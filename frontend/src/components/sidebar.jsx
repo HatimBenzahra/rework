@@ -10,6 +10,8 @@ import {
   MapPin,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useRole } from '@/contexts/RoleContext'
+import { hasPermission } from '@/utils/roleFilters'
 
 import {
   Sidebar,
@@ -30,46 +32,64 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-// Menu items.
+// Menu items avec permissions requises
 const items = [
   {
     title: 'Dashboard',
     url: '/',
     icon: Home,
+    entity: null, // Dashboard toujours visible
   },
   {
     title: 'Commerciaux',
     url: '/commerciaux',
     icon: Inbox,
+    entity: 'commerciaux',
   },
   {
     title: 'Managers',
     url: '/managers',
     icon: Calendar,
+    entity: 'managers',
   },
   {
     title: 'Directeurs',
     url: '/directeurs',
     icon: Search,
+    entity: 'directeurs',
   },
   {
     title: 'Immeubles',
     url: '/immeubles',
     icon: Building2,
+    entity: 'immeubles',
   },
   {
     title: 'Zones',
     url: '/zones',
     icon: MapPin,
+    entity: 'zones',
   },
   {
     title: 'Paramètres',
     url: '/settings',
     icon: Settings,
+    entity: null, // Paramètres toujours visibles
   },
 ]
 
 export function AppSidebar() {
+  const { currentRole } = useRole()
+
+  // Filtrer les éléments du menu selon les permissions
+  const visibleItems = items.filter(item => {
+    // Si pas d'entité spécifiée, toujours visible (Dashboard, Paramètres)
+    if (!item.entity) return true
+
+    // Vérifier si l'utilisateur a la permission de voir cette entité
+    return hasPermission(currentRole, item.entity, 'view')
+  })
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -94,7 +114,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map(item => (
+              {visibleItems.map(item => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>
@@ -120,7 +140,7 @@ export function AppSidebar() {
                   <User2 className="size-4" />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">Utilisateur</span>
-                    <span className="truncate text-xs">admin@example.com</span>
+                    <span className="truncate text-xs capitalize">{currentRole}</span>
                   </div>
                   <ChevronUp className="ml-auto size-4" />
                 </SidebarMenuButton>

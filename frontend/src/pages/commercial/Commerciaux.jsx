@@ -8,6 +8,7 @@ import {
   useManagers,
 } from '@/services'
 import { useMemo } from 'react'
+import { useEntityPage } from '@/hooks/useRoleBasedData'
 
 const commerciauxColumns = [
   {
@@ -52,11 +53,18 @@ export default function Commerciaux() {
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
   const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()
 
+  // Utilisation du nouveau système de rôles
+  const {
+    data: filteredCommercials,
+    permissions,
+    description,
+  } = useEntityPage('commerciaux', commercials, { managers })
+
   // Préparer les données pour le tableau
   const tableData = useMemo(() => {
-    if (!commercials) return []
+    if (!filteredCommercials) return []
 
-    return commercials.map(commercial => {
+    return filteredCommercials.map(commercial => {
       // Trouver le nom du manager
       const manager = managers?.find(m => m.id === commercial.managerId)
       const managerName = manager ? `${manager.prenom} ${manager.nom}` : 'N/A'
@@ -68,7 +76,7 @@ export default function Commerciaux() {
         createdAt: new Date(commercial.createdAt).toLocaleDateString('fr-FR'),
       }
     })
-  }, [commercials, managers])
+  }, [filteredCommercials, managers])
 
   // Préparer les options pour les formulaires
   const managerOptions = useMemo(() => {
@@ -222,16 +230,16 @@ export default function Commerciaux() {
 
       <AdvancedDataTable
         title="Liste des Commerciaux"
-        description="Tous les commerciaux de l'entreprise avec leurs informations et performances"
+        description={description}
         data={tableData}
         columns={commerciauxColumns}
         searchKey="name"
-        onAdd={handleAddCommercial}
+        onAdd={permissions.canAdd ? handleAddCommercial : undefined}
         addButtonText="Nouveau Commercial"
         detailsPath="/commerciaux"
         editFields={commerciauxEditFields}
-        onEdit={handleEditCommercial}
-        onDelete={handleDeleteCommercial}
+        onEdit={permissions.canEdit ? handleEditCommercial : undefined}
+        onDelete={permissions.canDelete ? handleDeleteCommercial : undefined}
         loading={creating || updating || deleting}
       />
     </div>

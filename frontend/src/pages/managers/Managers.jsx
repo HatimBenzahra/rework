@@ -1,6 +1,9 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
+import { useManagers } from '@/services'
+import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useMemo } from 'react'
 
 // Données exemple pour les managers
 const managersData = [
@@ -198,13 +201,30 @@ const managersEditFields = [
 export default function Managers() {
   const loading = useSimpleLoading(1000)
 
+  // Utilisation de l'API réelle
+  const { data: managersApi } = useManagers()
+
+  // Utilisation du système de rôles pour filtrer les données
+  const {
+    data: filteredManagers,
+    permissions,
+    description,
+  } = useEntityPage('managers', managersApi || managersData)
+  // Préparation des données pour le tableau
+  const tableData = useMemo(() => {
+    if (!filteredManagers) return []
+    return filteredManagers.map(manager => ({
+      ...manager,
+      name: manager.nom && manager.prenom ? `${manager.prenom} ${manager.nom}` : manager.name,
+    }))
+  }, [filteredManagers])
+
   const handleAddManager = () => {
     console.log('Ajouter un nouveau manager')
   }
 
   const handleEditManager = editedData => {
     console.log('Manager modifié:', editedData)
-    // Appel API pour mettre à jour les données
   }
 
   if (loading) {
@@ -225,22 +245,21 @@ export default function Managers() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Managers</h1>
-        <p className="text-muted-foreground text-base">
-          Gestion des managers régionaux et suivi de leurs équipes
-        </p>
+        <p className="text-muted-foreground text-base">{description}</p>
       </div>
 
       <AdvancedDataTable
         title="Liste des Managers"
-        description="Tous les managers avec leurs équipes et performances régionales"
-        data={managersData}
+        description={description}
+        data={tableData}
         columns={managersColumns}
         searchKey="name"
-        onAdd={handleAddManager}
+        onAdd={permissions.canAdd ? handleAddManager : undefined}
         addButtonText="Nouveau Manager"
         detailsPath="/managers"
         editFields={managersEditFields}
-        onEdit={handleEditManager}
+        onEdit={permissions.canEdit ? handleEditManager : undefined}
+        onDelete={permissions.canDelete ? id => console.log('Delete manager', id) : undefined}
       />
     </div>
   )
