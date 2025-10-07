@@ -252,11 +252,99 @@ const commerciauxColumns = [
   },
 ]
 
+// Configuration des champs du modal d'édition
+const commerciauxEditFields = [
+  {
+    key: 'name',
+    label: 'Nom complet',
+    type: 'text',
+    required: true,
+    section: 'Informations personnelles',
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    type: 'email',
+    required: true,
+    section: 'Informations personnelles',
+    validate: value => {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Email invalide'
+      }
+    },
+  },
+  {
+    key: 'phone',
+    label: 'Téléphone',
+    type: 'tel',
+    required: true,
+    section: 'Informations personnelles',
+    placeholder: '+216 XX XXX XXX',
+  },
+  {
+    key: 'zone',
+    label: 'Zone',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'Tunis Centre', label: 'Tunis Centre' },
+      { value: 'Sfax', label: 'Sfax' },
+      { value: 'Sousse', label: 'Sousse' },
+      { value: 'Bizerte', label: 'Bizerte' },
+      { value: 'Monastir', label: 'Monastir' },
+      { value: 'Nabeul', label: 'Nabeul' },
+    ],
+  },
+  {
+    key: 'manager',
+    label: 'Manager',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'Fatma Gharbi', label: 'Fatma Gharbi' },
+      { value: 'Mohamed Triki', label: 'Mohamed Triki' },
+    ],
+  },
+  {
+    key: 'status',
+    label: 'Statut',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'actif', label: 'Actif' },
+      { value: 'inactif', label: 'Inactif' },
+      { value: 'en_conge', label: 'En congé' },
+      { value: 'suspendu', label: 'Suspendu' },
+    ],
+  },
+  {
+    key: 'objectif',
+    label: 'Objectif (TND)',
+    type: 'text',
+    section: 'Performance',
+    placeholder: '50 000 TND',
+  },
+  {
+    key: 'date_embauche',
+    label: 'Date d\'embauche',
+    type: 'date',
+    section: 'Informations personnelles',
+  },
+]
+
 export default function Commerciaux() {
   const loading = useSimpleLoading(1000)
 
   const handleAddCommercial = () => {
     console.log('Ajouter un nouveau commercial')
+  }
+
+  const handleEditCommercial = editedData => {
+    console.log('Commercial modifié:', editedData)
+    // Ici, vous ferez un appel API pour mettre à jour les données
   }
 
   if (loading) {
@@ -291,6 +379,8 @@ export default function Commerciaux() {
         onAdd={handleAddCommercial}
         addButtonText="Nouveau Commercial"
         detailsPath="/commerciaux"
+        editFields={commerciauxEditFields}
+        onEdit={handleEditCommercial}
       />
     </div>
   )

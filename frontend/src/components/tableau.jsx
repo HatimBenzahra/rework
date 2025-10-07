@@ -29,8 +29,9 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronDown, Search, Filter, MoreHorizontal, Plus } from 'lucide-react'
+import { ChevronDown, Search, Filter, MoreHorizontal, Plus, Eye, Pencil, Trash2 } from 'lucide-react'
 import { StatsCard } from './card'
+import EditModal from './EditModal'
 
 export function AdvancedDataTable({
   title,
@@ -42,12 +43,16 @@ export function AdvancedDataTable({
   addButtonText = 'Ajouter',
   itemsPerPage = 10,
   detailsPath,
+  editFields,
+  onEdit,
 }) {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [selectedRow, setSelectedRow] = useState(null)
 
   // Filtrage et tri des données
   const filteredAndSortedData = useMemo(() => {
@@ -115,10 +120,22 @@ export function AdvancedDataTable({
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
   }
 
-  const handleRowClick = (row) => {
+  const handleViewDetails = (row) => {
     if (detailsPath && row.id) {
       navigate(`${detailsPath}/${row.id}`)
     }
+  }
+
+  const handleEdit = (row) => {
+    setSelectedRow(row)
+    setEditModalOpen(true)
+  }
+
+  const handleSaveEdit = (editedData) => {
+    if (onEdit) {
+      onEdit(editedData)
+    }
+    console.log('Données modifiées:', editedData)
   }
 
   return (
@@ -208,11 +225,7 @@ export function AdvancedDataTable({
                   </TableRow>
                 ) : (
                   paginatedData.map((row, rowIndex) => (
-                    <TableRow 
-                      key={rowIndex} 
-                      className={`hover:bg-muted/50 ${detailsPath ? 'cursor-pointer' : ''}`}
-                      onClick={() => handleRowClick(row)}
-                    >
+                    <TableRow key={rowIndex} className="hover:bg-muted/50">
                       {columns.map((column, colIndex) => (
                         <TableCell key={colIndex} className={column.className}>
                           {column.accessor === 'status'
@@ -222,19 +235,34 @@ export function AdvancedDataTable({
                               : column.cell?.(row)}
                         </TableCell>
                       ))}
-                      <TableCell onClick={(e) => e.stopPropagation()}>
+                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button 
+                              variant="ghost" 
+                              className="h-8 w-8 p-0 hover:bg-muted data-[state=open]:bg-muted"
+                            >
                               <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Ouvrir le menu</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Voir détails</DropdownMenuItem>
-                            <DropdownMenuItem>Modifier</DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-48">
+                            {detailsPath && (
+                              <DropdownMenuItem onClick={() => handleViewDetails(row)}>
+                                <Eye />
+                                <span>Voir détails</span>
+                              </DropdownMenuItem>
+                            )}
+                            {editFields && (
+                              <DropdownMenuItem onClick={() => handleEdit(row)}>
+                                <Pencil />
+                                <span>Modifier</span>
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              Supprimer
+                            <DropdownMenuItem variant="destructive">
+                              <Trash2 />
+                              <span>Supprimer</span>
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -313,6 +341,19 @@ export function AdvancedDataTable({
           )}
         </div>
       </CardContent>
+
+      {/* Modal d'édition */}
+      {editFields && selectedRow && (
+        <EditModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          title={`Modifier ${title.toLowerCase().replace('liste des ', '')}`}
+          description="Modifiez les informations ci-dessous"
+          data={selectedRow}
+          fields={editFields}
+          onSave={handleSaveEdit}
+        />
+      )}
     </Card>
   )
 }

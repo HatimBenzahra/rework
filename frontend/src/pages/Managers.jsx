@@ -113,11 +113,98 @@ const managersColumns = [
   },
 ]
 
+// Configuration des champs du modal d'édition
+const managersEditFields = [
+  {
+    key: 'name',
+    label: 'Nom complet',
+    type: 'text',
+    required: true,
+    section: 'Informations personnelles',
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    type: 'email',
+    required: true,
+    section: 'Informations personnelles',
+    validate: value => {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Email invalide'
+      }
+    },
+  },
+  {
+    key: 'phone',
+    label: 'Téléphone',
+    type: 'tel',
+    required: true,
+    section: 'Informations personnelles',
+    placeholder: '+216 XX XXX XXX',
+  },
+  {
+    key: 'region',
+    label: 'Région',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'Nord', label: 'Nord' },
+      { value: 'Centre', label: 'Centre' },
+      { value: 'Sud', label: 'Sud' },
+      { value: 'Est', label: 'Est' },
+      { value: 'Ouest', label: 'Ouest' },
+    ],
+  },
+  {
+    key: 'directeur',
+    label: 'Directeur',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'Samir Ben Mahmoud', label: 'Samir Ben Mahmoud' },
+      { value: 'Leila Mansouri', label: 'Leila Mansouri' },
+    ],
+  },
+  {
+    key: 'status',
+    label: 'Statut',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'actif', label: 'Actif' },
+      { value: 'inactif', label: 'Inactif' },
+      { value: 'en_conge', label: 'En congé' },
+      { value: 'suspendu', label: 'Suspendu' },
+    ],
+  },
+  {
+    key: 'objectif_equipe',
+    label: 'Objectif équipe (TND)',
+    type: 'text',
+    section: 'Performance',
+    placeholder: '400 000 TND',
+  },
+  {
+    key: 'date_promotion',
+    label: 'Date de promotion',
+    type: 'date',
+    section: 'Informations personnelles',
+  },
+]
+
 export default function Managers() {
   const loading = useSimpleLoading(1000)
 
   const handleAddManager = () => {
     console.log('Ajouter un nouveau manager')
+  }
+
+  const handleEditManager = editedData => {
+    console.log('Manager modifié:', editedData)
+    // Appel API pour mettre à jour les données
   }
 
   if (loading) {
@@ -152,6 +239,8 @@ export default function Managers() {
         onAdd={handleAddManager}
         addButtonText="Nouveau Manager"
         detailsPath="/managers"
+        editFields={managersEditFields}
+        onEdit={handleEditManager}
       />
     </div>
   )

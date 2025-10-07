@@ -183,11 +183,98 @@ const immeublesColumns = [
   },
 ]
 
+// Configuration des champs du modal d'édition
+const immeublesEditFields = [
+  {
+    key: 'name',
+    label: 'Nom de l\'immeuble',
+    type: 'text',
+    required: true,
+    section: 'Informations générales',
+  },
+  {
+    key: 'address',
+    label: 'Adresse',
+    type: 'textarea',
+    required: true,
+    section: 'Informations générales',
+    fullWidth: true,
+    placeholder: 'Adresse complète',
+  },
+  {
+    key: 'zone',
+    label: 'Zone',
+    type: 'select',
+    required: true,
+    section: 'Informations générales',
+    options: [
+      { value: 'Tunis Centre', label: 'Tunis Centre' },
+      { value: 'Les Berges du Lac', label: 'Les Berges du Lac' },
+      { value: 'Sfax', label: 'Sfax' },
+      { value: 'Sousse', label: 'Sousse' },
+      { value: 'Monastir', label: 'Monastir' },
+      { value: 'Bizerte', label: 'Bizerte' },
+      { value: 'Nabeul', label: 'Nabeul' },
+      { value: 'Carthage', label: 'Carthage' },
+    ],
+  },
+  {
+    key: 'floors',
+    label: 'Nombre d\'étages',
+    type: 'number',
+    required: true,
+    section: 'Caractéristiques',
+  },
+  {
+    key: 'apartments',
+    label: 'Nombre d\'appartements',
+    type: 'number',
+    required: true,
+    section: 'Caractéristiques',
+  },
+  {
+    key: 'manager',
+    label: 'Gestionnaire',
+    type: 'select',
+    section: 'Gestion',
+    options: [
+      { value: 'Ahmed Ben Ali', label: 'Ahmed Ben Ali' },
+      { value: 'Fatma Gharbi', label: 'Fatma Gharbi' },
+      { value: 'Mohamed Triki', label: 'Mohamed Triki' },
+    ],
+  },
+  {
+    key: 'status',
+    label: 'Statut',
+    type: 'select',
+    required: true,
+    section: 'Gestion',
+    options: [
+      { value: 'actif', label: 'Actif' },
+      { value: 'en_renovation', label: 'En rénovation' },
+      { value: 'en_maintenance', label: 'En maintenance' },
+      { value: 'complet', label: 'Complet' },
+    ],
+  },
+  {
+    key: 'year_built',
+    label: 'Année de construction',
+    type: 'text',
+    section: 'Caractéristiques',
+    placeholder: '2020',
+  },
+]
+
 export default function Immeubles() {
   const loading = useSimpleLoading(1000)
 
   const handleAddImmeuble = () => {
     console.log('Ajouter un nouveau immeuble')
+  }
+
+  const handleEditImmeuble = editedData => {
+    console.log('Immeuble modifié:', editedData)
+    // Appel API pour mettre à jour les données
   }
 
   if (loading) {
@@ -222,6 +309,8 @@ export default function Immeubles() {
         onAdd={handleAddImmeuble}
         addButtonText="Nouvel Immeuble"
         detailsPath="/immeubles"
+        editFields={immeublesEditFields}
+        onEdit={handleEditImmeuble}
       />
     </div>
   )

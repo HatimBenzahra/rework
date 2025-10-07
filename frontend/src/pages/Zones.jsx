@@ -184,11 +184,87 @@ const zonesColumns = [
   },
 ]
 
+// Configuration des champs du modal d'édition
+const zonesEditFields = [
+  {
+    key: 'name',
+    label: 'Nom de la zone',
+    type: 'text',
+    required: true,
+    section: 'Informations générales',
+  },
+  {
+    key: 'region',
+    label: 'Région',
+    type: 'select',
+    required: true,
+    section: 'Informations générales',
+    options: [
+      { value: 'Grand Tunis', label: 'Grand Tunis' },
+      { value: 'Centre', label: 'Centre' },
+      { value: 'Sahel', label: 'Sahel' },
+      { value: 'Nord', label: 'Nord' },
+      { value: 'Cap Bon', label: 'Cap Bon' },
+    ],
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    type: 'textarea',
+    section: 'Informations générales',
+    fullWidth: true,
+    placeholder: 'Description de la zone',
+  },
+  {
+    key: 'manager',
+    label: 'Manager responsable',
+    type: 'select',
+    required: true,
+    section: 'Gestion',
+    options: [
+      { value: 'Fatma Gharbi', label: 'Fatma Gharbi' },
+      { value: 'Mohamed Triki', label: 'Mohamed Triki' },
+      { value: 'Nadia Karoui', label: 'Nadia Karoui' },
+      { value: 'Tarek Sellami', label: 'Tarek Sellami' },
+      { value: 'Amira Jebali', label: 'Amira Jebali' },
+    ],
+  },
+  {
+    key: 'status',
+    label: 'Statut',
+    type: 'select',
+    required: true,
+    section: 'Gestion',
+    options: [
+      { value: 'actif', label: 'Actif' },
+      { value: 'en_developpement', label: 'En développement' },
+      { value: 'saisonnier', label: 'Saisonnier' },
+    ],
+  },
+  {
+    key: 'immeubles_count',
+    label: 'Nombre d\'immeubles',
+    type: 'number',
+    section: 'Statistiques',
+  },
+  {
+    key: 'commercial_count',
+    label: 'Nombre de commerciaux',
+    type: 'number',
+    section: 'Statistiques',
+  },
+]
+
 export default function Zones() {
   const loading = useSimpleLoading(1000)
 
   const handleAddZone = () => {
     console.log('Ajouter une nouvelle zone')
+  }
+
+  const handleEditZone = editedData => {
+    console.log('Zone modifiée:', editedData)
+    // Appel API pour mettre à jour les données
   }
 
   if (loading) {
@@ -223,6 +299,8 @@ export default function Zones() {
         onAdd={handleAddZone}
         addButtonText="Nouvelle Zone"
         detailsPath="/zones"
+        editFields={zonesEditFields}
+        onEdit={handleEditZone}
       />
     </div>
   )

@@ -107,11 +107,88 @@ const directeursColumns = [
   },
 ]
 
+// Configuration des champs du modal d'édition
+const directeursEditFields = [
+  {
+    key: 'name',
+    label: 'Nom complet',
+    type: 'text',
+    required: true,
+    section: 'Informations personnelles',
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    type: 'email',
+    required: true,
+    section: 'Informations personnelles',
+    validate: value => {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return 'Email invalide'
+      }
+    },
+  },
+  {
+    key: 'phone',
+    label: 'Téléphone',
+    type: 'tel',
+    required: true,
+    section: 'Informations personnelles',
+    placeholder: '+216 XX XXX XXX',
+  },
+  {
+    key: 'division',
+    label: 'Division',
+    type: 'text',
+    required: true,
+    section: 'Affectation',
+    placeholder: 'Ex: Division Nord & Sud',
+  },
+  {
+    key: 'status',
+    label: 'Statut',
+    type: 'select',
+    required: true,
+    section: 'Affectation',
+    options: [
+      { value: 'actif', label: 'Actif' },
+      { value: 'inactif', label: 'Inactif' },
+      { value: 'en_conge', label: 'En congé' },
+      { value: 'suspendu', label: 'Suspendu' },
+    ],
+  },
+  {
+    key: 'objectif_division',
+    label: 'Objectif division (TND)',
+    type: 'text',
+    section: 'Performance',
+    placeholder: '950 000 TND',
+  },
+  {
+    key: 'experience',
+    label: 'Expérience',
+    type: 'text',
+    section: 'Performance',
+    placeholder: 'Ex: 15 ans',
+  },
+  {
+    key: 'date_nomination',
+    label: 'Date de nomination',
+    type: 'date',
+    section: 'Informations personnelles',
+  },
+]
+
 export default function Directeurs() {
   const loading = useSimpleLoading(1000)
 
   const handleAddDirecteur = () => {
     console.log('Ajouter un nouveau directeur')
+  }
+
+  const handleEditDirecteur = editedData => {
+    console.log('Directeur modifié:', editedData)
+    // Appel API pour mettre à jour les données
   }
 
   if (loading) {
@@ -146,6 +223,8 @@ export default function Directeurs() {
         onAdd={handleAddDirecteur}
         addButtonText="Nouveau Directeur"
         detailsPath="/directeurs"
+        editFields={directeursEditFields}
+        onEdit={handleEditDirecteur}
       />
     </div>
   )
