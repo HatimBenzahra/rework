@@ -1,5 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 
 const immeublesData = {
   1: {
@@ -23,7 +25,10 @@ const immeublesData = {
 
 export default function ImmeubleDetails() {
   const { id } = useParams()
+  const loading = useSimpleLoading(1000)
   const immeuble = immeublesData[id] || immeublesData[1]
+
+  if (loading) return <DetailsPageSkeleton />
 
   const personalInfo = [
     { label: 'Adresse complète', value: immeuble.address, icon: 'mapPin' },

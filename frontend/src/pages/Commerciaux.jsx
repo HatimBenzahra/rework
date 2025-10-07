@@ -1,4 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { TableSkeleton } from '@/components/LoadingSkeletons'
 
 // Données exemple pour les commerciaux
 const commerciauxData = [
@@ -251,8 +253,24 @@ const commerciauxColumns = [
 ]
 
 export default function Commerciaux() {
+  const loading = useSimpleLoading(1000)
+
   const handleAddCommercial = () => {
     console.log('Ajouter un nouveau commercial')
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Commerciaux</h1>
+          <p className="text-muted-foreground text-base">
+            Gestion de l'équipe commerciale et suivi des performances
+          </p>
+        </div>
+        <TableSkeleton />
+      </div>
+    )
   }
 
   return (

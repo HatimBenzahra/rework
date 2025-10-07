@@ -1,5 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 
 // Données exemple (à remplacer par un appel API)
 const commerciauxData = {
@@ -41,7 +43,10 @@ const commerciauxData = {
 
 export default function CommercialDetails() {
   const { id } = useParams()
+  const loading = useSimpleLoading(1000)
   const commercial = commerciauxData[id] || commerciauxData[1]
+
+  if (loading) return <DetailsPageSkeleton />
 
   const personalInfo = [
     {

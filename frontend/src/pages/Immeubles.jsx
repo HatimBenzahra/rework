@@ -1,4 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { TableSkeleton } from '@/components/LoadingSkeletons'
 
 // Données exemple pour les immeubles
 const immeublesData = [
@@ -182,8 +184,24 @@ const immeublesColumns = [
 ]
 
 export default function Immeubles() {
+  const loading = useSimpleLoading(1000)
+
   const handleAddImmeuble = () => {
     console.log('Ajouter un nouveau immeuble')
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Immeubles</h1>
+          <p className="text-muted-foreground text-base">
+            Gestion du patrimoine immobilier et suivi des propriétés
+          </p>
+        </div>
+        <TableSkeleton />
+      </div>
+    )
   }
 
   return (

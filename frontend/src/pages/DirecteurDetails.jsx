@@ -1,5 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 
 const directeursData = {
   1: {
@@ -23,7 +25,10 @@ const directeursData = {
 
 export default function DirecteurDetails() {
   const { id } = useParams()
+  const loading = useSimpleLoading(1000)
   const directeur = directeursData[id] || directeursData[1]
+
+  if (loading) return <DetailsPageSkeleton />
 
   const personalInfo = [
     { label: 'Email', value: directeur.email, icon: 'mail' },

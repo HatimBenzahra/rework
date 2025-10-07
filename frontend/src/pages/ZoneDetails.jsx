@@ -1,5 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 
 const zonesData = {
   1: {
@@ -22,7 +24,10 @@ const zonesData = {
 
 export default function ZoneDetails() {
   const { id } = useParams()
+  const loading = useSimpleLoading(1000)
   const zone = zonesData[id] || zonesData[1]
+
+  if (loading) return <DetailsPageSkeleton />
 
   const personalInfo = [
     { label: 'Région', value: zone.region, icon: 'mapPin' },

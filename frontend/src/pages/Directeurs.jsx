@@ -1,4 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
+import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { TableSkeleton } from '@/components/LoadingSkeletons'
 
 // Données exemple pour les directeurs
 const directeursData = [
@@ -106,8 +108,24 @@ const directeursColumns = [
 ]
 
 export default function Directeurs() {
+  const loading = useSimpleLoading(1000)
+
   const handleAddDirecteur = () => {
     console.log('Ajouter un nouveau directeur')
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Directeurs</h1>
+          <p className="text-muted-foreground text-base">
+            Gestion des directeurs de division et supervision stratégique
+          </p>
+        </div>
+        <TableSkeleton />
+      </div>
+    )
   }
 
   return (
