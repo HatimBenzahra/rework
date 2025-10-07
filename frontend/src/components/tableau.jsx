@@ -18,8 +18,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChevronDown, Search, Filter, MoreHorizontal, Plus } from "lucide-react"
+import { StatsCard } from "./card"
 
 export function AdvancedDataTable({ 
   title, 
@@ -28,11 +38,13 @@ export function AdvancedDataTable({
   columns,
   searchKey = "name",
   onAdd,
-  addButtonText = "Ajouter"
+  addButtonText = "Ajouter",
+  itemsPerPage = 10
 }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Filtrage et tri des données
   const filteredAndSortedData = useMemo(() => {
@@ -60,6 +72,19 @@ export function AdvancedDataTable({
 
     return filtered
   }, [data, searchTerm, sortConfig, statusFilter, searchKey])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage)
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredAndSortedData.slice(startIndex, endIndex)
+  }, [filteredAndSortedData, currentPage, itemsPerPage])
+
+  // Réinitialise la page quand on change de filtre/recherche
+  useMemo(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter])
 
   const handleSort = (key) => {
     setSortConfig(prevConfig => ({
@@ -151,28 +176,26 @@ export function AdvancedDataTable({
 
         {/* Statistiques */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="text-center p-3 bg-muted/50 rounded-lg">
-            <div className="text-2xl font-bold">{data.length}</div>
-            <div className="text-sm text-muted-foreground">Total</div>
-          </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
-              {data.filter(item => item.status === 'actif').length}
-            </div>
-            <div className="text-sm text-muted-foreground">Actifs</div>
-          </div>
-          <div className="text-center p-3 bg-red-50 rounded-lg">
-            <div className="text-2xl font-bold text-red-600">
-              {data.filter(item => item.status === 'inactif').length}
-            </div>
-            <div className="text-sm text-muted-foreground">Inactifs</div>
-          </div>
-          <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
-              {filteredAndSortedData.length}
-            </div>
-            <div className="text-sm text-muted-foreground">Filtrés</div>
-          </div>
+          <StatsCard 
+            value={data.length} 
+            title="Total" 
+            variant="muted"
+          />
+          <StatsCard 
+            value={data.filter(item => item.status === 'actif').length} 
+            title="Actifs" 
+            variant="success"
+          />
+          <StatsCard 
+            value={data.filter(item => item.status === 'inactif').length} 
+            title="Inactifs" 
+            variant="destructive"
+          />
+          <StatsCard 
+            value={filteredAndSortedData.length} 
+            title="Filtrés" 
+            variant="primary"
+          />
         </div>
 
         {/* Tableau */}
@@ -201,7 +224,7 @@ export function AdvancedDataTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedData.length === 0 ? (
+                {paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell 
                       colSpan={columns.length + 1} 
@@ -211,7 +234,7 @@ export function AdvancedDataTable({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAndSortedData.map((row, rowIndex) => (
+                  paginatedData.map((row, rowIndex) => (
                     <TableRow key={rowIndex} className="hover:bg-muted/50">
                       {columns.map((column, colIndex) => (
                         <TableCell key={colIndex} className={column.className}>
@@ -235,7 +258,7 @@ export function AdvancedDataTable({
                             <DropdownMenuItem>Voir détails</DropdownMenuItem>
                             <DropdownMenuItem>Modifier</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem className="text-destructive">
                               Supprimer
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -249,11 +272,65 @@ export function AdvancedDataTable({
           </div>
         </div>
 
-        {/* Footer avec pagination info */}
-        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-          <div>
-            Affichage de {filteredAndSortedData.length} sur {data.length} résultats
+        {/* Footer avec pagination */}
+        <div className="flex items-center justify-between mt-4 -mx-6 px-6">
+          <div className="text-sm text-muted-foreground">
+            Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, filteredAndSortedData.length)} sur {filteredAndSortedData.length} résultats
           </div>
+          
+          {totalPages > 1 && (
+            <div className="-mr-2">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  
+                  {[...Array(totalPages)].map((_, index) => {
+                    const pageNumber = index + 1
+                    // Affiche les 3 premières pages, les 3 dernières, et la page actuelle avec ses voisines
+                    if (
+                      pageNumber === 1 ||
+                      pageNumber === totalPages ||
+                      (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNumber)}
+                            isActive={currentPage === pageNumber}
+                            className="cursor-pointer"
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    } else if (
+                      pageNumber === currentPage - 2 ||
+                      pageNumber === currentPage + 2
+                    ) {
+                      return (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )
+                    }
+                    return null
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

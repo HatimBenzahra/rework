@@ -39,6 +39,138 @@ const commerciauxData = [
     date_embauche: "12/01/2023"
   },
   {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
+    id: 3,
+    name: "Karim Ouali",
+    email: "karim.ouali@company.com",
+    phone: "+216 22 456 789",
+    zone: "Sousse",
+    manager: "Fatma Gharbi",
+    status: "en_conge",
+    ventes_mois: "38 000 TND",
+    objectif: "45 000 TND",
+    date_embauche: "12/01/2023"
+  },
+  {
     id: 4,
     name: "Ines Khediri",
     email: "ines.khediri@company.com",
@@ -88,6 +220,7 @@ const commerciauxColumns = [
     accessor: "email", 
     sortable: true 
   },
+  
   { 
     header: "Téléphone", 
     accessor: "phone",
