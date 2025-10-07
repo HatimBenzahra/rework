@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Table,
   TableBody,
@@ -40,7 +41,9 @@ export function AdvancedDataTable({
   onAdd,
   addButtonText = 'Ajouter',
   itemsPerPage = 10,
+  detailsPath,
 }) {
+  const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [statusFilter, setStatusFilter] = useState('all')
@@ -112,6 +115,12 @@ export function AdvancedDataTable({
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
   }
 
+  const handleRowClick = (row) => {
+    if (detailsPath && row.id) {
+      navigate(`${detailsPath}/${row.id}`)
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -167,22 +176,6 @@ export function AdvancedDataTable({
           </DropdownMenu>
         </div>
 
-        {/* Statistiques */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <StatsCard value={data.length} title="Total" variant="muted" />
-          <StatsCard
-            value={data.filter(item => item.status === 'actif').length}
-            title="Actifs"
-            variant="success"
-          />
-          <StatsCard
-            value={data.filter(item => item.status === 'inactif').length}
-            title="Inactifs"
-            variant="destructive"
-          />
-          <StatsCard value={filteredAndSortedData.length} title="Filtrés" variant="primary" />
-        </div>
-
         {/* Tableau */}
         <div className="rounded-md border overflow-hidden">
           <div className="overflow-x-auto">
@@ -215,7 +208,11 @@ export function AdvancedDataTable({
                   </TableRow>
                 ) : (
                   paginatedData.map((row, rowIndex) => (
-                    <TableRow key={rowIndex} className="hover:bg-muted/50">
+                    <TableRow 
+                      key={rowIndex} 
+                      className={`hover:bg-muted/50 ${detailsPath ? 'cursor-pointer' : ''}`}
+                      onClick={() => handleRowClick(row)}
+                    >
                       {columns.map((column, colIndex) => (
                         <TableCell key={colIndex} className={column.className}>
                           {column.accessor === 'status'
@@ -225,7 +222,7 @@ export function AdvancedDataTable({
                               : column.cell?.(row)}
                         </TableCell>
                       ))}
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="h-8 w-8 p-0">

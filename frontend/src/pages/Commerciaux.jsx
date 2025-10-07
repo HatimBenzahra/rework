@@ -257,9 +257,9 @@ export default function Commerciaux() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Commerciaux</h1>
-        <p className="text-muted-foreground">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Commerciaux</h1>
+        <p className="text-muted-foreground text-base">
           Gestion de l'équipe commerciale et suivi des performances
         </p>
       </div>
@@ -272,6 +272,7 @@ export default function Commerciaux() {
         searchKey="name"
         onAdd={handleAddCommercial}
         addButtonText="Nouveau Commercial"
+        detailsPath="/commerciaux"
       />
     </div>
   )

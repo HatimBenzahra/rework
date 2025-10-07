@@ -112,9 +112,9 @@ export default function Directeurs() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Directeurs</h1>
-        <p className="text-muted-foreground">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Directeurs</h1>
+        <p className="text-muted-foreground text-base">
           Gestion des directeurs de division et supervision stratégique
         </p>
       </div>
@@ -127,6 +127,7 @@ export default function Directeurs() {
         searchKey="name"
         onAdd={handleAddDirecteur}
         addButtonText="Nouveau Directeur"
+        detailsPath="/directeurs"
       />
     </div>
   )

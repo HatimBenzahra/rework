@@ -118,9 +118,9 @@ export default function Managers() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Managers</h1>
-        <p className="text-muted-foreground">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Managers</h1>
+        <p className="text-muted-foreground text-base">
           Gestion des managers régionaux et suivi de leurs équipes
         </p>
       </div>
@@ -133,6 +133,7 @@ export default function Managers() {
         searchKey="name"
         onAdd={handleAddManager}
         addButtonText="Nouveau Manager"
+        detailsPath="/managers"
       />
     </div>
   )

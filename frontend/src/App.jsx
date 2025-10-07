@@ -8,6 +8,13 @@ import Dashboard from '@/pages/Dashboard'
 import Commerciaux from '@/pages/Commerciaux'
 import Managers from '@/pages/Managers'
 import Directeurs from '@/pages/Directeurs'
+import Immeubles from '@/pages/Immeubles'
+import Zones from '@/pages/Zones'
+import CommercialDetails from '@/pages/CommercialDetails'
+import ManagerDetails from '@/pages/ManagerDetails'
+import DirecteurDetails from '@/pages/DirecteurDetails'
+import ImmeubleDetails from '@/pages/ImmeubleDetails'
+import ZoneDetails from '@/pages/ZoneDetails'
 
 function App() {
   return (
@@ -25,12 +32,19 @@ function App() {
             <ThemeToggle />
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 overflow-x-hidden">
+        <div className="flex flex-1 flex-col gap-4 p-6 pt-6 overflow-x-hidden">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/commerciaux" element={<Commerciaux />} />
+            <Route path="/commerciaux/:id" element={<CommercialDetails />} />
             <Route path="/managers" element={<Managers />} />
+            <Route path="/managers/:id" element={<ManagerDetails />} />
             <Route path="/directeurs" element={<Directeurs />} />
+            <Route path="/directeurs/:id" element={<DirecteurDetails />} />
+            <Route path="/immeubles" element={<Immeubles />} />
+            <Route path="/immeubles/:id" element={<ImmeubleDetails />} />
+            <Route path="/zones" element={<Zones />} />
+            <Route path="/zones/:id" element={<ZoneDetails />} />
           </Routes>
         </div>
       </SidebarInset>
