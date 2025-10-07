@@ -13,24 +13,6 @@ import { Badge } from '@/components/ui/badge'
 import { useTheme } from '@/hooks/use-theme'
 import { applyPreset, getSavedPreset } from '@/config/theme-presets'
 
-/**
- * Composant de sélection de thème prédéfini
- *
- * Permet de tester rapidement différents thèmes sans modifier le code
- *
- * Utilisation:
- * ```jsx
- * import ThemeSelector from '@/components/ThemeSelector'
- *
- * function Header() {
- *   return (
- *     <header>
- *       <ThemeSelector />
- *     </header>
- *   )
- * }
- * ```
- */
 export default function ThemeSelector() {
   const { theme: mode } = useTheme()
   // Charge le preset sauvegardé au démarrage

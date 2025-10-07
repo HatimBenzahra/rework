@@ -3,23 +3,6 @@ import { useTheme } from '@/hooks/use-theme'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-/**
- * Composant de bouton pour basculer entre le mode clair et sombre
- *
- * Exemple d'utilisation:
- * ```jsx
- * import ThemeToggle from '@/components/ThemeToggle'
- *
- * function Header() {
- *   return (
- *     <header>
- *       <h1>Mon App</h1>
- *       <ThemeToggle />
- *     </header>
- *   )
- * }
- * ```
- */
 export default function ThemeToggle() {
   const { theme, toggleTheme } = useTheme()
 

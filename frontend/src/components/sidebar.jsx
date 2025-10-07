@@ -1,4 +1,14 @@
-import { Calendar, Home, Inbox, Search, Settings, ChevronUp, User2, Building2, MapPin } from 'lucide-react'
+import {
+  Calendar,
+  Home,
+  Inbox,
+  Search,
+  Settings,
+  ChevronUp,
+  User2,
+  Building2,
+  MapPin,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import {
