@@ -58,4 +58,3 @@ export function useSimpleLoading(delay = 800) {
 
   return loading
 }
-

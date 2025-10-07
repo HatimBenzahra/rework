@@ -1,5 +1,13 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
-import { IsEmail, IsNotEmpty, IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { Immeuble } from '../immeuble/immeuble.dto';
 import { Zone } from '../zone/zone.dto';
 import { Statistic } from '../statistic/statistic.dto';

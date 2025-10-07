@@ -1,5 +1,11 @@
 import { ObjectType, Field, Int, InputType, Float } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, IsOptional, IsNumber, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsNumber,
+  Min,
+} from 'class-validator';
 
 @ObjectType()
 export class Zone {

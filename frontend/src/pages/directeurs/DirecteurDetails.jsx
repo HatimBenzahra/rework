@@ -66,7 +66,7 @@ export default function DirecteurDetails() {
       icon: 'users',
     },
     {
-      title: 'Taux d\'atteinte',
+      title: "Taux d'atteinte",
       value: directeur.taux_atteinte,
       description: 'Performance globale',
       icon: 'trendingUp',
@@ -111,4 +111,3 @@ export default function DirecteurDetails() {
     />
   )
 }
-

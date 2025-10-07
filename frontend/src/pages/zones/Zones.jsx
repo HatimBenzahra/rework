@@ -243,7 +243,7 @@ const zonesEditFields = [
   },
   {
     key: 'immeubles_count',
-    label: 'Nombre d\'immeubles',
+    label: "Nombre d'immeubles",
     type: 'number',
     section: 'Statistiques',
   },
@@ -305,4 +305,3 @@ export default function Zones() {
     </div>
   )
 }
-

@@ -1,156 +1,175 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
-import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-
-// Données exemple (à remplacer par un appel API)
-const commerciauxData = {
-  1: {
-    id: 1,
-    name: 'Ahmed Ben Ali',
-    email: 'ahmed.benali@company.com',
-    phone: '+216 20 123 456',
-    zone: 'Tunis Centre',
-    manager: 'Fatma Gharbi',
-    status: 'actif',
-    ventes_mois: '45 000 TND',
-    objectif: '50 000 TND',
-    date_embauche: '15/03/2022',
-    address: '23 Avenue Habib Bourguiba, Tunis',
-    contracts_signed: 28,
-    clients_actifs: 45,
-    taux_conversion: '62%',
-    commission: '4 500 TND',
-  },
-  2: {
-    id: 2,
-    name: 'Sarra Mejri',
-    email: 'sarra.mejri@company.com',
-    phone: '+216 25 987 654',
-    zone: 'Sfax',
-    manager: 'Mohamed Triki',
-    status: 'actif',
-    ventes_mois: '52 000 TND',
-    objectif: '50 000 TND',
-    date_embauche: '08/07/2021',
-    address: '45 Rue de la République, Sfax',
-    contracts_signed: 32,
-    clients_actifs: 58,
-    taux_conversion: '68%',
-    commission: '5 200 TND',
-  },
-}
+import { useCommercial, useManagers } from '@/services'
+import { useMemo } from 'react'
 
 export default function CommercialDetails() {
   const { id } = useParams()
-  const loading = useSimpleLoading(1000)
-  const commercial = commerciauxData[id] || commerciauxData[1]
+  const { data: commercial, loading, error } = useCommercial(parseInt(id))
+  const { data: managers } = useManagers()
+
+  // Préparer les données pour l'affichage
+  const commercialData = useMemo(() => {
+    if (!commercial) return null
+
+    // Trouver le manager
+    const manager = managers?.find(m => m.id === commercial.managerId)
+    const managerName = manager ? `${manager.prenom} ${manager.nom}` : 'Aucun manager assigné'
+
+    // Calculer quelques statistiques basiques basées sur les données disponibles
+    const totalStatistics = commercial.statistics || []
+    const totalContratsSignes = totalStatistics.reduce((sum, stat) => sum + stat.contratsSignes, 0)
+    const totalImmeublesVisites = totalStatistics.reduce(
+      (sum, stat) => sum + stat.immeublesVisites,
+      0
+    )
+    const totalRendezVousPris = totalStatistics.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
+    const totalRefus = totalStatistics.reduce((sum, stat) => sum + stat.refus, 0)
+
+    // Taux de conversion : contrats signés / rendez-vous pris
+    const tauxConversion =
+      totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
+
+    return {
+      ...commercial,
+      name: `${commercial.prenom} ${commercial.nom}`,
+      managerName,
+      totalContratsSignes,
+      totalImmeublesVisites,
+      totalRendezVousPris,
+      totalRefus,
+      tauxConversion: `${tauxConversion}%`,
+      zonesCount: commercial.zones?.length || 0,
+      immeublesCount: commercial.immeubles?.length || 0,
+    }
+  }, [commercial, managers])
 
   if (loading) return <DetailsPageSkeleton />
+
+  if (error) {
+    return (
+      <div className="p-6 border border-red-200 rounded-lg bg-red-50">
+        <p className="text-red-800">Erreur lors du chargement des données : {error}</p>
+      </div>
+    )
+  }
+
+  if (!commercialData) {
+    return (
+      <div className="p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <p className="text-gray-800">Commercial non trouvé</p>
+      </div>
+    )
+  }
 
   const personalInfo = [
     {
       label: 'Email',
-      value: commercial.email,
+      value: commercialData.email,
       icon: 'mail',
     },
     {
       label: 'Téléphone',
-      value: commercial.phone,
+      value: commercialData.numTel,
       icon: 'phone',
     },
     {
-      label: 'Zone',
-      value: commercial.zone,
-      icon: 'mapPin',
+      label: 'Age',
+      value: `${commercialData.age} ans`,
+      icon: 'user',
     },
     {
       label: 'Manager',
-      value: commercial.manager,
+      value: commercialData.managerName,
       icon: 'users',
     },
     {
-      label: 'Date d\'embauche',
-      value: commercial.date_embauche,
+      label: 'Date de création',
+      value: new Date(commercialData.createdAt).toLocaleDateString('fr-FR'),
       icon: 'calendar',
     },
     {
-      label: 'Adresse',
-      value: commercial.address,
+      label: 'Zones assignées',
+      value: `${commercialData.zonesCount} zone(s)`,
       icon: 'mapPin',
     },
   ]
 
   const statsCards = [
     {
-      title: 'Ventes du mois',
-      value: commercial.ventes_mois,
-      description: `Objectif: ${commercial.objectif}`,
-      icon: 'trendingUp',
-      trend: {
-        type: 'positive',
-        value: '+12% vs mois dernier',
-      },
-    },
-    {
       title: 'Contrats signés',
-      value: commercial.contracts_signed,
-      description: 'Ce mois-ci',
-      icon: 'users',
+      value: commercialData.totalContratsSignes,
+      description: 'Total historique',
+      icon: 'fileText',
     },
     {
-      title: 'Clients actifs',
-      value: commercial.clients_actifs,
-      description: 'Portfolio total',
-      icon: 'users',
+      title: 'Immeubles visités',
+      value: commercialData.totalImmeublesVisites,
+      description: 'Total historique',
+      icon: 'building',
+    },
+    {
+      title: 'Rendez-vous pris',
+      value: commercialData.totalRendezVousPris,
+      description: 'Total historique',
+      icon: 'calendar',
+    },
+    {
+      title: 'Refus',
+      value: commercialData.totalRefus,
+      description: 'Total historique',
+      icon: 'x',
     },
     {
       title: 'Taux de conversion',
-      value: commercial.taux_conversion,
-      description: 'Performance globale',
-      icon: 'trendingUp',
-    },
-    {
-      title: 'Commission',
-      value: commercial.commission,
-      description: 'Ce mois-ci',
+      value: commercialData.tauxConversion,
+      description: 'Contrats / RDV pris',
       icon: 'trendingUp',
     },
   ]
 
   const additionalSections = [
     {
-      title: 'Performance mensuelle',
-      description: 'Évolution des ventes sur les 6 derniers mois',
+      title: 'Statistiques détaillées',
+      description: 'Historique des performances par période',
       type: 'list',
-      items: [
-        { label: 'Janvier 2024', value: '42 000 TND' },
-        { label: 'Février 2024', value: '38 000 TND' },
-        { label: 'Mars 2024', value: '45 000 TND' },
-        { label: 'Avril 2024', value: '48 000 TND' },
-        { label: 'Mai 2024', value: '51 000 TND' },
-        { label: 'Juin 2024', value: '45 000 TND' },
-      ],
+      items: commercialData.statistics?.map(stat => ({
+        label: new Date(stat.createdAt).toLocaleDateString('fr-FR'),
+        value: `${stat.contratsSignes} contrats, ${stat.immeublesVisites} immeubles, ${stat.rendezVousPris} RDV, ${stat.refus} refus`,
+      })) || [{ label: 'Aucune donnée', value: 'Pas de statistiques disponibles' }],
     },
     {
-      title: 'Objectifs et réalisations',
-      description: 'Comparaison avec les objectifs fixés',
+      title: 'Zones et immeubles',
+      description: 'Territoire et portfolio assignés',
       type: 'grid',
       items: [
-        { label: 'Objectif annuel', value: '600 000 TND' },
-        { label: 'Réalisé à ce jour', value: '269 000 TND' },
-        { label: 'Pourcentage atteint', value: '45%' },
-        { label: 'Prévision fin d\'année', value: '620 000 TND' },
+        {
+          label: 'Zones assignées',
+          value: commercialData.zones?.map(zone => zone.nom).join(', ') || 'Aucune zone',
+        },
+        {
+          label: 'Immeubles sous responsabilité',
+          value: `${commercialData.immeublesCount} immeuble(s)`,
+        },
+        {
+          label: 'Manager responsable',
+          value: commercialData.managerName,
+        },
+        {
+          label: 'Dernière mise à jour',
+          value: new Date(commercialData.updatedAt).toLocaleDateString('fr-FR'),
+        },
       ],
     },
   ]
 
   return (
     <DetailsPage
-      title={commercial.name}
-      subtitle={`Commercial - ${commercial.zone}`}
-      status={commercial.status}
-      data={commercial}
+      title={commercialData.name}
+      subtitle={`Commercial - ID: ${commercialData.id}`}
+      status="actif"
+      data={commercialData}
       personalInfo={personalInfo}
       statsCards={statsCards}
       additionalSections={additionalSections}
@@ -158,4 +177,3 @@ export default function CommercialDetails() {
     />
   )
 }
-

@@ -52,7 +52,9 @@ input CreateManagerInput {
 input CreateStatisticInput {
   commercialId: Int!
   contratsSignes: Int!
-  portesVisitees: Int!
+  immeublesVisites: Int!
+  refus: Int!
+  rendezVousPris: Int!
 }
 
 input CreateZoneInput {
@@ -140,7 +142,9 @@ type Statistic {
   contratsSignes: Int!
   createdAt: DateTime!
   id: Int!
-  portesVisitees: Int!
+  immeublesVisites: Int!
+  refus: Int!
+  rendezVousPris: Int!
   updatedAt: DateTime!
 }
 
@@ -182,7 +186,9 @@ input UpdateStatisticInput {
   commercialId: Int
   contratsSignes: Int
   id: Int!
-  portesVisitees: Int
+  immeublesVisites: Int
+  refus: Int
+  rendezVousPris: Int
 }
 
 input UpdateZoneInput {

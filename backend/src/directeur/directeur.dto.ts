@@ -26,7 +26,6 @@ export class Directeur {
 
   @Field()
   updatedAt: Date;
-
 }
 
 @InputType()

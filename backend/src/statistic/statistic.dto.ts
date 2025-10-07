@@ -1,4 +1,10 @@
-import { ObjectType, Field, Int, InputType, PartialType } from '@nestjs/graphql';
+import {
+  ObjectType,
+  Field,
+  Int,
+  InputType,
+  PartialType,
+} from '@nestjs/graphql';
 
 @ObjectType()
 export class Statistic {
@@ -9,10 +15,16 @@ export class Statistic {
   commercialId: number;
 
   @Field(() => Int)
-  portesVisitees: number;
+  contratsSignes: number;
 
   @Field(() => Int)
-  contratsSignes: number;
+  immeublesVisites: number;
+
+  @Field(() => Int)
+  rendezVousPris: number;
+
+  @Field(() => Int)
+  refus: number;
 
   @Field()
   createdAt: Date;
@@ -27,10 +39,16 @@ export class CreateStatisticInput {
   commercialId: number;
 
   @Field(() => Int)
-  portesVisitees: number;
+  contratsSignes: number;
 
   @Field(() => Int)
-  contratsSignes: number;
+  immeublesVisites: number;
+
+  @Field(() => Int)
+  rendezVousPris: number;
+
+  @Field(() => Int)
+  refus: number;
 }
 
 @InputType()

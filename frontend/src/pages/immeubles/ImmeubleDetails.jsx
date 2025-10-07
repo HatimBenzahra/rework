@@ -48,7 +48,7 @@ export default function ImmeubleDetails() {
       trend: { type: 'positive', value: '+5% vs mois dernier' },
     },
     {
-      title: 'Taux d\'occupation',
+      title: "Taux d'occupation",
       value: immeuble.occupancy_rate,
       description: `${Math.floor(immeuble.apartments * 0.95)}/${immeuble.apartments} appartements occupés`,
       icon: 'users',
@@ -83,10 +83,10 @@ export default function ImmeubleDetails() {
     },
     {
       title: 'Caractéristiques techniques',
-      description: 'Détails de l\'immeuble',
+      description: "Détails de l'immeuble",
       type: 'grid',
       items: [
-        { label: 'Nombre d\'étages', value: immeuble.floors },
+        { label: "Nombre d'étages", value: immeuble.floors },
         { label: 'Ascenseurs', value: immeuble.elevator_count },
         { label: 'Parking', value: `${immeuble.parking_spots} places` },
         { label: 'Surface totale', value: immeuble.total_surface },
@@ -118,4 +118,3 @@ export default function ImmeubleDetails() {
     />
   )
 }
-

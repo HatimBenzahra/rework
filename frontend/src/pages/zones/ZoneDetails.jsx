@@ -47,7 +47,7 @@ export default function ZoneDetails() {
       trend: { type: 'positive', value: '+7% vs mois dernier' },
     },
     {
-      title: 'Taux d\'occupation',
+      title: "Taux d'occupation",
       value: zone.occupancy_rate,
       description: `${Math.floor(zone.total_apartments * 0.91)}/${zone.total_apartments} appartements`,
       icon: 'users',
@@ -123,4 +123,3 @@ export default function ZoneDetails() {
     />
   )
 }
-

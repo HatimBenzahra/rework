@@ -36,7 +36,9 @@ export class ZoneResolver {
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('commercialId', { type: () => Int }) commercialId: number,
   ) {
-    return this.zoneService.assignToCommercial(zoneId, commercialId).then(() => true);
+    return this.zoneService
+      .assignToCommercial(zoneId, commercialId)
+      .then(() => true);
   }
 
   @Mutation(() => Boolean)
@@ -44,6 +46,8 @@ export class ZoneResolver {
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('commercialId', { type: () => Int }) commercialId: number,
   ) {
-    return this.zoneService.unassignFromCommercial(zoneId, commercialId).then(() => true);
+    return this.zoneService
+      .unassignFromCommercial(zoneId, commercialId)
+      .then(() => true);
   }
 }

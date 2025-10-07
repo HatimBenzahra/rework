@@ -41,14 +41,14 @@ export default function ManagerDetails() {
 
   const statsCards = [
     {
-      title: 'CA de l\'équipe',
+      title: "CA de l'équipe",
       value: manager.ca_equipe,
       description: `Objectif: ${manager.objectif_equipe}`,
       icon: 'trendingUp',
       trend: { type: 'positive', value: '+8% vs mois dernier' },
     },
     {
-      title: 'Taille de l\'équipe',
+      title: "Taille de l'équipe",
       value: manager.equipe_taille,
       description: 'Commerciaux actifs',
       icon: 'users',
@@ -56,11 +56,11 @@ export default function ManagerDetails() {
     {
       title: 'Clients total',
       value: manager.clients_total,
-      description: 'Portfolio de l\'équipe',
+      description: "Portfolio de l'équipe",
       icon: 'users',
     },
     {
-      title: 'Taux d\'atteinte',
+      title: "Taux d'atteinte",
       value: manager.taux_atteinte,
       description: 'Performance équipe',
       icon: 'trendingUp',
@@ -69,7 +69,7 @@ export default function ManagerDetails() {
 
   const additionalSections = [
     {
-      title: 'Performance de l\'équipe',
+      title: "Performance de l'équipe",
       description: 'CA mensuel des 6 derniers mois',
       type: 'list',
       items: [
@@ -82,7 +82,7 @@ export default function ManagerDetails() {
       ],
     },
     {
-      title: 'Composition de l\'équipe',
+      title: "Composition de l'équipe",
       description: 'Détails des commerciaux sous supervision',
       type: 'grid',
       items: [
@@ -107,4 +107,3 @@ export default function ManagerDetails() {
     />
   )
 }
-

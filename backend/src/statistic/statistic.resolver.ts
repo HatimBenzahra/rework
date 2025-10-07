@@ -1,13 +1,19 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { StatisticService } from './statistic.service';
-import { Statistic, CreateStatisticInput, UpdateStatisticInput } from './statistic.dto';
+import {
+  Statistic,
+  CreateStatisticInput,
+  UpdateStatisticInput,
+} from './statistic.dto';
 
 @Resolver(() => Statistic)
 export class StatisticResolver {
   constructor(private readonly statisticService: StatisticService) {}
 
   @Mutation(() => Statistic)
-  createStatistic(@Args('createStatisticInput') createStatisticInput: CreateStatisticInput) {
+  createStatistic(
+    @Args('createStatisticInput') createStatisticInput: CreateStatisticInput,
+  ) {
     return this.statisticService.create(createStatisticInput);
   }
 
@@ -22,7 +28,9 @@ export class StatisticResolver {
   }
 
   @Mutation(() => Statistic)
-  updateStatistic(@Args('updateStatisticInput') updateStatisticInput: UpdateStatisticInput) {
+  updateStatistic(
+    @Args('updateStatisticInput') updateStatisticInput: UpdateStatisticInput,
+  ) {
     return this.statisticService.update(updateStatisticInput);
   }
 

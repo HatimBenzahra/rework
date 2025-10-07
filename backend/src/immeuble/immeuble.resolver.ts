@@ -1,13 +1,19 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { ImmeubleService } from './immeuble.service';
-import { Immeuble, CreateImmeubleInput, UpdateImmeubleInput } from './immeuble.dto';
+import {
+  Immeuble,
+  CreateImmeubleInput,
+  UpdateImmeubleInput,
+} from './immeuble.dto';
 
 @Resolver(() => Immeuble)
 export class ImmeubleResolver {
   constructor(private readonly immeubleService: ImmeubleService) {}
 
   @Mutation(() => Immeuble)
-  createImmeuble(@Args('createImmeubleInput') createImmeubleInput: CreateImmeubleInput) {
+  createImmeuble(
+    @Args('createImmeubleInput') createImmeubleInput: CreateImmeubleInput,
+  ) {
     return this.immeubleService.create(createImmeubleInput);
   }
 
@@ -22,7 +28,9 @@ export class ImmeubleResolver {
   }
 
   @Mutation(() => Immeuble)
-  updateImmeuble(@Args('updateImmeubleInput') updateImmeubleInput: UpdateImmeubleInput) {
+  updateImmeuble(
+    @Args('updateImmeubleInput') updateImmeubleInput: UpdateImmeubleInput,
+  ) {
     return this.immeubleService.update(updateImmeubleInput);
   }
 

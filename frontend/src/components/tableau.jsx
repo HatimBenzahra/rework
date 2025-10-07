@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Table,
@@ -29,7 +29,16 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChevronDown, Search, Filter, MoreHorizontal, Plus, Eye, Pencil, Trash2 } from 'lucide-react'
+import {
+  ChevronDown,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+} from 'lucide-react'
 import { StatsCard } from './card'
 import EditModal from './EditModal'
 
@@ -91,7 +100,7 @@ export function AdvancedDataTable({
   }, [filteredAndSortedData, currentPage, itemsPerPage])
 
   // Réinitialise la page quand on change de filtre/recherche
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, statusFilter])
 
@@ -120,18 +129,18 @@ export function AdvancedDataTable({
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
   }
 
-  const handleViewDetails = (row) => {
+  const handleViewDetails = row => {
     if (detailsPath && row.id) {
       navigate(`${detailsPath}/${row.id}`)
     }
   }
 
-  const handleEdit = (row) => {
+  const handleEdit = row => {
     setSelectedRow(row)
     setEditModalOpen(true)
   }
 
-  const handleSaveEdit = (editedData) => {
+  const handleSaveEdit = editedData => {
     if (onEdit) {
       onEdit(editedData)
     }
@@ -238,8 +247,8 @@ export function AdvancedDataTable({
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               className="h-8 w-8 p-0 hover:bg-muted data-[state=open]:bg-muted"
                             >
                               <MoreHorizontal className="h-4 w-4" />

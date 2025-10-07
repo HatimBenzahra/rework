@@ -30,7 +30,15 @@ import {
  * @param {Array} props.fields - Configuration des champs à afficher
  * @param {Function} props.onSave - Fonction appelée lors de la sauvegarde
  */
-export default function EditModal({ open, onOpenChange, title, description, data, fields, onSave }) {
+export default function EditModal({
+  open,
+  onOpenChange,
+  title,
+  description,
+  data,
+  fields,
+  onSave,
+}) {
   const [formData, setFormData] = useState({})
   const [errors, setErrors] = useState({})
 
@@ -185,10 +193,7 @@ export default function EditModal({ open, onOpenChange, title, description, data
               )}
               <div className="grid gap-4 md:grid-cols-2">
                 {sectionFields.map(field => (
-                  <div
-                    key={field.key}
-                    className={field.fullWidth ? 'md:col-span-2' : ''}
-                  >
+                  <div key={field.key} className={field.fullWidth ? 'md:col-span-2' : ''}>
                     <Label htmlFor={field.key} className="mb-2">
                       {field.label}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -219,4 +224,3 @@ export default function EditModal({ open, onOpenChange, title, description, data
     </Dialog>
   )
 }
-

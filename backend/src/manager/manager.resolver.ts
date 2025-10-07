@@ -7,7 +7,9 @@ export class ManagerResolver {
   constructor(private readonly managerService: ManagerService) {}
 
   @Mutation(() => Manager)
-  createManager(@Args('createManagerInput') createManagerInput: CreateManagerInput) {
+  createManager(
+    @Args('createManagerInput') createManagerInput: CreateManagerInput,
+  ) {
     return this.managerService.create(createManagerInput);
   }
 
@@ -22,7 +24,9 @@ export class ManagerResolver {
   }
 
   @Mutation(() => Manager)
-  updateManager(@Args('updateManagerInput') updateManagerInput: UpdateManagerInput) {
+  updateManager(
+    @Args('updateManagerInput') updateManagerInput: UpdateManagerInput,
+  ) {
     return this.managerService.update(updateManagerInput);
   }
 

@@ -3,7 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, TrendingUp, Users, Building2 } from 'lucide-react'
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  TrendingUp,
+  Users,
+  Building2,
+} from 'lucide-react'
 
 /**
  * Composant de page de détails réutilisable
@@ -116,7 +125,6 @@ export default function DetailsPage({
         </div>
       )}
 
-
       {/* Statistiques */}
       {statsCards.length > 0 && (
         <div>
@@ -159,7 +167,6 @@ export default function DetailsPage({
           </div>
         </div>
       )}
-
 
       {/* Sections additionnelles personnalisées */}
       {additionalSections.map((section, index) => (
@@ -206,4 +213,3 @@ export default function DetailsPage({
     </div>
   )
 }
-

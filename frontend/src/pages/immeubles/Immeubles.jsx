@@ -187,7 +187,7 @@ const immeublesColumns = [
 const immeublesEditFields = [
   {
     key: 'name',
-    label: 'Nom de l\'immeuble',
+    label: "Nom de l'immeuble",
     type: 'text',
     required: true,
     section: 'Informations générales',
@@ -220,14 +220,14 @@ const immeublesEditFields = [
   },
   {
     key: 'floors',
-    label: 'Nombre d\'étages',
+    label: "Nombre d'étages",
     type: 'number',
     required: true,
     section: 'Caractéristiques',
   },
   {
     key: 'apartments',
-    label: 'Nombre d\'appartements',
+    label: "Nombre d'appartements",
     type: 'number',
     required: true,
     section: 'Caractéristiques',
@@ -315,4 +315,3 @@ export default function Immeubles() {
     </div>
   )
 }
-

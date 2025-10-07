@@ -85,8 +85,10 @@ model Immeuble {
 model Statistic {
   id              Int      @id @default(autoincrement())
   commercialId    Int?
-  portesVisitees  Int
-  contratsSignes  Int
+  contratsSignes  Int      // Nombre de contrats signés
+  immeublesVisites Int     // Nombre d'immeubles visités  
+  rendezVousPris  Int      // Nombre de rendez-vous pris
+  refus           Int      // Nombre de refus
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
