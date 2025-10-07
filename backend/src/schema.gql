@@ -1,0 +1,204 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Commercial {
+  age: Int!
+  createdAt: DateTime!
+  directeurId: Int
+  email: String!
+  id: Int!
+  immeubles: [Immeuble!]!
+  managerId: Int
+  nom: String!
+  numTel: String!
+  prenom: String!
+  statistics: [Statistic!]!
+  updatedAt: DateTime!
+  zones: [Zone!]!
+}
+
+input CreateCommercialInput {
+  age: Int!
+  directeurId: Int
+  email: String!
+  managerId: Int
+  nom: String!
+  numTel: String!
+  prenom: String!
+}
+
+input CreateDirecteurInput {
+  adresse: String!
+  email: String!
+  nom: String!
+  numTelephone: String!
+  prenom: String!
+}
+
+input CreateImmeubleInput {
+  adresse: String!
+  commercialId: Int!
+  nbEtages: Int!
+  nbPortesParEtage: Int!
+}
+
+input CreateManagerInput {
+  directeurId: Int
+  nom: String!
+  prenom: String!
+}
+
+input CreateStatisticInput {
+  commercialId: Int!
+  contratsSignes: Int!
+  portesVisitees: Int!
+}
+
+input CreateZoneInput {
+  nom: String!
+  rayon: Float!
+  xOrigin: Float!
+  yOrigin: Float!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Directeur {
+  adresse: String!
+  createdAt: DateTime!
+  email: String!
+  id: Int!
+  nom: String!
+  numTelephone: String!
+  prenom: String!
+  updatedAt: DateTime!
+}
+
+type Immeuble {
+  adresse: String!
+  commercialId: Int!
+  createdAt: DateTime!
+  id: Int!
+  nbEtages: Int!
+  nbPortesParEtage: Int!
+  updatedAt: DateTime!
+}
+
+type Manager {
+  createdAt: DateTime!
+  directeurId: Int
+  id: Int!
+  nom: String!
+  prenom: String!
+  updatedAt: DateTime!
+}
+
+type Mutation {
+  assignZoneToCommercial(commercialId: Int!, zoneId: Int!): Boolean!
+  createCommercial(createCommercialInput: CreateCommercialInput!): Commercial!
+  createDirecteur(createDirecteurInput: CreateDirecteurInput!): Directeur!
+  createImmeuble(createImmeubleInput: CreateImmeubleInput!): Immeuble!
+  createManager(createManagerInput: CreateManagerInput!): Manager!
+  createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
+  createZone(createZoneInput: CreateZoneInput!): Zone!
+  removeCommercial(id: Int!): Commercial!
+  removeDirecteur(id: Int!): Directeur!
+  removeImmeuble(id: Int!): Immeuble!
+  removeManager(id: Int!): Manager!
+  removeStatistic(id: Int!): Statistic!
+  removeZone(id: Int!): Zone!
+  unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
+  updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
+  updateDirecteur(updateDirecteurInput: UpdateDirecteurInput!): Directeur!
+  updateImmeuble(updateImmeubleInput: UpdateImmeubleInput!): Immeuble!
+  updateManager(updateManagerInput: UpdateManagerInput!): Manager!
+  updateStatistic(updateStatisticInput: UpdateStatisticInput!): Statistic!
+  updateZone(updateZoneInput: UpdateZoneInput!): Zone!
+}
+
+type Query {
+  commercial(id: Int!): Commercial!
+  commercials: [Commercial!]!
+  directeur(id: Int!): Directeur!
+  directeurs: [Directeur!]!
+  immeuble(id: Int!): Immeuble!
+  immeubles: [Immeuble!]!
+  manager(id: Int!): Manager!
+  managers: [Manager!]!
+  statistic(id: Int!): Statistic!
+  statistics: [Statistic!]!
+  zone(id: Int!): Zone!
+  zones: [Zone!]!
+}
+
+type Statistic {
+  commercialId: Int!
+  contratsSignes: Int!
+  createdAt: DateTime!
+  id: Int!
+  portesVisitees: Int!
+  updatedAt: DateTime!
+}
+
+input UpdateCommercialInput {
+  age: Int
+  directeurId: Int
+  email: String
+  id: Int!
+  managerId: Int
+  nom: String
+  numTel: String
+  prenom: String
+}
+
+input UpdateDirecteurInput {
+  adresse: String
+  email: String
+  id: Int!
+  nom: String
+  numTelephone: String
+  prenom: String
+}
+
+input UpdateImmeubleInput {
+  adresse: String
+  id: Int!
+  nbEtages: Int
+  nbPortesParEtage: Int
+}
+
+input UpdateManagerInput {
+  directeurId: Int
+  id: Int!
+  nom: String
+  prenom: String
+}
+
+input UpdateStatisticInput {
+  commercialId: Int
+  contratsSignes: Int
+  id: Int!
+  portesVisitees: Int
+}
+
+input UpdateZoneInput {
+  id: Int!
+  nom: String
+  rayon: Float
+  xOrigin: Float
+  yOrigin: Float
+}
+
+type Zone {
+  createdAt: DateTime!
+  id: Int!
+  nom: String!
+  rayon: Float!
+  updatedAt: DateTime!
+  xOrigin: Float!
+  yOrigin: Float!
+}
