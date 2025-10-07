@@ -1,13 +1,13 @@
-import { Routes, Route } from "react-router-dom"
-import { AppSidebar } from "@/components/sidebar"
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
-import { Separator } from "@/components/ui/separator"
-import ThemeToggle from "@/components/ThemeSwitchDarklight"
-import ThemeSelector from "@/components/Theme"
-import Dashboard from "@/pages/Dashboard"
-import Commerciaux from "@/pages/Commerciaux"
-import Managers from "@/pages/Managers"
-import Directeurs from "@/pages/Directeurs"
+import { Routes, Route } from 'react-router-dom'
+import { AppSidebar } from '@/components/sidebar'
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
+import { Separator } from '@/components/ui/separator'
+import ThemeToggle from '@/components/ThemeSwitchDarklight'
+import ThemeSelector from '@/components/Theme'
+import Dashboard from '@/pages/Dashboard'
+import Commerciaux from '@/pages/Commerciaux'
+import Managers from '@/pages/Managers'
+import Directeurs from '@/pages/Directeurs'
 
 function App() {
   return (

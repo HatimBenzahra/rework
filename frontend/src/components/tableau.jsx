@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -6,10 +6,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+} from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
 import {
   Pagination,
   PaginationContent,
@@ -26,35 +26,36 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChevronDown, Search, Filter, MoreHorizontal, Plus } from "lucide-react"
-import { StatsCard } from "./card"
+} from '@/components/ui/pagination'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChevronDown, Search, Filter, MoreHorizontal, Plus } from 'lucide-react'
+import { StatsCard } from './card'
 
-export function AdvancedDataTable({ 
-  title, 
-  description, 
-  data, 
+export function AdvancedDataTable({
+  title,
+  description,
+  data,
   columns,
-  searchKey = "name",
+  searchKey = 'name',
   onAdd,
-  addButtonText = "Ajouter",
-  itemsPerPage = 10
+  addButtonText = 'Ajouter',
+  itemsPerPage = 10,
 }) {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
-  const [statusFilter, setStatusFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
 
   // Filtrage et tri des données
   const filteredAndSortedData = useMemo(() => {
     let filtered = data.filter(item => {
-      const searchMatch = item[searchKey]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const searchMatch =
+        item[searchKey]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      
-      const statusMatch = statusFilter === "all" || 
-        item.status?.toLowerCase() === statusFilter.toLowerCase()
-      
+
+      const statusMatch =
+        statusFilter === 'all' || item.status?.toLowerCase() === statusFilter.toLowerCase()
+
       return searchMatch && statusMatch
     })
 
@@ -86,33 +87,29 @@ export function AdvancedDataTable({
     setCurrentPage(1)
   }, [searchTerm, statusFilter])
 
-  const handleSort = (key) => {
+  const handleSort = key => {
     setSortConfig(prevConfig => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
     }))
   }
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = status => {
     const variants = {
-      'actif': 'default',
-      'inactif': 'secondary',
-      'suspendu': 'destructive',
-      'en_conge': 'outline'
-    }
-    
-    const labels = {
-      'actif': 'Actif',
-      'inactif': 'Inactif', 
-      'suspendu': 'Suspendu',
-      'en_conge': 'En congé'
+      actif: 'default',
+      inactif: 'secondary',
+      suspendu: 'destructive',
+      en_conge: 'outline',
     }
 
-    return (
-      <Badge variant={variants[status] || 'default'}>
-        {labels[status] || status}
-      </Badge>
-    )
+    const labels = {
+      actif: 'Actif',
+      inactif: 'Inactif',
+      suspendu: 'Suspendu',
+      en_conge: 'En congé',
+    }
+
+    return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
   }
 
   return (
@@ -139,11 +136,11 @@ export function AdvancedDataTable({
             <Input
               placeholder="Rechercher par nom ou email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="pl-8"
             />
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -155,19 +152,15 @@ export function AdvancedDataTable({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Filtrer par status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                Tous
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("actif")}>
-                Actif
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("inactif")}>
+              <DropdownMenuItem onClick={() => setStatusFilter('all')}>Tous</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('actif')}>Actif</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter('inactif')}>
                 Inactif
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("suspendu")}>
+              <DropdownMenuItem onClick={() => setStatusFilter('suspendu')}>
                 Suspendu
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("en_conge")}>
+              <DropdownMenuItem onClick={() => setStatusFilter('en_conge')}>
                 En congé
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -176,26 +169,18 @@ export function AdvancedDataTable({
 
         {/* Statistiques */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <StatsCard 
-            value={data.length} 
-            title="Total" 
-            variant="muted"
-          />
-          <StatsCard 
-            value={data.filter(item => item.status === 'actif').length} 
-            title="Actifs" 
+          <StatsCard value={data.length} title="Total" variant="muted" />
+          <StatsCard
+            value={data.filter(item => item.status === 'actif').length}
+            title="Actifs"
             variant="success"
           />
-          <StatsCard 
-            value={data.filter(item => item.status === 'inactif').length} 
-            title="Inactifs" 
+          <StatsCard
+            value={data.filter(item => item.status === 'inactif').length}
+            title="Inactifs"
             variant="destructive"
           />
-          <StatsCard 
-            value={filteredAndSortedData.length} 
-            title="Filtrés" 
-            variant="primary"
-          />
+          <StatsCard value={filteredAndSortedData.length} title="Filtrés" variant="primary" />
         </div>
 
         {/* Tableau */}
@@ -205,17 +190,15 @@ export function AdvancedDataTable({
               <TableHeader>
                 <TableRow>
                   {columns.map((column, index) => (
-                    <TableHead 
-                      key={index} 
+                    <TableHead
+                      key={index}
                       className={`${column.className || ''} ${column.sortable ? 'cursor-pointer hover:bg-muted' : ''}`}
                       onClick={() => column.sortable && handleSort(column.accessor)}
                     >
                       <div className="flex items-center">
                         {column.header}
                         {column.sortable && sortConfig.key === column.accessor && (
-                          <span className="ml-1">
-                            {sortConfig.direction === 'asc' ? '↑' : '↓'}
-                          </span>
+                          <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>
                     </TableHead>
@@ -226,10 +209,7 @@ export function AdvancedDataTable({
               <TableBody>
                 {paginatedData.length === 0 ? (
                   <TableRow>
-                    <TableCell 
-                      colSpan={columns.length + 1} 
-                      className="h-24 text-center"
-                    >
+                    <TableCell colSpan={columns.length + 1} className="h-24 text-center">
                       Aucun résultat trouvé
                     </TableCell>
                   </TableRow>
@@ -238,13 +218,11 @@ export function AdvancedDataTable({
                     <TableRow key={rowIndex} className="hover:bg-muted/50">
                       {columns.map((column, colIndex) => (
                         <TableCell key={colIndex} className={column.className}>
-                          {column.accessor === 'status' ? (
-                            getStatusBadge(row[column.accessor])
-                          ) : column.accessor ? (
-                            row[column.accessor]
-                          ) : (
-                            column.cell?.(row)
-                          )}
+                          {column.accessor === 'status'
+                            ? getStatusBadge(row[column.accessor])
+                            : column.accessor
+                              ? row[column.accessor]
+                              : column.cell?.(row)}
                         </TableCell>
                       ))}
                       <TableCell>
@@ -275,20 +253,24 @@ export function AdvancedDataTable({
         {/* Footer avec pagination */}
         <div className="flex items-center justify-between mt-4 -mx-6 px-6">
           <div className="text-sm text-muted-foreground">
-            Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, filteredAndSortedData.length)} sur {filteredAndSortedData.length} résultats
+            Affichage de {(currentPage - 1) * itemsPerPage + 1} à{' '}
+            {Math.min(currentPage * itemsPerPage, filteredAndSortedData.length)} sur{' '}
+            {filteredAndSortedData.length} résultats
           </div>
-          
+
           {totalPages > 1 && (
             <div className="-mr-2">
               <Pagination>
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious 
+                    <PaginationPrevious
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      className={
+                        currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                      }
                     />
                   </PaginationItem>
-                  
+
                   {[...Array(totalPages)].map((_, index) => {
                     const pageNumber = index + 1
                     // Affiche les 3 premières pages, les 3 dernières, et la page actuelle avec ses voisines
@@ -308,10 +290,7 @@ export function AdvancedDataTable({
                           </PaginationLink>
                         </PaginationItem>
                       )
-                    } else if (
-                      pageNumber === currentPage - 2 ||
-                      pageNumber === currentPage + 2
-                    ) {
+                    } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
                       return (
                         <PaginationItem key={pageNumber}>
                           <PaginationEllipsis />
@@ -320,11 +299,15 @@ export function AdvancedDataTable({
                     }
                     return null
                   })}
-                  
+
                   <PaginationItem>
-                    <PaginationNext 
+                    <PaginationNext
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      className={
+                        currentPage === totalPages
+                          ? 'pointer-events-none opacity-50'
+                          : 'cursor-pointer'
+                      }
                     />
                   </PaginationItem>
                 </PaginationContent>

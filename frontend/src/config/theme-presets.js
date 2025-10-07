@@ -1,6 +1,6 @@
 /**
  * Thèmes prédéfinis prêts à utiliser
- * 
+ *
  * Pour utiliser un thème, copiez les valeurs de `light` et `dark`
  * et collez-les dans le fichier theme.js
  */
@@ -78,21 +78,21 @@ export const themePresets = {
       sidebarAccentForeground: 'oklch(0.985 0 0)',
       sidebarBorder: 'oklch(1 0 0 / 10%)',
       sidebarRing: 'oklch(0.556 0 0)',
-    }
+    },
   },
 
   // Thème Bleu Océan
   ocean: {
     light: {
-      primary: 'oklch(0.5 0.20 250)',           // Bleu océan
+      primary: 'oklch(0.5 0.20 250)', // Bleu océan
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.7 0.15 250)',            // Bleu clair
+      accent: 'oklch(0.7 0.15 250)', // Bleu clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebar: 'oklch(0.985 0 0)',
       sidebarForeground: 'oklch(0.145 0 0)',
       sidebarPrimary: 'oklch(0.5 0.20 250)',
       sidebarPrimaryForeground: 'oklch(1 0 0)',
-      sidebarAccent: 'oklch(0.92 0.10 250)',    // Bleu très clair pour hover
+      sidebarAccent: 'oklch(0.92 0.10 250)', // Bleu très clair pour hover
       sidebarAccentForeground: 'oklch(0.2 0 0)',
       sidebarBorder: 'oklch(0.90 0.05 250)',
       sidebarRing: 'oklch(0.5 0.20 250)',
@@ -106,19 +106,19 @@ export const themePresets = {
       sidebarForeground: 'oklch(0.985 0 0)',
       sidebarPrimary: 'oklch(0.6 0.22 250)',
       sidebarPrimaryForeground: 'oklch(1 0 0)',
-      sidebarAccent: 'oklch(0.30 0.18 250)',    // Bleu foncé pour hover
+      sidebarAccent: 'oklch(0.30 0.18 250)', // Bleu foncé pour hover
       sidebarAccentForeground: 'oklch(0.95 0 0)',
       sidebarBorder: 'oklch(0.35 0.12 250)',
       sidebarRing: 'oklch(0.6 0.22 250)',
-    }
+    },
   },
 
   // Thème Vert Nature
   nature: {
     light: {
-      primary: 'oklch(0.55 0.17 145)',          // Vert nature
+      primary: 'oklch(0.55 0.17 145)', // Vert nature
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.75 0.12 145)',           // Vert clair
+      accent: 'oklch(0.75 0.12 145)', // Vert clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.55 0.17 145)',
       sidebarAccent: 'oklch(0.75 0.10 145)',
@@ -130,15 +130,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.65 0.18 145)',
       sidebarAccent: 'oklch(0.40 0.15 145)',
-    }
+    },
   },
 
   // Thème Violet Royal
   royal: {
     light: {
-      primary: 'oklch(0.5 0.25 300)',           // Violet profond
+      primary: 'oklch(0.5 0.25 300)', // Violet profond
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.7 0.18 300)',            // Violet clair
+      accent: 'oklch(0.7 0.18 300)', // Violet clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.5 0.25 300)',
       sidebarAccent: 'oklch(0.7 0.15 300)',
@@ -150,15 +150,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.6 0.26 300)',
       sidebarAccent: 'oklch(0.40 0.20 300)',
-    }
+    },
   },
 
   // Thème Orange Énergique
   energy: {
     light: {
-      primary: 'oklch(0.65 0.19 50)',           // Orange corail
+      primary: 'oklch(0.65 0.19 50)', // Orange corail
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.80 0.15 50)',            // Orange clair
+      accent: 'oklch(0.80 0.15 50)', // Orange clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.65 0.19 50)',
       sidebarAccent: 'oklch(0.80 0.12 50)',
@@ -170,15 +170,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.70 0.20 50)',
       sidebarAccent: 'oklch(0.45 0.17 50)',
-    }
+    },
   },
 
   // Thème Rose Moderne
   modern: {
     light: {
-      primary: 'oklch(0.55 0.22 340)',          // Rose/Magenta
+      primary: 'oklch(0.55 0.22 340)', // Rose/Magenta
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.75 0.15 340)',           // Rose clair
+      accent: 'oklch(0.75 0.15 340)', // Rose clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.55 0.22 340)',
       sidebarAccent: 'oklch(0.75 0.12 340)',
@@ -190,15 +190,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.65 0.23 340)',
       sidebarAccent: 'oklch(0.40 0.18 340)',
-    }
+    },
   },
 
   // Thème Cyan Tech
   tech: {
     light: {
-      primary: 'oklch(0.55 0.18 210)',          // Cyan
+      primary: 'oklch(0.55 0.18 210)', // Cyan
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.75 0.13 210)',           // Cyan clair
+      accent: 'oklch(0.75 0.13 210)', // Cyan clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.55 0.18 210)',
       sidebarAccent: 'oklch(0.75 0.10 210)',
@@ -210,15 +210,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.65 0.19 210)',
       sidebarAccent: 'oklch(0.40 0.16 210)',
-    }
+    },
   },
 
   // Thème Rouge Passion
   passion: {
     light: {
-      primary: 'oklch(0.55 0.24 27)',           // Rouge
+      primary: 'oklch(0.55 0.24 27)', // Rouge
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.75 0.17 27)',            // Rouge clair
+      accent: 'oklch(0.75 0.17 27)', // Rouge clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.55 0.24 27)',
       sidebarAccent: 'oklch(0.75 0.14 27)',
@@ -230,15 +230,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.65 0.22 27)',
       sidebarAccent: 'oklch(0.40 0.19 27)',
-    }
+    },
   },
 
   // Thème Indigo Professionnel
   professional: {
     light: {
-      primary: 'oklch(0.48 0.18 265)',          // Indigo
+      primary: 'oklch(0.48 0.18 265)', // Indigo
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.70 0.13 265)',           // Indigo clair
+      accent: 'oklch(0.70 0.13 265)', // Indigo clair
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.48 0.18 265)',
       sidebarAccent: 'oklch(0.70 0.10 265)',
@@ -250,15 +250,15 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.58 0.19 265)',
       sidebarAccent: 'oklch(0.38 0.16 265)',
-    }
+    },
   },
 
   // Thème Jaune Solaire (attention au contraste !)
   solar: {
     light: {
-      primary: 'oklch(0.45 0.15 90)',           // Jaune foncé pour le contraste
+      primary: 'oklch(0.45 0.15 90)', // Jaune foncé pour le contraste
       primaryForeground: 'oklch(1 0 0)',
-      accent: 'oklch(0.85 0.19 90)',            // Jaune vif
+      accent: 'oklch(0.85 0.19 90)', // Jaune vif
       accentForeground: 'oklch(0.2 0 0)',
       sidebarPrimary: 'oklch(0.45 0.15 90)',
       sidebarAccent: 'oklch(0.85 0.15 90)',
@@ -270,7 +270,7 @@ export const themePresets = {
       accentForeground: 'oklch(0.95 0 0)',
       sidebarPrimary: 'oklch(0.75 0.20 90)',
       sidebarAccent: 'oklch(0.50 0.17 90)',
-    }
+    },
   },
 }
 
@@ -285,49 +285,52 @@ function mergeWithDefault(presetColors, mode) {
 
 /**
  * Fonction utilitaire pour appliquer un thème prédéfini
- * 
+ *
  * Usage:
  * ```js
  * import { applyPreset } from '@/config/theme-presets'
- * 
+ *
  * applyPreset('ocean')  // Applique le thème océan
  * ```
  */
 export const applyPreset = (presetName, mode = 'light') => {
   const preset = themePresets[presetName]
-  
+
   if (!preset) {
-    console.error(`Thème "${presetName}" introuvable. Thèmes disponibles:`, Object.keys(themePresets).join(', '))
+    console.error(
+      `Thème "${presetName}" introuvable. Thèmes disponibles:`,
+      Object.keys(themePresets).join(', ')
+    )
     return
   }
-  
+
   const presetColors = preset[mode]
-  
+
   if (!presetColors) {
     console.error(`Mode "${mode}" introuvable pour le thème "${presetName}"`)
     return
   }
-  
+
   // Fusionne avec les couleurs par défaut pour avoir toutes les variables
   const colors = mergeWithDefault(presetColors, mode)
-  
+
   // Applique le rayon des bordures
   document.documentElement.style.setProperty('--radius', DEFAULT_RADIUS)
-  
+
   // Applique les couleurs en mettant à jour les variables CSS principales ET les variables --color-*
   Object.entries(colors).forEach(([key, value]) => {
     const cssVarName = key.replace(/([A-Z])/g, '-$1').toLowerCase()
-    
+
     // Met à jour la variable principale (ex: --primary)
     document.documentElement.style.setProperty(`--${cssVarName}`, value)
-    
+
     // Met à jour aussi la variable Tailwind (ex: --color-primary)
     document.documentElement.style.setProperty(`--color-${cssVarName}`, value)
   })
-  
+
   // 💾 Sauvegarde le preset dans localStorage pour persister après rechargement
   localStorage.setItem('theme-preset', presetName)
-  
+
   console.log(`✅ Thème "${presetName}" (${mode}) appliqué avec succès !`)
 }
 
@@ -349,4 +352,3 @@ export const clearPreset = () => {
  * Liste tous les thèmes disponibles
  */
 export const getAvailablePresets = () => Object.keys(themePresets)
-

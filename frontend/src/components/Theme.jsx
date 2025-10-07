@@ -15,13 +15,13 @@ import { applyPreset, getSavedPreset } from '@/config/theme-presets'
 
 /**
  * Composant de sélection de thème prédéfini
- * 
+ *
  * Permet de tester rapidement différents thèmes sans modifier le code
- * 
+ *
  * Utilisation:
  * ```jsx
  * import ThemeSelector from '@/components/ThemeSelector'
- * 
+ *
  * function Header() {
  *   return (
  *     <header>
@@ -35,13 +35,13 @@ export default function ThemeSelector() {
   const { theme: mode } = useTheme()
   // Charge le preset sauvegardé au démarrage
   const [selectedTheme, setSelectedTheme] = useState(() => getSavedPreset())
-  
+
   // Met à jour le thème sélectionné si le localStorage change
   useEffect(() => {
     const savedPreset = getSavedPreset()
     setSelectedTheme(savedPreset)
   }, [])
-  
+
   const presets = {
     default: { name: 'Défaut', color: '#333' },
     ocean: { name: 'Océan', color: '#3b82f6' },
@@ -54,12 +54,12 @@ export default function ThemeSelector() {
     professional: { name: 'Professionnel', color: '#6366f1' },
     solar: { name: 'Solaire', color: '#eab308' },
   }
-  
-  const handleThemeSelect = (presetName) => {
+
+  const handleThemeSelect = presetName => {
     applyPreset(presetName, mode)
     setSelectedTheme(presetName)
   }
-  
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -85,14 +85,9 @@ export default function ThemeSelector() {
             className="cursor-pointer"
           >
             <div className="flex items-center gap-2 w-full">
-              <div
-                className="w-4 h-4 rounded-full border"
-                style={{ backgroundColor: color }}
-              />
+              <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: color }} />
               <span className="flex-1">{name}</span>
-              {selectedTheme === key && (
-                <span className="text-xs text-muted-foreground">✓</span>
-              )}
+              {selectedTheme === key && <span className="text-xs text-muted-foreground">✓</span>}
             </div>
           </DropdownMenuItem>
         ))}
@@ -104,4 +99,3 @@ export default function ThemeSelector() {
     </DropdownMenu>
   )
 }
-

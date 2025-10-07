@@ -1,5 +1,5 @@
-import { Calendar, Home, Inbox, Search, Settings, ChevronUp, User2 } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Calendar, Home, Inbox, Search, Settings, ChevronUp, User2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import {
   Sidebar,
@@ -12,39 +12,39 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
 
 // Menu items.
 const items = [
   {
-    title: "Dashboard",
-    url: "/",
+    title: 'Dashboard',
+    url: '/',
     icon: Home,
   },
   {
-    title: "Commerciaux",
-    url: "/commerciaux",
+    title: 'Commerciaux',
+    url: '/commerciaux',
     icon: Inbox,
   },
   {
-    title: "Managers",
-    url: "/managers", 
+    title: 'Managers',
+    url: '/managers',
     icon: Calendar,
   },
   {
-    title: "Directeurs",
-    url: "/directeurs",
+    title: 'Directeurs',
+    url: '/directeurs',
     icon: Search,
   },
   {
-    title: "Paramètres",
-    url: "/settings",
+    title: 'Paramètres',
+    url: '/settings',
     icon: Settings,
   },
 ]
@@ -74,7 +74,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {items.map(item => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <Link to={item.url}>

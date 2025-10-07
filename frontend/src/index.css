@@ -1,11 +1,14 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+/* stylelint-disable at-rule-no-unknown */
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
+/* @custom-variant est une directive Tailwind valide */
 @custom-variant dark (&:is(.dark *));
 
 /**
  * Configuration Tailwind pour le mapping des variables CSS
  * Les valeurs sont définies dynamiquement dans src/config/theme.js
+ * @theme est une directive Tailwind CSS v4
  */
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
@@ -54,16 +57,16 @@
   html {
     @apply overflow-x-hidden;
   }
-  
+
   body {
     @apply bg-background text-foreground overflow-x-hidden;
     min-width: 320px; /* Largeur minimale pour mobile */
   }
-  
+
   #root {
     @apply min-h-screen overflow-x-hidden;
   }
-  
+
   * {
     @apply border-border outline-ring/50;
   }
