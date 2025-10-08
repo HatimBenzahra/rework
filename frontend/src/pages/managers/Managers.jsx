@@ -1,78 +1,16 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { useManagers } from '@/services'
+import {
+  useManagers,
+  useCreateManager,
+  useUpdateManager,
+  useRemoveManager,
+  useDirecteurs,
+} from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useMemo } from 'react'
 
-// Données exemple pour les managers
-const managersData = [
-  {
-    id: 1,
-    name: 'Fatma Gharbi',
-    email: 'fatma.gharbi@company.com',
-    phone: '+216 20 789 123',
-    region: 'Nord',
-    equipe_taille: 8,
-    directeur: 'Samir Ben Mahmoud',
-    status: 'actif',
-    ca_equipe: '350 000 TND',
-    objectif_equipe: '400 000 TND',
-    date_promotion: '10/01/2021',
-  },
-  {
-    id: 2,
-    name: 'Mohamed Triki',
-    email: 'mohamed.triki@company.com',
-    phone: '+216 25 456 789',
-    region: 'Centre',
-    equipe_taille: 6,
-    directeur: 'Leila Mansouri',
-    status: 'actif',
-    ca_equipe: '280 000 TND',
-    objectif_equipe: '320 000 TND',
-    date_promotion: '22/06/2020',
-  },
-  {
-    id: 3,
-    name: 'Nadia Karoui',
-    email: 'nadia.karoui@company.com',
-    phone: '+216 22 987 654',
-    region: 'Sud',
-    equipe_taille: 4,
-    directeur: 'Samir Ben Mahmoud',
-    status: 'en_conge',
-    ca_equipe: '180 000 TND',
-    objectif_equipe: '220 000 TND',
-    date_promotion: '15/11/2022',
-  },
-  {
-    id: 4,
-    name: 'Tarek Sellami',
-    email: 'tarek.sellami@company.com',
-    phone: '+216 29 321 654',
-    region: 'Ouest',
-    equipe_taille: 5,
-    directeur: 'Leila Mansouri',
-    status: 'actif',
-    ca_equipe: '295 000 TND',
-    objectif_equipe: '300 000 TND',
-    date_promotion: '03/09/2021',
-  },
-  {
-    id: 5,
-    name: 'Amira Jebali',
-    email: 'amira.jebali@company.com',
-    phone: '+216 24 159 753',
-    region: 'Est',
-    equipe_taille: 7,
-    directeur: 'Samir Ben Mahmoud',
-    status: 'suspendu',
-    ca_equipe: '120 000 TND',
-    objectif_equipe: '350 000 TND',
-    date_promotion: '18/04/2022',
-  },
-]
 
 const managersColumns = [
   {
@@ -201,33 +139,96 @@ const managersEditFields = [
 export default function Managers() {
   const loading = useSimpleLoading(1000)
 
-  // Utilisation de l'API réelle
-  const { data: managersApi } = useManagers()
+  // API hooks
+  const { data: managersApi, loading: managersLoading, refetch } = useManagers()
+  const { data: directeurs } = useDirecteurs()
+  const { mutate: createManager } = useCreateManager()
+  const { mutate: updateManager } = useUpdateManager()
+  const { mutate: removeManager } = useRemoveManager()
 
   // Utilisation du système de rôles pour filtrer les données
   const {
     data: filteredManagers,
     permissions,
     description,
-  } = useEntityPage('managers', managersApi || managersData)
-  // Préparation des données pour le tableau
+  } = useEntityPage('managers', managersApi || [])
+  // Préparation des données pour le tableau avec mapping API -> UI
   const tableData = useMemo(() => {
     if (!filteredManagers) return []
-    return filteredManagers.map(manager => ({
-      ...manager,
-      name: manager.nom && manager.prenom ? `${manager.prenom} ${manager.nom}` : manager.name,
-    }))
-  }, [filteredManagers])
+    return filteredManagers.map(manager => {
+      const directeur = directeurs?.find(d => d.id === manager.directeurId)
+      return {
+        ...manager,
+        name: `${manager.prenom} ${manager.nom}`,
+        directeur: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Aucun directeur',
+        // Mapping des champs manquants avec des valeurs par défaut
+        email: 'manager@company.com',
+        phone: '+216 XX XXX XXX',
+        region: 'Non assignée',
+        equipe_taille: 0,
+        status: 'actif',
+        ca_equipe: '0 TND',
+        objectif_equipe: '0 TND',
+        date_promotion: new Date().toLocaleDateString('fr-FR')
+      }
+    })
+  }, [filteredManagers, directeurs])
 
-  const handleAddManager = () => {
-    console.log('Ajouter un nouveau manager')
+  const handleAddManager = async formData => {
+    try {
+      // Conversion des données UI vers format API
+      const [prenom, ...nomParts] = (formData.name || '').split(' ')
+      const nom = nomParts.join(' ')
+
+      const managerInput = {
+        nom: nom || formData.nom || '',
+        prenom: prenom || formData.prenom || '',
+        directeurId:
+          formData.directeur && formData.directeur !== 'Aucun directeur'
+            ? directeurs?.find(d => `${d.prenom} ${d.nom}` === formData.directeur)?.id
+            : null,
+      }
+
+      await createManager(managerInput)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la création du manager:', error)
+    }
   }
 
-  const handleEditManager = editedData => {
-    console.log('Manager modifié:', editedData)
+  const handleEditManager = async editedData => {
+    try {
+      // Conversion des données UI vers format API
+      const [prenom, ...nomParts] = (editedData.name || '').split(' ')
+      const nom = nomParts.join(' ')
+
+      const updateInput = {
+        id: editedData.id,
+        nom: nom || editedData.nom,
+        prenom: prenom || editedData.prenom,
+        directeurId:
+          editedData.directeur && editedData.directeur !== 'Aucun directeur'
+            ? directeurs?.find(d => `${d.prenom} ${d.nom}` === editedData.directeur)?.id
+            : null,
+      }
+
+      await updateManager(updateInput)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la modification du manager:', error)
+    }
   }
 
-  if (loading) {
+  const handleDeleteManager = async id => {
+    try {
+      await removeManager(id)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la suppression du manager:', error)
+    }
+  }
+
+  if (loading || managersLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
@@ -259,7 +260,7 @@ export default function Managers() {
         detailsPath="/managers"
         editFields={managersEditFields}
         onEdit={permissions.canEdit ? handleEditManager : undefined}
-        onDelete={permissions.canDelete ? id => console.log('Delete manager', id) : undefined}
+        onDelete={permissions.canDelete ? handleDeleteManager : undefined}
       />
     </div>
   )

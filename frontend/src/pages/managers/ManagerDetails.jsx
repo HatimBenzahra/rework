@@ -2,66 +2,79 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
+import { useManager, useDirecteurs } from '@/services'
+import { useMemo } from 'react'
 
-const managersData = {
-  1: {
-    id: 1,
-    name: 'Fatma Gharbi',
-    email: 'fatma.gharbi@company.com',
-    phone: '+216 20 789 123',
-    region: 'Nord',
-    equipe_taille: 8,
-    directeur: 'Samir Ben Mahmoud',
-    status: 'actif',
-    ca_equipe: '350 000 TND',
-    objectif_equipe: '400 000 TND',
-    date_promotion: '10/01/2021',
-    address: '12 Avenue de la Liberté, Tunis',
-    commerciaux_actifs: 8,
-    clients_total: 234,
-    taux_atteinte: '87.5%',
-  },
-}
 
 export default function ManagerDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
-  const manager = managersData[id] || managersData[1]
+  
+  // API hooks
+  const { data: manager, loading: managerLoading, error } = useManager(parseInt(id))
+  const { data: directeurs } = useDirecteurs()
+  
+  // Transformation des données API vers format UI
+  const managerData = useMemo(() => {
+    if (!manager) return null
+    
+    const directeur = directeurs?.find(d => d.id === manager.directeurId)
+    
+    return {
+      ...manager,
+      name: `${manager.prenom} ${manager.nom}`,
+      directeur: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Aucun directeur',
+      email: 'manager@company.com',
+      phone: '+216 XX XXX XXX',
+      region: 'Non assignée',
+      equipe_taille: 0,
+      status: 'actif',
+      ca_equipe: '0 TND',
+      objectif_equipe: '0 TND',
+      date_promotion: new Date(manager.createdAt).toLocaleDateString('fr-FR'),
+      address: 'Adresse non renseignée',
+      commerciaux_actifs: 0,
+      clients_total: 0,
+      taux_atteinte: '0%'
+    }
+  }, [manager, directeurs])
 
-  if (loading) return <DetailsPageSkeleton />
+  if (loading || managerLoading) return <DetailsPageSkeleton />
+  if (error) return <div className="text-red-500">Erreur: {error}</div>
+  if (!managerData) return <div>Manager non trouvé</div>
 
   const personalInfo = [
-    { label: 'Email', value: manager.email, icon: 'mail' },
-    { label: 'Téléphone', value: manager.phone, icon: 'phone' },
-    { label: 'Région', value: manager.region, icon: 'mapPin' },
-    { label: 'Directeur', value: manager.directeur, icon: 'users' },
-    { label: 'Date de promotion', value: manager.date_promotion, icon: 'calendar' },
-    { label: 'Adresse', value: manager.address, icon: 'mapPin' },
+    { label: 'Email', value: managerData.email, icon: 'mail' },
+    { label: 'Téléphone', value: managerData.phone, icon: 'phone' },
+    { label: 'Région', value: managerData.region, icon: 'mapPin' },
+    { label: 'Directeur', value: managerData.directeur, icon: 'users' },
+    { label: 'Date de création', value: managerData.date_promotion, icon: 'calendar' },
+    { label: 'Adresse', value: managerData.address, icon: 'mapPin' },
   ]
 
   const statsCards = [
     {
       title: "CA de l'équipe",
-      value: manager.ca_equipe,
-      description: `Objectif: ${manager.objectif_equipe}`,
+      value: managerData.ca_equipe,
+      description: `Objectif: ${managerData.objectif_equipe}`,
       icon: 'trendingUp',
       trend: { type: 'positive', value: '+8% vs mois dernier' },
     },
     {
       title: "Taille de l'équipe",
-      value: manager.equipe_taille,
+      value: managerData.equipe_taille,
       description: 'Commerciaux actifs',
       icon: 'users',
     },
     {
       title: 'Clients total',
-      value: manager.clients_total,
+      value: managerData.clients_total,
       description: "Portfolio de l'équipe",
       icon: 'users',
     },
     {
       title: "Taux d'atteinte",
-      value: manager.taux_atteinte,
+      value: managerData.taux_atteinte,
       description: 'Performance équipe',
       icon: 'trendingUp',
     },
@@ -96,10 +109,10 @@ export default function ManagerDetails() {
 
   return (
     <DetailsPage
-      title={manager.name}
-      subtitle={`Manager Régional - ${manager.region}`}
-      status={manager.status}
-      data={manager}
+      title={managerData.name}
+      subtitle={`Manager Régional - ${managerData.region}`}
+      status={managerData.status}
+      data={managerData}
       personalInfo={personalInfo}
       statsCards={statsCards}
       additionalSections={additionalSections}
