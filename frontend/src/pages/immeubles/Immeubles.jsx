@@ -11,7 +11,6 @@ import {
 import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useMemo } from 'react'
 
-
 const immeublesColumns = [
   {
     header: 'Adresse',
@@ -57,11 +56,11 @@ const getImmeublesEditFields = (commercials = []) => [
     required: true,
     section: 'Informations générales',
     fullWidth: true,
-    placeholder: 'Adresse complète de l\'immeuble',
+    placeholder: "Adresse complète de l'immeuble",
   },
   {
     key: 'floors',
-    label: 'Nombre d\'étages',
+    label: "Nombre d'étages",
     type: 'number',
     required: true,
     section: 'Caractéristiques',
@@ -113,7 +112,7 @@ export default function Immeubles() {
     return filteredImmeubles.map(immeuble => {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
       const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
-      
+
       return {
         ...immeuble,
         address: immeuble.adresse,
@@ -129,25 +128,27 @@ export default function Immeubles() {
   const handleAddImmeuble = async formData => {
     try {
       const commercial = commercials?.find(c => `${c.prenom} ${c.nom}` === formData.commercial_name)
-      
+
       const immeubleInput = {
         adresse: formData.address,
         nbEtages: parseInt(formData.floors),
         nbPortesParEtage: parseInt(formData.doors_per_floor),
         commercialId: commercial?.id || null,
       }
-      
+
       await createImmeuble(immeubleInput)
       await refetch()
     } catch (error) {
-      console.error('Erreur lors de la création de l\'immeuble:', error)
+      console.error("Erreur lors de la création de l'immeuble:", error)
     }
   }
 
   const handleEditImmeuble = async editedData => {
     try {
-      const commercial = commercials?.find(c => `${c.prenom} ${c.nom}` === editedData.commercial_name)
-      
+      const commercial = commercials?.find(
+        c => `${c.prenom} ${c.nom}` === editedData.commercial_name
+      )
+
       const updateInput = {
         id: editedData.id,
         adresse: editedData.address,
@@ -155,11 +156,11 @@ export default function Immeubles() {
         nbPortesParEtage: parseInt(editedData.doors_per_floor),
         commercialId: commercial?.id,
       }
-      
+
       await updateImmeuble(updateInput)
       await refetch()
     } catch (error) {
-      console.error('Erreur lors de la modification de l\'immeuble:', error)
+      console.error("Erreur lors de la modification de l'immeuble:", error)
     }
   }
 
@@ -168,7 +169,7 @@ export default function Immeubles() {
       await removeImmeuble(id)
       await refetch()
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'immeuble:', error)
+      console.error("Erreur lors de la suppression de l'immeuble:", error)
     }
   }
 
