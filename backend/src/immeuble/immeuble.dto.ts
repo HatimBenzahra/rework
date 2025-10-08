@@ -68,4 +68,9 @@ export class UpdateImmeubleInput {
   @IsInt()
   @Min(1)
   nbPortesParEtage?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  commercialId?: number;
 }

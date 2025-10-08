@@ -1,180 +1,45 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
+import {
+  useImmeubles,
+  useCreateImmeuble,
+  useUpdateImmeuble,
+  useRemoveImmeuble,
+  useCommercials,
+} from '@/services'
+import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useMemo } from 'react'
 
-// Données exemple pour les immeubles
-const immeublesData = [
-  {
-    id: 1,
-    name: 'Résidence Les Jasmins',
-    address: '45 Avenue Habib Bourguiba, Tunis',
-    zone: 'Tunis Centre',
-    floors: 8,
-    apartments: 24,
-    status: 'actif',
-    occupancy_rate: '95%',
-    monthly_revenue: '42 000 TND',
-    manager: 'Ahmed Ben Ali',
-    year_built: '2018',
-  },
-  {
-    id: 2,
-    name: 'Tour du Lac',
-    address: '12 Rue du Lac Victoria, Tunis',
-    zone: 'Les Berges du Lac',
-    floors: 15,
-    apartments: 60,
-    status: 'actif',
-    occupancy_rate: '88%',
-    monthly_revenue: '125 000 TND',
-    manager: 'Fatma Gharbi',
-    year_built: '2020',
-  },
-  {
-    id: 3,
-    name: 'Immeuble El Manar',
-    address: '78 Avenue de la République, Sfax',
-    zone: 'Sfax',
-    floors: 6,
-    apartments: 18,
-    status: 'en_renovation',
-    occupancy_rate: '50%',
-    monthly_revenue: '15 000 TND',
-    manager: 'Sarra Mejri',
-    year_built: '2010',
-  },
-  {
-    id: 4,
-    name: 'Résidence Corniche',
-    address: '23 Boulevard de la Corniche, Sousse',
-    zone: 'Sousse',
-    floors: 10,
-    apartments: 40,
-    status: 'actif',
-    occupancy_rate: '92%',
-    monthly_revenue: '68 000 TND',
-    manager: 'Karim Ouali',
-    year_built: '2019',
-  },
-  {
-    id: 5,
-    name: 'Résidence Palmiers',
-    address: '56 Rue des Palmiers, Monastir',
-    zone: 'Monastir',
-    floors: 5,
-    apartments: 15,
-    status: 'actif',
-    occupancy_rate: '100%',
-    monthly_revenue: '28 000 TND',
-    manager: 'Youssef Hassine',
-    year_built: '2021',
-  },
-  {
-    id: 6,
-    name: 'Tour Panorama',
-    address: '89 Avenue Farhat Hached, Bizerte',
-    zone: 'Bizerte',
-    floors: 12,
-    apartments: 48,
-    status: 'actif',
-    occupancy_rate: '85%',
-    monthly_revenue: '82 000 TND',
-    manager: 'Ines Khediri',
-    year_built: '2017',
-  },
-  {
-    id: 7,
-    name: 'Résidence El Amal',
-    address: '34 Rue de la Liberté, Nabeul',
-    zone: 'Nabeul',
-    floors: 4,
-    apartments: 12,
-    status: 'complet',
-    occupancy_rate: '100%',
-    monthly_revenue: '22 000 TND',
-    manager: 'Rim Bouaziz',
-    year_built: '2022',
-  },
-  {
-    id: 8,
-    name: 'Immeuble Al Fajr',
-    address: '67 Boulevard 7 Novembre, Tunis',
-    zone: 'Tunis Centre',
-    floors: 7,
-    apartments: 21,
-    status: 'actif',
-    occupancy_rate: '78%',
-    monthly_revenue: '35 000 TND',
-    manager: 'Ahmed Ben Ali',
-    year_built: '2015',
-  },
-  {
-    id: 9,
-    name: 'Résidence Carthage',
-    address: '101 Route de La Marsa, Carthage',
-    zone: 'Carthage',
-    floors: 6,
-    apartments: 18,
-    status: 'en_maintenance',
-    occupancy_rate: '83%',
-    monthly_revenue: '45 000 TND',
-    manager: 'Mohamed Triki',
-    year_built: '2016',
-  },
-  {
-    id: 10,
-    name: 'Tour Business Center',
-    address: '15 Avenue Mohamed V, Tunis',
-    zone: 'Tunis Centre',
-    floors: 20,
-    apartments: 80,
-    status: 'actif',
-    occupancy_rate: '97%',
-    monthly_revenue: '185 000 TND',
-    manager: 'Fatma Gharbi',
-    year_built: '2021',
-  },
-]
 
 const immeublesColumns = [
-  {
-    header: 'Nom',
-    accessor: 'name',
-    sortable: true,
-    className: 'font-medium',
-  },
   {
     header: 'Adresse',
     accessor: 'address',
     sortable: true,
-    className: 'hidden lg:table-cell',
-  },
-  {
-    header: 'Zone',
-    accessor: 'zone',
-    sortable: true,
-    className: 'hidden sm:table-cell',
+    className: 'font-medium',
   },
   {
     header: 'Étages',
     accessor: 'floors',
     className: 'hidden md:table-cell text-center',
+    cell: row => `${row.floors} étages`,
   },
   {
-    header: 'Appartements',
-    accessor: 'apartments',
+    header: 'Portes/Étage',
+    accessor: 'doors_per_floor',
     className: 'hidden md:table-cell text-center',
   },
   {
-    header: 'Taux Occupation',
-    accessor: 'occupancy_rate',
-    sortable: true,
-    className: 'hidden xl:table-cell text-right',
+    header: 'Total Portes',
+    accessor: 'total_doors',
+    className: 'hidden lg:table-cell text-center',
   },
   {
-    header: 'Revenu/Mois',
-    accessor: 'monthly_revenue',
-    className: 'hidden xl:table-cell text-right',
+    header: 'Commercial',
+    accessor: 'commercial_name',
+    sortable: true,
+    className: 'hidden xl:table-cell',
   },
   {
     header: 'Status',
@@ -184,14 +49,7 @@ const immeublesColumns = [
 ]
 
 // Configuration des champs du modal d'édition
-const immeublesEditFields = [
-  {
-    key: 'name',
-    label: "Nom de l'immeuble",
-    type: 'text',
-    required: true,
-    section: 'Informations générales',
-  },
+const getImmeublesEditFields = (commercials = []) => [
   {
     key: 'address',
     label: 'Adresse',
@@ -199,85 +57,122 @@ const immeublesEditFields = [
     required: true,
     section: 'Informations générales',
     fullWidth: true,
-    placeholder: 'Adresse complète',
-  },
-  {
-    key: 'zone',
-    label: 'Zone',
-    type: 'select',
-    required: true,
-    section: 'Informations générales',
-    options: [
-      { value: 'Tunis Centre', label: 'Tunis Centre' },
-      { value: 'Les Berges du Lac', label: 'Les Berges du Lac' },
-      { value: 'Sfax', label: 'Sfax' },
-      { value: 'Sousse', label: 'Sousse' },
-      { value: 'Monastir', label: 'Monastir' },
-      { value: 'Bizerte', label: 'Bizerte' },
-      { value: 'Nabeul', label: 'Nabeul' },
-      { value: 'Carthage', label: 'Carthage' },
-    ],
+    placeholder: 'Adresse complète de l\'immeuble',
   },
   {
     key: 'floors',
-    label: "Nombre d'étages",
+    label: 'Nombre d\'étages',
     type: 'number',
     required: true,
     section: 'Caractéristiques',
+    min: 1,
+    max: 50,
   },
   {
-    key: 'apartments',
-    label: "Nombre d'appartements",
+    key: 'doors_per_floor',
+    label: 'Portes par étage',
     type: 'number',
     required: true,
     section: 'Caractéristiques',
+    min: 1,
+    max: 20,
   },
   {
-    key: 'manager',
-    label: 'Gestionnaire',
-    type: 'select',
-    section: 'Gestion',
-    options: [
-      { value: 'Ahmed Ben Ali', label: 'Ahmed Ben Ali' },
-      { value: 'Fatma Gharbi', label: 'Fatma Gharbi' },
-      { value: 'Mohamed Triki', label: 'Mohamed Triki' },
-    ],
-  },
-  {
-    key: 'status',
-    label: 'Statut',
+    key: 'commercial_name',
+    label: 'Commercial responsable',
     type: 'select',
     required: true,
     section: 'Gestion',
-    options: [
-      { value: 'actif', label: 'Actif' },
-      { value: 'en_renovation', label: 'En rénovation' },
-      { value: 'en_maintenance', label: 'En maintenance' },
-      { value: 'complet', label: 'Complet' },
-    ],
-  },
-  {
-    key: 'year_built',
-    label: 'Année de construction',
-    type: 'text',
-    section: 'Caractéristiques',
-    placeholder: '2020',
+    options: commercials.map(c => ({
+      value: `${c.prenom} ${c.nom}`,
+      label: `${c.prenom} ${c.nom}`,
+    })),
   },
 ]
 
 export default function Immeubles() {
   const loading = useSimpleLoading(1000)
 
-  const handleAddImmeuble = () => {
-    console.log('Ajouter un nouveau immeuble')
+  // API hooks
+  const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
+  const { data: commercials } = useCommercials()
+  const { mutate: createImmeuble } = useCreateImmeuble()
+  const { mutate: updateImmeuble } = useUpdateImmeuble()
+  const { mutate: removeImmeuble } = useRemoveImmeuble()
+
+  // Utilisation du système de rôles pour filtrer les données
+  const {
+    data: filteredImmeubles,
+    permissions,
+    description,
+  } = useEntityPage('immeubles', immeublesApi || [], { commercials })
+
+  // Préparation des données pour le tableau avec mapping API → UI
+  const tableData = useMemo(() => {
+    if (!filteredImmeubles) return []
+    return filteredImmeubles.map(immeuble => {
+      const commercial = commercials?.find(c => c.id === immeuble.commercialId)
+      const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
+      
+      return {
+        ...immeuble,
+        address: immeuble.adresse,
+        floors: immeuble.nbEtages,
+        doors_per_floor: immeuble.nbPortesParEtage,
+        total_doors: totalDoors,
+        commercial_name: commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné',
+        status: 'actif', // Valeur par défaut
+      }
+    })
+  }, [filteredImmeubles, commercials])
+
+  const handleAddImmeuble = async formData => {
+    try {
+      const commercial = commercials?.find(c => `${c.prenom} ${c.nom}` === formData.commercial_name)
+      
+      const immeubleInput = {
+        adresse: formData.address,
+        nbEtages: parseInt(formData.floors),
+        nbPortesParEtage: parseInt(formData.doors_per_floor),
+        commercialId: commercial?.id || null,
+      }
+      
+      await createImmeuble(immeubleInput)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'immeuble:', error)
+    }
   }
 
-  const handleEditImmeuble = editedData => {
-    console.log('Immeuble modifié:', editedData)
-    // Appel API pour mettre à jour les données
+  const handleEditImmeuble = async editedData => {
+    try {
+      const commercial = commercials?.find(c => `${c.prenom} ${c.nom}` === editedData.commercial_name)
+      
+      const updateInput = {
+        id: editedData.id,
+        adresse: editedData.address,
+        nbEtages: parseInt(editedData.floors),
+        nbPortesParEtage: parseInt(editedData.doors_per_floor),
+        commercialId: commercial?.id,
+      }
+      
+      await updateImmeuble(updateInput)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la modification de l\'immeuble:', error)
+    }
   }
 
-  if (loading) {
+  const handleDeleteImmeuble = async id => {
+    try {
+      await removeImmeuble(id)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'immeuble:', error)
+    }
+  }
+
+  if (loading || immeublesLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
@@ -295,22 +190,21 @@ export default function Immeubles() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Immeubles</h1>
-        <p className="text-muted-foreground text-base">
-          Gestion du patrimoine immobilier et suivi des propriétés
-        </p>
+        <p className="text-muted-foreground text-base">{description}</p>
       </div>
 
       <AdvancedDataTable
         title="Liste des Immeubles"
-        description="Tous les immeubles du portefeuille avec leurs caractéristiques et performances"
-        data={immeublesData}
+        description={description}
+        data={tableData}
         columns={immeublesColumns}
-        searchKey="name"
-        onAdd={handleAddImmeuble}
+        searchKey="address"
+        onAdd={permissions.canAdd ? handleAddImmeuble : undefined}
         addButtonText="Nouvel Immeuble"
         detailsPath="/immeubles"
-        editFields={immeublesEditFields}
-        onEdit={handleEditImmeuble}
+        editFields={getImmeublesEditFields(commercials)}
+        onEdit={permissions.canEdit ? handleEditImmeuble : undefined}
+        onDelete={permissions.canDelete ? handleDeleteImmeuble : undefined}
       />
     </div>
   )

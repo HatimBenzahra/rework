@@ -161,6 +161,7 @@ export interface UpdateImmeubleInput {
   adresse?: string;
   nbEtages?: number;
   nbPortesParEtage?: number;
+  commercialId?: number;
 }
 
 export interface UpdateStatisticInput {

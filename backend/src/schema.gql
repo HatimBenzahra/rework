@@ -170,6 +170,7 @@ input UpdateDirecteurInput {
 
 input UpdateImmeubleInput {
   adresse: String
+  commercialId: Int
   id: Int!
   nbEtages: Int
   nbPortesParEtage: Int
