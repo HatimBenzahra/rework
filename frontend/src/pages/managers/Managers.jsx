@@ -9,49 +9,46 @@ import {
   useDirecteurs,
 } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/RoleContext'
 import { useMemo } from 'react'
 
-const managersColumns = [
-  {
-    header: 'Nom',
-    accessor: 'name',
-    sortable: true,
-    className: 'font-medium',
-  },
-  {
-    header: 'Email',
-    accessor: 'email',
-    sortable: true,
-  },
-  {
-    header: 'Région',
-    accessor: 'region',
-    sortable: true,
-    className: 'hidden sm:table-cell',
-  },
-  {
-    header: 'Équipe',
-    accessor: 'equipe_taille',
-    className: 'hidden md:table-cell text-center',
-    cell: row => `${row.equipe_taille} personnes`,
-  },
-  {
-    header: 'Directeur',
-    accessor: 'directeur',
-    sortable: true,
-    className: 'hidden lg:table-cell',
-  },
-  {
-    header: 'CA Équipe',
-    accessor: 'ca_equipe',
-    className: 'hidden xl:table-cell text-right',
-  },
-  {
-    header: 'Status',
-    accessor: 'status',
-    sortable: true,
-  },
-]
+const getManagersColumns = isAdmin => {
+  const baseColumns = [
+    {
+      header: 'Nom Prénom',
+      accessor: 'name',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Email',
+      accessor: 'email',
+      sortable: true,
+      className: 'hidden sm:table-cell',
+    },
+    {
+      header: 'Téléphone',
+      accessor: 'numTelephone',
+      className: 'hidden md:table-cell',
+    },
+    {
+      header: 'Directeur',
+      accessor: 'directeur',
+      sortable: true,
+      className: 'hidden lg:table-cell',
+    },
+  ]
+
+  if (isAdmin) {
+    baseColumns.push({
+      header: 'Statut',
+      accessor: 'status',
+      sortable: true,
+    })
+  }
+
+  return baseColumns
+}
 
 // Configuration des champs du modal d'édition
 const managersEditFields = [
@@ -137,6 +134,7 @@ const managersEditFields = [
 
 export default function Managers() {
   const loading = useSimpleLoading(1000)
+  const { isAdmin } = useRole()
 
   // API hooks
   const { data: managersApi, loading: managersLoading, refetch } = useManagers()
@@ -156,19 +154,15 @@ export default function Managers() {
     if (!filteredManagers) return []
     return filteredManagers.map(manager => {
       const directeur = directeurs?.find(d => d.id === manager.directeurId)
+      const status = manager.directeurId ? 'actif' : 'inactif'
+
       return {
         ...manager,
         name: `${manager.prenom} ${manager.nom}`,
+        email: manager.email || 'Non renseigné',
+        numTelephone: manager.numTelephone || 'Non renseigné',
         directeur: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Aucun directeur',
-        // Mapping des champs manquants avec des valeurs par défaut
-        email: 'manager@company.com',
-        phone: '+216 XX XXX XXX',
-        region: 'Non assignée',
-        equipe_taille: 0,
-        status: 'actif',
-        ca_equipe: '0 TND',
-        objectif_equipe: '0 TND',
-        date_promotion: new Date().toLocaleDateString('fr-FR'),
+        status,
       }
     })
   }, [filteredManagers, directeurs])
@@ -252,7 +246,7 @@ export default function Managers() {
         title="Liste des Managers"
         description={description}
         data={tableData}
-        columns={managersColumns}
+        columns={getManagersColumns(isAdmin)}
         searchKey="name"
         onAdd={permissions.canAdd ? handleAddManager : undefined}
         addButtonText="Nouveau Manager"

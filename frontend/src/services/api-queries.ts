@@ -47,6 +47,8 @@ export const GET_MANAGERS = `
       id
       nom
       prenom
+      email
+      numTelephone
       directeurId
       createdAt
       updatedAt
@@ -60,6 +62,8 @@ export const GET_MANAGER = `
       id
       nom
       prenom
+      email
+      numTelephone
       directeurId
       createdAt
       updatedAt

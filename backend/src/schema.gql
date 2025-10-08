@@ -45,7 +45,9 @@ input CreateImmeubleInput {
 
 input CreateManagerInput {
   directeurId: Int
+  email: String
   nom: String!
+  numTelephone: String
   prenom: String!
 }
 
@@ -93,8 +95,10 @@ type Immeuble {
 type Manager {
   createdAt: DateTime!
   directeurId: Int
+  email: String
   id: Int!
   nom: String!
+  numTelephone: String
   prenom: String!
   updatedAt: DateTime!
 }
@@ -178,8 +182,10 @@ input UpdateImmeubleInput {
 
 input UpdateManagerInput {
   directeurId: Int
+  email: String
   id: Int!
   nom: String
+  numTelephone: String
   prenom: String
 }
 

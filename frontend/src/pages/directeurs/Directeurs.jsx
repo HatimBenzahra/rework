@@ -1,70 +1,18 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-
-// Données exemple pour les directeurs
-const directeursData = [
-  {
-    id: 1,
-    name: 'Samir Ben Mahmoud',
-    email: 'samir.benmahmoud@company.com',
-    phone: '+216 20 100 200',
-    division: 'Division Nord & Sud',
-    managers_count: 3,
-    commerciaux_count: 17,
-    status: 'actif',
-    ca_division: '820 000 TND',
-    objectif_division: '950 000 TND',
-    date_nomination: '01/01/2019',
-    experience: '15 ans',
-  },
-  {
-    id: 2,
-    name: 'Leila Mansouri',
-    email: 'leila.mansouri@company.com',
-    phone: '+216 25 300 400',
-    division: 'Division Centre & Ouest',
-    managers_count: 2,
-    commerciaux_count: 11,
-    status: 'actif',
-    ca_division: '575 000 TND',
-    objectif_division: '620 000 TND',
-    date_nomination: '12/03/2020',
-    experience: '12 ans',
-  },
-  {
-    id: 3,
-    name: 'Hichem Bousnina',
-    email: 'hichem.bousnina@company.com',
-    phone: '+216 22 500 600',
-    division: 'Division Internationale',
-    managers_count: 1,
-    commerciaux_count: 5,
-    status: 'en_conge',
-    ca_division: '420 000 TND',
-    objectif_division: '500 000 TND',
-    date_nomination: '08/09/2021',
-    experience: '18 ans',
-  },
-  {
-    id: 4,
-    name: 'Monia Dridi',
-    email: 'monia.dridi@company.com',
-    phone: '+216 29 700 800',
-    division: 'Division Grands Comptes',
-    managers_count: 2,
-    commerciaux_count: 8,
-    status: 'actif',
-    ca_division: '1 200 000 TND',
-    objectif_division: '1 150 000 TND',
-    date_nomination: '20/05/2022',
-    experience: '20 ans',
-  },
-]
+import {
+  useDirecteurs,
+  useCreateDirecteur,
+  useUpdateDirecteur,
+  useRemoveDirecteur,
+} from '@/services'
+import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useMemo } from 'react'
 
 const directeursColumns = [
   {
-    header: 'Nom',
+    header: 'Nom Prénom',
     accessor: 'name',
     sortable: true,
     className: 'font-medium',
@@ -73,37 +21,17 @@ const directeursColumns = [
     header: 'Email',
     accessor: 'email',
     sortable: true,
-  },
-  {
-    header: 'Division',
-    accessor: 'division',
-    sortable: true,
     className: 'hidden sm:table-cell',
   },
   {
-    header: 'Managers',
-    accessor: 'managers_count',
-    className: 'hidden md:table-cell text-center',
+    header: 'Téléphone',
+    accessor: 'numTelephone',
+    className: 'hidden md:table-cell',
   },
   {
-    header: 'Commerciaux',
-    accessor: 'commerciaux_count',
-    className: 'hidden md:table-cell text-center',
-  },
-  {
-    header: 'CA Division',
-    accessor: 'ca_division',
-    className: 'hidden lg:table-cell text-right',
-  },
-  {
-    header: 'Expérience',
-    accessor: 'experience',
-    className: 'hidden xl:table-cell',
-  },
-  {
-    header: 'Status',
-    accessor: 'status',
-    sortable: true,
+    header: 'Adresse',
+    accessor: 'adresse',
+    className: 'hidden lg:table-cell',
   },
 ]
 
@@ -120,85 +48,114 @@ const directeursEditFields = [
     key: 'email',
     label: 'Email',
     type: 'email',
-    required: true,
     section: 'Informations personnelles',
     validate: value => {
-      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      if (value && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value)) {
         return 'Email invalide'
       }
     },
   },
   {
-    key: 'phone',
+    key: 'numTelephone',
     label: 'Téléphone',
     type: 'tel',
-    required: true,
     section: 'Informations personnelles',
     placeholder: '+216 XX XXX XXX',
   },
   {
-    key: 'division',
-    label: 'Division',
-    type: 'text',
-    required: true,
-    section: 'Affectation',
-    placeholder: 'Ex: Division Nord & Sud',
-  },
-  {
-    key: 'status',
-    label: 'Statut',
-    type: 'select',
-    required: true,
-    section: 'Affectation',
-    options: [
-      { value: 'actif', label: 'Actif' },
-      { value: 'inactif', label: 'Inactif' },
-      { value: 'en_conge', label: 'En congé' },
-      { value: 'suspendu', label: 'Suspendu' },
-    ],
-  },
-  {
-    key: 'objectif_division',
-    label: 'Objectif division (TND)',
-    type: 'text',
-    section: 'Performance',
-    placeholder: '950 000 TND',
-  },
-  {
-    key: 'experience',
-    label: 'Expérience',
-    type: 'text',
-    section: 'Performance',
-    placeholder: 'Ex: 15 ans',
-  },
-  {
-    key: 'date_nomination',
-    label: 'Date de nomination',
-    type: 'date',
+    key: 'adresse',
+    label: 'Adresse',
+    type: 'textarea',
     section: 'Informations personnelles',
+    fullWidth: true,
+    placeholder: 'Adresse complète',
   },
 ]
 
 export default function Directeurs() {
   const loading = useSimpleLoading(1000)
 
-  const handleAddDirecteur = () => {
-    console.log('Ajouter un nouveau directeur')
+  // API hooks
+  const { data: directeursApi, loading: directeursLoading, refetch } = useDirecteurs()
+  const { mutate: createDirecteur } = useCreateDirecteur()
+  const { mutate: updateDirecteur } = useUpdateDirecteur()
+  const { mutate: removeDirecteur } = useRemoveDirecteur()
+
+  // Utilisation du système de rôles pour filtrer les données
+  const {
+    data: filteredDirecteurs,
+    permissions,
+    description,
+  } = useEntityPage('directeurs', directeursApi || [])
+
+  // Préparation des données pour le tableau avec mapping API → UI
+  const tableData = useMemo(() => {
+    if (!filteredDirecteurs) return []
+    return filteredDirecteurs.map(directeur => ({
+      ...directeur,
+      name: `${directeur.prenom} ${directeur.nom}`,
+      email: directeur.email || 'Non renseigné',
+      numTelephone: directeur.numTelephone || 'Non renseigné',
+      adresse: directeur.adresse || 'Non renseignée',
+    }))
+  }, [filteredDirecteurs])
+
+  const handleAddDirecteur = async formData => {
+    try {
+      const [prenom, ...nomParts] = (formData.name || '').split(' ')
+      const nom = nomParts.join(' ')
+
+      const directeurInput = {
+        nom: nom || formData.nom || '',
+        prenom: prenom || formData.prenom || '',
+        email: formData.email || null,
+        numTelephone: formData.numTelephone || null,
+        adresse: formData.adresse || null,
+      }
+
+      await createDirecteur(directeurInput)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la création du directeur:', error)
+    }
   }
 
-  const handleEditDirecteur = editedData => {
-    console.log('Directeur modifié:', editedData)
-    // Appel API pour mettre à jour les données
+  const handleEditDirecteur = async editedData => {
+    try {
+      const [prenom, ...nomParts] = (editedData.name || '').split(' ')
+      const nom = nomParts.join(' ')
+
+      const updateInput = {
+        id: editedData.id,
+        nom: nom || editedData.nom,
+        prenom: prenom || editedData.prenom,
+        email: editedData.email,
+        numTelephone: editedData.numTelephone,
+        adresse: editedData.adresse,
+      }
+
+      await updateDirecteur(updateInput)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la modification du directeur:', error)
+    }
   }
 
-  if (loading) {
+  const handleDeleteDirecteur = async id => {
+    try {
+      await removeDirecteur(id)
+      await refetch()
+    } catch (error) {
+      console.error('Erreur lors de la suppression du directeur:', error)
+    }
+  }
+
+  if (loading || directeursLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Directeurs</h1>
-          <p className="text-muted-foreground text-base">
-            Gestion des directeurs de division et supervision stratégique
-          </p>
+          <p className="text-muted-foreground text-base">{description}</p>
         </div>
         <TableSkeleton />
       </div>
@@ -209,22 +166,21 @@ export default function Directeurs() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Directeurs</h1>
-        <p className="text-muted-foreground text-base">
-          Gestion des directeurs de division et supervision stratégique
-        </p>
+        <p className="text-muted-foreground text-base">{description}</p>
       </div>
 
       <AdvancedDataTable
         title="Liste des Directeurs"
-        description="Direction exécutive avec vue d'ensemble des divisions et performances"
-        data={directeursData}
+        description={description}
+        data={tableData}
         columns={directeursColumns}
         searchKey="name"
-        onAdd={handleAddDirecteur}
+        onAdd={permissions.canAdd ? handleAddDirecteur : undefined}
         addButtonText="Nouveau Directeur"
         detailsPath="/directeurs"
         editFields={directeursEditFields}
-        onEdit={handleEditDirecteur}
+        onEdit={permissions.canEdit ? handleEditDirecteur : undefined}
+        onDelete={permissions.canDelete ? handleDeleteDirecteur : undefined}
       />
     </div>
   )

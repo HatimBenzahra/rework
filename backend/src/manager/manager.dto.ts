@@ -12,6 +12,12 @@ export class Manager {
   @Field()
   prenom: string;
 
+  @Field({ nullable: true })
+  email?: string;
+
+  @Field({ nullable: true })
+  numTelephone?: string;
+
   @Field(() => Int, { nullable: true })
   directeurId?: number;
 
@@ -34,6 +40,16 @@ export class CreateManagerInput {
   @IsString()
   prenom: string;
 
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  numTelephone?: string;
+
   @Field(() => Int, { nullable: true })
   @IsOptional()
   @IsInt()
@@ -54,6 +70,16 @@ export class UpdateManagerInput {
   @IsOptional()
   @IsString()
   prenom?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  numTelephone?: string;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()

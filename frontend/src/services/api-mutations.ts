@@ -62,6 +62,8 @@ export const CREATE_MANAGER = `
       id
       nom
       prenom
+      email
+      numTelephone
       directeurId
       createdAt
       updatedAt
@@ -75,6 +77,8 @@ export const UPDATE_MANAGER = `
       id
       nom
       prenom
+      email
+      numTelephone
       directeurId
       createdAt
       updatedAt
@@ -88,6 +92,8 @@ export const REMOVE_MANAGER = `
       id
       nom
       prenom
+      email
+      numTelephone
       directeurId
       createdAt
       updatedAt

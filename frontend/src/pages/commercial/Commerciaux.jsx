@@ -6,49 +6,70 @@ import {
   useUpdateCommercial,
   useRemoveCommercial,
   useManagers,
+  useDirecteurs,
 } from '@/services'
 import { useMemo } from 'react'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/RoleContext'
 
-const commerciauxColumns = [
-  {
-    header: 'Nom',
-    accessor: 'name',
-    sortable: true,
-    className: 'font-medium',
-  },
-  {
-    header: 'Email',
-    accessor: 'email',
-    sortable: true,
-  },
-  {
-    header: 'Téléphone',
-    accessor: 'numTel',
-    className: 'hidden sm:table-cell',
-  },
-  {
-    header: 'Age',
-    accessor: 'age',
-    sortable: true,
-    className: 'hidden md:table-cell',
-  },
-  {
-    header: 'Manager',
-    accessor: 'managerName',
-    sortable: true,
-    className: 'hidden lg:table-cell',
-  },
-  {
-    header: 'Date création',
-    accessor: 'createdAt',
-    className: 'hidden xl:table-cell',
-  },
-]
+const getCommerciauxColumns = (isAdmin, isDirecteur) => {
+  const baseColumns = [
+    {
+      header: 'Nom Prénom',
+      accessor: 'name',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Email',
+      accessor: 'email',
+      sortable: true,
+      className: 'hidden sm:table-cell',
+    },
+    {
+      header: 'Téléphone',
+      accessor: 'numTel',
+      className: 'hidden md:table-cell',
+    },
+  ]
+
+  // Colonne Manager: visible pour Admin et Directeur seulement
+  if (isAdmin || isDirecteur) {
+    baseColumns.push({
+      header: 'Manager',
+      accessor: 'managerName',
+      sortable: true,
+      className: 'hidden lg:table-cell',
+    })
+  }
+
+  // Colonne Directeur: visible pour Admin seulement
+  if (isAdmin) {
+    baseColumns.push({
+      header: 'Directeur',
+      accessor: 'directeurName',
+      sortable: true,
+      className: 'hidden xl:table-cell',
+    })
+  }
+
+  // Colonne Statut: visible pour Admin seulement
+  if (isAdmin) {
+    baseColumns.push({
+      header: 'Statut',
+      accessor: 'status',
+      sortable: true,
+    })
+  }
+
+  return baseColumns
+}
 
 export default function Commerciaux() {
+  const { isAdmin, isDirecteur } = useRole()
   const { data: commercials, loading, error, refetch } = useCommercials()
   const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
   const { mutate: createCommercial, loading: creating } = useCreateCommercial()
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
   const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()
@@ -69,14 +90,23 @@ export default function Commerciaux() {
       const manager = managers?.find(m => m.id === commercial.managerId)
       const managerName = manager ? `${manager.prenom} ${manager.nom}` : 'N/A'
 
+      // Trouver le nom du directeur
+      const directeur = directeurs?.find(d => d.id === commercial.directeurId)
+      const directeurName = directeur ? `${directeur.prenom} ${directeur.nom}` : 'N/A'
+
+      // Calculer le statut basé sur l'assignation au manager
+      const status = commercial.managerId ? 'actif' : 'inactif'
+
       return {
         ...commercial,
         name: `${commercial.prenom} ${commercial.nom}`,
         managerName,
+        directeurName,
+        status,
         createdAt: new Date(commercial.createdAt).toLocaleDateString('fr-FR'),
       }
     })
-  }, [filteredCommercials, managers])
+  }, [filteredCommercials, managers, directeurs])
 
   // Préparer les options pour les formulaires
   const managerOptions = useMemo(() => {
@@ -232,7 +262,7 @@ export default function Commerciaux() {
         title="Liste des Commerciaux"
         description={description}
         data={tableData}
-        columns={commerciauxColumns}
+        columns={getCommerciauxColumns(isAdmin, isDirecteur)}
         searchKey="name"
         onAdd={permissions.canAdd ? handleAddCommercial : undefined}
         addButtonText="Nouveau Commercial"

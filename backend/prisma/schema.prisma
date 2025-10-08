@@ -17,9 +17,9 @@ model Directeur {
   id          Int         @id @default(autoincrement())
   nom         String
   prenom      String
-  adresse     String
-  email       String      @unique
-  numTelephone String
+  adresse     String?
+  email       String?     @unique
+  numTelephone String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   
@@ -31,6 +31,8 @@ model Manager {
   id          Int         @id @default(autoincrement())
   nom         String
   prenom      String
+  email       String?     @unique
+  numTelephone String?
   directeurId Int?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -43,9 +45,9 @@ model Commercial {
   id          Int      @id @default(autoincrement())
   nom         String
   prenom      String
-  email       String   @unique
-  numTel      String
-  age         Int
+  email       String?  @unique
+  numTel      String?
+  age         Int?
   managerId   Int?
   directeurId Int?
   createdAt   DateTime @default(now())

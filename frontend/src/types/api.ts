@@ -29,6 +29,8 @@ export interface Directeur extends BaseEntity {
 export interface Manager extends BaseEntity {
   nom: string;
   prenom: string;
+  email?: string | null;
+  numTelephone?: string | null;
   directeurId?: number | null;
 }
 
@@ -82,6 +84,8 @@ export interface CreateDirecteurInput {
 export interface CreateManagerInput {
   nom: string;
   prenom: string;
+  email?: string;
+  numTelephone?: string;
   directeurId?: number;
 }
 
@@ -134,6 +138,8 @@ export interface UpdateManagerInput {
   id: number;
   nom?: string;
   prenom?: string;
+  email?: string;
+  numTelephone?: string;
   directeurId?: number;
 }
 
