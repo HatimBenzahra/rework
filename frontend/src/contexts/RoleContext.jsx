@@ -2,9 +2,10 @@
  * Contexte global pour la gestion des rôles et des données filtrées
  */
 
-import { useMemo } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { ROLES } from '../utils/roleFilters'
-import { RoleContext } from './roleContext'
+
+const RoleContext = createContext()
 
 // Fonctions utilitaires pour localStorage
 const getUserRole = () => {
@@ -45,4 +46,12 @@ export const RoleProvider = ({ children }) => {
   )
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>
+}
+
+export const useRole = () => {
+  const context = useContext(RoleContext)
+  if (context === undefined) {
+    throw new Error('useRole must be used within a RoleProvider')
+  }
+  return context
 }

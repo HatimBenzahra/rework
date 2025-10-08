@@ -3,7 +3,7 @@
  */
 
 import { useMemo } from 'react'
-import { useRole } from '../contexts/useRole'
+import { useRole } from '../contexts/RoleContext'
 import {
   filterCommercials,
   filterManagers,
