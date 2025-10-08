@@ -11,7 +11,6 @@ import {
 import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useMemo } from 'react'
 
-
 const managersColumns = [
   {
     header: 'Nom',
@@ -169,7 +168,7 @@ export default function Managers() {
         status: 'actif',
         ca_equipe: '0 TND',
         objectif_equipe: '0 TND',
-        date_promotion: new Date().toLocaleDateString('fr-FR')
+        date_promotion: new Date().toLocaleDateString('fr-FR'),
       }
     })
   }, [filteredManagers, directeurs])
