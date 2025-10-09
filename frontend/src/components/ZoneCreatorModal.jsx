@@ -1,0 +1,476 @@
+import React, { useState, useEffect, useRef } from 'react'
+import Map, { Marker, Source, Layer, NavigationControl, useControl } from 'react-map-gl/mapbox'
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder'
+import 'mapbox-gl/dist/mapbox-gl.css'
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
+import mapboxgl from 'mapbox-gl'
+
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { X, Check, Move3D, MousePointerClick, RotateCcw } from 'lucide-react'
+
+// Set Mapbox access token
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+
+// Helper functions
+function haversineDistance(coords1, coords2) {
+  const [lon1, lat1] = coords1
+  const [lon2, lat2] = coords2
+  const toRad = x => (x * Math.PI) / 180
+  const R = 6371e3 // metres
+  const φ1 = toRad(lat1)
+  const φ2 = toRad(lat2)
+  const Δφ = toRad(lat2 - lat1)
+  const Δλ = toRad(lon2 - lon1)
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+function createGeoJSONCircle(center, radiusInMeters, points = 64) {
+  const coords = { latitude: center[1], longitude: center[0] }
+  const km = radiusInMeters / 1000
+  const ret = []
+  const distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180))
+  const distanceY = km / 110.574
+  let theta, x, y
+  for (let i = 0; i < points; i++) {
+    theta = (i / points) * (2 * Math.PI)
+    x = distanceX * Math.cos(theta)
+    y = distanceY * Math.sin(theta)
+    ret.push([coords.longitude + x, coords.latitude + y])
+  }
+  ret.push(ret[0])
+  return {
+    type: 'Feature',
+    geometry: { type: 'Polygon', coordinates: [ret] },
+    properties: {},
+  }
+}
+
+// Geocoder Control Component
+const GeocoderControl = React.memo(({ onResult, position }) => {
+  useControl(
+    () => {
+      const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        marker: false,
+        countries: 'fr', // France
+        language: 'fr',
+      })
+      geocoder.on('result', onResult)
+      return geocoder
+    },
+    { position }
+  )
+  return null
+})
+
+// 3D Control Component
+const ThreeDControl = ({ position, onClick, show3D }) => (
+  <div
+    className={`mapboxgl-ctrl mapboxgl-ctrl-group ${position.includes('top') ? 'mapboxgl-ctrl-top-right' : 'mapboxgl-ctrl-bottom-right'}`}
+    style={{
+      position: 'absolute',
+      top: position.includes('top') ? '74px' : 'auto',
+      bottom: position.includes('bottom') ? '10px' : 'auto',
+      right: '10px',
+      zIndex: 2,
+    }}
+  >
+    <button
+      onClick={onClick}
+      className={`mapboxgl-ctrl-icon ${show3D ? 'bg-blue-50 text-blue-600' : ''}`}
+      style={{
+        width: '29px',
+        height: '29px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: 'none',
+        cursor: 'pointer',
+        backgroundColor: show3D ? '#eff6ff' : 'white',
+      }}
+      title="Mode 3D"
+    >
+      <Move3D className="h-4 w-4" />
+    </button>
+  </div>
+)
+
+export const ZoneCreatorModal = ({
+  onValidate,
+  onClose,
+  existingZones = [],
+  zoneToEdit = null,
+  userRole,
+  assignableUsers = [],
+}) => {
+  const isEditMode = !!zoneToEdit
+  const mapRef = useRef(null)
+
+  // Initialize state based on edit mode
+  const [center, setCenter] = useState(
+    isEditMode && zoneToEdit?.xOrigin && zoneToEdit?.yOrigin
+      ? [zoneToEdit.xOrigin, zoneToEdit.yOrigin]
+      : null
+  )
+  const [radius, setRadius] = useState(isEditMode ? zoneToEdit?.rayon || 1000 : 0)
+  const [step, setStep] = useState(isEditMode ? 3 : 1)
+  const [zoneName, setZoneName] = useState(isEditMode ? zoneToEdit?.nom || '' : '')
+  const [assignedUserId, setAssignedUserId] = useState(
+    isEditMode ? zoneToEdit?.assignedUserId || '' : ''
+  )
+  const [zoneColor, setZoneColor] = useState(
+    isEditMode ? zoneToEdit?.color || '#3388ff' : '#3388ff'
+  )
+  const [show3D, setShow3D] = useState(false)
+
+  // Map view state
+  const initialMapViewState =
+    isEditMode && zoneToEdit?.xOrigin && zoneToEdit?.yOrigin
+      ? {
+          longitude: zoneToEdit.xOrigin,
+          latitude: zoneToEdit.yOrigin,
+          zoom: 12,
+        }
+      : {
+          longitude: 2.2137, // France center
+          latitude: 46.2276,
+          zoom: 6,
+        }
+
+  // Effect for 3D mode
+  useEffect(() => {
+    if (mapRef.current) {
+      if (show3D) {
+        mapRef.current.easeTo({ pitch: 60, duration: 1000 })
+      } else {
+        mapRef.current.easeTo({ pitch: 0, duration: 1000 })
+      }
+    }
+  }, [show3D])
+
+  // Fit bounds to existing zones when creating new one
+  useEffect(() => {
+    if (!isEditMode && existingZones.length > 0) {
+      const map = mapRef.current
+      if (map) {
+        const allPoints = existingZones
+          .filter(z => z.xOrigin && z.yOrigin)
+          .map(z => [z.xOrigin, z.yOrigin])
+
+        if (allPoints.length > 0) {
+          const bounds = allPoints.reduce(
+            (bounds, coord) => bounds.extend(coord),
+            new mapboxgl.LngLatBounds(allPoints[0], allPoints[0])
+          )
+          map.fitBounds(bounds, { padding: 80, animate: true, maxZoom: 12 })
+        }
+      }
+    }
+  }, [isEditMode, existingZones])
+
+  const handleMapClick = e => {
+    const { lng, lat } = e.lngLat
+    if (step === 1) {
+      setCenter([lng, lat])
+      setStep(2)
+    } else if (step === 2) {
+      setStep(3)
+    }
+  }
+
+  const handleMouseMove = e => {
+    if (step === 2 && center) {
+      const currentRadius = haversineDistance(center, [e.lngLat.lng, e.lngLat.lat])
+      setRadius(currentRadius)
+    }
+  }
+
+  const handleReset = () => {
+    setCenter(null)
+    setRadius(0)
+    setStep(1)
+    setZoneName('')
+    setAssignedUserId('')
+    setZoneColor('#3388ff')
+  }
+
+  const handleValidate = () => {
+    if (center && zoneName && radius > 0) {
+      const zoneData = {
+        nom: zoneName,
+        xOrigin: center[0], // longitude
+        yOrigin: center[1], // latitude
+        rayon: Math.round(radius), // en mètres
+        color: zoneColor, // pour l'UI locale seulement
+      }
+
+      if (isEditMode && zoneToEdit?.id) {
+        zoneData.id = zoneToEdit.id
+      }
+
+      onValidate(zoneData, assignedUserId)
+    }
+  }
+
+  const handleGeocoderResult = e => {
+    const { result } = e
+    if (result && result.center) {
+      mapRef.current?.flyTo({ center: result.center, zoom: 12 })
+    }
+  }
+
+  // Validation de la couleur pour s'assurer qu'elle est valide
+  const validZoneColor = zoneColor.match(/^#[0-9A-Fa-f]{6}$/) ? zoneColor : '#3388ff'
+
+  const isFormValid = center && zoneName && radius > 0
+  const currentCircleGeoJSON = center && radius > 0 ? createGeoJSONCircle(center, radius) : null
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col p-4 animate-in fade-in-0">
+      <div className="flex-1 w-full relative">
+        <Map
+          ref={mapRef}
+          initialViewState={initialMapViewState}
+          style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          onClick={handleMapClick}
+          onMouseMove={handleMouseMove}
+          cursor={step < 3 ? 'crosshair' : 'default'}
+        >
+          <NavigationControl position="top-right" />
+          <GeocoderControl onResult={handleGeocoderResult} position="top-left" />
+          <ThreeDControl position="top-right" onClick={() => setShow3D(!show3D)} show3D={show3D} />
+
+          {/* 3D Buildings Layer */}
+          {show3D && (
+            <Layer
+              id="3d-buildings"
+              source="composite"
+              source-layer="building"
+              filter={['==', 'extrude', 'true']}
+              type="fill-extrusion"
+              minzoom={15}
+              paint={{
+                'fill-extrusion-color': '#aaa',
+                'fill-extrusion-height': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  15,
+                  0,
+                  15.05,
+                  ['get', 'height'],
+                ],
+                'fill-extrusion-base': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  15,
+                  0,
+                  15.05,
+                  ['get', 'min_height'],
+                ],
+                'fill-extrusion-opacity': 0.6,
+              }}
+            />
+          )}
+
+          {/* Display existing zones */}
+          {existingZones
+            .filter(z => z.id !== zoneToEdit?.id && z.xOrigin && z.yOrigin)
+            .map(zone => {
+              const circle = createGeoJSONCircle([zone.xOrigin, zone.yOrigin], zone.rayon || 1000)
+              return (
+                <Source
+                  key={`existing-${zone.id}`}
+                  id={`existing-${zone.id}`}
+                  type="geojson"
+                  data={circle}
+                >
+                  <Layer
+                    id={`fill-existing-${zone.id}`}
+                    type="fill"
+                    paint={{
+                      'fill-color': zone.color || '#888',
+                      'fill-opacity': 0.15,
+                    }}
+                  />
+                  <Layer
+                    id={`line-existing-${zone.id}`}
+                    type="line"
+                    paint={{
+                      'line-color': zone.color || '#888',
+                      'line-width': 2,
+                      'line-dasharray': [2, 2],
+                    }}
+                  />
+                </Source>
+              )
+            })}
+
+          {/* Display current zone being created/edited */}
+          {center && <Marker longitude={center[0]} latitude={center[1]} />}
+          {currentCircleGeoJSON && (
+            <Source id="current-zone" type="geojson" data={currentCircleGeoJSON}>
+              <Layer
+                id="current-zone-fill"
+                type="fill"
+                paint={{ 'fill-color': validZoneColor, 'fill-opacity': 0.35 }}
+              />
+              <Layer
+                id="current-zone-line"
+                type="line"
+                paint={{ 'line-color': validZoneColor, 'line-width': 2 }}
+              />
+            </Source>
+          )}
+        </Map>
+
+        {/* Control Panel */}
+        <div className="absolute top-4 right-20 bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-900">
+              {isEditMode
+                ? 'Modifier la Zone'
+                : step === 1
+                  ? 'Étape 1: Centre'
+                  : step === 2
+                    ? 'Étape 2: Rayon'
+                    : 'Étape 3: Détails'}
+            </h2>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="icon" onClick={handleReset} title="Recommencer">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Step Instructions */}
+          {step < 3 && (
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 flex items-center gap-2">
+                <MousePointerClick className="h-4 w-4" />
+                {step === 1
+                  ? 'Cliquez sur la carte pour placer le centre de la zone.'
+                  : 'Déplacez la souris pour ajuster le rayon, puis cliquez pour confirmer.'}
+              </p>
+            </div>
+          )}
+
+          {/* Current Values Display */}
+          {center && (
+            <div className="mb-4 text-sm text-gray-600">
+              <p>
+                <strong>Centre:</strong> {center[1].toFixed(4)}, {center[0].toFixed(4)}
+              </p>
+              {radius > 0 && (
+                <p>
+                  <strong>Rayon:</strong> {(radius / 1000).toFixed(2)} km
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Form Fields (Step 3 or Edit Mode) */}
+          {(step >= 3 || isEditMode) && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="zone-name">Nom de la zone *</Label>
+                <Input
+                  id="zone-name"
+                  value={zoneName}
+                  onChange={e => setZoneName(e.target.value)}
+                  placeholder="Ex: Paris Centre"
+                />
+              </div>
+
+              {(userRole === 'admin' || userRole === 'directeur') && (
+                <div className="space-y-2">
+                  <Label htmlFor="assigned-user">
+                    {userRole === 'admin' ? 'Assigner à *' : 'Assigner au manager/commercial *'}
+                  </Label>
+                  <Select value={assignedUserId} onValueChange={setAssignedUserId}>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          userRole === 'admin'
+                            ? 'Sélectionnez directeur/manager/commercial'
+                            : 'Sélectionnez manager/commercial'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assignableUsers.map(user => (
+                        <SelectItem key={user.id} value={user.id.toString()}>
+                          {user.name} ({user.role})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="zone-color">Couleur de la zone</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="zone-color"
+                    type="color"
+                    value={zoneColor}
+                    onChange={e => setZoneColor(e.target.value)}
+                    className="w-16 h-10 p-1 border rounded"
+                  />
+                  <Input
+                    value={zoneColor}
+                    onChange={e => {
+                      const color = e.target.value
+                      // Validation de la couleur hexadécimale
+                      if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
+                        setZoneColor(color)
+                      }
+                    }}
+                    placeholder="#3388ff"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 mt-6">
+            <Button
+              onClick={handleValidate}
+              disabled={!isFormValid}
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Check className="mr-2 h-4 w-4" />
+              {isEditMode ? 'Enregistrer' : 'Créer la zone'}
+            </Button>
+            <Button onClick={onClose} variant="outline" className="px-6">
+              Annuler
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default ZoneCreatorModal

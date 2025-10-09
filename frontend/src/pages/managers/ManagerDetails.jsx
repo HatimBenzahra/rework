@@ -21,20 +21,20 @@ export default function ManagerDetails() {
   const loading = useSimpleLoading(1000)
   const { isAdmin } = useRole()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
-  
+
   // API hooks
   const { data: manager, loading: managerLoading, error, refetch } = useManager(parseInt(id))
   const { data: directeurs } = useDirecteurs()
   const { data: allCommercials, refetch: refetchCommercials } = useCommercials()
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
-  
+
   // Transformation des données API vers format UI
   const managerData = useMemo(() => {
     if (!manager) return null
-    
+
     const directeur = directeurs?.find(d => d.id === manager.directeurId)
     const assignedCommercials = allCommercials?.filter(c => c.managerId === manager.id) || []
-    
+
     return {
       ...manager,
       name: `${manager.prenom} ${manager.nom}`,
@@ -50,12 +50,12 @@ export default function ManagerDetails() {
       address: 'Adresse non renseignée',
       commerciaux_actifs: assignedCommercials.length,
       clients_total: 0,
-      taux_atteinte: '0%'
+      taux_atteinte: '0%',
     }
   }, [manager, directeurs, allCommercials])
 
   // Gestion de l'assignation/désassignation
-  const handleAssignCommercial = async (commercialId) => {
+  const handleAssignCommercial = async commercialId => {
     setAssigningCommercial(commercialId)
     try {
       await updateCommercial({
@@ -65,13 +65,13 @@ export default function ManagerDetails() {
       await refetchCommercials()
       await refetch()
     } catch (error) {
-      console.error('Erreur lors de l\'assignation:', error)
+      console.error("Erreur lors de l'assignation:", error)
     } finally {
       setAssigningCommercial(null)
     }
   }
 
-  const handleUnassignCommercial = async (commercialId) => {
+  const handleUnassignCommercial = async commercialId => {
     setAssigningCommercial(commercialId)
     try {
       await updateCommercial({
@@ -98,7 +98,9 @@ export default function ManagerDetails() {
       <div className="space-y-6">
         {/* Commerciaux assignés */}
         <div>
-          <h4 className="text-lg font-semibold mb-3">Commerciaux assignés ({assignedCommercials.length})</h4>
+          <h4 className="text-lg font-semibold mb-3">
+            Commerciaux assignés ({assignedCommercials.length})
+          </h4>
           {assignedCommercials.length > 0 ? (
             <Table>
               <TableHeader>
@@ -111,7 +113,7 @@ export default function ManagerDetails() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {assignedCommercials.map((commercial) => (
+                {assignedCommercials.map(commercial => (
                   <TableRow key={commercial.id}>
                     <TableCell className="font-medium">
                       {commercial.prenom} {commercial.nom}
@@ -143,7 +145,9 @@ export default function ManagerDetails() {
         {/* Commerciaux disponibles */}
         {unassignedCommercials.length > 0 && (
           <div>
-            <h4 className="text-lg font-semibold mb-3">Commerciaux disponibles ({unassignedCommercials.length})</h4>
+            <h4 className="text-lg font-semibold mb-3">
+              Commerciaux disponibles ({unassignedCommercials.length})
+            </h4>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -156,7 +160,7 @@ export default function ManagerDetails() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {unassignedCommercials.map((commercial) => (
+                {unassignedCommercials.map(commercial => (
                   <TableRow key={commercial.id}>
                     <TableCell className="font-medium">
                       {commercial.prenom} {commercial.nom}

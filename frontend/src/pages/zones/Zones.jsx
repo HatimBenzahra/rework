@@ -1,140 +1,10 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-
-// Données exemple pour les zones
-const zonesData = [
-  {
-    id: 1,
-    name: 'Tunis Centre',
-    region: 'Grand Tunis',
-    immeubles_count: 12,
-    total_apartments: 280,
-    manager: 'Fatma Gharbi',
-    status: 'actif',
-    occupancy_rate: '91%',
-    monthly_revenue: '485 000 TND',
-    commercial_count: 5,
-    description: 'Zone principale du centre-ville',
-  },
-  {
-    id: 2,
-    name: 'Les Berges du Lac',
-    region: 'Grand Tunis',
-    immeubles_count: 8,
-    total_apartments: 320,
-    manager: 'Mohamed Triki',
-    status: 'actif',
-    occupancy_rate: '95%',
-    monthly_revenue: '720 000 TND',
-    commercial_count: 4,
-    description: 'Zone résidentielle premium',
-  },
-  {
-    id: 3,
-    name: 'Sfax',
-    region: 'Centre',
-    immeubles_count: 6,
-    total_apartments: 156,
-    manager: 'Nadia Karoui',
-    status: 'actif',
-    occupancy_rate: '82%',
-    monthly_revenue: '285 000 TND',
-    commercial_count: 3,
-    description: 'Deuxième ville économique',
-  },
-  {
-    id: 4,
-    name: 'Sousse',
-    region: 'Sahel',
-    immeubles_count: 10,
-    total_apartments: 245,
-    manager: 'Tarek Sellami',
-    status: 'actif',
-    occupancy_rate: '88%',
-    monthly_revenue: '425 000 TND',
-    commercial_count: 6,
-    description: 'Zone touristique et résidentielle',
-  },
-  {
-    id: 5,
-    name: 'Monastir',
-    region: 'Sahel',
-    immeubles_count: 4,
-    total_apartments: 98,
-    manager: 'Fatma Gharbi',
-    status: 'actif',
-    occupancy_rate: '93%',
-    monthly_revenue: '175 000 TND',
-    commercial_count: 2,
-    description: 'Zone côtière résidentielle',
-  },
-  {
-    id: 6,
-    name: 'Bizerte',
-    region: 'Nord',
-    immeubles_count: 7,
-    total_apartments: 182,
-    manager: 'Mohamed Triki',
-    status: 'actif',
-    occupancy_rate: '85%',
-    monthly_revenue: '315 000 TND',
-    commercial_count: 4,
-    description: 'Zone portuaire en développement',
-  },
-  {
-    id: 7,
-    name: 'Nabeul',
-    region: 'Cap Bon',
-    immeubles_count: 5,
-    total_apartments: 125,
-    manager: 'Amira Jebali',
-    status: 'en_developpement',
-    occupancy_rate: '78%',
-    monthly_revenue: '195 000 TND',
-    commercial_count: 3,
-    description: 'Zone balnéaire en expansion',
-  },
-  {
-    id: 8,
-    name: 'Carthage',
-    region: 'Grand Tunis',
-    immeubles_count: 3,
-    total_apartments: 72,
-    manager: 'Fatma Gharbi',
-    status: 'actif',
-    occupancy_rate: '97%',
-    monthly_revenue: '245 000 TND',
-    commercial_count: 2,
-    description: 'Zone historique haut standing',
-  },
-  {
-    id: 9,
-    name: 'Ariana',
-    region: 'Grand Tunis',
-    immeubles_count: 9,
-    total_apartments: 215,
-    manager: 'Mohamed Triki',
-    status: 'actif',
-    occupancy_rate: '89%',
-    monthly_revenue: '380 000 TND',
-    commercial_count: 5,
-    description: 'Zone résidentielle dynamique',
-  },
-  {
-    id: 10,
-    name: 'Hammamet',
-    region: 'Cap Bon',
-    immeubles_count: 6,
-    total_apartments: 168,
-    manager: 'Tarek Sellami',
-    status: 'saisonnier',
-    occupancy_rate: '75%',
-    monthly_revenue: '295 000 TND',
-    commercial_count: 3,
-    description: 'Zone touristique internationale',
-  },
-]
+import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
+import { useRole } from '@/contexts/RoleContext'
+import { useZones, useCreateZone, useDirecteurs, useManagers, useCommercials } from '@/services'
+import { useState } from 'react'
 
 const zonesColumns = [
   {
@@ -184,87 +54,106 @@ const zonesColumns = [
   },
 ]
 
-// Configuration des champs du modal d'édition
-const zonesEditFields = [
-  {
-    key: 'name',
-    label: 'Nom de la zone',
-    type: 'text',
-    required: true,
-    section: 'Informations générales',
-  },
-  {
-    key: 'region',
-    label: 'Région',
-    type: 'select',
-    required: true,
-    section: 'Informations générales',
-    options: [
-      { value: 'Grand Tunis', label: 'Grand Tunis' },
-      { value: 'Centre', label: 'Centre' },
-      { value: 'Sahel', label: 'Sahel' },
-      { value: 'Nord', label: 'Nord' },
-      { value: 'Cap Bon', label: 'Cap Bon' },
-    ],
-  },
-  {
-    key: 'description',
-    label: 'Description',
-    type: 'textarea',
-    section: 'Informations générales',
-    fullWidth: true,
-    placeholder: 'Description de la zone',
-  },
-  {
-    key: 'manager',
-    label: 'Manager responsable',
-    type: 'select',
-    required: true,
-    section: 'Gestion',
-    options: [
-      { value: 'Fatma Gharbi', label: 'Fatma Gharbi' },
-      { value: 'Mohamed Triki', label: 'Mohamed Triki' },
-      { value: 'Nadia Karoui', label: 'Nadia Karoui' },
-      { value: 'Tarek Sellami', label: 'Tarek Sellami' },
-      { value: 'Amira Jebali', label: 'Amira Jebali' },
-    ],
-  },
-  {
-    key: 'status',
-    label: 'Statut',
-    type: 'select',
-    required: true,
-    section: 'Gestion',
-    options: [
-      { value: 'actif', label: 'Actif' },
-      { value: 'en_developpement', label: 'En développement' },
-      { value: 'saisonnier', label: 'Saisonnier' },
-    ],
-  },
-  {
-    key: 'immeubles_count',
-    label: "Nombre d'immeubles",
-    type: 'number',
-    section: 'Statistiques',
-  },
-  {
-    key: 'commercial_count',
-    label: 'Nombre de commerciaux',
-    type: 'number',
-    section: 'Statistiques',
-  },
-]
-
 export default function Zones() {
   const loading = useSimpleLoading(1000)
+  const { currentRole } = useRole()
+  const [showZoneModal, setShowZoneModal] = useState(false)
+  const [editingZone, setEditingZone] = useState(null)
 
-  const handleAddZone = () => {
-    console.log('Ajouter une nouvelle zone')
+  // API hooks
+  const { data: zones, refetch: refetchZones } = useZones()
+  const { mutate: createZone } = useCreateZone()
+  const { data: directeurs } = useDirecteurs()
+  const { data: managers } = useManagers()
+  const { data: commercials } = useCommercials()
+
+  // Préparer les utilisateurs assignables selon le rôle (seulement pour admin et directeur)
+  const getAssignableUsers = () => {
+    const users = []
+
+    if (currentRole === 'admin') {
+      if (directeurs) {
+        users.push(
+          ...directeurs.map(d => ({
+            id: d.id,
+            name: `${d.prenom} ${d.nom}`,
+            role: 'directeur',
+          }))
+        )
+      }
+      if (managers) {
+        users.push(
+          ...managers.map(m => ({
+            id: m.id,
+            name: `${m.prenom} ${m.nom}`,
+            role: 'manager',
+          }))
+        )
+      }
+      if (commercials) {
+        users.push(
+          ...commercials.map(c => ({
+            id: c.id,
+            name: `${c.prenom} ${c.nom}`,
+            role: 'commercial',
+          }))
+        )
+      }
+    } else if (currentRole === 'directeur') {
+      // Directeur peut assigner à ses managers et commerciaux
+      if (managers) {
+        users.push(
+          ...managers.map(m => ({
+            id: m.id,
+            name: `${m.prenom} ${m.nom}`,
+            role: 'manager',
+          }))
+        )
+      }
+      if (commercials) {
+        users.push(
+          ...commercials.map(c => ({
+            id: c.id,
+            name: `${c.prenom} ${c.nom}`,
+            role: 'commercial',
+          }))
+        )
+      }
+    }
+    // Manager ne peut pas créer de zones, donc pas de cas pour 'manager'
+
+    return users
   }
 
-  const handleEditZone = editedData => {
-    console.log('Zone modifiée:', editedData)
-    // Appel API pour mettre à jour les données
+  const handleAddZone = () => {
+    setEditingZone(null)
+    setShowZoneModal(true)
+  }
+
+  const handleZoneValidate = async (zoneData, assignedUserId) => {
+    try {
+      // Créer la zone via l'API
+      const newZone = await createZone(zoneData)
+
+      // TODO: Assigner la zone à l'utilisateur sélectionné si nécessaire
+      if (assignedUserId && newZone?.id) {
+        console.log("Zone à assigner à l'utilisateur:", assignedUserId)
+        // await assignZoneToUser(newZone.id, assignedUserId)
+      }
+
+      // Rafraîchir la liste des zones
+      await refetchZones()
+
+      setShowZoneModal(false)
+      console.log('Zone créée avec succès:', zoneData)
+    } catch (error) {
+      console.error('Erreur lors de la création de la zone:', error)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setShowZoneModal(false)
+    setEditingZone(null)
   }
 
   if (loading) {
@@ -293,15 +182,25 @@ export default function Zones() {
       <AdvancedDataTable
         title="Liste des Zones"
         description="Toutes les zones de couverture avec leurs statistiques et performances"
-        data={zonesData}
+        data={zones || []}
         columns={zonesColumns}
         searchKey="name"
-        onAdd={handleAddZone}
+        onAdd={currentRole !== 'manager' ? handleAddZone : undefined}
         addButtonText="Nouvelle Zone"
         detailsPath="/zones"
-        editFields={zonesEditFields}
-        onEdit={handleEditZone}
+        onEdit={undefined}
       />
+
+      {showZoneModal && (
+        <ZoneCreatorModal
+          onValidate={handleZoneValidate}
+          onClose={handleCloseModal}
+          existingZones={zones || []}
+          zoneToEdit={editingZone}
+          userRole={currentRole}
+          assignableUsers={getAssignableUsers()}
+        />
+      )}
     </div>
   )
 }

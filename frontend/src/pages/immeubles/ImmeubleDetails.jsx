@@ -5,22 +5,21 @@ import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeuble, useCommercials } from '@/services'
 import { useMemo } from 'react'
 
-
 export default function ImmeubleDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
-  
+
   // API hooks
   const { data: immeuble, loading: immeubleLoading, error } = useImmeuble(parseInt(id))
   const { data: commercials } = useCommercials()
-  
+
   // Transformation des données API vers format UI
   const immeubleData = useMemo(() => {
     if (!immeuble) return null
-    
+
     const commercial = commercials?.find(c => c.id === immeuble.commercialId)
     const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
-    
+
     return {
       ...immeuble,
       name: `Immeuble ${immeuble.adresse.split(',')[0]}`,

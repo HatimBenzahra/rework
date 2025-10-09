@@ -30,9 +30,9 @@ export default function DirecteurDetails() {
   // Transformation des données API vers format UI
   const directeurData = useMemo(() => {
     if (!directeur) return null
-    
+
     const assignedManagers = allManagers?.filter(m => m.directeurId === directeur.id) || []
-    
+
     return {
       ...directeur,
       name: `${directeur.prenom} ${directeur.nom}`,
@@ -53,7 +53,7 @@ export default function DirecteurDetails() {
   }, [directeur, allManagers])
 
   // Gestion de l'assignation/désassignation
-  const handleAssignManager = async (managerId) => {
+  const handleAssignManager = async managerId => {
     setAssigningManager(managerId)
     try {
       await updateManager({
@@ -63,13 +63,13 @@ export default function DirecteurDetails() {
       await refetchManagers()
       await refetch()
     } catch (error) {
-      console.error('Erreur lors de l\'assignation:', error)
+      console.error("Erreur lors de l'assignation:", error)
     } finally {
       setAssigningManager(null)
     }
   }
 
-  const handleUnassignManager = async (managerId) => {
+  const handleUnassignManager = async managerId => {
     setAssigningManager(managerId)
     try {
       await updateManager({
@@ -96,7 +96,9 @@ export default function DirecteurDetails() {
       <div className="space-y-6">
         {/* Managers assignés */}
         <div>
-          <h4 className="text-lg font-semibold mb-3">Managers assignés ({assignedManagers.length})</h4>
+          <h4 className="text-lg font-semibold mb-3">
+            Managers assignés ({assignedManagers.length})
+          </h4>
           {assignedManagers.length > 0 ? (
             <Table>
               <TableHeader>
@@ -108,7 +110,7 @@ export default function DirecteurDetails() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {assignedManagers.map((manager) => (
+                {assignedManagers.map(manager => (
                   <TableRow key={manager.id}>
                     <TableCell className="font-medium">
                       {manager.prenom} {manager.nom}
@@ -139,7 +141,9 @@ export default function DirecteurDetails() {
         {/* Managers disponibles */}
         {unassignedManagers.length > 0 && (
           <div>
-            <h4 className="text-lg font-semibold mb-3">Managers disponibles ({unassignedManagers.length})</h4>
+            <h4 className="text-lg font-semibold mb-3">
+              Managers disponibles ({unassignedManagers.length})
+            </h4>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -151,7 +155,7 @@ export default function DirecteurDetails() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {unassignedManagers.map((manager) => (
+                {unassignedManagers.map(manager => (
                   <TableRow key={manager.id}>
                     <TableCell className="font-medium">
                       {manager.prenom} {manager.nom}

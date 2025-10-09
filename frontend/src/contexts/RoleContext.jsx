@@ -9,11 +9,23 @@ const RoleContext = createContext()
 
 // Fonctions utilitaires pour localStorage
 const getUserRole = () => {
-  return localStorage.getItem('userRole') || ROLES.ADMIN
+  const storedRole = localStorage.getItem('userRole')
+  if (!storedRole) {
+    // Initialiser avec admin par défaut si non défini
+    localStorage.setItem('userRole', ROLES.ADMIN)
+    return ROLES.ADMIN
+  }
+  return storedRole
 }
 
 const getUserId = () => {
-  return localStorage.getItem('userId') || '1'
+  const storedId = localStorage.getItem('userId')
+  if (!storedId) {
+    // Initialiser avec l'ID 1 par défaut si non défini
+    localStorage.setItem('userId', '1')
+    return '1'
+  }
+  return storedId
 }
 
 export const RoleProvider = ({ children }) => {
