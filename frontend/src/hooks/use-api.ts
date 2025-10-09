@@ -3,8 +3,9 @@
  * Provides reusable hooks with loading states, error handling, and caching
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../services/api-service';
+import { useState, useEffect, useCallback } from 'react'
+import { api } from '../services/api-service'
+import { apiCache, invalidateRelatedCaches } from '../services/api-cache'
 import type {
   Directeur,
   Manager,
@@ -24,32 +25,32 @@ import type {
   UpdateZoneInput,
   UpdateImmeubleInput,
   UpdateStatisticInput,
-} from '../types/api';
+} from '../types/api'
 
 // =============================================================================
 // Base Hook Types
 // =============================================================================
 
 interface UseApiState<T> {
-  data: T | null;
-  loading: boolean;
-  error: string | null;
+  data: T | null
+  loading: boolean
+  error: string | null
 }
 
 interface UseApiListState<T> {
-  data: T[];
-  loading: boolean;
-  error: string | null;
+  data: T[]
+  loading: boolean
+  error: string | null
 }
 
 interface UseApiActions {
-  refetch: () => Promise<void>;
+  refetch: () => Promise<void>
 }
 
 interface UseApiMutation<TInput, TOutput> {
-  mutate: (input: TInput) => Promise<TOutput>;
-  loading: boolean;
-  error: string | null;
+  mutate: (input: TInput) => Promise<TOutput>
+  loading: boolean
+  error: string | null
 }
 
 // =============================================================================
@@ -58,63 +59,141 @@ interface UseApiMutation<TInput, TOutput> {
 
 function useApiCall<T>(
   apiCall: () => Promise<T>,
-  dependencies: any[] = []
+  dependencies: any[] = [],
+  namespace?: string
 ): UseApiState<T> & UseApiActions {
   const [state, setState] = useState<UseApiState<T>>({
     data: null,
     loading: true,
     error: null,
-  });
+  })
 
-  const fetchData = useCallback(async () => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    const cacheKey = apiCache.getKey(apiCall, dependencies, namespace)
+
+    if (forceRefresh) {
+      // Force refresh: bypass cache and in-flight
+      setState(prev => ({ ...prev, loading: true, error: null }))
+      try {
+        const data = await apiCall()
+        apiCache.set(cacheKey, data)
+        setState({ data, loading: false, error: null })
+      } catch (error) {
+        setState({
+          data: null,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
+        })
+      }
+      return
+    }
+
+    // Use fetchWithCache for deduplication and cache management
+    setState(prev => ({ ...prev, loading: true, error: null }))
     try {
-      const data = await apiCall();
-      setState({ data, loading: false, error: null });
+      const data = await apiCache.fetchWithCache<T>(cacheKey, apiCall)
+      setState({ data, loading: false, error: null })
     } catch (error) {
       setState({
         data: null,
         loading: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',
-      });
+      })
     }
-  }, dependencies);
+  }, dependencies)
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchData()
+  }, [fetchData])
+
+  const refetch = useCallback(() => fetchData(true), [fetchData])
 
   return {
     ...state,
-    refetch: fetchData,
-  };
+    refetch,
+  }
 }
 
-function useApiMutation<TInput, TOutput>(
-  mutationFn: (input: TInput) => Promise<TOutput>
-): UseApiMutation<TInput, TOutput> {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+import { useState, useRef, useCallback, useEffect } from 'react'
+
+type MutateOptions<TOutput, TOptimistic> = {
+  onSuccess?: (result: TOutput) => void
+  onError?: (message: string, raw: unknown) => void
+  optimisticUpdate?: (draft?: TOptimistic) => () => void // renvoie un rollback
+}
+
+export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
+  mutationFn: (input: TInput, signal?: AbortSignal) => Promise<TOutput>,
+  entityType?: string
+) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const callIdRef = useRef(0)
+  const abortRef = useRef<AbortController | null>(null)
+  const mounted = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false
+      abortRef.current?.abort()
+    }
+  }, [])
 
   const mutate = useCallback(
-    async (input: TInput): Promise<TOutput> => {
-      setLoading(true);
-      setError(null);
+    async (input: TInput, opts?: MutateOptions<TOutput, TOptimistic>): Promise<TOutput> => {
+      const myId = ++callIdRef.current
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
+      setLoading(true)
+      setError(null)
+
+      let rollback: (() => void) | undefined
       try {
-        const result = await mutationFn(input);
-        setLoading(false);
-        return result;
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-        setError(errorMessage);
-        setLoading(false);
-        throw err;
+        if (opts?.optimisticUpdate) {
+          rollback = opts.optimisticUpdate()
+        }
+
+        const result = await mutationFn(input, controller.signal)
+
+        if (entityType) {
+          await Promise.resolve(invalidateRelatedCaches(entityType))
+        }
+
+        if (mounted.current && callIdRef.current === myId) {
+          opts?.onSuccess?.(result)
+        }
+
+        return result
+      } catch (err: unknown) {
+        // Normalisation message d’erreur
+        let message = 'Unknown error occurred'
+        if (typeof err === 'object' && err !== null) {
+          const anyErr = err as any
+          message = anyErr?.response?.data?.message ?? anyErr?.message ?? message
+        }
+        // rollback si optimistic
+        try {
+          rollback?.()
+        } catch {}
+
+        if (mounted.current && callIdRef.current === myId) {
+          setError(message)
+          opts?.onError?.(message, err)
+        }
+        throw err
+      } finally {
+        if (mounted.current && callIdRef.current === myId) {
+          setLoading(false)
+        }
       }
     },
-    [mutationFn]
-  );
+    [mutationFn, entityType]
+  )
 
-  return { mutate, loading, error };
+  return { mutate, loading, error }
 }
 
 // =============================================================================
@@ -122,23 +201,23 @@ function useApiMutation<TInput, TOutput>(
 // =============================================================================
 
 export function useDirecteurs(): UseApiListState<Directeur> & UseApiActions {
-  return useApiCall(api.directeurs.getAll);
+  return useApiCall(api.directeurs.getAll, [], 'directeurs')
 }
 
 export function useDirecteur(id: number): UseApiState<Directeur> & UseApiActions {
-  return useApiCall(() => api.directeurs.getById(id), [id]);
+  return useApiCall(() => api.directeurs.getById(id), [id], 'directeurs')
 }
 
 export function useCreateDirecteur(): UseApiMutation<CreateDirecteurInput, Directeur> {
-  return useApiMutation(api.directeurs.create);
+  return useApiMutation(api.directeurs.create, 'directeurs')
 }
 
 export function useUpdateDirecteur(): UseApiMutation<UpdateDirecteurInput, Directeur> {
-  return useApiMutation(api.directeurs.update);
+  return useApiMutation(api.directeurs.update, 'directeurs')
 }
 
 export function useRemoveDirecteur(): UseApiMutation<number, Directeur> {
-  return useApiMutation(api.directeurs.remove);
+  return useApiMutation(api.directeurs.remove, 'directeurs')
 }
 
 // =============================================================================
@@ -146,23 +225,23 @@ export function useRemoveDirecteur(): UseApiMutation<number, Directeur> {
 // =============================================================================
 
 export function useManagers(): UseApiListState<Manager> & UseApiActions {
-  return useApiCall(api.managers.getAll);
+  return useApiCall(api.managers.getAll, [], 'managers')
 }
 
 export function useManager(id: number): UseApiState<Manager> & UseApiActions {
-  return useApiCall(() => api.managers.getById(id), [id]);
+  return useApiCall(() => api.managers.getById(id), [id], 'managers')
 }
 
 export function useCreateManager(): UseApiMutation<CreateManagerInput, Manager> {
-  return useApiMutation(api.managers.create);
+  return useApiMutation(api.managers.create, 'managers')
 }
 
 export function useUpdateManager(): UseApiMutation<UpdateManagerInput, Manager> {
-  return useApiMutation(api.managers.update);
+  return useApiMutation(api.managers.update, 'managers')
 }
 
 export function useRemoveManager(): UseApiMutation<number, Manager> {
-  return useApiMutation(api.managers.remove);
+  return useApiMutation(api.managers.remove, 'managers')
 }
 
 // =============================================================================
@@ -170,35 +249,40 @@ export function useRemoveManager(): UseApiMutation<number, Manager> {
 // =============================================================================
 
 export function useCommercials(): UseApiListState<Commercial> & UseApiActions {
-  return useApiCall(api.commercials.getAll);
+  return useApiCall(api.commercials.getAll, [], 'commercials')
 }
 
 export function useCommercial(id: number): UseApiState<Commercial> & UseApiActions {
-  return useApiCall(() => api.commercials.getById(id), [id]);
+  return useApiCall(() => api.commercials.getById(id), [id], 'commercials')
 }
 
 export function useCreateCommercial(): UseApiMutation<CreateCommercialInput, Commercial> {
-  return useApiMutation(api.commercials.create);
+  return useApiMutation(api.commercials.create, 'commercials')
 }
 
 export function useUpdateCommercial(): UseApiMutation<UpdateCommercialInput, Commercial> {
-  return useApiMutation(api.commercials.update);
+  return useApiMutation(api.commercials.update, 'commercials')
 }
 
 export function useRemoveCommercial(): UseApiMutation<number, Commercial> {
-  return useApiMutation(api.commercials.remove);
+  return useApiMutation(api.commercials.remove, 'commercials')
 }
 
 export function useAssignZone(): UseApiMutation<{ commercialId: number; zoneId: number }, boolean> {
-  return useApiMutation(({ commercialId, zoneId }) =>
-    api.commercials.assignZone(commercialId, zoneId)
-  );
+  return useApiMutation(
+    ({ commercialId, zoneId }) => api.commercials.assignZone(commercialId, zoneId),
+    'commercials'
+  )
 }
 
-export function useUnassignZone(): UseApiMutation<{ commercialId: number; zoneId: number }, boolean> {
-  return useApiMutation(({ commercialId, zoneId }) =>
-    api.commercials.unassignZone(commercialId, zoneId)
-  );
+export function useUnassignZone(): UseApiMutation<
+  { commercialId: number; zoneId: number },
+  boolean
+> {
+  return useApiMutation(
+    ({ commercialId, zoneId }) => api.commercials.unassignZone(commercialId, zoneId),
+    'commercials'
+  )
 }
 
 // =============================================================================
@@ -206,23 +290,23 @@ export function useUnassignZone(): UseApiMutation<{ commercialId: number; zoneId
 // =============================================================================
 
 export function useZones(): UseApiListState<Zone> & UseApiActions {
-  return useApiCall(api.zones.getAll);
+  return useApiCall(api.zones.getAll, [], 'zones')
 }
 
 export function useZone(id: number): UseApiState<Zone> & UseApiActions {
-  return useApiCall(() => api.zones.getById(id), [id]);
+  return useApiCall(() => api.zones.getById(id), [id], 'zones')
 }
 
 export function useCreateZone(): UseApiMutation<CreateZoneInput, Zone> {
-  return useApiMutation(api.zones.create);
+  return useApiMutation(api.zones.create, 'zones')
 }
 
 export function useUpdateZone(): UseApiMutation<UpdateZoneInput, Zone> {
-  return useApiMutation(api.zones.update);
+  return useApiMutation(api.zones.update, 'zones')
 }
 
 export function useRemoveZone(): UseApiMutation<number, Zone> {
-  return useApiMutation(api.zones.remove);
+  return useApiMutation(api.zones.remove, 'zones')
 }
 
 // =============================================================================
@@ -230,23 +314,23 @@ export function useRemoveZone(): UseApiMutation<number, Zone> {
 // =============================================================================
 
 export function useImmeubles(): UseApiListState<Immeuble> & UseApiActions {
-  return useApiCall(api.immeubles.getAll);
+  return useApiCall(api.immeubles.getAll, [], 'immeubles')
 }
 
 export function useImmeuble(id: number): UseApiState<Immeuble> & UseApiActions {
-  return useApiCall(() => api.immeubles.getById(id), [id]);
+  return useApiCall(() => api.immeubles.getById(id), [id], 'immeubles')
 }
 
 export function useCreateImmeuble(): UseApiMutation<CreateImmeubleInput, Immeuble> {
-  return useApiMutation(api.immeubles.create);
+  return useApiMutation(api.immeubles.create, 'immeubles')
 }
 
 export function useUpdateImmeuble(): UseApiMutation<UpdateImmeubleInput, Immeuble> {
-  return useApiMutation(api.immeubles.update);
+  return useApiMutation(api.immeubles.update, 'immeubles')
 }
 
 export function useRemoveImmeuble(): UseApiMutation<number, Immeuble> {
-  return useApiMutation(api.immeubles.remove);
+  return useApiMutation(api.immeubles.remove, 'immeubles')
 }
 
 // =============================================================================
@@ -254,21 +338,21 @@ export function useRemoveImmeuble(): UseApiMutation<number, Immeuble> {
 // =============================================================================
 
 export function useStatistics(): UseApiListState<Statistic> & UseApiActions {
-  return useApiCall(api.statistics.getAll);
+  return useApiCall(api.statistics.getAll, [], 'statistics')
 }
 
 export function useStatistic(id: number): UseApiState<Statistic> & UseApiActions {
-  return useApiCall(() => api.statistics.getById(id), [id]);
+  return useApiCall(() => api.statistics.getById(id), [id], 'statistics')
 }
 
 export function useCreateStatistic(): UseApiMutation<CreateStatisticInput, Statistic> {
-  return useApiMutation(api.statistics.create);
+  return useApiMutation(api.statistics.create, 'statistics')
 }
 
 export function useUpdateStatistic(): UseApiMutation<UpdateStatisticInput, Statistic> {
-  return useApiMutation(api.statistics.update);
+  return useApiMutation(api.statistics.update, 'statistics')
 }
 
 export function useRemoveStatistic(): UseApiMutation<number, Statistic> {
-  return useApiMutation(api.statistics.remove);
+  return useApiMutation(api.statistics.remove, 'statistics')
 }
