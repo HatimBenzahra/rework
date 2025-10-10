@@ -37,6 +37,23 @@ function haversineDistance(coords1, coords2) {
   return R * c
 }
 
+// Generate a deterministic color from zone ID
+function getZoneColor(zoneId) {
+  const colors = [
+    '#3388ff', // Blue
+    '#ff6b6b', // Red
+    '#51cf66', // Green
+    '#ffd93d', // Yellow
+    '#a78bfa', // Purple
+    '#f59e0b', // Orange
+    '#ec4899', // Pink
+    '#06b6d4', // Cyan
+    '#84cc16', // Lime
+    '#f97316', // Dark Orange
+  ]
+  return colors[zoneId % colors.length]
+}
+
 function createGeoJSONCircle(center, radiusInMeters, points = 64) {
   const coords = { latitude: center[1], longitude: center[0] }
   const km = radiusInMeters / 1000
@@ -90,7 +107,7 @@ const ThreeDControl = ({ position, onClick, show3D }) => (
   >
     <button
       onClick={onClick}
-      className={`mapboxgl-ctrl-icon ${show3D ? 'bg-blue-50 text-blue-600' : ''}`}
+      className={`mapboxgl-ctrl-icon ${show3D ? 'bg-primary/10 text-primary' : 'bg-card text-foreground'}`}
       style={{
         width: '29px',
         height: '29px',
@@ -99,7 +116,6 @@ const ThreeDControl = ({ position, onClick, show3D }) => (
         justifyContent: 'center',
         border: 'none',
         cursor: 'pointer',
-        backgroundColor: show3D ? '#eff6ff' : 'white',
       }}
       title="Mode 3D"
     >
@@ -132,7 +148,7 @@ export const ZoneCreatorModal = ({
     isEditMode ? zoneToEdit?.assignedUserId || '' : ''
   )
   const [zoneColor, setZoneColor] = useState(
-    isEditMode ? zoneToEdit?.color || '#3388ff' : '#3388ff'
+    isEditMode && zoneToEdit?.id ? getZoneColor(zoneToEdit.id) : '#3388ff'
   )
   const [show3D, setShow3D] = useState(false)
 
@@ -214,13 +230,14 @@ export const ZoneCreatorModal = ({
         xOrigin: center[0], // longitude
         yOrigin: center[1], // latitude
         rayon: Math.round(radius), // en mètres
-        color: zoneColor, // pour l'UI locale seulement
       }
 
       if (isEditMode && zoneToEdit?.id) {
         zoneData.id = zoneToEdit.id
       }
 
+      // Note: color is managed locally on the frontend only
+      // It's stored in local state/storage, not in the backend
       onValidate(zoneData, assignedUserId)
     }
   }
@@ -239,7 +256,7 @@ export const ZoneCreatorModal = ({
   const currentCircleGeoJSON = center && radius > 0 ? createGeoJSONCircle(center, radius) : null
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col p-4 animate-in fade-in-0">
+    <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col p-4 animate-in fade-in-0">
       <div className="flex-1 w-full relative">
         <Map
           ref={mapRef}
@@ -293,6 +310,7 @@ export const ZoneCreatorModal = ({
             .filter(z => z.id !== zoneToEdit?.id && z.xOrigin && z.yOrigin)
             .map(zone => {
               const circle = createGeoJSONCircle([zone.xOrigin, zone.yOrigin], zone.rayon || 1000)
+              const color = getZoneColor(zone.id)
               return (
                 <Source
                   key={`existing-${zone.id}`}
@@ -301,18 +319,20 @@ export const ZoneCreatorModal = ({
                   data={circle}
                 >
                   <Layer
+                    key={`fill-existing-${zone.id}`}
                     id={`fill-existing-${zone.id}`}
                     type="fill"
                     paint={{
-                      'fill-color': zone.color || '#888',
+                      'fill-color': color,
                       'fill-opacity': 0.15,
                     }}
                   />
                   <Layer
+                    key={`line-existing-${zone.id}`}
                     id={`line-existing-${zone.id}`}
                     type="line"
                     paint={{
-                      'line-color': zone.color || '#888',
+                      'line-color': color,
                       'line-width': 2,
                       'line-dasharray': [2, 2],
                     }}
@@ -326,11 +346,13 @@ export const ZoneCreatorModal = ({
           {currentCircleGeoJSON && (
             <Source id="current-zone" type="geojson" data={currentCircleGeoJSON}>
               <Layer
+                key="current-zone-fill"
                 id="current-zone-fill"
                 type="fill"
                 paint={{ 'fill-color': validZoneColor, 'fill-opacity': 0.35 }}
               />
               <Layer
+                key="current-zone-line"
                 id="current-zone-line"
                 type="line"
                 paint={{ 'line-color': validZoneColor, 'line-width': 2 }}
@@ -340,9 +362,9 @@ export const ZoneCreatorModal = ({
         </Map>
 
         {/* Control Panel */}
-        <div className="absolute top-4 right-20 bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+        <div className="absolute top-4 right-20 bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-md">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-card-foreground">
               {isEditMode
                 ? 'Modifier la Zone'
                 : step === 1
@@ -363,8 +385,8 @@ export const ZoneCreatorModal = ({
 
           {/* Step Instructions */}
           {step < 3 && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800 flex items-center gap-2">
+            <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+              <p className="text-sm text-foreground flex items-center gap-2">
                 <MousePointerClick className="h-4 w-4" />
                 {step === 1
                   ? 'Cliquez sur la carte pour placer le centre de la zone.'
@@ -375,7 +397,7 @@ export const ZoneCreatorModal = ({
 
           {/* Current Values Display */}
           {center && (
-            <div className="mb-4 text-sm text-gray-600">
+            <div className="mb-4 text-sm text-muted-foreground">
               <p>
                 <strong>Centre:</strong> {center[1].toFixed(4)}, {center[0].toFixed(4)}
               </p>
@@ -406,7 +428,7 @@ export const ZoneCreatorModal = ({
                     {userRole === 'admin' ? 'Assigner à *' : 'Assigner au manager/commercial *'}
                   </Label>
                   <Select value={assignedUserId} onValueChange={setAssignedUserId}>
-                    <SelectTrigger>
+                    <SelectTrigger id="assigned-user">
                       <SelectValue
                         placeholder={
                           userRole === 'admin'
@@ -415,9 +437,12 @@ export const ZoneCreatorModal = ({
                         }
                       />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-[150]">
                       {assignableUsers.map(user => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
+                        <SelectItem
+                          key={`${user.role}-${user.id}`}
+                          value={`${user.role}-${user.id}`}
+                        >
                           {user.name} ({user.role})
                         </SelectItem>
                       ))}
@@ -425,31 +450,6 @@ export const ZoneCreatorModal = ({
                   </Select>
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="zone-color">Couleur de la zone</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="zone-color"
-                    type="color"
-                    value={zoneColor}
-                    onChange={e => setZoneColor(e.target.value)}
-                    className="w-16 h-10 p-1 border rounded"
-                  />
-                  <Input
-                    value={zoneColor}
-                    onChange={e => {
-                      const color = e.target.value
-                      // Validation de la couleur hexadécimale
-                      if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
-                        setZoneColor(color)
-                      }
-                    }}
-                    placeholder="#3388ff"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
             </div>
           )}
 
@@ -458,7 +458,8 @@ export const ZoneCreatorModal = ({
             <Button
               onClick={handleValidate}
               disabled={!isFormValid}
-              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              className="flex-1"
+              variant="default"
             >
               <Check className="mr-2 h-4 w-4" />
               {isEditMode ? 'Enregistrer' : 'Créer la zone'}

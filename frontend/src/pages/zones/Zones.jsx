@@ -4,53 +4,61 @@ import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
 import { useRole } from '@/contexts/RoleContext'
 import { useZones, useCreateZone, useDirecteurs, useManagers, useCommercials } from '@/services'
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+
+// Fonction pour récupérer l'adresse via reverse geocoding Mapbox
+const fetchLocationName = async (longitude, latitude) => {
+  try {
+    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+    const response = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
+    )
+    const data = await response.json()
+
+    if (data.features && data.features.length > 0) {
+      // Récupérer le lieu le plus pertinent (ville, région, pays)
+      const feature = data.features[0]
+      return feature.place_name || feature.text
+    }
+    return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+  } catch (error) {
+    console.error('Erreur lors de la récupération du nom de lieu:', error)
+    return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+  }
+}
 
 const zonesColumns = [
   {
     header: 'Nom',
-    accessor: 'name',
+    accessor: 'nom',
     sortable: true,
     className: 'font-medium',
   },
   {
-    header: 'Région',
-    accessor: 'region',
-    sortable: true,
+    header: 'Localisation',
+    accessor: 'location',
     className: 'hidden sm:table-cell',
+    cell: row => row.location || 'Chargement...',
   },
   {
-    header: 'Immeubles',
-    accessor: 'immeubles_count',
+    header: 'Date de création',
+    accessor: 'createdAt',
     sortable: true,
-    className: 'hidden md:table-cell text-center',
+    className: 'hidden md:table-cell',
+    cell: row => new Date(row.createdAt).toLocaleDateString('fr-FR'),
   },
   {
-    header: 'Appartements',
-    accessor: 'total_apartments',
-    className: 'hidden md:table-cell text-center',
-  },
-  {
-    header: 'Manager',
-    accessor: 'manager',
-    sortable: true,
+    header: 'Assigné à',
+    accessor: 'assignedTo',
     className: 'hidden lg:table-cell',
+    cell: row => row.assignedTo || 'Non assigné',
   },
   {
-    header: 'Taux Occupation',
-    accessor: 'occupancy_rate',
+    header: 'Rayon (km)',
+    accessor: 'rayon',
     sortable: true,
-    className: 'hidden xl:table-cell text-right',
-  },
-  {
-    header: 'Revenu/Mois',
-    accessor: 'monthly_revenue',
-    className: 'hidden xl:table-cell text-right',
-  },
-  {
-    header: 'Status',
-    accessor: 'status',
-    sortable: true,
+    className: 'hidden xl:table-cell text-start',
+    cell: row => `${(row.rayon / 1000).toFixed(1)} km`,
   },
 ]
 
@@ -59,6 +67,7 @@ export default function Zones() {
   const { currentRole } = useRole()
   const [showZoneModal, setShowZoneModal] = useState(false)
   const [editingZone, setEditingZone] = useState(null)
+  const [zoneLocations, setZoneLocations] = useState({})
 
   // API hooks
   const { data: zones, refetch: refetchZones } = useZones()
@@ -66,6 +75,55 @@ export default function Zones() {
   const { data: directeurs } = useDirecteurs()
   const { data: managers } = useManagers()
   const { data: commercials } = useCommercials()
+
+  // Charger les adresses des zones via reverse geocoding
+  useEffect(() => {
+    if (!zones || zones.length === 0) return
+
+    const loadLocations = async () => {
+      const locationsToLoad = zones.filter(
+        zone => zone.xOrigin && zone.yOrigin && !zoneLocations[zone.id]
+      )
+
+      if (locationsToLoad.length === 0) return
+
+      const newLocations = {}
+      await Promise.all(
+        locationsToLoad.map(async zone => {
+          const location = await fetchLocationName(zone.xOrigin, zone.yOrigin)
+          newLocations[zone.id] = location
+        })
+      )
+
+      setZoneLocations(prev => ({ ...prev, ...newLocations }))
+    }
+
+    loadLocations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zones])
+
+  // Enrichir les zones avec l'information d'assignation et localisation
+  const enrichedZones = useMemo(() => {
+    if (!zones || !commercials) return zones || []
+
+    return zones.map(zone => {
+      // Trouver les commercials assignés à cette zone
+      const assignedCommercials = commercials.filter(commercial =>
+        commercial.zones?.some(z => z.id === zone.id)
+      )
+
+      const assignedTo =
+        assignedCommercials.length > 0
+          ? assignedCommercials.map(c => `${c.prenom} ${c.nom}`).join(', ')
+          : null
+
+      return {
+        ...zone,
+        assignedTo,
+        location: zoneLocations[zone.id] || null,
+      }
+    })
+  }, [zones, commercials, zoneLocations])
 
   // Préparer les utilisateurs assignables selon le rôle (seulement pour admin et directeur)
   const getAssignableUsers = () => {
@@ -182,9 +240,9 @@ export default function Zones() {
       <AdvancedDataTable
         title="Liste des Zones"
         description="Toutes les zones de couverture avec leurs statistiques et performances"
-        data={zones || []}
+        data={enrichedZones}
         columns={zonesColumns}
-        searchKey="name"
+        searchKey="nom"
         onAdd={currentRole !== 'manager' ? handleAddZone : undefined}
         addButtonText="Nouvelle Zone"
         detailsPath="/zones"

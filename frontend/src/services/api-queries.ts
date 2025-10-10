@@ -20,7 +20,7 @@ export const GET_DIRECTEURS = `
       updatedAt
     }
   }
-`;
+`
 
 export const GET_DIRECTEUR = `
   query GetDirecteur($id: Int!) {
@@ -35,7 +35,7 @@ export const GET_DIRECTEUR = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Manager Queries
@@ -54,7 +54,7 @@ export const GET_MANAGERS = `
       updatedAt
     }
   }
-`;
+`
 
 export const GET_MANAGER = `
   query GetManager($id: Int!) {
@@ -69,7 +69,7 @@ export const GET_MANAGER = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Commercial Queries
@@ -118,7 +118,7 @@ export const GET_COMMERCIALS = `
       }
     }
   }
-`;
+`
 
 export const GET_COMMERCIAL = `
   query GetCommercial($id: Int!) {
@@ -163,7 +163,7 @@ export const GET_COMMERCIAL = `
       }
     }
   }
-`;
+`
 
 // =============================================================================
 // Zone Queries
@@ -181,7 +181,26 @@ export const GET_ZONES = `
       updatedAt
     }
   }
-`;
+`
+
+export const GET_ZONES_WITH_COMMERCIALS = `
+  query GetZonesWithCommercials {
+    commercials {
+      id
+      nom
+      prenom
+      zones {
+        id
+        nom
+        xOrigin
+        yOrigin
+        rayon
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`
 
 export const GET_ZONE = `
   query GetZone($id: Int!) {
@@ -195,7 +214,7 @@ export const GET_ZONE = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Immeuble Queries
@@ -213,7 +232,7 @@ export const GET_IMMEUBLES = `
       updatedAt
     }
   }
-`;
+`
 
 export const GET_IMMEUBLE = `
   query GetImmeuble($id: Int!) {
@@ -227,7 +246,7 @@ export const GET_IMMEUBLE = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Statistic Queries
@@ -246,7 +265,7 @@ export const GET_STATISTICS = `
       updatedAt
     }
   }
-`;
+`
 
 export const GET_STATISTIC = `
   query GetStatistic($id: Int!) {
@@ -261,4 +280,4 @@ export const GET_STATISTIC = `
       updatedAt
     }
   }
-`;
+`

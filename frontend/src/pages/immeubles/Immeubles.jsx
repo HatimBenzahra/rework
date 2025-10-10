@@ -1,13 +1,7 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import {
-  useImmeubles,
-  useCreateImmeuble,
-  useUpdateImmeuble,
-  useRemoveImmeuble,
-  useCommercials,
-} from '@/services'
+import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useMemo } from 'react'
 
@@ -95,7 +89,6 @@ export default function Immeubles() {
   // API hooks
   const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
   const { data: commercials } = useCommercials()
-  const { mutate: createImmeuble } = useCreateImmeuble()
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 
@@ -124,24 +117,6 @@ export default function Immeubles() {
       }
     })
   }, [filteredImmeubles, commercials])
-
-  const handleAddImmeuble = async formData => {
-    try {
-      const commercial = commercials?.find(c => `${c.prenom} ${c.nom}` === formData.commercial_name)
-
-      const immeubleInput = {
-        adresse: formData.address,
-        nbEtages: parseInt(formData.floors),
-        nbPortesParEtage: parseInt(formData.doors_per_floor),
-        commercialId: commercial?.id || null,
-      }
-
-      await createImmeuble(immeubleInput)
-      await refetch()
-    } catch (error) {
-      console.error("Erreur lors de la création de l'immeuble:", error)
-    }
-  }
 
   const handleEditImmeuble = async editedData => {
     try {
@@ -200,8 +175,6 @@ export default function Immeubles() {
         data={tableData}
         columns={immeublesColumns}
         searchKey="address"
-        onAdd={permissions.canAdd ? handleAddImmeuble : undefined}
-        addButtonText="Nouvel Immeuble"
         detailsPath="/immeubles"
         editFields={getImmeublesEditFields(commercials)}
         onEdit={permissions.canEdit ? handleEditImmeuble : undefined}

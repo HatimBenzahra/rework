@@ -3,7 +3,7 @@
  * Provides reusable hooks with loading states, error handling, and caching
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../services/api-service'
 import { apiCache, invalidateRelatedCaches } from '../services/api-cache'
 import type {
@@ -113,8 +113,6 @@ function useApiCall<T>(
     refetch,
   }
 }
-
-import { useState, useRef, useCallback, useEffect } from 'react'
 
 type MutateOptions<TOutput, TOptimistic> = {
   onSuccess?: (result: TOutput) => void
