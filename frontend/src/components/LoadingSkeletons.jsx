@@ -272,3 +272,37 @@ export function PageSkeleton() {
     </div>
   )
 }
+
+/**
+ * Skeleton pour la carte interactive
+ */
+export function MapSkeleton() {
+  return (
+    <div className="relative w-full h-full bg-muted rounded-lg overflow-hidden">
+      <Skeleton className="w-full h-full" />
+      
+      <div className="absolute top-4 right-4 space-y-2">
+        <Skeleton className="h-8 w-8 rounded" />
+        <Skeleton className="h-8 w-8 rounded" />
+        <Skeleton className="h-8 w-8 rounded" />
+      </div>
+      
+      <div className="absolute top-4 left-4 right-16">
+        <Skeleton className="h-10 w-full max-w-md rounded-md" />
+      </div>
+      
+      <div className="absolute bottom-2 right-2">
+        <Skeleton className="h-4 w-24" />
+      </div>
+      
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="bg-background/80 backdrop-blur-sm p-4 rounded-lg shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+            <span className="text-sm text-muted-foreground">Chargement de la carte...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

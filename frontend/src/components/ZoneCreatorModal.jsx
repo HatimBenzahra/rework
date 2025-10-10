@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { MapSkeleton } from '@/components/LoadingSkeletons'
 import { X, Check, Move3D, MousePointerClick, RotateCcw } from 'lucide-react'
 
 // Set Mapbox access token
@@ -151,8 +152,9 @@ export const ZoneCreatorModal = ({
     isEditMode && zoneToEdit?.id ? getZoneColor(zoneToEdit.id) : '#3388ff'
   )
   const [show3D, setShow3D] = useState(false)
+  const [mapLoading, setMapLoading] = useState(true)
 
-  // Map view state
+  // Map view state - Focus sur l'Île-de-France
   const initialMapViewState =
     isEditMode && zoneToEdit?.xOrigin && zoneToEdit?.yOrigin
       ? {
@@ -161,9 +163,9 @@ export const ZoneCreatorModal = ({
           zoom: 12,
         }
       : {
-          longitude: 2.2137, // France center
-          latitude: 46.2276,
-          zoom: 6,
+          longitude: 2.3522, // Paris center
+          latitude: 48.8566,
+          zoom: 10, // Zoom pour voir l'Île-de-France
         }
 
   // Effect for 3D mode
@@ -258,6 +260,11 @@ export const ZoneCreatorModal = ({
   return (
     <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col p-4 animate-in fade-in-0">
       <div className="flex-1 w-full relative">
+        {mapLoading && (
+          <div className="absolute inset-0 z-10">
+            <MapSkeleton />
+          </div>
+        )}
         <Map
           ref={mapRef}
           initialViewState={initialMapViewState}
@@ -266,6 +273,8 @@ export const ZoneCreatorModal = ({
           onClick={handleMapClick}
           onMouseMove={handleMouseMove}
           cursor={step < 3 ? 'crosshair' : 'default'}
+          onLoad={() => setMapLoading(false)}
+          onError={() => setMapLoading(false)}
         >
           <NavigationControl position="top-right" />
           <GeocoderControl onResult={handleGeocoderResult} position="top-left" />
