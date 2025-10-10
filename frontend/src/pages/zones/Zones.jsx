@@ -2,8 +2,17 @@ import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
+import { ActionConfirmation } from '@/components/ActionConfirmation'
 import { useRole } from '@/contexts/RoleContext'
-import { useZones, useCreateZone, useDirecteurs, useManagers, useCommercials } from '@/services'
+import {
+  useZones,
+  useCreateZone,
+  useUpdateZone,
+  useRemoveZone,
+  useDirecteurs,
+  useManagers,
+  useCommercials,
+} from '@/services'
 import { useState, useMemo } from 'react'
 import { apiCache } from '@/services/api-cache'
 
@@ -12,41 +21,31 @@ const fetchLocationName = async (longitude, latitude) => {
   // Arrondir les coordonnées pour améliorer le taux de cache hit
   const roundedLng = longitude.toFixed(4)
   const roundedLat = latitude.toFixed(4)
-  const cacheKey = `mapbox-geocode:${roundedLng},${roundedLat}`
+  // Créer une fonction unique pour cette géolocalisation
+  const fetchGeocode = async () => {
+    try {
+      const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
+      )
+      const data = await response.json()
 
-  // Vérifier le cache d'abord
-  const cached = apiCache.get(cacheKey)
-  if (cached) {
-    return cached
-  }
-
-  try {
-    const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-    const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
-    )
-    const data = await response.json()
-
-    let locationName
-    if (data.features && data.features.length > 0) {
-      // Récupérer le lieu le plus pertinent (ville, région, pays)
-      const feature = data.features[0]
-      locationName = feature.place_name || feature.text
-    } else {
-      locationName = `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+      if (data.features && data.features.length > 0) {
+        // Récupérer le lieu le plus pertinent (ville, région, pays)
+        const feature = data.features[0]
+        return feature.place_name || feature.text
+      } else {
+        return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du nom de lieu:', error)
+      return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
     }
-
-    // Mettre en cache avec un TTL de 30 jours (les adresses ne changent pas souvent)
-    apiCache.set(cacheKey, locationName, 30 * 24 * 60 * 60 * 1000)
-
-    return locationName
-  } catch (error) {
-    console.error('Erreur lors de la récupération du nom de lieu:', error)
-    const fallbackName = `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
-    // Mettre en cache même les erreurs (avec un TTL plus court de 1 heure)
-    apiCache.set(cacheKey, fallbackName, 60 * 60 * 1000)
-    return fallbackName
   }
+
+  // Utiliser ton système de cache avec namespace et gestion de déduplication
+  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
 }
 
 export default function Zones() {
@@ -54,28 +53,33 @@ export default function Zones() {
   const { currentRole } = useRole()
   const [showZoneModal, setShowZoneModal] = useState(false)
   const [editingZone, setEditingZone] = useState(null)
-  const [zoneLocations, setZoneLocations] = useState({})
+  const [confirmAction, setConfirmAction] = useState({ isOpen: false, type: '', zone: null, isLoading: false })
 
   // API hooks
   const { data: zones, refetch: refetchZones } = useZones()
   const { mutate: createZone } = useCreateZone()
+  const { mutate: updateZone } = useUpdateZone()
+  const { mutate: removeZone } = useRemoveZone()
   const { data: directeurs } = useDirecteurs()
   const { data: managers } = useManagers()
   const { data: commercials } = useCommercials()
 
-  // Fonction pour charger l'adresse d'une zone spécifique à la demande
-  const loadZoneLocation = async (zoneId, xOrigin, yOrigin) => {
-    if (zoneLocations[zoneId]) return zoneLocations[zoneId]
-
-    try {
-      const location = await fetchLocationName(xOrigin, yOrigin)
-      setZoneLocations(prev => ({ ...prev, [zoneId]: location }))
-      return location
-    } catch (error) {
-      console.error("Erreur lors du chargement de l'adresse:", error)
-      return `${yOrigin.toFixed(2)}°N, ${xOrigin.toFixed(2)}°E`
-    }
-  }
+  // Configuration pour le lazy loading des adresses
+  const mapboxLazyLoader = useMemo(
+    () => ({
+      namespace: 'mapbox-geocode',
+      fetcher: async zone => {
+        return fetchLocationName(zone.xOrigin, zone.yOrigin)
+      },
+      getCacheKey: zone => [zone.xOrigin.toFixed(4), zone.yOrigin.toFixed(4)],
+      shouldLoad: (zone, currentData) => {
+        return zone.xOrigin && zone.yOrigin && !currentData
+      },
+      delay: 200, // 200ms entre chaque appel
+      maxConcurrent: 3,
+    }),
+    []
+  )
 
   // Définition des colonnes du tableau
   const zonesColumns = [
@@ -89,19 +93,26 @@ export default function Zones() {
       header: 'Localisation',
       accessor: 'location',
       className: 'hidden sm:table-cell',
-      cell: row => {
-        if (row.location) return row.location
+      cell: (row, { getLoadedData, isLoading }) => {
+        // Utiliser les données chargées dynamiquement
+        const loadedLocation = getLoadedData(row, 'mapbox-geocode')
+
+        if (loadedLocation) return loadedLocation
+
         if (row.xOrigin && row.yOrigin) {
-          return (
-            <span
-              className="cursor-pointer text-blue-600 hover:text-blue-800 underline"
-              onClick={() => loadZoneLocation(row.id, row.xOrigin, row.yOrigin)}
-              title="Cliquer pour charger l'adresse"
-            >
-              Charger l'adresse
-            </span>
-          )
+          const isCurrentlyLoading = isLoading(row, 'mapbox-geocode')
+          if (isCurrentlyLoading) {
+            return (
+              <span className="text-gray-500 text-sm flex items-center gap-1">
+                <div className="animate-spin h-3 w-3 border border-gray-300 border-t-blue-600 rounded-full"></div>
+                Chargement...
+              </span>
+            )
+          }
+          // Si pas encore chargé et pas en cours, afficher coordonnées temporaires
+          return `${row.yOrigin.toFixed(2)}°N, ${row.xOrigin.toFixed(2)}°E`
         }
+
         return 'Coordonnées non disponibles'
       },
     },
@@ -127,7 +138,7 @@ export default function Zones() {
     },
   ]
 
-  // Enrichir les zones avec l'information d'assignation et localisation
+  // Enrichir les zones avec l'information d'assignation
   const enrichedZones = useMemo(() => {
     if (!zones || !commercials) return zones || []
 
@@ -145,10 +156,9 @@ export default function Zones() {
       return {
         ...zone,
         assignedTo,
-        location: zoneLocations[zone.id] || null,
       }
     })
-  }, [zones, commercials, zoneLocations])
+  }, [zones, commercials])
 
   // Préparer les utilisateurs assignables selon le rôle (seulement pour admin et directeur)
   const getAssignableUsers = () => {
@@ -213,24 +223,72 @@ export default function Zones() {
     setShowZoneModal(true)
   }
 
+  const handleEditZone = zone => {
+    setConfirmAction({
+      isOpen: true,
+      type: 'edit',
+      zone,
+      isLoading: false,
+    })
+  }
+
+  const confirmEditZone = () => {
+    setEditingZone(confirmAction.zone)
+    setShowZoneModal(true)
+    setConfirmAction({ isOpen: false, type: '', zone: null, isLoading: false })
+  }
+
+  const handleDeleteZone = zone => {
+    setConfirmAction({
+      isOpen: true,
+      type: 'delete',
+      zone,
+      isLoading: false,
+    })
+  }
+
+  const confirmDeleteZone = async () => {
+    setConfirmAction(prev => ({ ...prev, isLoading: true }))
+    try {
+      await removeZone(confirmAction.zone.id)
+      await refetchZones()
+      console.log('Zone supprimée avec succès')
+      setConfirmAction({ isOpen: false, type: '', zone: null, isLoading: false })
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la zone:', error)
+      setConfirmAction(prev => ({ ...prev, isLoading: false }))
+    }
+  }
+
   const handleZoneValidate = async (zoneData, assignedUserId) => {
     try {
-      // Créer la zone via l'API
-      const newZone = await createZone(zoneData)
+      if (editingZone) {
+        // Modifier la zone existante
+        const updatedZone = await updateZone({
+          id: editingZone.id,
+          ...zoneData,
+        })
+        console.log('Zone modifiée avec succès:', updatedZone)
+      } else {
+        // Créer une nouvelle zone
+        const newZone = await createZone(zoneData)
 
-      // TODO: Assigner la zone à l'utilisateur sélectionné si nécessaire
-      if (assignedUserId && newZone?.id) {
-        console.log("Zone à assigner à l'utilisateur:", assignedUserId)
-        // await assignZoneToUser(newZone.id, assignedUserId)
+        // TODO: Assigner la zone à l'utilisateur sélectionné si nécessaire
+        if (assignedUserId && newZone?.id) {
+          console.log("Zone à assigner à l'utilisateur:", assignedUserId)
+          // await assignZoneToUser(newZone.id, assignedUserId)
+        }
+        console.log('Zone créée avec succès:', newZone)
       }
 
       // Rafraîchir la liste des zones
       await refetchZones()
-
       setShowZoneModal(false)
-      console.log('Zone créée avec succès:', zoneData)
     } catch (error) {
-      console.error('Erreur lors de la création de la zone:', error)
+      console.error(
+        `Erreur lors de ${editingZone ? 'la modification' : 'la création'} de la zone:`,
+        error
+      )
     }
   }
 
@@ -271,7 +329,9 @@ export default function Zones() {
         onAdd={currentRole !== 'manager' ? handleAddZone : undefined}
         addButtonText="Nouvelle Zone"
         detailsPath="/zones"
-        onEdit={undefined}
+        onEdit={currentRole !== 'manager' ? handleEditZone : undefined}
+        onDelete={currentRole !== 'manager' ? handleDeleteZone : undefined}
+        lazyLoaders={[mapboxLazyLoader]}
       />
 
       {showZoneModal && (
@@ -284,6 +344,26 @@ export default function Zones() {
           assignableUsers={getAssignableUsers()}
         />
       )}
+
+      <ActionConfirmation
+        isOpen={confirmAction.isOpen}
+        onClose={() => setConfirmAction({ isOpen: false, type: '', zone: null, isLoading: false })}
+        onConfirm={confirmAction.type === 'delete' ? confirmDeleteZone : confirmEditZone}
+        type={confirmAction.type}
+        title={
+          confirmAction.type === 'delete'
+            ? 'Supprimer la zone'
+            : 'Modifier la zone'
+        }
+        description={
+          confirmAction.type === 'delete'
+            ? 'Cette action supprimera définitivement la zone et toutes ses associations avec les commerciaux.'
+            : 'Vous allez modifier les paramètres de cette zone.'
+        }
+        itemName={confirmAction.zone?.nom}
+        confirmText={confirmAction.type === 'delete' ? 'Supprimer' : 'Modifier'}
+        isLoading={confirmAction.isLoading}
+      />
     </div>
   )
 }

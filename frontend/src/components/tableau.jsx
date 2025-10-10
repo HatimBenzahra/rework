@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useLazyDataLoader } from '@/hooks/use-lazy-data-loader'
 import { useNavigate } from 'react-router-dom'
 import {
   Table,
@@ -54,6 +55,8 @@ export function AdvancedDataTable({
   detailsPath,
   editFields,
   onEdit,
+  onDelete,
+  lazyLoaders = [], // Configuration pour le lazy loading
 }) {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
@@ -62,6 +65,9 @@ export function AdvancedDataTable({
   const [currentPage, setCurrentPage] = useState(1)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
+
+  // Initialiser le lazy loading hook si des loaders sont fournis
+  const { loadVisibleData, getLoadedData, isLoading } = useLazyDataLoader(lazyLoaders)
 
   // Filtrage et tri des données
   const filteredAndSortedData = useMemo(() => {
@@ -103,6 +109,13 @@ export function AdvancedDataTable({
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, statusFilter])
+
+  // Déclencher le lazy loading pour les données visibles
+  useEffect(() => {
+    if (lazyLoaders.length > 0 && paginatedData.length > 0) {
+      loadVisibleData(paginatedData)
+    }
+  }, [paginatedData, lazyLoaders, loadVisibleData])
 
   const handleSort = key => {
     setSortConfig(prevConfig => ({
@@ -237,11 +250,11 @@ export function AdvancedDataTable({
                     <TableRow key={rowIndex} className="hover:bg-muted/50">
                       {columns.map((column, colIndex) => (
                         <TableCell key={colIndex} className={column.className}>
-                          {column.accessor === 'status'
-                            ? getStatusBadge(row[column.accessor])
-                            : column.accessor
-                              ? row[column.accessor]
-                              : column.cell?.(row)}
+                          {column.cell
+                            ? column.cell(row, { getLoadedData, isLoading })
+                            : column.accessor === 'status'
+                              ? getStatusBadge(row[column.accessor])
+                              : row[column.accessor]}
                         </TableCell>
                       ))}
                       <TableCell>
@@ -269,10 +282,12 @@ export function AdvancedDataTable({
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive">
-                              <Trash2 />
-                              <span>Supprimer</span>
-                            </DropdownMenuItem>
+                            {onDelete && (
+                              <DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
+                                <Trash2 />
+                                <span>Supprimer</span>
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

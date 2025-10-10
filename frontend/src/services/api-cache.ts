@@ -71,6 +71,7 @@ const TTL_BY_NAMESPACE: Record<string, number> = {
   managers: 5 * 60_000,   // 5min - default
   commercials: 3 * 60_000, // 3min - plus volatile
   immeubles: 10 * 60_000,  // 10min - données statiques
+  'mapbox-geocode': 30 * 24 * 60 * 60_000, // 30 jours - géolocalisation très stable
 };
 
 class APICache {
