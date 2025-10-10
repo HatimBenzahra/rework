@@ -4,10 +4,22 @@ import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
 import { useRole } from '@/contexts/RoleContext'
 import { useZones, useCreateZone, useDirecteurs, useManagers, useCommercials } from '@/services'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import { apiCache } from '@/services/api-cache'
 
-// Fonction pour récupérer l'adresse via reverse geocoding Mapbox
+// Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
 const fetchLocationName = async (longitude, latitude) => {
+  // Arrondir les coordonnées pour améliorer le taux de cache hit
+  const roundedLng = longitude.toFixed(4)
+  const roundedLat = latitude.toFixed(4)
+  const cacheKey = `mapbox-geocode:${roundedLng},${roundedLat}`
+
+  // Vérifier le cache d'abord
+  const cached = apiCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+
   try {
     const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
     const response = await fetch(
@@ -15,52 +27,27 @@ const fetchLocationName = async (longitude, latitude) => {
     )
     const data = await response.json()
 
+    let locationName
     if (data.features && data.features.length > 0) {
       // Récupérer le lieu le plus pertinent (ville, région, pays)
       const feature = data.features[0]
-      return feature.place_name || feature.text
+      locationName = feature.place_name || feature.text
+    } else {
+      locationName = `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
     }
-    return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+
+    // Mettre en cache avec un TTL de 30 jours (les adresses ne changent pas souvent)
+    apiCache.set(cacheKey, locationName, 30 * 24 * 60 * 60 * 1000)
+
+    return locationName
   } catch (error) {
     console.error('Erreur lors de la récupération du nom de lieu:', error)
-    return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+    const fallbackName = `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+    // Mettre en cache même les erreurs (avec un TTL plus court de 1 heure)
+    apiCache.set(cacheKey, fallbackName, 60 * 60 * 1000)
+    return fallbackName
   }
 }
-
-const zonesColumns = [
-  {
-    header: 'Nom',
-    accessor: 'nom',
-    sortable: true,
-    className: 'font-medium',
-  },
-  {
-    header: 'Localisation',
-    accessor: 'location',
-    className: 'hidden sm:table-cell',
-    cell: row => row.location || 'Chargement...',
-  },
-  {
-    header: 'Date de création',
-    accessor: 'createdAt',
-    sortable: true,
-    className: 'hidden md:table-cell',
-    cell: row => new Date(row.createdAt).toLocaleDateString('fr-FR'),
-  },
-  {
-    header: 'Assigné à',
-    accessor: 'assignedTo',
-    className: 'hidden lg:table-cell',
-    cell: row => row.assignedTo || 'Non assigné',
-  },
-  {
-    header: 'Rayon (km)',
-    accessor: 'rayon',
-    sortable: true,
-    className: 'hidden xl:table-cell text-start',
-    cell: row => `${(row.rayon / 1000).toFixed(1)} km`,
-  },
-]
 
 export default function Zones() {
   const loading = useSimpleLoading(1000)
@@ -76,31 +63,69 @@ export default function Zones() {
   const { data: managers } = useManagers()
   const { data: commercials } = useCommercials()
 
-  // Charger les adresses des zones via reverse geocoding
-  useEffect(() => {
-    if (!zones || zones.length === 0) return
+  // Fonction pour charger l'adresse d'une zone spécifique à la demande
+  const loadZoneLocation = async (zoneId, xOrigin, yOrigin) => {
+    if (zoneLocations[zoneId]) return zoneLocations[zoneId]
 
-    const loadLocations = async () => {
-      const locationsToLoad = zones.filter(
-        zone => zone.xOrigin && zone.yOrigin && !zoneLocations[zone.id]
-      )
-
-      if (locationsToLoad.length === 0) return
-
-      const newLocations = {}
-      await Promise.all(
-        locationsToLoad.map(async zone => {
-          const location = await fetchLocationName(zone.xOrigin, zone.yOrigin)
-          newLocations[zone.id] = location
-        })
-      )
-
-      setZoneLocations(prev => ({ ...prev, ...newLocations }))
+    try {
+      const location = await fetchLocationName(xOrigin, yOrigin)
+      setZoneLocations(prev => ({ ...prev, [zoneId]: location }))
+      return location
+    } catch (error) {
+      console.error("Erreur lors du chargement de l'adresse:", error)
+      return `${yOrigin.toFixed(2)}°N, ${xOrigin.toFixed(2)}°E`
     }
+  }
 
-    loadLocations()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zones])
+  // Définition des colonnes du tableau
+  const zonesColumns = [
+    {
+      header: 'Nom',
+      accessor: 'nom',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Localisation',
+      accessor: 'location',
+      className: 'hidden sm:table-cell',
+      cell: row => {
+        if (row.location) return row.location
+        if (row.xOrigin && row.yOrigin) {
+          return (
+            <span
+              className="cursor-pointer text-blue-600 hover:text-blue-800 underline"
+              onClick={() => loadZoneLocation(row.id, row.xOrigin, row.yOrigin)}
+              title="Cliquer pour charger l'adresse"
+            >
+              Charger l'adresse
+            </span>
+          )
+        }
+        return 'Coordonnées non disponibles'
+      },
+    },
+    {
+      header: 'Date de création',
+      accessor: 'createdAt',
+      sortable: true,
+      className: 'hidden md:table-cell',
+      cell: row => new Date(row.createdAt).toLocaleDateString('fr-FR'),
+    },
+    {
+      header: 'Assigné à',
+      accessor: 'assignedTo',
+      className: 'hidden lg:table-cell',
+      cell: row => row.assignedTo || 'Non assigné',
+    },
+    {
+      header: 'Rayon (km)',
+      accessor: 'rayon',
+      sortable: true,
+      className: 'hidden xl:table-cell text-start',
+      cell: row => `${(row.rayon / 1000).toFixed(1)} km`,
+    },
+  ]
 
   // Enrichir les zones avec l'information d'assignation et localisation
   const enrichedZones = useMemo(() => {
