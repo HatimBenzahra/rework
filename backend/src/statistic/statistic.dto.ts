@@ -11,8 +11,14 @@ export class Statistic {
   @Field(() => Int)
   id: number;
 
-  @Field(() => Int)
-  commercialId: number;
+  @Field(() => Int, { nullable: true })
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  immeubleId?: number;
+
+  @Field(() => Int, { nullable: true })
+  zoneId?: number;
 
   @Field(() => Int)
   contratsSignes: number;
@@ -25,6 +31,12 @@ export class Statistic {
 
   @Field(() => Int)
   refus: number;
+
+  @Field(() => Int)
+  nbImmeublesProspectes: number;
+
+  @Field(() => Int)
+  nbPortesProspectes: number;
 
   @Field()
   createdAt: Date;
@@ -35,8 +47,14 @@ export class Statistic {
 
 @InputType()
 export class CreateStatisticInput {
-  @Field(() => Int)
-  commercialId: number;
+  @Field(() => Int, { nullable: true })
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  immeubleId?: number;
+
+  @Field(() => Int, { nullable: true })
+  zoneId?: number;
 
   @Field(() => Int)
   contratsSignes: number;
@@ -49,6 +67,12 @@ export class CreateStatisticInput {
 
   @Field(() => Int)
   refus: number;
+
+  @Field(() => Int)
+  nbImmeublesProspectes: number;
+
+  @Field(() => Int)
+  nbPortesProspectes: number;
 }
 
 @InputType()

@@ -1,22 +1,22 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Début du seeding de la base de données...')
+  console.log('🌱 Début du seeding de la base de données...');
 
   // Nettoyer les données existantes
-  console.log('🧹 Nettoyage des données existantes...')
-  await prisma.commercialZone.deleteMany()
-  await prisma.statistic.deleteMany()
-  await prisma.immeuble.deleteMany()
-  await prisma.commercial.deleteMany()
-  await prisma.manager.deleteMany()
-  await prisma.directeur.deleteMany()
-  await prisma.zone.deleteMany()
+  console.log('🧹 Nettoyage des données existantes...');
+  await prisma.commercialZone.deleteMany();
+  await prisma.statistic.deleteMany();
+  await prisma.immeuble.deleteMany();
+  await prisma.commercial.deleteMany();
+  await prisma.manager.deleteMany();
+  await prisma.directeur.deleteMany();
+  await prisma.zone.deleteMany();
 
   // Créer des directeurs
-  console.log('👔 Création des directeurs...')
+  console.log('👔 Création des directeurs...');
   const directeur1 = await prisma.directeur.create({
     data: {
       nom: 'Gharbi',
@@ -25,7 +25,7 @@ async function main() {
       numTelephone: '+216 20 123 456',
       adresse: '123 Avenue Habib Bourguiba, Tunis',
     },
-  })
+  });
 
   const directeur2 = await prisma.directeur.create({
     data: {
@@ -35,17 +35,17 @@ async function main() {
       numTelephone: '+216 25 987 654',
       adresse: '456 Rue de la République, Sfax',
     },
-  })
+  });
 
   // Créer des managers
-  console.log('👨‍💼 Création des managers...')
+  console.log('👨‍💼 Création des managers...');
   const manager1 = await prisma.manager.create({
     data: {
       nom: 'Ben Salem',
       prenom: 'Ahmed',
       directeurId: directeur1.id,
     },
-  })
+  });
 
   const manager2 = await prisma.manager.create({
     data: {
@@ -53,28 +53,33 @@ async function main() {
       prenom: 'Sarra',
       directeurId: directeur2.id,
     },
-  })
+  });
 
   // Créer des zones
-  console.log('🗺️ Création des zones...')
+  console.log('🗺️ Création des zones...');
+  // Zone 1: Assignée directement au directeur1
   const zone1 = await prisma.zone.create({
     data: {
       nom: 'Tunis Centre',
       xOrigin: 36.8065,
       yOrigin: 10.1815,
       rayon: 5.0,
+      directeurId: directeur1.id,
     },
-  })
+  });
 
+  // Zone 2: Assignée directement au manager2
   const zone2 = await prisma.zone.create({
     data: {
       nom: 'Sfax',
       xOrigin: 34.7406,
       yOrigin: 10.7603,
       rayon: 8.0,
+      managerId: manager2.id,
     },
-  })
+  });
 
+  // Zone 3: Non assignée directement, seulement via commerciaux
   const zone3 = await prisma.zone.create({
     data: {
       nom: 'Sousse',
@@ -82,10 +87,32 @@ async function main() {
       yOrigin: 10.6369,
       rayon: 6.0,
     },
-  })
+  });
+
+  // Zone 4: Assignée au manager1
+  const zone4 = await prisma.zone.create({
+    data: {
+      nom: 'Ariana',
+      xOrigin: 36.8625,
+      yOrigin: 10.1956,
+      rayon: 4.5,
+      managerId: manager1.id,
+    },
+  });
+
+  // Zone 5: Assignée au directeur2
+  const zone5 = await prisma.zone.create({
+    data: {
+      nom: 'Monastir',
+      xOrigin: 35.7643,
+      yOrigin: 10.8263,
+      rayon: 5.5,
+      directeurId: directeur2.id,
+    },
+  });
 
   // Créer des commerciaux
-  console.log('💼 Création des commerciaux...')
+  console.log('💼 Création des commerciaux...');
   const commercial1 = await prisma.commercial.create({
     data: {
       nom: 'Ben Ali',
@@ -96,7 +123,7 @@ async function main() {
       managerId: manager1.id,
       directeurId: directeur1.id,
     },
-  })
+  });
 
   const commercial2 = await prisma.commercial.create({
     data: {
@@ -108,7 +135,7 @@ async function main() {
       managerId: manager2.id,
       directeurId: directeur2.id,
     },
-  })
+  });
 
   const commercial3 = await prisma.commercial.create({
     data: {
@@ -120,10 +147,10 @@ async function main() {
       managerId: manager1.id,
       directeurId: directeur1.id,
     },
-  })
+  });
 
   // Créer des immeubles
-  console.log('🏢 Création des immeubles...')
+  console.log('🏢 Création des immeubles...');
   await prisma.immeuble.createMany({
     data: [
       {
@@ -151,75 +178,122 @@ async function main() {
         commercialId: commercial3.id,
       },
     ],
-  })
+  });
 
   // Assigner des zones aux commerciaux
-  console.log('🔗 Attribution des zones aux commerciaux...')
+  console.log('🔗 Attribution des zones aux commerciaux...');
   await prisma.commercialZone.createMany({
     data: [
+      // Commercial1 travaille sur zone1 (Tunis Centre - directeur1)
       { commercialId: commercial1.id, zoneId: zone1.id },
+      // Commercial1 travaille aussi sur zone4 (Ariana - manager1)
+      { commercialId: commercial1.id, zoneId: zone4.id },
+      // Commercial2 travaille sur zone2 (Sfax - manager2)
       { commercialId: commercial2.id, zoneId: zone2.id },
+      // Commercial2 travaille aussi sur zone5 (Monastir - directeur2)
+      { commercialId: commercial2.id, zoneId: zone5.id },
+      // Commercial3 travaille sur zone3 (Sousse - non assignée)
       { commercialId: commercial3.id, zoneId: zone3.id },
+      // Commercial3 travaille aussi sur zone4 (Ariana - manager1)
+      { commercialId: commercial3.id, zoneId: zone4.id },
     ],
-  })
+  });
+
+  // Récupérer les immeubles créés pour les statistiques
+  const immeubles = await prisma.immeuble.findMany();
 
   // Créer des statistiques
-  console.log('📊 Création des statistiques...')
+  console.log('📊 Création des statistiques...');
   await prisma.statistic.createMany({
     data: [
+      // Statistiques pour Commercial1 - Zone1 (Tunis Centre)
       {
         commercialId: commercial1.id,
+        zoneId: zone1.id,
+        immeubleId: immeubles[0].id,
         contratsSignes: 28,
         immeublesVisites: 45,
         rendezVousPris: 32,
         refus: 12,
+        nbImmeublesProspectes: 38,
+        nbPortesProspectes: 152,
       },
+      // Statistiques pour Commercial1 - Zone4 (Ariana)
       {
         commercialId: commercial1.id,
+        zoneId: zone4.id,
         contratsSignes: 22,
         immeublesVisites: 38,
         rendezVousPris: 28,
         refus: 8,
+        nbImmeublesProspectes: 32,
+        nbPortesProspectes: 128,
       },
+      // Statistiques pour Commercial2 - Zone2 (Sfax)
       {
         commercialId: commercial2.id,
+        zoneId: zone2.id,
+        immeubleId: immeubles[2].id,
         contratsSignes: 35,
         immeublesVisites: 52,
         rendezVousPris: 41,
         refus: 15,
+        nbImmeublesProspectes: 45,
+        nbPortesProspectes: 225,
       },
+      // Statistiques pour Commercial2 - Zone5 (Monastir)
       {
         commercialId: commercial2.id,
+        zoneId: zone5.id,
         contratsSignes: 42,
         immeublesVisites: 58,
         rendezVousPris: 48,
         refus: 18,
+        nbImmeublesProspectes: 50,
+        nbPortesProspectes: 250,
       },
+      // Statistiques pour Commercial3 - Zone3 (Sousse)
       {
         commercialId: commercial3.id,
+        zoneId: zone3.id,
+        immeubleId: immeubles[3].id,
         contratsSignes: 15,
         immeublesVisites: 28,
         rendezVousPris: 22,
         refus: 9,
+        nbImmeublesProspectes: 24,
+        nbPortesProspectes: 96,
+      },
+      // Statistiques pour Commercial3 - Zone4 (Ariana)
+      {
+        commercialId: commercial3.id,
+        zoneId: zone4.id,
+        contratsSignes: 18,
+        immeublesVisites: 32,
+        rendezVousPris: 25,
+        refus: 11,
+        nbImmeublesProspectes: 28,
+        nbPortesProspectes: 112,
       },
     ],
-  })
+  });
 
-  console.log('✅ Seeding terminé avec succès !')
-  console.log(`📊 Créé : 
+  console.log('✅ Seeding terminé avec succès !');
+  console.log(`📊 Créé :
     - ${2} directeurs
-    - ${2} managers  
+    - ${2} managers
     - ${3} commerciaux
-    - ${3} zones
+    - ${5} zones (2 assignées à directeurs, 2 à managers, 1 non assignée)
     - ${4} immeubles
-    - ${5} statistiques`)
+    - ${6} relations zone-commercial
+    - ${6} statistiques complètes`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erreur lors du seeding:', e)
-    process.exit(1)
+    console.error('❌ Erreur lors du seeding:', e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });

@@ -2,120 +2,144 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-
-const zonesData = {
-  1: {
-    id: 1,
-    name: 'Tunis Centre',
-    region: 'Grand Tunis',
-    immeubles_count: 12,
-    total_apartments: 280,
-    manager: 'Fatma Gharbi',
-    status: 'actif',
-    occupancy_rate: '91%',
-    monthly_revenue: '485 000 TND',
-    commercial_count: 5,
-    description: 'Zone principale du centre-ville',
-    surface_area: '15 km²',
-    population: '250 000',
-    avg_rent: '1 800 TND',
-  },
-}
+import { useZone, useCommercials } from '@/services'
+import { useEntityPermissions } from '@/hooks/useRoleBasedData'
+import { useMemo } from 'react'
 
 export default function ZoneDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
-  const zone = zonesData[id] || zonesData[1]
 
-  if (loading) return <DetailsPageSkeleton />
+  // API hooks
+  const { data: zone, loading: zoneLoading, error } = useZone(parseInt(id))
+  const { data: commercials } = useCommercials()
+  const permissions = useEntityPermissions('zones')
+
+  // Transformation des données API vers format UI
+  const zoneData = useMemo(() => {
+    if (!zone) return null
+
+    // Trouver les commercials assignés à cette zone
+    const assignedCommercials = commercials?.filter(commercial =>
+      commercial.zones?.some(z => z.id === zone.id)
+    ) || []
+
+    return {
+      ...zone,
+      name: zone.nom,
+      region: `Zone ${zone.nom}`,
+      immeubles_count: 0, // TODO: Calculer depuis les immeubles
+      total_apartments: 0, // TODO: Calculer depuis les immeubles
+      manager: assignedCommercials.length > 0 
+        ? assignedCommercials.map(c => `${c.prenom} ${c.nom}`).join(', ')
+        : 'Non assigné',
+      status: 'actif',
+      occupancy_rate: '0%', // TODO: Calculer depuis les statistiques
+      monthly_revenue: '0 TND', // TODO: Calculer depuis les statistiques
+      commercial_count: assignedCommercials.length,
+      description: `Zone géographique ${zone.nom}`,
+      surface_area: `${(zone.rayon / 1000).toFixed(1)} km de rayon`,
+      population: 'Non définie',
+      avg_rent: 'Non défini',
+    }
+  }, [zone, commercials])
+
+  if (loading || zoneLoading) return <DetailsPageSkeleton />
+  if (error) return <div className="text-red-500">Erreur: {error}</div>
+  if (!zoneData) return <div>Zone non trouvée</div>
+
+  // Vérification des permissions d'accès
+  if (!permissions.canView) {
+    return <div className="text-red-500">Vous n'avez pas l'autorisation de voir cette zone</div>
+  }
 
   const personalInfo = [
-    { label: 'Région', value: zone.region, icon: 'mapPin' },
-    { label: 'Manager responsable', value: zone.manager, icon: 'users' },
-    { label: 'Nombre de commerciaux', value: zone.commercial_count, icon: 'users' },
-    { label: 'Surface', value: zone.surface_area, icon: 'mapPin' },
-    { label: 'Population estimée', value: zone.population, icon: 'users' },
-    { label: 'Description', value: zone.description, icon: 'building' },
+    { label: 'Région', value: zoneData.region, icon: 'mapPin' },
+    { label: 'Commerciaux assignés', value: zoneData.manager, icon: 'users' },
+    { label: 'Nombre de commerciaux', value: zoneData.commercial_count, icon: 'users' },
+    { label: 'Rayon de couverture', value: zoneData.surface_area, icon: 'mapPin' },
+    { label: 'Coordonnées centre', value: `${zone.yOrigin.toFixed(4)}°N, ${zone.xOrigin.toFixed(4)}°E`, icon: 'mapPin' },
+    { label: 'Description', value: zoneData.description, icon: 'building' },
   ]
 
   const statsCards = [
     {
       title: 'Revenu mensuel',
-      value: zone.monthly_revenue,
-      description: 'Total zone',
+      value: zoneData.monthly_revenue,
+      description: 'Total zone (à calculer)',
       icon: 'trendingUp',
-      trend: { type: 'positive', value: '+7% vs mois dernier' },
+      trend: { type: 'neutral', value: 'Données en cours' },
     },
     {
       title: "Taux d'occupation",
-      value: zone.occupancy_rate,
-      description: `${Math.floor(zone.total_apartments * 0.91)}/${zone.total_apartments} appartements`,
+      value: zoneData.occupancy_rate,
+      description: 'À calculer depuis les immeubles',
       icon: 'users',
     },
     {
       title: 'Immeubles',
-      value: zone.immeubles_count,
-      description: 'Dans la zone',
+      value: zoneData.immeubles_count,
+      description: 'Dans la zone (à calculer)',
       icon: 'building',
     },
     {
-      title: 'Appartements',
-      value: zone.total_apartments,
-      description: 'Total disponibles',
-      icon: 'building',
+      title: 'Commerciaux actifs',
+      value: zoneData.commercial_count,
+      description: 'Assignés à cette zone',
+      icon: 'users',
     },
     {
-      title: 'Loyer moyen',
-      value: zone.avg_rent,
-      description: 'Par appartement',
-      icon: 'trendingUp',
+      title: 'Surface couverte',
+      value: `${Math.PI * Math.pow(zone.rayon / 1000, 2).toFixed(1)} km²`,
+      description: 'Zone circulaire',
+      icon: 'mapPin',
     },
   ]
 
   const additionalSections = [
     {
-      title: 'Performance mensuelle',
-      description: 'Revenus des 6 derniers mois',
+      title: 'Détails techniques',
+      description: 'Paramètres de la zone',
+      type: 'grid',
+      items: [
+        { label: 'Latitude centre', value: `${zone.yOrigin.toFixed(6)}°` },
+        { label: 'Longitude centre', value: `${zone.xOrigin.toFixed(6)}°` },
+        { label: 'Rayon (mètres)', value: `${zone.rayon.toLocaleString()} m` },
+        { label: 'Créée le', value: new Date(zone.createdAt).toLocaleDateString('fr-FR') },
+      ],
+    },
+    {
+      title: 'Commerciaux assignés',
+      description: 'Équipe commerciale de la zone',
       type: 'list',
-      items: [
-        { label: 'Janvier 2024', value: '450 000 TND' },
-        { label: 'Février 2024', value: '455 000 TND' },
-        { label: 'Mars 2024', value: '470 000 TND' },
-        { label: 'Avril 2024', value: '475 000 TND' },
-        { label: 'Mai 2024', value: '480 000 TND' },
-        { label: 'Juin 2024', value: '485 000 TND' },
-      ],
+      items: zoneData.commercial_count > 0 
+        ? commercials
+            ?.filter(c => c.zones?.some(z => z.id === zone.id))
+            ?.map(commercial => ({
+              label: `${commercial.prenom} ${commercial.nom}`,
+              value: commercial.email || 'Email non renseigné'
+            })) || []
+        : [{ label: 'Aucun commercial assigné', value: 'Zone non attribuée' }],
     },
     {
-      title: 'Statistiques de la zone',
-      description: 'Indicateurs clés',
+      title: 'Actions possibles',
+      description: 'Selon vos permissions',
       type: 'grid',
       items: [
-        { label: 'Immeubles gérés', value: zone.immeubles_count },
-        { label: 'Appartements totaux', value: zone.total_apartments },
-        { label: 'Commerciaux actifs', value: zone.commercial_count },
-        { label: 'Taux de satisfaction', value: '89%' },
-      ],
-    },
-    {
-      title: 'Analyse de marché',
-      description: 'Tendances et perspectives',
-      type: 'grid',
-      items: [
-        { label: 'Croissance annuelle', value: '+12%' },
-        { label: 'Demande locative', value: 'Élevée' },
-        { label: 'Potentiel développement', value: '3 nouveaux projets' },
-        { label: 'Score attractivité', value: '9.2/10' },
+        { label: 'Voir les détails', value: permissions.canView ? '✅ Autorisé' : '❌ Non autorisé' },
+        { label: 'Modifier la zone', value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé' },
+        { label: 'Supprimer la zone', value: permissions.canDelete ? '✅ Autorisé' : '❌ Non autorisé' },
+        { label: 'Assigner commerciaux', value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé' },
       ],
     },
   ]
 
   return (
     <DetailsPage
-      title={zone.name}
-      subtitle={`Zone - ${zone.region}`}
-      status={zone.status}
-      data={zone}
+      title={zoneData.name}
+      subtitle={`Zone - ${zoneData.region}`}
+      status={zoneData.status}
+      data={zoneData}
       personalInfo={personalInfo}
       statsCards={statsCards}
       additionalSections={additionalSections}

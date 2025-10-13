@@ -24,7 +24,11 @@ export class CommercialService {
         immeubles: true,
         zones: {
           include: {
-            zone: true,
+            zone: {
+              include: {
+                commercials: true,
+              },
+            },
           },
         },
         statistics: true,
@@ -41,7 +45,11 @@ export class CommercialService {
         immeubles: true,
         zones: {
           include: {
-            zone: true,
+            zone: {
+              include: {
+                commercials: true,
+              },
+            },
           },
         },
         statistics: true,

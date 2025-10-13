@@ -22,9 +22,10 @@ model Directeur {
   numTelephone String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
+
   managers    Manager[]
   commercials Commercial[]
+  zones       Zone[]
 }
 
 model Manager {
@@ -36,9 +37,10 @@ model Manager {
   directeurId Int?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
+
   directeur   Directeur?  @relation(fields: [directeurId], references: [id])
   commercials Commercial[]
+  zones       Zone[]
 }
 
 model Commercial {
@@ -52,7 +54,7 @@ model Commercial {
   directeurId Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   manager     Manager?     @relation(fields: [managerId], references: [id])
   directeur   Directeur?   @relation(fields: [directeurId], references: [id])
   immeubles   Immeuble[]
@@ -61,15 +63,20 @@ model Commercial {
 }
 
 model Zone {
-  id        Int      @id @default(autoincrement())
-  nom       String
-  xOrigin   Float
-  yOrigin   Float
-  rayon     Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id          Int      @id @default(autoincrement())
+  nom         String
+  xOrigin     Float
+  yOrigin     Float
+  rayon       Float
+  directeurId Int?
+  managerId   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  directeur   Directeur? @relation(fields: [directeurId], references: [id])
+  manager     Manager?   @relation(fields: [managerId], references: [id])
   commercials CommercialZone[]
+  statistics  Statistic[]
 }
 
 model Immeuble {
@@ -80,21 +87,28 @@ model Immeuble {
   commercialId      Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  
+
   commercial        Commercial? @relation(fields: [commercialId], references: [id])
+  statistics        Statistic[]
 }
 
 model Statistic {
-  id              Int      @id @default(autoincrement())
-  commercialId    Int?
-  contratsSignes  Int      // Nombre de contrats signés
-  immeublesVisites Int     // Nombre d'immeubles visités  
-  rendezVousPris  Int      // Nombre de rendez-vous pris
-  refus           Int      // Nombre de refus
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  commercial      Commercial? @relation(fields: [commercialId], references: [id])
+  id                    Int      @id @default(autoincrement())
+  commercialId          Int?
+  immeubleId            Int?
+  zoneId                Int?
+  contratsSignes        Int      // Nombre de contrats signés
+  immeublesVisites      Int      // Nombre d'immeubles visités
+  rendezVousPris        Int      // Nombre de rendez-vous pris
+  refus                 Int      // Nombre de refus
+  nbImmeublesProspectes Int      // Nombre d'immeubles prospectés
+  nbPortesProspectes    Int      // Nombre de portes prospectées
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  commercial            Commercial? @relation(fields: [commercialId], references: [id])
+  immeuble              Immeuble?   @relation(fields: [immeubleId], references: [id])
+  zone                  Zone?       @relation(fields: [zoneId], references: [id])
 }
 
 model CommercialZone {
@@ -102,9 +116,9 @@ model CommercialZone {
   commercialId Int
   zoneId       Int
   createdAt    DateTime   @default(now())
-  
+
   commercial   Commercial @relation(fields: [commercialId], references: [id])
   zone         Zone       @relation(fields: [zoneId], references: [id])
-  
+
   @@unique([commercialId, zoneId])
 }

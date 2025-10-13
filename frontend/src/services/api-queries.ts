@@ -103,6 +103,13 @@ export const GET_COMMERCIALS = `
         xOrigin
         yOrigin
         rayon
+        directeurId
+        managerId
+        commercials {
+          id
+          commercialId
+          zoneId
+        }
         createdAt
         updatedAt
       }
@@ -148,6 +155,13 @@ export const GET_COMMERCIAL = `
         xOrigin
         yOrigin
         rayon
+        directeurId
+        managerId
+        commercials {
+          id
+          commercialId
+          zoneId
+        }
         createdAt
         updatedAt
       }
@@ -177,6 +191,13 @@ export const GET_ZONES = `
       xOrigin
       yOrigin
       rayon
+      directeurId
+      managerId
+      commercials {
+        id
+        commercialId
+        zoneId
+      }
       createdAt
       updatedAt
     }
@@ -195,6 +216,13 @@ export const GET_ZONES_WITH_COMMERCIALS = `
         xOrigin
         yOrigin
         rayon
+        directeurId
+        managerId
+        commercials {
+          id
+          commercialId
+          zoneId
+        }
         createdAt
         updatedAt
       }
@@ -210,6 +238,13 @@ export const GET_ZONE = `
       xOrigin
       yOrigin
       rayon
+      directeurId
+      managerId
+      commercials {
+        id
+        commercialId
+        zoneId
+      }
       createdAt
       updatedAt
     }

@@ -5,10 +5,12 @@
 
 // Re-export all entity types
 export * from './entities.js'
+export * from './auth.js'
 
 // Re-export TypeScript API types
 export * from './api'
 export * from './graphql'
+export * from './roles'
 
 // Common UI types
 /**

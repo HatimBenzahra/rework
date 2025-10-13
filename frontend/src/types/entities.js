@@ -41,11 +41,22 @@
  */
 
 /**
+ * @typedef {Object} CommercialZoneRelation
+ * @property {number} id
+ * @property {number} commercialId
+ * @property {number} zoneId
+ * @property {string} createdAt
+ */
+
+/**
  * @typedef {BaseEntity & Object} Zone
  * @property {string} nom
  * @property {number} rayon
  * @property {number} xOrigin
  * @property {number} yOrigin
+ * @property {number|null} directeurId
+ * @property {number|null} managerId
+ * @property {CommercialZoneRelation[]} commercials
  */
 
 /**
@@ -58,9 +69,15 @@
 
 /**
  * @typedef {BaseEntity & Object} Statistic
- * @property {number} commercialId
- * @property {number} portesVisitees
+ * @property {number|null} commercialId
+ * @property {number|null} immeubleId
+ * @property {number|null} zoneId
  * @property {number} contratsSignes
+ * @property {number} immeublesVisites
+ * @property {number} rendezVousPris
+ * @property {number} refus
+ * @property {number} nbImmeublesProspectes
+ * @property {number} nbPortesProspectes
  */
 
 // Create Input Types
@@ -97,6 +114,8 @@
  * @property {number} rayon
  * @property {number} xOrigin
  * @property {number} yOrigin
+ * @property {number} [directeurId]
+ * @property {number} [managerId]
  */
 
 /**
@@ -109,9 +128,15 @@
 
 /**
  * @typedef {Object} CreateStatisticInput
- * @property {number} commercialId
- * @property {number} portesVisitees
+ * @property {number} [commercialId]
+ * @property {number} [immeubleId]
+ * @property {number} [zoneId]
  * @property {number} contratsSignes
+ * @property {number} immeublesVisites
+ * @property {number} rendezVousPris
+ * @property {number} refus
+ * @property {number} nbImmeublesProspectes
+ * @property {number} nbPortesProspectes
  */
 
 // Update Input Types
@@ -152,6 +177,8 @@
  * @property {number} [rayon]
  * @property {number} [xOrigin]
  * @property {number} [yOrigin]
+ * @property {number} [directeurId]
+ * @property {number} [managerId]
  */
 
 /**
@@ -165,8 +192,15 @@
 /**
  * @typedef {Object} UpdateStatisticInput
  * @property {number} id
- * @property {number} [portesVisitees]
+ * @property {number} [commercialId]
+ * @property {number} [immeubleId]
+ * @property {number} [zoneId]
  * @property {number} [contratsSignes]
+ * @property {number} [immeublesVisites]
+ * @property {number} [rendezVousPris]
+ * @property {number} [refus]
+ * @property {number} [nbImmeublesProspectes]
+ * @property {number} [nbPortesProspectes]
  */
 
 export {}

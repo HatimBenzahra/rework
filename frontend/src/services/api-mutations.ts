@@ -20,7 +20,7 @@ export const CREATE_DIRECTEUR = `
       updatedAt
     }
   }
-`;
+`
 
 export const UPDATE_DIRECTEUR = `
   mutation UpdateDirecteur($updateDirecteurInput: UpdateDirecteurInput!) {
@@ -35,7 +35,7 @@ export const UPDATE_DIRECTEUR = `
       updatedAt
     }
   }
-`;
+`
 
 export const REMOVE_DIRECTEUR = `
   mutation RemoveDirecteur($id: Int!) {
@@ -50,7 +50,7 @@ export const REMOVE_DIRECTEUR = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Manager Mutations
@@ -69,7 +69,7 @@ export const CREATE_MANAGER = `
       updatedAt
     }
   }
-`;
+`
 
 export const UPDATE_MANAGER = `
   mutation UpdateManager($updateManagerInput: UpdateManagerInput!) {
@@ -84,7 +84,7 @@ export const UPDATE_MANAGER = `
       updatedAt
     }
   }
-`;
+`
 
 export const REMOVE_MANAGER = `
   mutation RemoveManager($id: Int!) {
@@ -99,7 +99,7 @@ export const REMOVE_MANAGER = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Commercial Mutations
@@ -120,7 +120,7 @@ export const CREATE_COMMERCIAL = `
       updatedAt
     }
   }
-`;
+`
 
 export const UPDATE_COMMERCIAL = `
   mutation UpdateCommercial($updateCommercialInput: UpdateCommercialInput!) {
@@ -137,7 +137,7 @@ export const UPDATE_COMMERCIAL = `
       updatedAt
     }
   }
-`;
+`
 
 export const REMOVE_COMMERCIAL = `
   mutation RemoveCommercial($id: Int!) {
@@ -154,7 +154,7 @@ export const REMOVE_COMMERCIAL = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Zone Mutations
@@ -168,11 +168,18 @@ export const CREATE_ZONE = `
       xOrigin
       yOrigin
       rayon
+      directeurId
+      managerId
+      commercials {
+        id
+        commercialId
+        zoneId
+      }
       createdAt
       updatedAt
     }
   }
-`;
+`
 
 export const UPDATE_ZONE = `
   mutation UpdateZone($updateZoneInput: UpdateZoneInput!) {
@@ -182,11 +189,18 @@ export const UPDATE_ZONE = `
       xOrigin
       yOrigin
       rayon
+      directeurId
+      managerId
+      commercials {
+        id
+        commercialId
+        zoneId
+      }
       createdAt
       updatedAt
     }
   }
-`;
+`
 
 export const REMOVE_ZONE = `
   mutation RemoveZone($id: Int!) {
@@ -200,7 +214,7 @@ export const REMOVE_ZONE = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Immeuble Mutations
@@ -218,7 +232,7 @@ export const CREATE_IMMEUBLE = `
       updatedAt
     }
   }
-`;
+`
 
 export const UPDATE_IMMEUBLE = `
   mutation UpdateImmeuble($updateImmeubleInput: UpdateImmeubleInput!) {
@@ -232,7 +246,7 @@ export const UPDATE_IMMEUBLE = `
       updatedAt
     }
   }
-`;
+`
 
 export const REMOVE_IMMEUBLE = `
   mutation RemoveImmeuble($id: Int!) {
@@ -246,7 +260,7 @@ export const REMOVE_IMMEUBLE = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Statistic Mutations
@@ -265,7 +279,7 @@ export const CREATE_STATISTIC = `
       updatedAt
     }
   }
-`;
+`
 
 export const UPDATE_STATISTIC = `
   mutation UpdateStatistic($updateStatisticInput: UpdateStatisticInput!) {
@@ -280,7 +294,7 @@ export const UPDATE_STATISTIC = `
       updatedAt
     }
   }
-`;
+`
 
 export const REMOVE_STATISTIC = `
   mutation RemoveStatistic($id: Int!) {
@@ -295,7 +309,7 @@ export const REMOVE_STATISTIC = `
       updatedAt
     }
   }
-`;
+`
 
 // =============================================================================
 // Zone Assignment Mutations
@@ -305,10 +319,10 @@ export const ASSIGN_ZONE_TO_COMMERCIAL = `
   mutation AssignZoneToCommercial($commercialId: Int!, $zoneId: Int!) {
     assignZoneToCommercial(commercialId: $commercialId, zoneId: $zoneId)
   }
-`;
+`
 
 export const UNASSIGN_ZONE_FROM_COMMERCIAL = `
   mutation UnassignZoneFromCommercial($commercialId: Int!, $zoneId: Int!) {
     unassignZoneFromCommercial(commercialId: $commercialId, zoneId: $zoneId)
   }
-`;
+`

@@ -29,6 +29,13 @@ const immeublesColumns = [
     className: 'hidden lg:table-cell text-center',
   },
   {
+    header: 'Couverture',
+    accessor: 'couverture',
+    sortable: true,
+    className: 'hidden lg:table-cell text-center',
+    cell: row => `${row.couverture}%`,
+  },
+  {
     header: 'Commercial',
     accessor: 'commercial_name',
     sortable: true,
@@ -106,12 +113,18 @@ export default function Immeubles() {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
       const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
 
+      // TODO: Récupérer les vraies données de couverture depuis les statistiques
+      // Pour l'instant, valeur simulée basée sur l'ID
+      const portesProspectees = Math.floor(totalDoors * (0.3 + (immeuble.id % 7) * 0.1))
+      const couverture = Math.round((portesProspectees / totalDoors) * 100)
+
       return {
         ...immeuble,
         address: immeuble.adresse,
         floors: immeuble.nbEtages,
         doors_per_floor: immeuble.nbPortesParEtage,
         total_doors: totalDoors,
+        couverture: couverture,
         commercial_name: commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné',
         status: 'actif', // Valeur par défaut
       }

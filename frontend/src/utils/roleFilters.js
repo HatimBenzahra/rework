@@ -31,9 +31,9 @@ export const PERMISSIONS = {
     commerciaux: { view: true, add: true, edit: true, delete: false },
     managers: { view: false, add: false, edit: false, delete: false },
     directeurs: { view: false, add: false, edit: false, delete: false },
-    zones: { view: true, add: false, edit: false, delete: false },
-    immeubles: { view: true, add: false, edit: false, delete: false },
-    statistics: { view: true, add: false, edit: false, delete: false },
+    zones: { view: true, add: true, edit: true, delete: false },
+    immeubles: { view: true, add: true, edit: true, delete: false },
+    statistics: { view: true, add: true, edit: true, delete: false },
   },
 }
 
@@ -41,164 +41,154 @@ export const PERMISSIONS = {
  * Filtre les commerciaux selon le rôle de l'utilisateur
  */
 export const filterCommercials = (commercials, managers, userRole, userId) => {
-  if (!commercials) return []
+  if (!commercials?.length) return []
 
-  const userIdInt = parseInt(userId)
+  const userIdInt = parseInt(userId, 10)
+  if (isNaN(userIdInt)) return []
 
-  switch (userRole) {
-    case ROLES.ADMIN:
-      return commercials
-
-    case ROLES.DIRECTEUR:
-      return commercials.filter(commercial => commercial.directeurId === userIdInt)
-
-    case ROLES.MANAGER:
-      return commercials.filter(commercial => commercial.managerId === userIdInt)
-
-    default:
-      return []
+  const roleFilters = {
+    [ROLES.ADMIN]: () => commercials,
+    [ROLES.DIRECTEUR]: () => commercials.filter(commercial => commercial.directeurId === userIdInt),
+    [ROLES.MANAGER]: () => commercials.filter(commercial => commercial.managerId === userIdInt),
   }
+
+  return roleFilters[userRole]?.() || []
 }
 
 /**
  * Filtre les managers selon le rôle de l'utilisateur
  */
 export const filterManagers = (managers, userRole, userId) => {
-  if (!managers) return []
+  if (!managers?.length) return []
 
-  const userIdInt = parseInt(userId)
+  const userIdInt = parseInt(userId, 10)
+  if (isNaN(userIdInt)) return []
 
-  switch (userRole) {
-    case ROLES.ADMIN:
-      return managers
-
-    case ROLES.DIRECTEUR:
-      return managers.filter(manager => manager.directeurId === userIdInt)
-
-    case ROLES.MANAGER:
-      return []
-
-    default:
-      return []
+  const roleFilters = {
+    [ROLES.ADMIN]: () => managers,
+    [ROLES.DIRECTEUR]: () => managers.filter(manager => manager.directeurId === userIdInt),
+    [ROLES.MANAGER]: () => [],
   }
+
+  return roleFilters[userRole]?.() || []
 }
 
 /**
  * Filtre les directeurs selon le rôle de l'utilisateur
  */
 export const filterDirecteurs = (directeurs, userRole, userId) => {
-  if (!directeurs) return []
+  if (!directeurs?.length) return []
 
-  const userIdInt = parseInt(userId)
+  const userIdInt = parseInt(userId, 10)
+  if (isNaN(userIdInt)) return []
 
-  switch (userRole) {
-    case ROLES.ADMIN:
-      return directeurs
-
-    case ROLES.DIRECTEUR:
-      return directeurs.filter(directeur => directeur.id === userIdInt)
-
-    case ROLES.MANAGER:
-      return []
-
-    default:
-      return []
+  const roleFilters = {
+    [ROLES.ADMIN]: () => directeurs,
+    [ROLES.DIRECTEUR]: () => directeurs.filter(directeur => directeur.id === userIdInt),
+    [ROLES.MANAGER]: () => [],
   }
+
+  return roleFilters[userRole]?.() || []
 }
 
 /**
  * Filtre les zones selon le rôle de l'utilisateur
  */
 export const filterZones = (zones, commercials, userRole, userId) => {
-  if (!zones || !commercials) return []
+  if (!zones?.length || !commercials?.length) return []
 
-  const userIdInt = parseInt(userId)
+  const userIdInt = parseInt(userId, 10)
+  if (isNaN(userIdInt)) return []
 
-  switch (userRole) {
-    case ROLES.ADMIN:
-      return zones
+  const getCommercialIds = commercialsList => commercialsList.map(c => c.id)
 
-    case ROLES.DIRECTEUR: {
-      // Zones des commerciaux du directeur
+  const isZoneAssignedToCommercials = (zone, commercialIds) =>
+    zone.commercials?.some(czr => commercialIds.includes(czr.commercialId))
+
+  const roleFilters = {
+    [ROLES.ADMIN]: () => zones,
+
+    [ROLES.DIRECTEUR]: () => {
       const directeurCommercials = commercials.filter(c => c.directeurId === userIdInt)
-      const commercialIds = directeurCommercials.map(c => c.id)
-      return zones.filter(zone =>
-        zone.commercials?.some(czr => commercialIds.includes(czr.commercialId))
-      )
-    }
+      const commercialIds = getCommercialIds(directeurCommercials)
 
-    case ROLES.MANAGER: {
-      // Zones des commerciaux du manager
+      return zones.filter(
+        zone => zone.directeurId === userIdInt || isZoneAssignedToCommercials(zone, commercialIds)
+      )
+    },
+
+    [ROLES.MANAGER]: () => {
       const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
-      const managerCommercialIds = managerCommercials.map(c => c.id)
-      return zones.filter(zone =>
-        zone.commercials?.some(czr => managerCommercialIds.includes(czr.commercialId))
-      )
-    }
+      const managerCommercialIds = getCommercialIds(managerCommercials)
 
-    default:
-      return []
+      return zones.filter(
+        zone =>
+          zone.managerId === userIdInt || isZoneAssignedToCommercials(zone, managerCommercialIds)
+      )
+    },
   }
+
+  return roleFilters[userRole]?.() || []
 }
 
 /**
  * Filtre les immeubles selon le rôle de l'utilisateur
  */
 export const filterImmeubles = (immeubles, commercials, userRole, userId) => {
-  if (!immeubles || !commercials) return []
+  if (!immeubles?.length || !commercials?.length) return []
 
-  const userIdInt = parseInt(userId)
+  const userIdInt = parseInt(userId, 10)
+  if (isNaN(userIdInt)) return []
 
-  switch (userRole) {
-    case ROLES.ADMIN:
-      return immeubles
+  const getCommercialIds = commercialsList => commercialsList.map(c => c.id)
 
-    case ROLES.DIRECTEUR: {
+  const roleFilters = {
+    [ROLES.ADMIN]: () => immeubles,
+
+    [ROLES.DIRECTEUR]: () => {
       const directeurCommercials = commercials.filter(c => c.directeurId === userIdInt)
-      const commercialIds = directeurCommercials.map(c => c.id)
+      const commercialIds = getCommercialIds(directeurCommercials)
       return immeubles.filter(immeuble => commercialIds.includes(immeuble.commercialId))
-    }
+    },
 
-    case ROLES.MANAGER: {
+    [ROLES.MANAGER]: () => {
       const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
-      const managerCommercialIds = managerCommercials.map(c => c.id)
+      const managerCommercialIds = getCommercialIds(managerCommercials)
       return immeubles.filter(immeuble => managerCommercialIds.includes(immeuble.commercialId))
-    }
-
-    default:
-      return []
+    },
   }
+
+  return roleFilters[userRole]?.() || []
 }
 
 /**
  * Filtre les statistiques selon le rôle de l'utilisateur
  */
 export const filterStatistics = (statistics, commercials, userRole, userId) => {
-  if (!statistics || !commercials) return []
+  if (!statistics?.length || !commercials?.length) return []
 
-  const userIdInt = parseInt(userId)
+  const userIdInt = parseInt(userId, 10)
+  if (isNaN(userIdInt)) return []
 
-  switch (userRole) {
-    case ROLES.ADMIN:
-      return statistics
+  const getCommercialIds = commercialsList => commercialsList.map(c => c.id)
 
-    case ROLES.DIRECTEUR: {
-      // Statistiques des commerciaux du directeur
+  const roleFilters = {
+    [ROLES.ADMIN]: () => statistics,
+
+    [ROLES.DIRECTEUR]: () => {
       const directeurCommercials = commercials.filter(c => c.directeurId === userIdInt)
-      const commercialIds = directeurCommercials.map(c => c.id)
+      const commercialIds = getCommercialIds(directeurCommercials)
       return statistics.filter(stat => commercialIds.includes(stat.commercialId))
-    }
+    },
 
-    case ROLES.MANAGER: {
-      // Statistiques des commerciaux du manager
+    [ROLES.MANAGER]: () => {
       const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
-      const managerCommercialIds = managerCommercials.map(c => c.id)
+      const managerCommercialIds = getCommercialIds(managerCommercials)
       return statistics.filter(stat => managerCommercialIds.includes(stat.commercialId))
-    }
-
-    default:
-      return []
+    },
   }
+
+  return roleFilters[userRole]?.() || []
 }
 
 /**

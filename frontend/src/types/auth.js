@@ -4,7 +4,7 @@
  */
 
 /**
- * @typedef {'directeur' | 'manager' | 'commercial'} UserRole
+ * @typedef {'admin' | 'directeur' | 'manager'} UserRole
  */
 
 /**
@@ -14,8 +14,8 @@
  * @property {string} prenom
  * @property {string} email
  * @property {UserRole} role
- * @property {number} [managerId] - For commercials
- * @property {number} [directeurId] - For managers and commercials
+ * @property {number} [managerId] - For managers (assigned directeur)
+ * @property {number} [directeurId] - For managers (assigned directeur)
  */
 
 /**

@@ -18,6 +18,13 @@ type Commercial {
   zones: [Zone!]!
 }
 
+type CommercialZoneRelation {
+  commercialId: Int!
+  createdAt: DateTime!
+  id: Int!
+  zoneId: Int!
+}
+
 input CreateCommercialInput {
   age: Int!
   directeurId: Int
@@ -52,14 +59,20 @@ input CreateManagerInput {
 }
 
 input CreateStatisticInput {
-  commercialId: Int!
+  commercialId: Int
   contratsSignes: Int!
+  immeubleId: Int
   immeublesVisites: Int!
+  nbImmeublesProspectes: Int!
+  nbPortesProspectes: Int!
   refus: Int!
   rendezVousPris: Int!
+  zoneId: Int
 }
 
 input CreateZoneInput {
+  directeurId: Int
+  managerId: Int
   nom: String!
   rayon: Float!
   xOrigin: Float!
@@ -142,14 +155,18 @@ type Query {
 }
 
 type Statistic {
-  commercialId: Int!
+  commercialId: Int
   contratsSignes: Int!
   createdAt: DateTime!
   id: Int!
+  immeubleId: Int
   immeublesVisites: Int!
+  nbImmeublesProspectes: Int!
+  nbPortesProspectes: Int!
   refus: Int!
   rendezVousPris: Int!
   updatedAt: DateTime!
+  zoneId: Int
 }
 
 input UpdateCommercialInput {
@@ -193,13 +210,19 @@ input UpdateStatisticInput {
   commercialId: Int
   contratsSignes: Int
   id: Int!
+  immeubleId: Int
   immeublesVisites: Int
+  nbImmeublesProspectes: Int
+  nbPortesProspectes: Int
   refus: Int
   rendezVousPris: Int
+  zoneId: Int
 }
 
 input UpdateZoneInput {
+  directeurId: Int
   id: Int!
+  managerId: Int
   nom: String
   rayon: Float
   xOrigin: Float
@@ -207,8 +230,11 @@ input UpdateZoneInput {
 }
 
 type Zone {
+  commercials: [CommercialZoneRelation!]
   createdAt: DateTime!
+  directeurId: Int
   id: Int!
+  managerId: Int
   nom: String!
   rayon: Float!
   updatedAt: DateTime!

@@ -3,6 +3,7 @@ import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
 import { ActionConfirmation } from '@/components/ActionConfirmation'
+import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useRole } from '@/contexts/RoleContext'
 import {
   useZones,
@@ -12,6 +13,7 @@ import {
   useDirecteurs,
   useManagers,
   useCommercials,
+  useAssignZone,
 } from '@/services'
 import { useState, useMemo } from 'react'
 import { apiCache } from '@/services/api-cache'
@@ -50,19 +52,34 @@ const fetchLocationName = async (longitude, latitude) => {
 
 export default function Zones() {
   const loading = useSimpleLoading(1000)
-  const { currentRole } = useRole()
   const [showZoneModal, setShowZoneModal] = useState(false)
   const [editingZone, setEditingZone] = useState(null)
-  const [confirmAction, setConfirmAction] = useState({ isOpen: false, type: '', zone: null, isLoading: false })
+  const [confirmAction, setConfirmAction] = useState({
+    isOpen: false,
+    type: '',
+    zone: null,
+    isLoading: false,
+  })
+
+  // Récupération du rôle de l'utilisateur
+  const { currentRole } = useRole()
 
   // API hooks
-  const { data: zones, refetch: refetchZones } = useZones()
+  const { data: zonesApi, refetch: refetchZones } = useZones()
   const { mutate: createZone } = useCreateZone()
   const { mutate: updateZone } = useUpdateZone()
   const { mutate: removeZone } = useRemoveZone()
+  const { mutate: assignZoneToCommercial } = useAssignZone()
   const { data: directeurs } = useDirecteurs()
   const { data: managers } = useManagers()
   const { data: commercials } = useCommercials()
+
+  // Utilisation du système de rôles pour filtrer les données
+  const {
+    data: filteredZones,
+    permissions,
+    description,
+  } = useEntityPage('zones', zonesApi || [], { commercials })
 
   // Configuration pour le lazy loading des adresses
   const mapboxLazyLoader = useMemo(
@@ -140,31 +157,55 @@ export default function Zones() {
 
   // Enrichir les zones avec l'information d'assignation
   const enrichedZones = useMemo(() => {
-    if (!zones || !commercials) return zones || []
+    if (!filteredZones) return []
 
-    return zones.map(zone => {
-      // Trouver les commercials assignés à cette zone
-      const assignedCommercials = commercials.filter(commercial =>
-        commercial.zones?.some(z => z.id === zone.id)
-      )
+    return filteredZones.map(zone => {
+      const assignedToList = []
 
-      const assignedTo =
-        assignedCommercials.length > 0
-          ? assignedCommercials.map(c => `${c.prenom} ${c.nom}`).join(', ')
-          : null
+      // 1. Vérifier l'assignation directe au directeur
+      if (zone.directeurId && directeurs) {
+        const directeur = directeurs.find(d => d.id === zone.directeurId)
+        if (directeur) {
+          assignedToList.push(`${directeur.prenom} ${directeur.nom} (Directeur)`)
+        }
+      }
+
+      // 2. Vérifier l'assignation directe au manager
+      if (zone.managerId && managers) {
+        const manager = managers.find(m => m.id === zone.managerId)
+        if (manager) {
+          assignedToList.push(`${manager.prenom} ${manager.nom} (Manager)`)
+        }
+      }
+
+      // 3. Trouver les commerciaux assignés à cette zone (via CommercialZone)
+      if (commercials) {
+        const assignedCommercials = commercials.filter(commercial =>
+          commercial.zones?.some(z => z.id === zone.id)
+        )
+        if (assignedCommercials.length > 0) {
+          assignedCommercials.forEach(c => {
+            assignedToList.push(`${c.prenom} ${c.nom} (Commercial)`)
+          })
+        }
+      }
+
+      const assignedTo = assignedToList.length > 0 ? assignedToList.join(', ') : null
 
       return {
         ...zone,
         assignedTo,
       }
     })
-  }, [zones, commercials])
+  }, [filteredZones, directeurs, managers, commercials])
 
-  // Préparer les utilisateurs assignables selon le rôle (seulement pour admin et directeur)
+  // Préparer les utilisateurs assignables selon le rôle
   const getAssignableUsers = () => {
     const users = []
 
-    if (currentRole === 'admin') {
+    // Les permissions sont déjà gérées par le système de rôles
+    // On peut toujours proposer l'assignation si on a les droits d'ajout/édition
+    if (permissions.canAdd || permissions.canEdit) {
       if (directeurs) {
         users.push(
           ...directeurs.map(d => ({
@@ -192,28 +233,7 @@ export default function Zones() {
           }))
         )
       }
-    } else if (currentRole === 'directeur') {
-      // Directeur peut assigner à ses managers et commerciaux
-      if (managers) {
-        users.push(
-          ...managers.map(m => ({
-            id: m.id,
-            name: `${m.prenom} ${m.nom}`,
-            role: 'manager',
-          }))
-        )
-      }
-      if (commercials) {
-        users.push(
-          ...commercials.map(c => ({
-            id: c.id,
-            name: `${c.prenom} ${c.nom}`,
-            role: 'commercial',
-          }))
-        )
-      }
     }
-    // Manager ne peut pas créer de zones, donc pas de cas pour 'manager'
 
     return users
   }
@@ -221,6 +241,31 @@ export default function Zones() {
   const handleAddZone = () => {
     setEditingZone(null)
     setShowZoneModal(true)
+  }
+
+  /**
+   * Détermine l'utilisateur assigné à une zone (format: "role-id")
+   * @param {object} zone - La zone à analyser
+   * @returns {string} Format: "directeur-5", "manager-3", "commercial-7" ou ""
+   */
+  const getAssignedUserIdFromZone = zone => {
+    if (!zone) return ''
+
+    // Priorité: directeur > manager > commercial
+    if (zone.directeurId) {
+      return `directeur-${zone.directeurId}`
+    }
+
+    if (zone.managerId) {
+      return `manager-${zone.managerId}`
+    }
+
+    // Pour les commerciaux, prendre le premier assigné s'il y en a
+    if (zone.commercials && zone.commercials.length > 0) {
+      return `commercial-${zone.commercials[0].commercialId}`
+    }
+
+    return ''
   }
 
   const handleEditZone = zone => {
@@ -233,7 +278,12 @@ export default function Zones() {
   }
 
   const confirmEditZone = () => {
-    setEditingZone(confirmAction.zone)
+    // Enrichir la zone avec l'utilisateur assigné actuel
+    const zoneWithAssignment = {
+      ...confirmAction.zone,
+      assignedUserId: getAssignedUserIdFromZone(confirmAction.zone),
+    }
+    setEditingZone(zoneWithAssignment)
     setShowZoneModal(true)
     setConfirmAction({ isOpen: false, type: '', zone: null, isLoading: false })
   }
@@ -260,24 +310,96 @@ export default function Zones() {
     }
   }
 
+  /**
+   * Parse l'assignedUserId (format: "role-id") et retourne le rôle et l'ID
+   * @param {string} assignedUserId - Format: "directeur-5", "manager-3", "commercial-7"
+   * @returns {{role: string, id: number} | null}
+   */
+  const parseAssignedUserId = assignedUserId => {
+    if (!assignedUserId || typeof assignedUserId !== 'string') return null
+
+    const parts = assignedUserId.split('-')
+    if (parts.length !== 2) return null
+
+    const [role, idStr] = parts
+    const id = parseInt(idStr, 10)
+
+    if (isNaN(id)) return null
+
+    return { role, id }
+  }
+
+  /**
+   * Prépare les données de la zone avec l'assignation appropriée
+   * @param {object} zoneData - Données de base de la zone
+   * @param {string} assignedUserId - Format: "role-id"
+   * @returns {object} Données enrichies avec directeurId ou managerId
+   */
+  const prepareZoneDataWithAssignment = (zoneData, assignedUserId) => {
+    const assignment = parseAssignedUserId(assignedUserId)
+
+    if (!assignment) return zoneData
+
+    const enrichedData = { ...zoneData }
+
+    // Réinitialiser les assignations existantes
+    enrichedData.directeurId = null
+    enrichedData.managerId = null
+
+    // Ajouter l'assignation appropriée selon le rôle
+    if (assignment.role === 'directeur') {
+      enrichedData.directeurId = assignment.id
+    } else if (assignment.role === 'manager') {
+      enrichedData.managerId = assignment.id
+    }
+    // Pour les commerciaux, on ne définit pas directeurId/managerId
+    // L'assignation se fait via la mutation assignZoneToCommercial
+
+    return enrichedData
+  }
+
   const handleZoneValidate = async (zoneData, assignedUserId) => {
     try {
+      const assignment = parseAssignedUserId(assignedUserId)
+
       if (editingZone) {
         // Modifier la zone existante
+        const enrichedData = prepareZoneDataWithAssignment(zoneData, assignedUserId)
         const updatedZone = await updateZone({
           id: editingZone.id,
-          ...zoneData,
+          ...enrichedData,
         })
+
+        // Si c'est un commercial, gérer l'assignation via la mutation spécifique
+        if (assignment?.role === 'commercial') {
+          // Note: Pour l'instant on ne gère que l'ajout, pas le remplacement
+          // Une amélioration future serait de gérer les assignations multiples
+          console.log(
+            'Assignation commercial lors de la modification - à implémenter si nécessaire'
+          )
+        }
+
         console.log('Zone modifiée avec succès:', updatedZone)
       } else {
         // Créer une nouvelle zone
-        const newZone = await createZone(zoneData)
+        const enrichedData = prepareZoneDataWithAssignment(zoneData, assignedUserId)
+        const newZone = await createZone(enrichedData)
 
-        // TODO: Assigner la zone à l'utilisateur sélectionné si nécessaire
-        if (assignedUserId && newZone?.id) {
-          console.log("Zone à assigner à l'utilisateur:", assignedUserId)
-          // await assignZoneToUser(newZone.id, assignedUserId)
+        // Si c'est un commercial, l'assigner à la zone via la mutation spécifique
+        if (assignment?.role === 'commercial' && newZone?.id) {
+          try {
+            await assignZoneToCommercial({
+              commercialId: assignment.id,
+              zoneId: newZone.id,
+            })
+            console.log(`Zone ${newZone.id} assignée au commercial ${assignment.id}`)
+          } catch (assignError) {
+            console.error("Erreur lors de l'assignation du commercial:", assignError)
+            // La zone est créée mais l'assignation a échoué
+            // On pourrait afficher un message à l'utilisateur ici
+          }
         }
+
         console.log('Zone créée avec succès:', newZone)
       }
 
@@ -315,22 +437,20 @@ export default function Zones() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Zones</h1>
-        <p className="text-muted-foreground text-base">
-          Gestion des zones géographiques et suivi des performances territoriales
-        </p>
+        <p className="text-muted-foreground text-base">{description}</p>
       </div>
 
       <AdvancedDataTable
         title="Liste des Zones"
-        description="Toutes les zones de couverture avec leurs statistiques et performances"
+        description={description}
         data={enrichedZones}
         columns={zonesColumns}
         searchKey="nom"
-        onAdd={currentRole !== 'manager' ? handleAddZone : undefined}
+        onAdd={permissions.canAdd ? handleAddZone : undefined}
         addButtonText="Nouvelle Zone"
         detailsPath="/zones"
-        onEdit={currentRole !== 'manager' ? handleEditZone : undefined}
-        onDelete={currentRole !== 'manager' ? handleDeleteZone : undefined}
+        onEdit={permissions.canEdit ? handleEditZone : undefined}
+        onDelete={permissions.canDelete ? handleDeleteZone : undefined}
         lazyLoaders={[mapboxLazyLoader]}
       />
 
@@ -338,7 +458,7 @@ export default function Zones() {
         <ZoneCreatorModal
           onValidate={handleZoneValidate}
           onClose={handleCloseModal}
-          existingZones={zones || []}
+          existingZones={filteredZones || []}
           zoneToEdit={editingZone}
           userRole={currentRole}
           assignableUsers={getAssignableUsers()}
@@ -350,11 +470,7 @@ export default function Zones() {
         onClose={() => setConfirmAction({ isOpen: false, type: '', zone: null, isLoading: false })}
         onConfirm={confirmAction.type === 'delete' ? confirmDeleteZone : confirmEditZone}
         type={confirmAction.type}
-        title={
-          confirmAction.type === 'delete'
-            ? 'Supprimer la zone'
-            : 'Modifier la zone'
-        }
+        title={confirmAction.type === 'delete' ? 'Supprimer la zone' : 'Modifier la zone'}
         description={
           confirmAction.type === 'delete'
             ? 'Cette action supprimera définitivement la zone et toutes ses associations avec les commerciaux.'

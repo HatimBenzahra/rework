@@ -146,7 +146,7 @@ export const ZoneCreatorModal = ({
   const [step, setStep] = useState(isEditMode ? 3 : 1)
   const [zoneName, setZoneName] = useState(isEditMode ? zoneToEdit?.nom || '' : '')
   const [assignedUserId, setAssignedUserId] = useState(
-    isEditMode ? zoneToEdit?.assignedUserId || '' : ''
+    isEditMode && zoneToEdit?.assignedUserId ? zoneToEdit.assignedUserId : ''
   )
   const [zoneColor, setZoneColor] = useState(
     isEditMode && zoneToEdit?.id ? getZoneColor(zoneToEdit.id) : '#3388ff'

@@ -8,6 +8,21 @@ import {
 } from 'class-validator';
 
 @ObjectType()
+export class CommercialZoneRelation {
+  @Field(() => Int)
+  id: number;
+
+  @Field(() => Int)
+  commercialId: number;
+
+  @Field(() => Int)
+  zoneId: number;
+
+  @Field()
+  createdAt: Date;
+}
+
+@ObjectType()
 export class Zone {
   @Field(() => Int)
   id: number;
@@ -23,6 +38,15 @@ export class Zone {
 
   @Field(() => Float)
   rayon: number;
+
+  @Field(() => Int, { nullable: true })
+  directeurId?: number;
+
+  @Field(() => Int, { nullable: true })
+  managerId?: number;
+
+  @Field(() => [CommercialZoneRelation], { nullable: true })
+  commercials?: CommercialZoneRelation[];
 
   @Field()
   createdAt: Date;
@@ -50,6 +74,14 @@ export class CreateZoneInput {
   @IsNumber()
   @Min(0)
   rayon: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  directeurId?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  managerId?: number;
 }
 
 @InputType()
@@ -77,4 +109,12 @@ export class UpdateZoneInput {
   @IsNumber()
   @Min(0)
   rayon?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  directeurId?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  managerId?: number;
 }
