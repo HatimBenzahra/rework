@@ -254,7 +254,8 @@ export const ZoneCreatorModal = ({
   // Validation de la couleur pour s'assurer qu'elle est valide
   const validZoneColor = zoneColor.match(/^#[0-9A-Fa-f]{6}$/) ? zoneColor : '#3388ff'
 
-  const isFormValid = center && zoneName && radius > 0
+  const isFormValid = center && zoneName && radius > 0 && 
+    ((userRole === 'admin' || userRole === 'directeur') ? assignedUserId : true)
   const currentCircleGeoJSON = center && radius > 0 ? createGeoJSONCircle(center, radius) : null
 
   return (

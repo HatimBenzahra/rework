@@ -1,12 +1,13 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useCommercial, useManagers } from '@/services'
+import { useCommercialFull, useManagers } from '@/services'
 import { useMemo } from 'react'
 
 export default function CommercialDetails() {
   const { id } = useParams()
-  const { data: commercial, loading, error } = useCommercial(parseInt(id))
+  // ⚡ Utilise useCommercialFull pour charger toutes les relations (immeubles, zones, statistics)
+  const { data: commercial, loading, error } = useCommercialFull(parseInt(id))
   const { data: managers } = useManagers()
 
   // Préparer les données pour l'affichage

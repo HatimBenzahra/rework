@@ -254,6 +254,14 @@ export function useCommercial(id: number): UseApiState<Commercial> & UseApiActio
   return useApiCall(() => api.commercials.getById(id), [id], 'commercials')
 }
 
+/**
+ * Hook pour charger un commercial avec toutes ses relations (immeubles, zones, statistics)
+ * ⚡ Optimisé pour les pages de détails - charge plus de données que useCommercial
+ */
+export function useCommercialFull(id: number): UseApiState<Commercial> & UseApiActions {
+  return useApiCall(() => api.commercials.getFullById(id), [id], 'commercials-full')
+}
+
 export function useCreateCommercial(): UseApiMutation<CreateCommercialInput, Commercial> {
   return useApiMutation(api.commercials.create, 'commercials')
 }

@@ -75,6 +75,11 @@ export const GET_MANAGER = `
 // Commercial Queries
 // =============================================================================
 
+/**
+ * Requête légère pour la liste des commerciaux (tableau)
+ * ⚡ Optimisée : Charge uniquement les champs de base sans relations
+ * Utilisée par : Page Commerciaux (liste/tableau)
+ */
 export const GET_COMMERCIALS = `
   query GetCommercials {
     commercials {
@@ -88,47 +93,39 @@ export const GET_COMMERCIALS = `
       directeurId
       createdAt
       updatedAt
-      immeubles {
-        id
-        adresse
-        nbEtages
-        nbPortesParEtage
-        commercialId
-        createdAt
-        updatedAt
-      }
-      zones {
-        id
-        nom
-        xOrigin
-        yOrigin
-        rayon
-        directeurId
-        managerId
-        commercials {
-          id
-          commercialId
-          zoneId
-        }
-        createdAt
-        updatedAt
-      }
-      statistics {
-        id
-        commercialId
-        contratsSignes
-        immeublesVisites
-        rendezVousPris
-        refus
-        createdAt
-        updatedAt
-      }
     }
   }
 `
 
+/**
+ * Requête légère pour un commercial sans relations
+ * ⚡ Optimisée : Charge uniquement les champs de base
+ * Utilisée par : Formulaires d'édition rapide
+ */
 export const GET_COMMERCIAL = `
   query GetCommercial($id: Int!) {
+    commercial(id: $id) {
+      id
+      nom
+      prenom
+      email
+      numTel
+      age
+      managerId
+      directeurId
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+/**
+ * Requête complète pour les détails d'un commercial
+ * 📊 Charge toutes les relations : immeubles, zones, statistics
+ * Utilisée par : Page détails commercial
+ */
+export const GET_COMMERCIAL_FULL = `
+  query GetCommercialFull($id: Int!) {
     commercial(id: $id) {
       id
       nom

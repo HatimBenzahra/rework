@@ -70,8 +70,22 @@ export class ZoneService {
   }
 
   async remove(id: number) {
-    return this.prisma.zone.delete({
-      where: { id },
+    // Use a transaction to ensure all deletions succeed or fail together
+    return this.prisma.$transaction(async (prisma) => {
+      // First, delete all CommercialZone associations
+      await prisma.commercialZone.deleteMany({
+        where: { zoneId: id },
+      });
+
+      // Delete all statistics related to this zone
+      await prisma.statistic.deleteMany({
+        where: { zoneId: id },
+      });
+
+      // Finally, delete the zone itself
+      return prisma.zone.delete({
+        where: { id },
+      });
     });
   }
 }
