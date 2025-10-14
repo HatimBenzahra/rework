@@ -45,7 +45,9 @@ input CreateDirecteurInput {
 
 input CreateImmeubleInput {
   adresse: String!
+  ascenseurPresent: Boolean!
   commercialId: Int!
+  digitalCode: String
   nbEtages: Int!
   nbPortesParEtage: Int!
   zoneId: Int
@@ -98,8 +100,10 @@ type Directeur {
 
 type Immeuble {
   adresse: String!
+  ascenseurPresent: Boolean!
   commercialId: Int
   createdAt: DateTime!
+  digitalCode: String
   id: Int!
   nbEtages: Int!
   nbPortesParEtage: Int!
@@ -193,7 +197,9 @@ input UpdateDirecteurInput {
 
 input UpdateImmeubleInput {
   adresse: String
+  ascenseurPresent: Boolean
   commercialId: Int
+  digitalCode: String
   id: Int!
   nbEtages: Int
   nbPortesParEtage: Int

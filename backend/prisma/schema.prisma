@@ -85,6 +85,8 @@ model Immeuble {
   adresse           String
   nbEtages          Int
   nbPortesParEtage  Int
+  ascenseurPresent  Boolean  @default(false)
+  digitalCode       String?
   commercialId      Int?
   zoneId            Int?
   createdAt         DateTime @default(now())

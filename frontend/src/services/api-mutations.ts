@@ -227,6 +227,8 @@ export const CREATE_IMMEUBLE = `
       adresse
       nbEtages
       nbPortesParEtage
+      ascenseurPresent
+      digitalCode
       commercialId
       createdAt
       updatedAt
@@ -241,6 +243,8 @@ export const UPDATE_IMMEUBLE = `
       adresse
       nbEtages
       nbPortesParEtage
+      ascenseurPresent
+      digitalCode
       commercialId
       createdAt
       updatedAt

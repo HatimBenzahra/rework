@@ -17,6 +17,7 @@ import { useCommercialFull, useStatistics } from '@/hooks/use-api'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 import CommercialBottomBar from '@/components/CommercialBottomBar'
 import CommercialHeader from '@/components/CommercialHeader'
+import ImmeublesList from '@/pages-COMMERCIAL/immeubles/ImmeublesList'
 
 export default function CommercialDashboard() {
   const { currentUserId } = useRole()
@@ -159,39 +160,7 @@ export default function CommercialDashboard() {
         )
 
       case 'immeubles':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Mes immeubles</h3>
-              <Badge>{commercial?.immeubles?.length || 0} immeubles</Badge>
-            </div>
-            <div className="space-y-3">
-              {commercial?.immeubles?.map(immeuble => (
-                <Card key={immeuble.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">{immeuble.adresse}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {immeuble.nbEtages * immeuble.nbPortesParEtage} portes
-                      </Badge>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-              {(!commercial?.immeubles || commercial.immeubles.length === 0) && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Aucun immeuble assigné</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )
+        return <ImmeublesList />
 
       case 'historique':
         return (

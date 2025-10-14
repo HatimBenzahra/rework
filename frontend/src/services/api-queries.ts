@@ -140,6 +140,8 @@ export const GET_COMMERCIAL_FULL = `
         adresse
         nbEtages
         nbPortesParEtage
+        ascenseurPresent
+        digitalCode
         commercialId
         createdAt
         updatedAt
@@ -271,6 +273,8 @@ export const GET_IMMEUBLES = `
       adresse
       nbEtages
       nbPortesParEtage
+      ascenseurPresent
+      digitalCode
       commercialId
       createdAt
       updatedAt
@@ -285,6 +289,8 @@ export const GET_IMMEUBLE = `
       adresse
       nbEtages
       nbPortesParEtage
+      ascenseurPresent
+      digitalCode
       commercialId
       createdAt
       updatedAt

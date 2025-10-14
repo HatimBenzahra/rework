@@ -64,6 +64,8 @@
  * @property {string} adresse
  * @property {number} nbEtages
  * @property {number} nbPortesParEtage
+ * @property {boolean} ascenseurPresent
+ * @property {string|null} digitalCode
  * @property {number} commercialId
  */
 
@@ -123,6 +125,8 @@
  * @property {string} adresse
  * @property {number} nbEtages
  * @property {number} nbPortesParEtage
+ * @property {boolean} ascenseurPresent
+ * @property {string|null} digitalCode
  * @property {number} commercialId
  */
 
@@ -187,6 +191,8 @@
  * @property {string} [adresse]
  * @property {number} [nbEtages]
  * @property {number} [nbPortesParEtage]
+ * @property {boolean} [ascenseurPresent]
+ * @property {string|null} [digitalCode]
  */
 
 /**

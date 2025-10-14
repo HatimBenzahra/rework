@@ -1,5 +1,5 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, IsOptional, IsInt, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsInt, Min, IsBoolean } from 'class-validator';
 
 @ObjectType()
 export class Immeuble {
@@ -14,6 +14,12 @@ export class Immeuble {
 
   @Field(() => Int)
   nbPortesParEtage: number;
+
+  @Field()
+  ascenseurPresent: boolean;
+
+  @Field({ nullable: true })
+  digitalCode?: string;
 
   @Field(() => Int, { nullable: true })
   commercialId?: number;
@@ -44,6 +50,15 @@ export class CreateImmeubleInput {
   @IsInt()
   @Min(1)
   nbPortesParEtage: number;
+
+  @Field()
+  @IsBoolean()
+  ascenseurPresent: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  digitalCode?: string;
 
   @Field(() => Int)
   @IsInt()
@@ -76,6 +91,16 @@ export class UpdateImmeubleInput {
   @IsInt()
   @Min(1)
   nbPortesParEtage?: number;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  ascenseurPresent?: boolean;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  digitalCode?: string;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()

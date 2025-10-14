@@ -186,6 +186,8 @@ export const CREATE_IMMEUBLE = Apollo.gql`
       adresse
       nbEtages
       nbPortesParEtage
+      ascenseurPresent
+      digitalCode
       commercialId
       createdAt
       updatedAt
@@ -200,6 +202,8 @@ export const UPDATE_IMMEUBLE = Apollo.gql`
       adresse
       nbEtages
       nbPortesParEtage
+      ascenseurPresent
+      digitalCode
       createdAt
       updatedAt
     }

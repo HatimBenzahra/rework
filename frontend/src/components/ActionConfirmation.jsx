@@ -86,7 +86,7 @@ export function ActionConfirmation({
   showCancel = true,
   maxWidth = 'sm:max-w-md',
 }) {
-  const { isDark } = useTheme()
+  const { isDark: _isDark } = useTheme()
   const actionConfig = actionTypes[type] || actionTypes.info
   const IconComponent = actionConfig.icon
 
