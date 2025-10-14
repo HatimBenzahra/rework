@@ -50,8 +50,9 @@ export default function CommercialDetails() {
     if (!commercialData?.zones) return []
     return commercialData.zones.map(zone => {
       const assignment = zone.commercials?.find(c => c.commercialId === commercialData.id)
-      // Pour un commercial, tous ses immeubles sont dans sa zone assignée
-      const immeublesCount = commercialData.immeubles?.length || 0
+      // Compter les immeubles de cette zone assignés au commercial
+      const immeublesCount =
+        zone.immeubles?.filter(immeuble => immeuble.commercialId === commercialData.id).length || 0
       return {
         ...zone,
         assignmentDate: assignment?.createdAt || zone.createdAt,

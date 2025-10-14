@@ -6,6 +6,7 @@ import {
   IsNumber,
   Min,
 } from 'class-validator';
+import { Immeuble } from '../immeuble/immeuble.dto';
 
 @ObjectType()
 export class CommercialZoneRelation {
@@ -47,6 +48,9 @@ export class Zone {
 
   @Field(() => [CommercialZoneRelation], { nullable: true })
   commercials?: CommercialZoneRelation[];
+
+  @Field(() => [Immeuble], { nullable: true })
+  immeubles?: Immeuble[];
 
   @Field()
   createdAt: Date;

@@ -65,10 +65,10 @@ export default function DirecteurDetails() {
     const filtered = allZones.filter(zone => zone.directeurId === directeur.id)
     console.log('🗺️ Zones filtrées pour ce directeur:', filtered)
 
-    // Calculer le nombre d'immeubles par zone (pour l'instant 0, à implémenter si nécessaire)
+    // Calculer le nombre d'immeubles par zone
     return filtered.map(zone => ({
       ...zone,
-      immeublesCount: 0, // TODO: Calculer depuis les commerciaux de la zone
+      immeublesCount: zone.immeubles?.length || 0,
     }))
   }, [allZones, directeur])
 

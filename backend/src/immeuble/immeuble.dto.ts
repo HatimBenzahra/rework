@@ -15,8 +15,11 @@ export class Immeuble {
   @Field(() => Int)
   nbPortesParEtage: number;
 
-  @Field(() => Int)
-  commercialId: number;
+  @Field(() => Int, { nullable: true })
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  zoneId?: number;
 
   @Field()
   createdAt: Date;
@@ -45,6 +48,11 @@ export class CreateImmeubleInput {
   @Field(() => Int)
   @IsInt()
   commercialId: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  zoneId?: number;
 }
 
 @InputType()
@@ -73,4 +81,9 @@ export class UpdateImmeubleInput {
   @IsOptional()
   @IsInt()
   commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  zoneId?: number;
 }

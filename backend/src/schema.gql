@@ -48,6 +48,7 @@ input CreateImmeubleInput {
   commercialId: Int!
   nbEtages: Int!
   nbPortesParEtage: Int!
+  zoneId: Int
 }
 
 input CreateManagerInput {
@@ -97,12 +98,13 @@ type Directeur {
 
 type Immeuble {
   adresse: String!
-  commercialId: Int!
+  commercialId: Int
   createdAt: DateTime!
   id: Int!
   nbEtages: Int!
   nbPortesParEtage: Int!
   updatedAt: DateTime!
+  zoneId: Int
 }
 
 type Manager {
@@ -195,6 +197,7 @@ input UpdateImmeubleInput {
   id: Int!
   nbEtages: Int
   nbPortesParEtage: Int
+  zoneId: Int
 }
 
 input UpdateManagerInput {
@@ -234,6 +237,7 @@ type Zone {
   createdAt: DateTime!
   directeurId: Int
   id: Int!
+  immeubles: [Immeuble!]
   managerId: Int
   nom: String!
   rayon: Float!

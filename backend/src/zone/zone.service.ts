@@ -20,6 +20,7 @@ export class ZoneService {
             commercial: true,
           },
         },
+        immeubles: true,
       },
     });
   }
@@ -33,6 +34,7 @@ export class ZoneService {
             commercial: true,
           },
         },
+        immeubles: true,
       },
     });
   }

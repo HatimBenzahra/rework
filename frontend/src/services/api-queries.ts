@@ -194,6 +194,12 @@ export const GET_ZONES = `
         commercialId
         zoneId
       }
+      immeubles {
+        id
+        adresse
+        commercialId
+        zoneId
+      }
       createdAt
       updatedAt
     }
@@ -239,6 +245,12 @@ export const GET_ZONE = `
       managerId
       commercials {
         id
+        commercialId
+        zoneId
+      }
+      immeubles {
+        id
+        adresse
         commercialId
         zoneId
       }

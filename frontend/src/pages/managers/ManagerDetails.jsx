@@ -70,23 +70,15 @@ export default function ManagerDetails() {
 
     // Calculer le nombre d'immeubles par zone
     return filtered.map(zone => {
-      // Trouver les commerciaux assignés à cette zone et qui appartiennent au manager
-      const zoneCommercials =
-        allCommercials?.filter(
-          c => c.managerId === manager.id && c.zones?.some(z => z.id === zone.id)
-        ) || []
-
-      // Compter tous les immeubles de ces commerciaux
-      const immeublesCount = zoneCommercials.reduce((total, commercial) => {
-        return total + (commercial.immeubles?.length || 0)
-      }, 0)
+      // Compter directement les immeubles de la zone
+      const immeublesCount = zone.immeubles?.length || 0
 
       return {
         ...zone,
         immeublesCount,
       }
     })
-  }, [allZones, manager, allCommercials])
+  }, [allZones, manager])
 
   // Gestion de l'assignation/désassignation
   const handleAssignCommercial = async commercialId => {

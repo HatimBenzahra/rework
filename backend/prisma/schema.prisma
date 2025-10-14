@@ -76,6 +76,7 @@ model Zone {
   directeur   Directeur? @relation(fields: [directeurId], references: [id])
   manager     Manager?   @relation(fields: [managerId], references: [id])
   commercials CommercialZone[]
+  immeubles   Immeuble[]
   statistics  Statistic[]
 }
 
@@ -85,10 +86,12 @@ model Immeuble {
   nbEtages          Int
   nbPortesParEtage  Int
   commercialId      Int?
+  zoneId            Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   commercial        Commercial? @relation(fields: [commercialId], references: [id])
+  zone              Zone?       @relation(fields: [zoneId], references: [id])
   statistics        Statistic[]
 }
 
