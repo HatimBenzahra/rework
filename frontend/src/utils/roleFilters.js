@@ -7,6 +7,7 @@ export const ROLES = {
   ADMIN: 'admin',
   DIRECTEUR: 'directeur',
   MANAGER: 'manager',
+  COMMERCIAL: 'commercial',
 }
 
 // Permissions par rôle et par entité
@@ -38,6 +39,15 @@ export const PERMISSIONS = {
     statistics: { view: true, add: true, edit: true, delete: false },
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
   },
+  [ROLES.COMMERCIAL]: {
+    commerciaux: { view: false, add: false, edit: false, delete: false },
+    managers: { view: false, add: false, edit: false, delete: false },
+    directeurs: { view: false, add: false, edit: false, delete: false },
+    zones: { view: true, add: false, edit: false, delete: false },
+    immeubles: { view: true, add: false, edit: false, delete: false },
+    statistics: { view: true, add: true, edit: true, delete: false },
+    'gps-tracking': { view: false, add: false, edit: false, delete: false },
+  },
 }
 
 /**
@@ -53,6 +63,7 @@ export const filterCommercials = (commercials, managers, userRole, userId) => {
     [ROLES.ADMIN]: () => commercials,
     [ROLES.DIRECTEUR]: () => commercials.filter(commercial => commercial.directeurId === userIdInt),
     [ROLES.MANAGER]: () => commercials.filter(commercial => commercial.managerId === userIdInt),
+    [ROLES.COMMERCIAL]: () => commercials.filter(commercial => commercial.id === userIdInt),
   }
 
   return roleFilters[userRole]?.() || []
@@ -71,6 +82,7 @@ export const filterManagers = (managers, userRole, userId) => {
     [ROLES.ADMIN]: () => managers,
     [ROLES.DIRECTEUR]: () => managers.filter(manager => manager.directeurId === userIdInt),
     [ROLES.MANAGER]: () => [],
+    [ROLES.COMMERCIAL]: () => [],
   }
 
   return roleFilters[userRole]?.() || []
@@ -89,6 +101,7 @@ export const filterDirecteurs = (directeurs, userRole, userId) => {
     [ROLES.ADMIN]: () => directeurs,
     [ROLES.DIRECTEUR]: () => directeurs.filter(directeur => directeur.id === userIdInt),
     [ROLES.MANAGER]: () => [],
+    [ROLES.COMMERCIAL]: () => [],
   }
 
   return roleFilters[userRole]?.() || []
@@ -129,6 +142,10 @@ export const filterZones = (zones, commercials, userRole, userId) => {
           zone.managerId === userIdInt || isZoneAssignedToCommercials(zone, managerCommercialIds)
       )
     },
+
+    [ROLES.COMMERCIAL]: () => {
+      return zones.filter(zone => isZoneAssignedToCommercials(zone, [userIdInt]))
+    },
   }
 
   return roleFilters[userRole]?.() || []
@@ -159,6 +176,10 @@ export const filterImmeubles = (immeubles, commercials, userRole, userId) => {
       const managerCommercialIds = getCommercialIds(managerCommercials)
       return immeubles.filter(immeuble => managerCommercialIds.includes(immeuble.commercialId))
     },
+
+    [ROLES.COMMERCIAL]: () => {
+      return immeubles.filter(immeuble => immeuble.commercialId === userIdInt)
+    },
   }
 
   return roleFilters[userRole]?.() || []
@@ -188,6 +209,10 @@ export const filterStatistics = (statistics, commercials, userRole, userId) => {
       const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
       const managerCommercialIds = getCommercialIds(managerCommercials)
       return statistics.filter(stat => managerCommercialIds.includes(stat.commercialId))
+    },
+
+    [ROLES.COMMERCIAL]: () => {
+      return statistics.filter(stat => stat.commercialId === userIdInt)
     },
   }
 
@@ -225,16 +250,19 @@ export const getEntityDescription = (entity, userRole) => {
       [ROLES.ADMIN]: "Toutes les zones géographiques de l'entreprise",
       [ROLES.DIRECTEUR]: 'Zones géographiques de votre division',
       [ROLES.MANAGER]: 'Zones géographiques de vos commerciaux',
+      [ROLES.COMMERCIAL]: 'Vos zones géographiques assignées',
     },
     immeubles: {
       [ROLES.ADMIN]: "Tous les immeubles gérés par l'entreprise",
       [ROLES.DIRECTEUR]: 'Immeubles gérés par votre division',
       [ROLES.MANAGER]: 'Immeubles gérés par vos commerciaux',
+      [ROLES.COMMERCIAL]: 'Vos immeubles assignés',
     },
     statistics: {
       [ROLES.ADMIN]: "Statistiques de tous les commerciaux de l'entreprise",
       [ROLES.DIRECTEUR]: 'Statistiques des commerciaux de votre division',
       [ROLES.MANAGER]: 'Statistiques de vos commerciaux',
+      [ROLES.COMMERCIAL]: 'Vos statistiques personnelles',
     },
   }
 

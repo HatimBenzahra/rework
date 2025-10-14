@@ -55,4 +55,5 @@ export interface RoleContextValue {
   isAdmin: boolean
   isDirecteur: boolean
   isManager: boolean
+  isCommercial: boolean
 }

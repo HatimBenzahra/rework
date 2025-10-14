@@ -53,6 +53,7 @@ export const RoleProvider = ({ children }) => {
       isAdmin: currentRole === ROLES.ADMIN,
       isDirecteur: currentRole === ROLES.DIRECTEUR,
       isManager: currentRole === ROLES.MANAGER,
+      isCommercial: currentRole === ROLES.COMMERCIAL,
     }),
     [currentRole, currentUserId]
   )

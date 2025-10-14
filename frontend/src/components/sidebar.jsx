@@ -214,6 +214,25 @@ export function AppSidebar() {
                 >
                   Sarra Khelifi {currentRole === ROLES.MANAGER && currentUserId === '6' && '✓'}
                 </DropdownMenuItem>
+                <DropdownMenuItem disabled className="text-xs">
+                  Commerciaux:
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.COMMERCIAL, '7')}
+                  className={
+                    currentRole === ROLES.COMMERCIAL && currentUserId === '7' ? 'bg-accent' : ''
+                  }
+                >
+                  Amira Sassi {currentRole === ROLES.COMMERCIAL && currentUserId === '7' && '✓'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.COMMERCIAL, '8')}
+                  className={
+                    currentRole === ROLES.COMMERCIAL && currentUserId === '8' ? 'bg-accent' : ''
+                  }
+                >
+                  Karim Bouali {currentRole === ROLES.COMMERCIAL && currentUserId === '8' && '✓'}
+                </DropdownMenuItem>
                 <DropdownMenuItem>Se déconnecter</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
