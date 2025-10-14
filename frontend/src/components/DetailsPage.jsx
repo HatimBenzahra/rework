@@ -12,9 +12,237 @@ import {
   TrendingUp,
   Users,
   Building2,
+  Search,
+  Filter,
+  ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 import AssignedZoneCard from './AssignedZoneCard'
+import { AdvancedDataTable } from './tableau'
 import { useEntityPermissions } from '@/hooks/useRoleBasedData'
+import { useState, useMemo, useEffect } from 'react'
+
+/**
+ * Composant de tableau sans Card wrapper pour éviter les doubles cards
+ */
+function DoorsTableContent({ data, columns, customStatusFilter }) {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  // Filtrage et tri des données
+  const filteredAndSortedData = useMemo(() => {
+    let filtered = data.filter(item => {
+      const searchMatch = item.number?.toLowerCase().includes(searchTerm.toLowerCase())
+      const statusMatch = statusFilter === 'all' || item.status === statusFilter
+      return searchMatch && statusMatch
+    })
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+    }
+
+    return filtered
+  }, [data, searchTerm, sortConfig, statusFilter])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage)
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const endIndex = startIndex + itemsPerPage
+    return filteredAndSortedData.slice(startIndex, endIndex)
+  }, [filteredAndSortedData, currentPage, itemsPerPage])
+
+  // Réinitialise la page quand on change de filtre/recherche
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, statusFilter])
+
+  const handleSort = key => {
+    setSortConfig(prevConfig => ({
+      key,
+      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Barre de filtres */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par numéro de porte..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <Filter className="mr-2 h-4 w-4" />
+              Statut
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Filtrer par statut</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {customStatusFilter.map(filter => (
+              <DropdownMenuItem key={filter.value} onClick={() => setStatusFilter(filter.value)}>
+                {filter.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Tableau */}
+      <div className="rounded-md border overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {columns.map((column, index) => (
+                  <TableHead
+                    key={index}
+                    className={`${column.className || ''} ${column.sortable ? 'cursor-pointer hover:bg-muted' : ''}`}
+                    onClick={() => column.sortable && handleSort(column.accessor)}
+                  >
+                    <div className="flex items-center">
+                      {column.header}
+                      {column.sortable && sortConfig.key === column.accessor && (
+                        <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                      )}
+                    </div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedData.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    Aucun résultat trouvé
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedData.map((row, rowIndex) => (
+                  <TableRow key={rowIndex} className="hover:bg-muted/50">
+                    {columns.map((column, colIndex) => (
+                      <TableCell key={colIndex} className={column.className}>
+                        {column.cell ? column.cell(row) : row[column.accessor]}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Footer avec pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Affichage de {(currentPage - 1) * itemsPerPage + 1} à{' '}
+            {Math.min(currentPage * itemsPerPage, filteredAndSortedData.length)} sur{' '}
+            {filteredAndSortedData.length} résultats
+          </div>
+
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  className={
+                    currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1
+                if (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                ) {
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(pageNumber)}
+                        isActive={currentPage === pageNumber}
+                        className="cursor-pointer"
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                } else if (pageNumber === currentPage - 2 || pageNumber === currentPage + 2) {
+                  return (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  )
+                }
+                return null
+              })}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  className={
+                    currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
+    </div>
+  )
+}
 
 /**
  * Composant de page de détails réutilisable
@@ -240,6 +468,116 @@ export default function DetailsPage({
                 </div>
               )}
               {section.type === 'custom' && section.render && section.render(data)}
+              {section.type === 'custom' && section.component === 'DoorsTable' && (
+                <DoorsTableContent
+                  data={section.data.doors}
+                  columns={section.data.columns}
+                  customStatusFilter={section.data.customFilters}
+                />
+              )}
+              {section.type === 'custom' && section.component === 'FloorDetails' && (
+                <div className="space-y-6">
+                  {section.data.map((floor, floorIndex) => (
+                    <div key={floorIndex} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold">Étage {floor.floor}</h3>
+                        <div className="flex gap-2 text-xs">
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+                            {floor.doors.filter(d => d.status === 'contrat_signe').length} signés
+                          </span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                            {floor.doors.filter(d => d.status === 'rdv_pris').length} RDV
+                          </span>
+                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                            {floor.doors.filter(d => d.status === 'curieux').length} curieux
+                          </span>
+                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded">
+                            {floor.doors.filter(d => d.status === 'refus').length} refus
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4">
+                        <h4 className="text-sm font-medium mb-3">Statut des portes</h4>
+                        <div className="grid gap-3">
+                          {floor.doors.map((door, doorIndex) => {
+                            const getStatusColor = status => {
+                              switch (status) {
+                                case 'contrat_signe':
+                                  return 'bg-green-50 border-green-200 text-green-800'
+                                case 'rdv_pris':
+                                  return 'bg-blue-50 border-blue-200 text-blue-800'
+                                case 'curieux':
+                                  return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                                case 'refus':
+                                  return 'bg-red-50 border-red-200 text-red-800'
+                                default:
+                                  return 'bg-gray-50 border-gray-200 text-gray-800'
+                              }
+                            }
+
+                            const getStatusLabel = status => {
+                              switch (status) {
+                                case 'contrat_signe':
+                                  return 'Contrat signé'
+                                case 'rdv_pris':
+                                  return 'RDV programmé'
+                                case 'curieux':
+                                  return 'Curieux'
+                                case 'refus':
+                                  return 'Refus'
+                                case 'non_visite':
+                                  return 'Non visité'
+                                default:
+                                  return status
+                              }
+                            }
+
+                            return (
+                              <div
+                                key={doorIndex}
+                                className={`p-3 rounded border ${getStatusColor(door.status)}`}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-medium">Porte {door.number}</span>
+                                      <span className="text-xs px-2 py-1 rounded bg-white/50">
+                                        {getStatusLabel(door.status)}
+                                      </span>
+                                    </div>
+
+                                    {door.rdvDate && (
+                                      <div className="text-sm mt-2">
+                                        <span className="font-medium">RDV:</span> {door.rdvDate} à{' '}
+                                        {door.rdvTime}
+                                      </div>
+                                    )}
+
+                                    {door.lastVisit && (
+                                      <div className="text-sm mt-1">
+                                        <span className="font-medium">Dernière visite:</span>{' '}
+                                        {door.lastVisit}
+                                      </div>
+                                    )}
+
+                                    {door.comment && (
+                                      <div className="text-sm mt-2 p-2 bg-white/30 rounded">
+                                        <span className="font-medium">Commentaire:</span>{' '}
+                                        {door.comment}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

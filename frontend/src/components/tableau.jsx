@@ -57,6 +57,7 @@ export function AdvancedDataTable({
   onEdit,
   onDelete,
   lazyLoaders = [], // Configuration pour le lazy loading
+  customStatusFilter = null, // Filtres personnalisés pour le statut
 }) {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
@@ -200,17 +201,34 @@ export function AdvancedDataTable({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Filtrer par status</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setStatusFilter('all')}>Tous</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('actif')}>Actif</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('inactif')}>
-                Inactif
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('suspendu')}>
-                Suspendu
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter('en_conge')}>
-                En congé
-              </DropdownMenuItem>
+              {customStatusFilter ? (
+                // Utiliser les filtres personnalisés si fournis
+                customStatusFilter.map(filter => (
+                  <DropdownMenuItem
+                    key={filter.value}
+                    onClick={() => setStatusFilter(filter.value)}
+                  >
+                    {filter.label}
+                  </DropdownMenuItem>
+                ))
+              ) : (
+                // Filtres par défaut
+                <>
+                  <DropdownMenuItem onClick={() => setStatusFilter('all')}>Tous</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('actif')}>
+                    Actif
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('inactif')}>
+                    Inactif
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('suspendu')}>
+                    Suspendu
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter('en_conge')}>
+                    En congé
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
