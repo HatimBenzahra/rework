@@ -2,8 +2,9 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useDirecteur, useManagers, useUpdateManager, getErrorMessage, logError } from '@/services'
+import { useDirecteur, useManagers, useUpdateManager, useZones } from '@/services'
 import { useRole } from '@/contexts/RoleContext'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +28,7 @@ export default function DirecteurDetails() {
   const { data: directeur, loading: directeurLoading, error, refetch } = useDirecteur(parseInt(id))
   const { data: allManagers, refetch: refetchManagers } = useManagers()
   const { mutate: updateManager, loading: updatingManager } = useUpdateManager()
+  const { data: allZones } = useZones()
 
   // Transformation des données API vers format UI
   const directeurData = useMemo(() => {
@@ -52,6 +54,23 @@ export default function DirecteurDetails() {
       taux_atteinte: '0%',
     }
   }, [directeur, allManagers])
+
+  // Récupérer les zones assignées à ce directeur
+  const directeurZones = useMemo(() => {
+    if (!allZones || !directeur) return []
+
+    // DEBUG: Vérifier les zones
+    console.log('🔍 DirecteurDetails - Toutes les zones:', allZones)
+    console.log('👤 Directeur ID:', directeur.id)
+    const filtered = allZones.filter(zone => zone.directeurId === directeur.id)
+    console.log('🗺️ Zones filtrées pour ce directeur:', filtered)
+
+    // Calculer le nombre d'immeubles par zone (pour l'instant 0, à implémenter si nécessaire)
+    return filtered.map(zone => ({
+      ...zone,
+      immeublesCount: 0, // TODO: Calculer depuis les commerciaux de la zone
+    }))
+  }, [allZones, directeur])
 
   // Gestion de l'assignation/désassignation
   const handleAssignManager = async managerId => {
@@ -278,6 +297,7 @@ export default function DirecteurDetails() {
       data={directeurData}
       personalInfo={personalInfo}
       statsCards={statsCards}
+      assignedZones={directeurZones}
       additionalSections={additionalSections}
       backUrl="/directeurs"
     />

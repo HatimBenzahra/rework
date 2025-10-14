@@ -6,7 +6,6 @@ import { useMemo } from 'react'
 
 export default function CommercialDetails() {
   const { id } = useParams()
-  // ⚡ Utilise useCommercialFull pour charger toutes les relations (immeubles, zones, statistics)
   const { data: commercial, loading, error } = useCommercialFull(parseInt(id))
   const { data: managers } = useManagers()
 
@@ -45,6 +44,21 @@ export default function CommercialDetails() {
       immeublesCount: commercial.immeubles?.length || 0,
     }
   }, [commercial, managers])
+
+  // Préparer les zones avec dates d'assignation et nombre d'immeubles
+  const assignedZones = useMemo(() => {
+    if (!commercialData?.zones) return []
+    return commercialData.zones.map(zone => {
+      const assignment = zone.commercials?.find(c => c.commercialId === commercialData.id)
+      // Pour un commercial, tous ses immeubles sont dans sa zone assignée
+      const immeublesCount = commercialData.immeubles?.length || 0
+      return {
+        ...zone,
+        assignmentDate: assignment?.createdAt || zone.createdAt,
+        immeublesCount,
+      }
+    })
+  }, [commercialData])
 
   if (loading) return <DetailsPageSkeleton />
 
@@ -173,6 +187,7 @@ export default function CommercialDetails() {
       data={commercialData}
       personalInfo={personalInfo}
       statsCards={statsCards}
+      assignedZones={assignedZones}
       additionalSections={additionalSections}
       backUrl="/commerciaux"
     />

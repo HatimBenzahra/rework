@@ -2,7 +2,13 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useManager, useDirecteurs, useCommercials, useUpdateCommercial } from '@/services'
+import {
+  useManager,
+  useDirecteurs,
+  useCommercials,
+  useUpdateCommercial,
+  useZones,
+} from '@/services'
 import { useRole } from '@/contexts/RoleContext'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
@@ -29,6 +35,7 @@ export default function ManagerDetails() {
   const { data: directeurs } = useDirecteurs()
   const { data: allCommercials, refetch: refetchCommercials } = useCommercials()
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
+  const { data: allZones } = useZones()
 
   // Transformation des données API vers format UI
   const managerData = useMemo(() => {
@@ -55,6 +62,31 @@ export default function ManagerDetails() {
       taux_atteinte: '0%',
     }
   }, [manager, directeurs, allCommercials])
+
+  // Récupérer les zones assignées à ce manager
+  const managerZones = useMemo(() => {
+    if (!allZones || !manager) return []
+    const filtered = allZones.filter(zone => zone.managerId === manager.id)
+
+    // Calculer le nombre d'immeubles par zone
+    return filtered.map(zone => {
+      // Trouver les commerciaux assignés à cette zone et qui appartiennent au manager
+      const zoneCommercials =
+        allCommercials?.filter(
+          c => c.managerId === manager.id && c.zones?.some(z => z.id === zone.id)
+        ) || []
+
+      // Compter tous les immeubles de ces commerciaux
+      const immeublesCount = zoneCommercials.reduce((total, commercial) => {
+        return total + (commercial.immeubles?.length || 0)
+      }, 0)
+
+      return {
+        ...zone,
+        immeublesCount,
+      }
+    })
+  }, [allZones, manager, allCommercials])
 
   // Gestion de l'assignation/désassignation
   const handleAssignCommercial = async commercialId => {
@@ -281,6 +313,7 @@ export default function ManagerDetails() {
       data={managerData}
       personalInfo={personalInfo}
       statsCards={statsCards}
+      assignedZones={managerZones}
       additionalSections={additionalSections}
       backUrl="/managers"
     />

@@ -99,8 +99,6 @@ export const GET_COMMERCIALS = `
 
 /**
  * Requête légère pour un commercial sans relations
- * ⚡ Optimisée : Charge uniquement les champs de base
- * Utilisée par : Formulaires d'édition rapide
  */
 export const GET_COMMERCIAL = `
   query GetCommercial($id: Int!) {
@@ -121,7 +119,7 @@ export const GET_COMMERCIAL = `
 
 /**
  * Requête complète pour les détails d'un commercial
- * 📊 Charge toutes les relations : immeubles, zones, statistics
+ * Charge toutes les relations : immeubles, zones, statistics
  * Utilisée par : Page détails commercial
  */
 export const GET_COMMERCIAL_FULL = `
@@ -158,6 +156,7 @@ export const GET_COMMERCIAL_FULL = `
           id
           commercialId
           zoneId
+          createdAt
         }
         createdAt
         updatedAt
@@ -219,6 +218,7 @@ export const GET_ZONES_WITH_COMMERCIALS = `
           id
           commercialId
           zoneId
+          createdAt
         }
         createdAt
         updatedAt

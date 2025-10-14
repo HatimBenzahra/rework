@@ -13,6 +13,8 @@ import {
   Users,
   Building2,
 } from 'lucide-react'
+import AssignedZoneCard from './AssignedZoneCard'
+import { useEntityPermissions } from '@/hooks/useRoleBasedData'
 
 /**
  * Composant de page de détails réutilisable
@@ -23,6 +25,7 @@ import {
  * @param {Object} props.personalInfo - Section d'informations personnelles
  * @param {Array} props.statsCards - Cartes de statistiques
  * @param {Array} props.additionalSections - Sections supplémentaires personnalisées
+ * @param {Array} props.assignedZones - Zones assignées à afficher (optionnel)
  * @param {string} props.backUrl - URL de retour
  * @param {string} props.status - Status de l'entité (actif, inactif, etc.)
  */
@@ -33,10 +36,12 @@ export default function DetailsPage({
   personalInfo = [],
   statsCards = [],
   additionalSections = [],
+  assignedZones = null,
   backUrl = '/',
   status,
 }) {
   const navigate = useNavigate()
+  const zonePermissions = useEntityPermissions('zones')
 
   const getStatusBadge = status => {
     const variants = {
@@ -164,6 +169,35 @@ export default function DetailsPage({
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Section des zones assignées (si applicable et autorisée) */}
+      {assignedZones && zonePermissions.canView && (
+        <div>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-1">Zones assignées</h2>
+            <p className="text-sm text-muted-foreground">Territoires géographiques attribués</p>
+          </div>
+          <Separator className="mb-6" />
+          <div className="space-y-4">
+            {assignedZones.length > 0 ? (
+              assignedZones.map(zone => (
+                <AssignedZoneCard
+                  key={zone.id}
+                  zone={zone}
+                  assignmentDate={zone.assignmentDate || zone.createdAt}
+                  immeublesCount={zone.immeublesCount || 0}
+                />
+              ))
+            ) : (
+              <Card className="border-2">
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground text-center py-8">Aucune zone assignée</p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       )}
