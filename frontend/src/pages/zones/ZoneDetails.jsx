@@ -20,9 +20,8 @@ export default function ZoneDetails() {
     if (!zone) return null
 
     // Trouver les commercials assignés à cette zone
-    const assignedCommercials = commercials?.filter(commercial =>
-      commercial.zones?.some(z => z.id === zone.id)
-    ) || []
+    const assignedCommercials =
+      commercials?.filter(commercial => commercial.zones?.some(z => z.id === zone.id)) || []
 
     return {
       ...zone,
@@ -30,9 +29,10 @@ export default function ZoneDetails() {
       region: `Zone ${zone.nom}`,
       immeubles_count: 0, // TODO: Calculer depuis les immeubles
       total_apartments: 0, // TODO: Calculer depuis les immeubles
-      manager: assignedCommercials.length > 0 
-        ? assignedCommercials.map(c => `${c.prenom} ${c.nom}`).join(', ')
-        : 'Non assigné',
+      manager:
+        assignedCommercials.length > 0
+          ? assignedCommercials.map(c => `${c.prenom} ${c.nom}`).join(', ')
+          : 'Non assigné',
       status: 'actif',
       occupancy_rate: '0%', // TODO: Calculer depuis les statistiques
       monthly_revenue: '0 TND', // TODO: Calculer depuis les statistiques
@@ -58,7 +58,11 @@ export default function ZoneDetails() {
     { label: 'Commerciaux assignés', value: zoneData.manager, icon: 'users' },
     { label: 'Nombre de commerciaux', value: zoneData.commercial_count, icon: 'users' },
     { label: 'Rayon de couverture', value: zoneData.surface_area, icon: 'mapPin' },
-    { label: 'Coordonnées centre', value: `${zone.yOrigin.toFixed(4)}°N, ${zone.xOrigin.toFixed(4)}°E`, icon: 'mapPin' },
+    {
+      label: 'Coordonnées centre',
+      value: `${zone.yOrigin.toFixed(4)}°N, ${zone.xOrigin.toFixed(4)}°E`,
+      icon: 'mapPin',
+    },
     { label: 'Description', value: zoneData.description, icon: 'building' },
   ]
 
@@ -112,24 +116,37 @@ export default function ZoneDetails() {
       title: 'Commerciaux assignés',
       description: 'Équipe commerciale de la zone',
       type: 'list',
-      items: zoneData.commercial_count > 0 
-        ? commercials
-            ?.filter(c => c.zones?.some(z => z.id === zone.id))
-            ?.map(commercial => ({
-              label: `${commercial.prenom} ${commercial.nom}`,
-              value: commercial.email || 'Email non renseigné'
-            })) || []
-        : [{ label: 'Aucun commercial assigné', value: 'Zone non attribuée' }],
+      items:
+        zoneData.commercial_count > 0
+          ? commercials
+              ?.filter(c => c.zones?.some(z => z.id === zone.id))
+              ?.map(commercial => ({
+                label: `${commercial.prenom} ${commercial.nom}`,
+                value: commercial.email || 'Email non renseigné',
+              })) || []
+          : [{ label: 'Aucun commercial assigné', value: 'Zone non attribuée' }],
     },
     {
       title: 'Actions possibles',
       description: 'Selon vos permissions',
       type: 'grid',
       items: [
-        { label: 'Voir les détails', value: permissions.canView ? '✅ Autorisé' : '❌ Non autorisé' },
-        { label: 'Modifier la zone', value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé' },
-        { label: 'Supprimer la zone', value: permissions.canDelete ? '✅ Autorisé' : '❌ Non autorisé' },
-        { label: 'Assigner commerciaux', value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé' },
+        {
+          label: 'Voir les détails',
+          value: permissions.canView ? '✅ Autorisé' : '❌ Non autorisé',
+        },
+        {
+          label: 'Modifier la zone',
+          value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé',
+        },
+        {
+          label: 'Supprimer la zone',
+          value: permissions.canDelete ? '✅ Autorisé' : '❌ Non autorisé',
+        },
+        {
+          label: 'Assigner commerciaux',
+          value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé',
+        },
       ],
     },
   ]

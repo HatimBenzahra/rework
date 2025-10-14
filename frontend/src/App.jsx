@@ -17,6 +17,7 @@ import ManagerDetails from '@/pages/managers/ManagerDetails'
 import DirecteurDetails from '@/pages/directeurs/DirecteurDetails'
 import ImmeubleDetails from '@/pages/immeubles/ImmeubleDetails'
 import ZoneDetails from '@/pages/zones/ZoneDetails'
+import GPSTracking from '@/pages/gps-tracking/GPSTracking'
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/immeubles/:id" element={<ImmeubleDetails />} />
                 <Route path="/zones" element={<Zones />} />
                 <Route path="/zones/:id" element={<ZoneDetails />} />
+                <Route path="/gps-tracking" element={<GPSTracking />} />
               </Routes>
             </div>
           </SidebarInset>

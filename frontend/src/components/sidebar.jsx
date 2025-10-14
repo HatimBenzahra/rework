@@ -8,10 +8,11 @@ import {
   User2,
   Building2,
   MapPin,
+  Navigation2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useRole } from '@/contexts/RoleContext'
-import { hasPermission } from '@/utils/roleFilters'
+import { hasPermission, ROLES } from '@/utils/roleFilters'
 
 import {
   Sidebar,
@@ -71,6 +72,12 @@ const items = [
     entity: 'zones',
   },
   {
+    title: 'Suivi GPS',
+    url: '/gps-tracking',
+    icon: Navigation2,
+    entity: 'gps-tracking',
+  },
+  {
     title: 'Paramètres',
     url: '/settings',
     icon: Settings,
@@ -79,7 +86,14 @@ const items = [
 ]
 
 export function AppSidebar() {
-  const { currentRole } = useRole()
+  const { currentRole, currentUserId } = useRole()
+
+  // Fonction helper pour changer rôle + userId
+  const switchRole = (role, userId) => {
+    localStorage.setItem('userRole', role)
+    localStorage.setItem('userId', userId)
+    window.location.reload()
+  }
 
   // Filtrer les éléments du menu selon les permissions
   const visibleItems = items.filter(item => {
@@ -153,6 +167,53 @@ export function AppSidebar() {
               >
                 <DropdownMenuItem>Profil</DropdownMenuItem>
                 <DropdownMenuItem>Paramètres</DropdownMenuItem>
+                <DropdownMenuItem disabled className="text-xs font-semibold">
+                  Changer de rôle
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.ADMIN, '1')}
+                  className={currentRole === ROLES.ADMIN ? 'bg-accent' : ''}
+                >
+                  Admin {currentRole === ROLES.ADMIN && '✓'}
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled className="text-xs">
+                  Directeurs:
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.DIRECTEUR, '1')}
+                  className={
+                    currentRole === ROLES.DIRECTEUR && currentUserId === '1' ? 'bg-accent' : ''
+                  }
+                >
+                  Fatma Gharbi {currentRole === ROLES.DIRECTEUR && currentUserId === '1' && '✓'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.DIRECTEUR, '2')}
+                  className={
+                    currentRole === ROLES.DIRECTEUR && currentUserId === '2' ? 'bg-accent' : ''
+                  }
+                >
+                  Mohamed Triki {currentRole === ROLES.DIRECTEUR && currentUserId === '2' && '✓'}
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled className="text-xs">
+                  Managers:
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.MANAGER, '5')}
+                  className={
+                    currentRole === ROLES.MANAGER && currentUserId === '5' ? 'bg-accent' : ''
+                  }
+                >
+                  Ahmed Ben Salem {currentRole === ROLES.MANAGER && currentUserId === '5' && '✓'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.MANAGER, '6')}
+                  className={
+                    currentRole === ROLES.MANAGER && currentUserId === '6' ? 'bg-accent' : ''
+                  }
+                >
+                  Sarra Khelifi {currentRole === ROLES.MANAGER && currentUserId === '6' && '✓'}
+                </DropdownMenuItem>
                 <DropdownMenuItem>Se déconnecter</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

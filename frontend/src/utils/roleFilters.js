@@ -18,6 +18,7 @@ export const PERMISSIONS = {
     zones: { view: true, add: true, edit: true, delete: true },
     immeubles: { view: true, add: true, edit: true, delete: true },
     statistics: { view: true, add: true, edit: true, delete: true },
+    'gps-tracking': { view: true, add: false, edit: false, delete: false },
   },
   [ROLES.DIRECTEUR]: {
     commerciaux: { view: true, add: true, edit: true, delete: true },
@@ -26,6 +27,7 @@ export const PERMISSIONS = {
     zones: { view: true, add: true, edit: true, delete: false },
     immeubles: { view: true, add: true, edit: true, delete: false },
     statistics: { view: true, add: false, edit: false, delete: false },
+    'gps-tracking': { view: true, add: false, edit: false, delete: false },
   },
   [ROLES.MANAGER]: {
     commerciaux: { view: true, add: true, edit: true, delete: false },
@@ -34,6 +36,7 @@ export const PERMISSIONS = {
     zones: { view: true, add: true, edit: true, delete: false },
     immeubles: { view: true, add: true, edit: true, delete: false },
     statistics: { view: true, add: true, edit: true, delete: false },
+    'gps-tracking': { view: false, add: false, edit: false, delete: false },
   },
 }
 
