@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useDirecteur, useManagers, useUpdateManager } from '@/services'
+import { useDirecteur, useManagers, useUpdateManager, getErrorMessage, logError } from '@/services'
 import { useRole } from '@/contexts/RoleContext'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ export default function DirecteurDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
   const { isAdmin } = useRole()
+  const { showError, showSuccess } = useErrorToast()
   const [assigningManager, setAssigningManager] = useState(null)
 
   // API hooks
@@ -62,8 +63,9 @@ export default function DirecteurDetails() {
       })
       await refetchManagers()
       await refetch()
+      showSuccess('Manager assigné avec succès')
     } catch (error) {
-      console.error("Erreur lors de l'assignation:", error)
+      showError(error, 'DirecteurDetails.handleAssignManager')
     } finally {
       setAssigningManager(null)
     }
@@ -78,8 +80,9 @@ export default function DirecteurDetails() {
       })
       await refetchManagers()
       await refetch()
+      showSuccess('Manager désassigné avec succès')
     } catch (error) {
-      console.error('Erreur lors de la désassignation:', error)
+      showError(error, 'DirecteurDetails.handleUnassignManager')
     } finally {
       setAssigningManager(null)
     }

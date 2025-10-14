@@ -11,6 +11,7 @@ import {
 import { useMemo } from 'react'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useRole } from '@/contexts/RoleContext'
+import { useErrorToast } from '@/hooks/use-error-toast'
 
 const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   const baseColumns = [
@@ -73,6 +74,7 @@ export default function Commerciaux() {
   const { mutate: createCommercial, loading: creating } = useCreateCommercial()
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
   const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()
+  const { showError, showSuccess } = useErrorToast()
 
   // Utilisation du nouveau système de rôles
   const {
@@ -181,9 +183,11 @@ export default function Commerciaux() {
         age: parseInt(formData.age),
         managerId: formData.managerId ? parseInt(formData.managerId) : undefined,
       })
-      refetch()
+      await refetch()
+      showSuccess('Commercial créé avec succès')
     } catch (error) {
-      console.error('Erreur lors de la création:', error)
+      showError(error, 'Commerciaux.handleAddCommercial')
+      throw error
     }
   }
 
@@ -198,18 +202,22 @@ export default function Commerciaux() {
         age: editedData.age ? parseInt(editedData.age) : undefined,
         managerId: editedData.managerId ? parseInt(editedData.managerId) : undefined,
       })
-      refetch()
+      await refetch()
+      showSuccess('Commercial modifié avec succès')
     } catch (error) {
-      console.error('Erreur lors de la modification:', error)
+      showError(error, 'Commerciaux.handleEditCommercial')
+      throw error
     }
   }
 
   const handleDeleteCommercial = async id => {
     try {
       await removeCommercial(id)
-      refetch()
+      await refetch()
+      showSuccess('Commercial supprimé avec succès')
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
+      showError(error, 'Commerciaux.handleDeleteCommercial')
+      throw error
     }
   }
 

@@ -10,6 +10,7 @@ import {
 } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
 import { useRole } from '@/contexts/RoleContext'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo } from 'react'
 
 const getManagersColumns = isAdmin => {
@@ -50,91 +51,10 @@ const getManagersColumns = isAdmin => {
   return baseColumns
 }
 
-// Configuration des champs du modal d'édition
-const managersEditFields = [
-  {
-    key: 'name',
-    label: 'Nom complet',
-    type: 'text',
-    required: true,
-    section: 'Informations personnelles',
-  },
-  {
-    key: 'email',
-    label: 'Email',
-    type: 'email',
-    required: true,
-    section: 'Informations personnelles',
-    validate: value => {
-      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        return 'Email invalide'
-      }
-    },
-  },
-  {
-    key: 'phone',
-    label: 'Téléphone',
-    type: 'tel',
-    required: true,
-    section: 'Informations personnelles',
-    placeholder: '+216 XX XXX XXX',
-  },
-  {
-    key: 'region',
-    label: 'Région',
-    type: 'select',
-    required: true,
-    section: 'Affectation',
-    options: [
-      { value: 'Nord', label: 'Nord' },
-      { value: 'Centre', label: 'Centre' },
-      { value: 'Sud', label: 'Sud' },
-      { value: 'Est', label: 'Est' },
-      { value: 'Ouest', label: 'Ouest' },
-    ],
-  },
-  {
-    key: 'directeur',
-    label: 'Directeur',
-    type: 'select',
-    required: true,
-    section: 'Affectation',
-    options: [
-      { value: 'Samir Ben Mahmoud', label: 'Samir Ben Mahmoud' },
-      { value: 'Leila Mansouri', label: 'Leila Mansouri' },
-    ],
-  },
-  {
-    key: 'status',
-    label: 'Statut',
-    type: 'select',
-    required: true,
-    section: 'Affectation',
-    options: [
-      { value: 'actif', label: 'Actif' },
-      { value: 'inactif', label: 'Inactif' },
-      { value: 'en_conge', label: 'En congé' },
-      { value: 'suspendu', label: 'Suspendu' },
-    ],
-  },
-  {
-    key: 'objectif_equipe',
-    label: 'Objectif équipe (TND)',
-    type: 'text',
-    section: 'Performance',
-    placeholder: '400 000 TND',
-  },
-  {
-    key: 'date_promotion',
-    label: 'Date de promotion',
-    type: 'date',
-    section: 'Informations personnelles',
-  },
-]
-
 export default function Managers() {
   const loading = useSimpleLoading(1000)
   const { isAdmin } = useRole()
+  const { showError, showSuccess } = useErrorToast()
 
   // API hooks
   const { data: managersApi, loading: managersLoading, refetch } = useManagers()
@@ -167,6 +87,97 @@ export default function Managers() {
     })
   }, [filteredManagers, directeurs])
 
+  // Options dynamiques pour les directeurs
+  const directeurOptions = useMemo(() => {
+    if (!directeurs) return []
+    return directeurs.map(d => ({
+      value: `${d.prenom} ${d.nom}`,
+      label: `${d.prenom} ${d.nom}`,
+    }))
+  }, [directeurs])
+
+  // Configuration des champs du modal d'édition
+  const managersEditFields = useMemo(
+    () => [
+      {
+        key: 'name',
+        label: 'Nom complet',
+        type: 'text',
+        required: true,
+        section: 'Informations personnelles',
+      },
+      {
+        key: 'email',
+        label: 'Email',
+        type: 'email',
+        required: true,
+        section: 'Informations personnelles',
+        validate: value => {
+          if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            return 'Email invalide'
+          }
+        },
+      },
+      {
+        key: 'phone',
+        label: 'Téléphone',
+        type: 'tel',
+        required: true,
+        section: 'Informations personnelles',
+        placeholder: '+216 XX XXX XXX',
+      },
+      {
+        key: 'region',
+        label: 'Région',
+        type: 'select',
+        required: true,
+        section: 'Affectation',
+        options: [
+          { value: 'Nord', label: 'Nord' },
+          { value: 'Centre', label: 'Centre' },
+          { value: 'Sud', label: 'Sud' },
+          { value: 'Est', label: 'Est' },
+          { value: 'Ouest', label: 'Ouest' },
+        ],
+      },
+      {
+        key: 'directeur',
+        label: 'Directeur',
+        type: 'select',
+        required: true,
+        section: 'Affectation',
+        options: directeurOptions,
+      },
+      {
+        key: 'status',
+        label: 'Statut',
+        type: 'select',
+        required: true,
+        section: 'Affectation',
+        options: [
+          { value: 'actif', label: 'Actif' },
+          { value: 'inactif', label: 'Inactif' },
+          { value: 'en_conge', label: 'En congé' },
+          { value: 'suspendu', label: 'Suspendu' },
+        ],
+      },
+      {
+        key: 'objectif_equipe',
+        label: 'Objectif équipe (TND)',
+        type: 'text',
+        section: 'Performance',
+        placeholder: '400 000 TND',
+      },
+      {
+        key: 'date_promotion',
+        label: 'Date de promotion',
+        type: 'date',
+        section: 'Informations personnelles',
+      },
+    ],
+    [directeurOptions]
+  )
+
   const handleAddManager = async formData => {
     try {
       // Conversion des données UI vers format API
@@ -184,8 +195,10 @@ export default function Managers() {
 
       await createManager(managerInput)
       await refetch()
+      showSuccess('Manager créé avec succès')
     } catch (error) {
-      console.error('Erreur lors de la création du manager:', error)
+      showError(error, 'Managers.handleAddManager')
+      throw error
     }
   }
 
@@ -207,8 +220,10 @@ export default function Managers() {
 
       await updateManager(updateInput)
       await refetch()
+      showSuccess('Manager modifié avec succès')
     } catch (error) {
-      console.error('Erreur lors de la modification du manager:', error)
+      showError(error, 'Managers.handleEditManager')
+      throw error
     }
   }
 
@@ -216,8 +231,10 @@ export default function Managers() {
     try {
       await removeManager(id)
       await refetch()
+      showSuccess('Manager supprimé avec succès')
     } catch (error) {
-      console.error('Erreur lors de la suppression du manager:', error)
+      showError(error, 'Managers.handleDeleteManager')
+      throw error
     }
   }
 

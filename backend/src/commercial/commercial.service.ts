@@ -7,8 +7,25 @@ export class CommercialService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateCommercialInput) {
+    // Si un managerId est fourni, récupérer automatiquement le directeurId du manager
+    let directeurId = data.directeurId;
+
+    if (data.managerId && !directeurId) {
+      const manager = await this.prisma.manager.findUnique({
+        where: { id: data.managerId },
+        select: { directeurId: true },
+      });
+
+      if (manager?.directeurId) {
+        directeurId = manager.directeurId;
+      }
+    }
+
     return this.prisma.commercial.create({
-      data,
+      data: {
+        ...data,
+        directeurId,
+      },
       include: {
         manager: true,
         directeur: true,
@@ -59,9 +76,27 @@ export class CommercialService {
 
   async update(data: UpdateCommercialInput) {
     const { id, ...updateData } = data;
+
+    // Si le managerId est modifié, mettre à jour automatiquement le directeurId
+    let directeurId = updateData.directeurId;
+
+    if (updateData.managerId !== undefined && !directeurId) {
+      const manager = await this.prisma.manager.findUnique({
+        where: { id: updateData.managerId },
+        select: { directeurId: true },
+      });
+
+      if (manager?.directeurId) {
+        directeurId = manager.directeurId;
+      }
+    }
+
     return this.prisma.commercial.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        ...(directeurId !== undefined && { directeurId }),
+      },
       include: {
         manager: true,
         directeur: true,

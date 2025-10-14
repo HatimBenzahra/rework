@@ -4,6 +4,7 @@ import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useManager, useDirecteurs, useCommercials, useUpdateCommercial } from '@/services'
 import { useRole } from '@/contexts/RoleContext'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +21,7 @@ export default function ManagerDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
   const { isAdmin } = useRole()
+  const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
   // API hooks
@@ -64,8 +66,9 @@ export default function ManagerDetails() {
       })
       await refetchCommercials()
       await refetch()
+      showSuccess('Commercial assigné avec succès')
     } catch (error) {
-      console.error("Erreur lors de l'assignation:", error)
+      showError(error, 'ManagerDetails.handleAssignCommercial')
     } finally {
       setAssigningCommercial(null)
     }
@@ -80,8 +83,9 @@ export default function ManagerDetails() {
       })
       await refetchCommercials()
       await refetch()
+      showSuccess('Commercial désassigné avec succès')
     } catch (error) {
-      console.error('Erreur lors de la désassignation:', error)
+      showError(error, 'ManagerDetails.handleUnassignCommercial')
     } finally {
       setAssigningCommercial(null)
     }

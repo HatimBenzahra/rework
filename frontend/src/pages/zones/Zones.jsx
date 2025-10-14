@@ -15,6 +15,7 @@ import {
   useCommercials,
   useAssignZone,
 } from '@/services'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useState, useMemo } from 'react'
 import { apiCache } from '@/services/api-cache'
 
@@ -52,6 +53,7 @@ const fetchLocationName = async (longitude, latitude) => {
 
 export default function Zones() {
   const loading = useSimpleLoading(1000)
+  const { showError, showSuccess } = useErrorToast()
   const [showZoneModal, setShowZoneModal] = useState(false)
   const [editingZone, setEditingZone] = useState(null)
   const [confirmAction, setConfirmAction] = useState({
@@ -302,10 +304,10 @@ export default function Zones() {
     try {
       await removeZone(confirmAction.zone.id)
       await refetchZones()
-      console.log('Zone supprimée avec succès')
+      showSuccess('Zone supprimée avec succès')
       setConfirmAction({ isOpen: false, type: '', zone: null, isLoading: false })
     } catch (error) {
-      console.error('Erreur lors de la suppression de la zone:', error)
+      showError(error, 'Zones.confirmDeleteZone')
       setConfirmAction(prev => ({ ...prev, isLoading: false }))
     }
   }
@@ -394,23 +396,19 @@ export default function Zones() {
             })
             console.log(`Zone ${newZone.id} assignée au commercial ${assignment.id}`)
           } catch (assignError) {
-            console.error("Erreur lors de l'assignation du commercial:", assignError)
-            // La zone est créée mais l'assignation a échoué
-            // On pourrait afficher un message à l'utilisateur ici
+            showError(assignError, 'Zones.handleZoneValidate.assignCommercial')
           }
         }
 
-        console.log('Zone créée avec succès:', newZone)
+        showSuccess(editingZone ? 'Zone modifiée avec succès' : 'Zone créée avec succès')
       }
 
       // Rafraîchir la liste des zones
       await refetchZones()
       setShowZoneModal(false)
     } catch (error) {
-      console.error(
-        `Erreur lors de ${editingZone ? 'la modification' : 'la création'} de la zone:`,
-        error
-      )
+      showError(error, 'Zones.handleZoneValidate')
+      throw error
     }
   }
 

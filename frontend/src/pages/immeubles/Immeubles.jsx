@@ -3,6 +3,7 @@ import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo } from 'react'
 
 const immeublesColumns = [
@@ -92,6 +93,7 @@ const getImmeublesEditFields = (commercials = []) => [
 
 export default function Immeubles() {
   const loading = useSimpleLoading(1000)
+  const { showError, showSuccess } = useErrorToast()
 
   // API hooks
   const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
@@ -147,8 +149,10 @@ export default function Immeubles() {
 
       await updateImmeuble(updateInput)
       await refetch()
+      showSuccess('Immeuble modifié avec succès')
     } catch (error) {
-      console.error("Erreur lors de la modification de l'immeuble:", error)
+      showError(error, 'Immeubles.handleEditImmeuble')
+      throw error
     }
   }
 
@@ -156,8 +160,10 @@ export default function Immeubles() {
     try {
       await removeImmeuble(id)
       await refetch()
+      showSuccess('Immeuble supprimé avec succès')
     } catch (error) {
-      console.error("Erreur lors de la suppression de l'immeuble:", error)
+      showError(error, 'Immeubles.handleDeleteImmeuble')
+      throw error
     }
   }
 

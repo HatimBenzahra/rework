@@ -8,6 +8,7 @@ import {
   useRemoveDirecteur,
 } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo } from 'react'
 
 const directeursColumns = [
@@ -74,6 +75,7 @@ const directeursEditFields = [
 
 export default function Directeurs() {
   const loading = useSimpleLoading(1000)
+  const { showError, showSuccess } = useErrorToast()
 
   // API hooks
   const { data: directeursApi, loading: directeursLoading, refetch } = useDirecteurs()
@@ -115,8 +117,10 @@ export default function Directeurs() {
 
       await createDirecteur(directeurInput)
       await refetch()
+      showSuccess('Directeur créé avec succès')
     } catch (error) {
-      console.error('Erreur lors de la création du directeur:', error)
+      showError(error, 'Directeurs.handleAddDirecteur')
+      throw error
     }
   }
 
@@ -136,8 +140,10 @@ export default function Directeurs() {
 
       await updateDirecteur(updateInput)
       await refetch()
+      showSuccess('Directeur modifié avec succès')
     } catch (error) {
-      console.error('Erreur lors de la modification du directeur:', error)
+      showError(error, 'Directeurs.handleEditDirecteur')
+      throw error
     }
   }
 
@@ -145,8 +151,10 @@ export default function Directeurs() {
     try {
       await removeDirecteur(id)
       await refetch()
+      showSuccess('Directeur supprimé avec succès')
     } catch (error) {
-      console.error('Erreur lors de la suppression du directeur:', error)
+      showError(error, 'Directeurs.handleDeleteDirecteur')
+      throw error
     }
   }
 
