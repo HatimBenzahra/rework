@@ -218,20 +218,28 @@ export function AppSidebar() {
                   Commerciaux:
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.COMMERCIAL, '7')}
+                  onClick={() => switchRole(ROLES.COMMERCIAL, '10')}
                   className={
-                    currentRole === ROLES.COMMERCIAL && currentUserId === '7' ? 'bg-accent' : ''
+                    currentRole === ROLES.COMMERCIAL && currentUserId === '10' ? 'bg-accent' : ''
                   }
                 >
-                  Amira Sassi {currentRole === ROLES.COMMERCIAL && currentUserId === '7' && '✓'}
+                  Ahmed Ben Ali {currentRole === ROLES.COMMERCIAL && currentUserId === '10' && '✓'}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.COMMERCIAL, '8')}
+                  onClick={() => switchRole(ROLES.COMMERCIAL, '11')}
                   className={
-                    currentRole === ROLES.COMMERCIAL && currentUserId === '8' ? 'bg-accent' : ''
+                    currentRole === ROLES.COMMERCIAL && currentUserId === '11' ? 'bg-accent' : ''
                   }
                 >
-                  Karim Bouali {currentRole === ROLES.COMMERCIAL && currentUserId === '8' && '✓'}
+                  Sarra Mejri {currentRole === ROLES.COMMERCIAL && currentUserId === '11' && '✓'}
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => switchRole(ROLES.COMMERCIAL, '12')}
+                  className={
+                    currentRole === ROLES.COMMERCIAL && currentUserId === '12' ? 'bg-accent' : ''
+                  }
+                >
+                  Karim Ouali {currentRole === ROLES.COMMERCIAL && currentUserId === '12' && '✓'}
                 </DropdownMenuItem>
                 <DropdownMenuItem>Se déconnecter</DropdownMenuItem>
               </DropdownMenuContent>
