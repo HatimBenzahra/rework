@@ -149,6 +149,30 @@ async function main() {
     },
   });
 
+  const commercial4 = await prisma.commercial.create({
+    data: {
+      nom: 'Hamdi',
+      prenom: 'Leila',
+      email: 'leila.hamdi@company.com',
+      numTel: '+216 23 777 888',
+      age: 30,
+      managerId: manager2.id,
+      directeurId: directeur2.id,
+    },
+  });
+
+  const commercial5 = await prisma.commercial.create({
+    data: {
+      nom: 'Jebali',
+      prenom: 'Yassine',
+      email: 'yassine.jebali@company.com',
+      numTel: '+216 21 999 000',
+      age: 27,
+      managerId: manager1.id,
+      directeurId: directeur1.id,
+    },
+  });
+
   // Créer des immeubles
   console.log('🏢 Création des immeubles...');
   await prisma.immeuble.createMany({
@@ -177,6 +201,24 @@ async function main() {
         nbPortesParEtage: 3,
         commercialId: commercial3.id,
       },
+      {
+        adresse: '42 Rue Mongi Slim, Monastir',
+        nbEtages: 7,
+        nbPortesParEtage: 4,
+        commercialId: commercial4.id,
+      },
+      {
+        adresse: '88 Avenue de la Liberté, Sfax',
+        nbEtages: 5,
+        nbPortesParEtage: 5,
+        commercialId: commercial4.id,
+      },
+      {
+        adresse: '55 Rue Ibn Khaldoun, Ariana',
+        nbEtages: 6,
+        nbPortesParEtage: 6,
+        commercialId: commercial5.id,
+      },
     ],
   });
 
@@ -196,6 +238,14 @@ async function main() {
       { commercialId: commercial3.id, zoneId: zone3.id },
       // Commercial3 travaille aussi sur zone4 (Ariana - manager1)
       { commercialId: commercial3.id, zoneId: zone4.id },
+      // Commercial4 travaille sur zone2 (Sfax - manager2)
+      { commercialId: commercial4.id, zoneId: zone2.id },
+      // Commercial4 travaille aussi sur zone5 (Monastir - directeur2)
+      { commercialId: commercial4.id, zoneId: zone5.id },
+      // Commercial5 travaille sur zone1 (Tunis Centre - directeur1)
+      { commercialId: commercial5.id, zoneId: zone1.id },
+      // Commercial5 travaille aussi sur zone4 (Ariana - manager1)
+      { commercialId: commercial5.id, zoneId: zone4.id },
     ],
   });
 
@@ -275,6 +325,53 @@ async function main() {
         nbImmeublesProspectes: 28,
         nbPortesProspectes: 112,
       },
+      // Statistiques pour Commercial4 - Zone2 (Sfax)
+      {
+        commercialId: commercial4.id,
+        zoneId: zone2.id,
+        immeubleId: immeubles[4].id,
+        contratsSignes: 31,
+        immeublesVisites: 47,
+        rendezVousPris: 36,
+        refus: 13,
+        nbImmeublesProspectes: 41,
+        nbPortesProspectes: 164,
+      },
+      // Statistiques pour Commercial4 - Zone5 (Monastir)
+      {
+        commercialId: commercial4.id,
+        zoneId: zone5.id,
+        immeubleId: immeubles[5].id,
+        contratsSignes: 25,
+        immeublesVisites: 39,
+        rendezVousPris: 30,
+        refus: 10,
+        nbImmeublesProspectes: 35,
+        nbPortesProspectes: 140,
+      },
+      // Statistiques pour Commercial5 - Zone1 (Tunis Centre)
+      {
+        commercialId: commercial5.id,
+        zoneId: zone1.id,
+        immeubleId: immeubles[6].id,
+        contratsSignes: 33,
+        immeublesVisites: 51,
+        rendezVousPris: 39,
+        refus: 14,
+        nbImmeublesProspectes: 44,
+        nbPortesProspectes: 176,
+      },
+      // Statistiques pour Commercial5 - Zone4 (Ariana)
+      {
+        commercialId: commercial5.id,
+        zoneId: zone4.id,
+        contratsSignes: 20,
+        immeublesVisites: 35,
+        rendezVousPris: 27,
+        refus: 9,
+        nbImmeublesProspectes: 30,
+        nbPortesProspectes: 120,
+      },
     ],
   });
 
@@ -282,11 +379,11 @@ async function main() {
   console.log(`📊 Créé :
     - ${2} directeurs
     - ${2} managers
-    - ${3} commerciaux
+    - ${5} commerciaux
     - ${5} zones (2 assignées à directeurs, 2 à managers, 1 non assignée)
-    - ${4} immeubles
-    - ${6} relations zone-commercial
-    - ${6} statistiques complètes`);
+    - ${7} immeubles
+    - ${10} relations zone-commercial
+    - ${10} statistiques complètes`);
 }
 
 main()
