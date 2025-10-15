@@ -1,139 +1,204 @@
 import React, { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 import { useRole } from '@/contexts/RoleContext'
-import { LogOut, MoreHorizontal } from 'lucide-react'
+import { LogOut, X } from 'lucide-react'
 
 export default function CommercialBottomBar({ navigationItems, activeTab, onTabChange }) {
-  const { getNavClasses, getBadgeClasses } = useCommercialTheme()
+  const { colors, base } = useCommercialTheme()
   const { setUserRole } = useRole()
   const [showMenu, setShowMenu] = useState(false)
 
   const handleLogout = () => {
-    // Retour à l'interface admin par défaut
     setUserRole('admin')
-  }
-
-  const toggleMenu = () => {
-    setShowMenu(!showMenu)
   }
 
   return (
     <>
-      {/* Overlay menu pour déconnexion */}
+      {/* Overlay menu moderne */}
       {showMenu && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40" onClick={() => setShowMenu(false)}>
-          <div className="absolute bottom-20 right-4 bg-white rounded-2xl shadow-xl border border-gray-200 p-2 min-w-[180px]">
-            <Button
-              onClick={handleLogout}
-              variant="ghost"
-              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Se déconnecter
-            </Button>
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+          onClick={() => setShowMenu(false)}
+        >
+          <div
+            className="absolute bottom-24 left-1/2 -translate-x-1/2 w-[90%] max-w-xs bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-4 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header du menu */}
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className={`font-semibold ${base.text.primary}`}>Menu</h3>
+              <button
+                onClick={() => setShowMenu(false)}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Fermer"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Actions du menu */}
+            <div className="p-2">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-600 hover:bg-red-50 transition-all duration-200 active:scale-98"
+              >
+                <div className="w-9 h-9 bg-red-100 rounded-full flex items-center justify-center">
+                  <LogOut className="w-4 h-4" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-sm">Se déconnecter</p>
+                  <p className="text-xs text-red-400">Retour à l'interface admin</p>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200/50 shadow-2xl">
-        
-        <div className="safe-area-inset-bottom">
-          <div className="flex items-center justify-center px-2 py-3">
-            {/* Navigation tabs */}
-            <div className="flex items-center justify-center space-x-1 flex-1">
-              {navigationItems.map((item) => {
-                const Icon = item.icon
-                const isActive = activeTab === item.id
-                const navClasses = getNavClasses(isActive)
-                
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onTabChange(item.id)}
-                    className={`
-                      relative flex flex-col items-center justify-center px-4 py-2 rounded-2xl 
-                      transition-all duration-300 ease-out min-w-[70px] group
-                      ${isActive 
-                        ? `${navClasses.bg} ${navClasses.text} shadow-lg scale-105` 
-                        : `${navClasses.bg} ${navClasses.text} hover:bg-gray-50 active:scale-95`
+      {/* Bottom Navigation Bar - Design moderne et épuré */}
+      <nav
+        className={`fixed bottom-0 left-0 right-0 ${base.bg.card} border-t ${base.border.light} z-50 safe-area-inset-bottom`}
+        role="navigation"
+        aria-label="Navigation principale"
+      >
+        {/* Container avec padding responsive */}
+        <div className="max-w-screen-lg mx-auto px-safe">
+          <div className="flex items-stretch justify-around h-20 sm:h-16">
+            {/* Navigation items */}
+            {navigationItems.map(item => {
+              const Icon = item.icon
+              const isActive = activeTab === item.id
+              const showBadge = item.badge > 0
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={`
+                    relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
+                    transition-all duration-300 ease-out
+                    ${isActive ? 'scale-105' : 'active:scale-95 hover:scale-102'}
+                  `}
+                  aria-label={item.label}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {/* Active indicator bar */}
+                  {isActive && (
+                    <div
+                      className={`absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full ${colors.primary.bg} animate-in slide-in-from-top-1 duration-300`}
+                    />
+                  )}
+
+                  {/* Icon avec badge */}
+                  <div className="relative">
+                    <div
+                      className={`
+                      p-2 rounded-2xl transition-all duration-300
+                      ${
+                        isActive
+                          ? `${colors.primary.bgLight} ${colors.primary.textLight}`
+                          : `${base.bg.transparent} ${base.text.muted} group-hover:${base.bg.muted}`
                       }
                     `}
-                    aria-label={item.label}
-                    role="tab"
-                    aria-selected={isActive}
-                  >
-                    {/* Active background glow */}
-                    {isActive && (
-                      <div className="absolute inset-0 bg-blue-500/10 rounded-2xl blur-sm" />
-                    )}
-                    
-                    {/* Icon container */}
-                    <div className="relative z-10 mb-1">
-                      <Icon 
-                        className={`w-6 h-6 transition-all duration-300 ${
-                          isActive ? 'scale-110 drop-shadow-sm' : 'group-hover:scale-105 group-active:scale-95'
-                        }`} 
+                    >
+                      <Icon
+                        className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-300 ${
+                          isActive ? 'scale-110' : ''
+                        }`}
+                        strokeWidth={isActive ? 2.5 : 2}
                       />
-                      
-                      {/* Badge notification */}
-                      {item.badge > 0 && (
-                        <Badge 
-                          className={`
-                            absolute -top-2 -right-2 text-xs min-w-[18px] h-5 px-1.5 
-                            flex items-center justify-center font-bold transition-all duration-300
-                            shadow-sm border-2 border-white
-                            ${getBadgeClasses(isActive)}
-                            ${isActive ? 'animate-pulse scale-110' : 'hover:scale-110'}
-                          `}
-                        >
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </Badge>
-                      )}
                     </div>
-                    
-                    {/* Label */}
-                    <span className={`
-                      text-xs font-medium leading-tight text-center transition-all duration-300 z-10
-                      ${isActive ? 'font-bold' : 'group-hover:font-semibold'}
-                    `}>
-                      {item.label}
-                    </span>
 
-                    {/* Active dot indicator */}
-                    {isActive && (
-                      <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full shadow-sm animate-pulse" />
+                    {/* Badge moderne */}
+                    {showBadge && (
+                      <Badge
+                        className={`
+                          absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
+                          flex items-center justify-center text-[10px] font-bold
+                          border-2 border-white shadow-md
+                          ${isActive ? `${colors.primary.bg} ${colors.primary.text}` : 'bg-red-500 text-white'}
+                          ${isActive && item.badge > 0 ? 'animate-pulse' : ''}
+                          transition-all duration-300
+                        `}
+                      >
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </Badge>
                     )}
-                  </button>
-                )
-              })}
-            </div>
+                  </div>
 
-            {/* Menu button */}
+                  {/* Label */}
+                  <span
+                    className={`
+                    text-[11px] sm:text-xs leading-tight text-center max-w-full truncate px-1
+                    transition-all duration-300
+                    ${
+                      isActive
+                        ? `${colors.primary.text} font-bold`
+                        : `${base.text.muted} font-medium`
+                    }
+                  `}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              )
+            })}
+
+            {/* Menu button - Design cohérent */}
             <button
-              onClick={toggleMenu}
+              onClick={() => setShowMenu(!showMenu)}
               className={`
-                relative flex flex-col items-center justify-center p-3 rounded-2xl 
-                transition-all duration-300 ease-out ml-2 group
-                ${showMenu 
-                  ? 'bg-gray-100 text-gray-700 scale-105' 
-                  : 'hover:bg-gray-50 text-gray-600 active:scale-95'
-                }
+                relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
+                transition-all duration-300 ease-out
+                ${showMenu ? 'scale-105' : 'active:scale-95 hover:scale-102'}
               `}
               aria-label="Menu"
+              aria-expanded={showMenu}
             >
-              <MoreHorizontal 
-                className={`w-5 h-5 transition-all duration-300 ${
-                  showMenu ? 'rotate-90 scale-110' : 'group-hover:scale-105'
-                }`} 
-              />
-              <span className="text-xs font-medium mt-1">Menu</span>
+              {/* Active indicator pour le menu */}
+              {showMenu && (
+                <div
+                  className={`absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full bg-gray-700 animate-in slide-in-from-top-1 duration-300`}
+                />
+              )}
+
+              <div
+                className={`
+                  p-2 rounded-2xl transition-all duration-300
+                  ${
+                    showMenu
+                      ? 'bg-gray-100 text-gray-900'
+                      : `${base.bg.transparent} ${base.text.muted}`
+                  }
+                `}
+              >
+                <div className="flex gap-1">
+                  <div
+                    className={`w-1 h-1 rounded-full bg-current transition-all duration-300 ${showMenu ? 'scale-125' : ''}`}
+                  />
+                  <div
+                    className={`w-1 h-1 rounded-full bg-current transition-all duration-300 ${showMenu ? 'scale-125' : ''}`}
+                  />
+                  <div
+                    className={`w-1 h-1 rounded-full bg-current transition-all duration-300 ${showMenu ? 'scale-125' : ''}`}
+                  />
+                </div>
+              </div>
+
+              <span
+                className={`
+                  text-[11px] sm:text-xs leading-tight text-center font-medium
+                  transition-all duration-300
+                  ${showMenu ? 'text-gray-900 font-bold' : base.text.muted}
+                `}
+              >
+                Plus
+              </span>
             </button>
           </div>
         </div>
-      </div>
+      </nav>
     </>
   )
 }

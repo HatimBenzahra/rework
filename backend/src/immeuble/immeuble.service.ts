@@ -7,9 +7,33 @@ export class ImmeubleService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateImmeubleInput) {
-    return this.prisma.immeuble.create({
+    // Créer l'immeuble
+    const immeuble = await this.prisma.immeuble.create({
       data,
     });
+
+    // Créer automatiquement toutes les portes pour cet immeuble
+    const portes: any[] = [];
+    for (let etage = 1; etage <= data.nbEtages; etage++) {
+      for (let porte = 1; porte <= data.nbPortesParEtage; porte++) {
+        portes.push({
+          numero: `${etage}${porte.toString().padStart(2, '0')}`,
+          etage,
+          immeubleId: immeuble.id,
+          statut: 'NON_VISITE',
+          nbRepassages: 0,
+        });
+      }
+    }
+
+    // Créer toutes les portes en une fois
+    if (portes.length > 0) {
+      await this.prisma.porte.createMany({
+        data: portes,
+      });
+    }
+
+    return immeuble;
   }
 
   async findAll() {

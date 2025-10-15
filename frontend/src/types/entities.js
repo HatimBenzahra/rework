@@ -67,6 +67,24 @@
  * @property {boolean} ascenseurPresent
  * @property {string|null} digitalCode
  * @property {number} commercialId
+ * @property {Porte[]} portes
+ */
+
+/**
+ * @typedef {BaseEntity & Object} Porte
+ * @property {string} numero
+ * @property {number} etage
+ * @property {number} immeubleId
+ * @property {StatutPorte} statut
+ * @property {number} nbRepassages
+ * @property {string|null} rdvDate
+ * @property {string|null} rdvTime
+ * @property {string|null} commentaire
+ * @property {string|null} derniereVisite
+ */
+
+/**
+ * @typedef {'NON_VISITE'|'CONTRAT_SIGNE'|'REFUS'|'RENDEZ_VOUS_PRIS'|'CURIEUX'|'NECESSITE_REPASSAGE'} StatutPorte
  */
 
 /**
@@ -128,6 +146,32 @@
  * @property {boolean} ascenseurPresent
  * @property {string|null} digitalCode
  * @property {number} commercialId
+ */
+
+/**
+ * @typedef {Object} CreatePorteInput
+ * @property {string} numero
+ * @property {number} etage
+ * @property {number} immeubleId
+ * @property {StatutPorte} [statut]
+ * @property {number} [nbRepassages]
+ * @property {string} [rdvDate]
+ * @property {string} [rdvTime]
+ * @property {string} [commentaire]
+ * @property {string} [derniereVisite]
+ */
+
+/**
+ * @typedef {Object} UpdatePorteInput
+ * @property {number} id
+ * @property {string} [numero]
+ * @property {number} [etage]
+ * @property {StatutPorte} [statut]
+ * @property {number} [nbRepassages]
+ * @property {string} [rdvDate]
+ * @property {string} [rdvTime]
+ * @property {string} [commentaire]
+ * @property {string} [derniereVisite]
  */
 
 /**

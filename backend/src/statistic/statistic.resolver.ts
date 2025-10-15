@@ -18,8 +18,8 @@ export class StatisticResolver {
   }
 
   @Query(() => [Statistic], { name: 'statistics' })
-  findAll() {
-    return this.statisticService.findAll();
+  findAll(@Args('commercialId', { type: () => Int, nullable: true }) commercialId?: number) {
+    return this.statisticService.findAll(commercialId);
   }
 
   @Query(() => Statistic, { name: 'statistic' })

@@ -29,7 +29,6 @@ import {
   Check,
   Loader2,
 } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 
 const STEPS = [
   {
@@ -53,7 +52,6 @@ const STEPS = [
 ]
 
 export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
-  const { getCardClasses } = useCommercialTheme()
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [addressSuggestions, setAddressSuggestions] = useState([])
@@ -294,17 +292,21 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
             {/* Summary card */}
             {formData.nbEtages && formData.nbPortesParEtage && (
-              <div className={`p-4 rounded-lg ${getCardClasses('visits')}`}>
-                <div className="flex items-center space-x-2">
-                  <Building2 className="h-5 w-5" />
-                  <span className="font-medium">
-                    Total: {parseInt(formData.nbEtages) * parseInt(formData.nbPortesParEtage)}{' '}
-                    portes
-                  </span>
+              <div className="p-4 rounded-lg border bg-muted/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total des portes</p>
+                    <p className="text-xl font-bold">
+                      {parseInt(formData.nbEtages) * parseInt(formData.nbPortesParEtage)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formData.nbEtages} étages × {formData.nbPortesParEtage} portes/étage
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-lg border bg-background">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                  </div>
                 </div>
-                <p className="text-sm mt-1 opacity-80">
-                  {formData.nbEtages} étages × {formData.nbPortesParEtage} portes/étage
-                </p>
               </div>
             )}
           </div>

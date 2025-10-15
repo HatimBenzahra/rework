@@ -10,70 +10,85 @@ import type {
   Zone,
   Immeuble,
   Statistic,
+  Porte,
   CreateDirecteurInput,
   CreateManagerInput,
   CreateCommercialInput,
   CreateZoneInput,
   CreateImmeubleInput,
   CreateStatisticInput,
+  CreatePorteInput,
   UpdateDirecteurInput,
   UpdateManagerInput,
   UpdateCommercialInput,
   UpdateZoneInput,
   UpdateImmeubleInput,
-  UpdateStatisticInput
-} from './api';
+  UpdateStatisticInput,
+  UpdatePorteInput,
+} from './api'
 
 // =============================================================================
 // Query Types
 // =============================================================================
 
 export interface QueryDirecteursResponse {
-  directeurs: Directeur[];
+  directeurs: Directeur[]
 }
 
 export interface QueryDirecteurResponse {
-  directeur: Directeur;
+  directeur: Directeur
 }
 
 export interface QueryManagersResponse {
-  managers: Manager[];
+  managers: Manager[]
 }
 
 export interface QueryManagerResponse {
-  manager: Manager;
+  manager: Manager
 }
 
 export interface QueryCommercialsResponse {
-  commercials: Commercial[];
+  commercials: Commercial[]
 }
 
 export interface QueryCommercialResponse {
-  commercial: Commercial;
+  commercial: Commercial
 }
 
 export interface QueryZonesResponse {
-  zones: Zone[];
+  zones: Zone[]
 }
 
 export interface QueryZoneResponse {
-  zone: Zone;
+  zone: Zone
 }
 
 export interface QueryImmeublesResponse {
-  immeubles: Immeuble[];
+  immeubles: Immeuble[]
 }
 
 export interface QueryImmeubleResponse {
-  immeuble: Immeuble;
+  immeuble: Immeuble
 }
 
 export interface QueryStatisticsResponse {
-  statistics: Statistic[];
+  statistics: Statistic[]
 }
 
 export interface QueryStatisticResponse {
-  statistic: Statistic;
+  statistic: Statistic
+}
+
+export interface QueryPortesResponse {
+  portes: Porte[]
+}
+
+export interface QueryPorteResponse {
+  porte: Porte
+}
+
+export interface QueryPortesByImmeubleResponse {
+  portesByImmeuble: Porte[]
 }
 
 // =============================================================================
@@ -81,83 +96,95 @@ export interface QueryStatisticResponse {
 // =============================================================================
 
 export interface MutationCreateDirecteurResponse {
-  createDirecteur: Directeur;
+  createDirecteur: Directeur
 }
 
 export interface MutationCreateManagerResponse {
-  createManager: Manager;
+  createManager: Manager
 }
 
 export interface MutationCreateCommercialResponse {
-  createCommercial: Commercial;
+  createCommercial: Commercial
 }
 
 export interface MutationCreateZoneResponse {
-  createZone: Zone;
+  createZone: Zone
 }
 
 export interface MutationCreateImmeubleResponse {
-  createImmeuble: Immeuble;
+  createImmeuble: Immeuble
 }
 
 export interface MutationCreateStatisticResponse {
-  createStatistic: Statistic;
+  createStatistic: Statistic
 }
 
 export interface MutationUpdateDirecteurResponse {
-  updateDirecteur: Directeur;
+  updateDirecteur: Directeur
 }
 
 export interface MutationUpdateManagerResponse {
-  updateManager: Manager;
+  updateManager: Manager
 }
 
 export interface MutationUpdateCommercialResponse {
-  updateCommercial: Commercial;
+  updateCommercial: Commercial
 }
 
 export interface MutationUpdateZoneResponse {
-  updateZone: Zone;
+  updateZone: Zone
 }
 
 export interface MutationUpdateImmeubleResponse {
-  updateImmeuble: Immeuble;
+  updateImmeuble: Immeuble
 }
 
 export interface MutationUpdateStatisticResponse {
-  updateStatistic: Statistic;
+  updateStatistic: Statistic
 }
 
 export interface MutationRemoveDirecteurResponse {
-  removeDirecteur: Directeur;
+  removeDirecteur: Directeur
 }
 
 export interface MutationRemoveManagerResponse {
-  removeManager: Manager;
+  removeManager: Manager
 }
 
 export interface MutationRemoveCommercialResponse {
-  removeCommercial: Commercial;
+  removeCommercial: Commercial
 }
 
 export interface MutationRemoveZoneResponse {
-  removeZone: Zone;
+  removeZone: Zone
 }
 
 export interface MutationRemoveImmeubleResponse {
-  removeImmeuble: Immeuble;
+  removeImmeuble: Immeuble
 }
 
 export interface MutationRemoveStatisticResponse {
-  removeStatistic: Statistic;
+  removeStatistic: Statistic
+}
+
+export interface MutationCreatePorteResponse {
+  createPorte: Porte
+}
+
+export interface MutationUpdatePorteResponse {
+  updatePorte: Porte
+}
+
+export interface MutationRemovePorteResponse {
+  removePorte: Porte
 }
 
 export interface MutationAssignZoneResponse {
-  assignZoneToCommercial: boolean;
+  assignZoneToCommercial: boolean
 }
 
 export interface MutationUnassignZoneResponse {
-  unassignZoneFromCommercial: boolean;
+  unassignZoneFromCommercial: boolean
 }
 
 // =============================================================================
@@ -165,63 +192,75 @@ export interface MutationUnassignZoneResponse {
 // =============================================================================
 
 export interface GetEntityByIdVariables {
-  id: number;
+  id: number
 }
 
 export interface CreateDirecteurVariables {
-  createDirecteurInput: CreateDirecteurInput;
+  createDirecteurInput: CreateDirecteurInput
 }
 
 export interface CreateManagerVariables {
-  createManagerInput: CreateManagerInput;
+  createManagerInput: CreateManagerInput
 }
 
 export interface CreateCommercialVariables {
-  createCommercialInput: CreateCommercialInput;
+  createCommercialInput: CreateCommercialInput
 }
 
 export interface CreateZoneVariables {
-  createZoneInput: CreateZoneInput;
+  createZoneInput: CreateZoneInput
 }
 
 export interface CreateImmeubleVariables {
-  createImmeubleInput: CreateImmeubleInput;
+  createImmeubleInput: CreateImmeubleInput
 }
 
 export interface CreateStatisticVariables {
-  createStatisticInput: CreateStatisticInput;
+  createStatisticInput: CreateStatisticInput
 }
 
 export interface UpdateDirecteurVariables {
-  updateDirecteurInput: UpdateDirecteurInput;
+  updateDirecteurInput: UpdateDirecteurInput
 }
 
 export interface UpdateManagerVariables {
-  updateManagerInput: UpdateManagerInput;
+  updateManagerInput: UpdateManagerInput
 }
 
 export interface UpdateCommercialVariables {
-  updateCommercialInput: UpdateCommercialInput;
+  updateCommercialInput: UpdateCommercialInput
 }
 
 export interface UpdateZoneVariables {
-  updateZoneInput: UpdateZoneInput;
+  updateZoneInput: UpdateZoneInput
 }
 
 export interface UpdateImmeubleVariables {
-  updateImmeubleInput: UpdateImmeubleInput;
+  updateImmeubleInput: UpdateImmeubleInput
 }
 
 export interface UpdateStatisticVariables {
-  updateStatisticInput: UpdateStatisticInput;
+  updateStatisticInput: UpdateStatisticInput
+}
+
+export interface CreatePorteVariables {
+  createPorteInput: CreatePorteInput
+}
+
+export interface UpdatePorteVariables {
+  updatePorteInput: UpdatePorteInput
+}
+
+export interface GetPortesByImmeubleVariables {
+  immeubleId: number
 }
 
 export interface AssignZoneVariables {
-  commercialId: number;
-  zoneId: number;
+  commercialId: number
+  zoneId: number
 }
 
 export interface UnassignZoneVariables {
-  commercialId: number;
-  zoneId: number;
+  commercialId: number
+  zoneId: number
 }

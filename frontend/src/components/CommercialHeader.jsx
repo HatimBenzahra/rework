@@ -67,18 +67,60 @@ export default function CommercialHeader({ commercial, showGreeting = true, stat
   if (!showGreeting) return null
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-6 rounded-b-3xl shadow-lg">
-      <div className="flex items-center justify-between">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-4 sm:py-6 rounded-b-3xl shadow-2xl">
+      {/* Layout Mobile - Stack vertical */}
+      <div className="flex flex-col sm:hidden space-y-3">
+        {/* Top row: Avatar + Nom + Badge */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-white">
+                Bonjour {commercial?.prenom || 'Commercial'} !
+              </h1>
+            </div>
+          </div>
+          <Badge
+            className={`${badgeInfo.color} border-none shadow-xl flex items-center space-x-1 px-2 py-1`}
+          >
+            <badgeInfo.icon className="w-3 h-3" />
+            <span className="font-bold text-xs">{badgeInfo.level}</span>
+          </Badge>
+        </div>
+
+        {/* Bottom row: Date et stats */}
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-1.5 text-blue-50">
+            <Calendar className="w-3 h-3" />
+            <span>{currentTime}</span>
+          </div>
+          {stats?.contratsSignes !== undefined && (
+            <span className="text-xs text-blue-50 font-medium">
+              {stats.contratsSignes} contrats
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Layout Desktop/Tablet - Horizontal */}
+      <div className="hidden sm:flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-            <User className="w-6 h-6" />
+          <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
+            <User className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Bonjour {commercial?.prenom || 'Commercial'} !</h1>
-            <div className="flex items-center space-x-2 text-blue-100 text-sm">
+            <h1 className="text-lg md:text-xl font-bold text-white">
+              Bonjour {commercial?.prenom || 'Commercial'} !
+            </h1>
+            <div className="flex items-center space-x-2 text-blue-50 text-xs md:text-sm">
               <Calendar className="w-4 h-4" />
-              <span className="capitalize">{currentDate}</span>
-              <span className="text-blue-200">•</span>
+              <span className="capitalize hidden md:inline">{currentDate}</span>
+              <span className="md:hidden">
+                {new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+              </span>
+              <span className="text-blue-100">•</span>
               <span>{currentTime}</span>
             </div>
           </div>
@@ -86,19 +128,19 @@ export default function CommercialHeader({ commercial, showGreeting = true, stat
 
         <div className="flex flex-col items-end space-y-1">
           <Badge
-            className={`${badgeInfo.color} border-none shadow-lg flex items-center space-x-1 px-3 py-1`}
+            className={`${badgeInfo.color} border-none shadow-xl flex items-center space-x-1 px-3 py-1.5`}
           >
             <badgeInfo.icon className="w-4 h-4" />
-            <span className="font-bold">{badgeInfo.level}</span>
+            <span className="font-bold text-sm">{badgeInfo.level}</span>
           </Badge>
           <div className="flex flex-col items-end space-y-0.5">
             {stats?.contratsSignes !== undefined && (
-              <span className="text-xs text-blue-100 font-medium text-right">
+              <span className="text-xs text-blue-50 font-medium text-right">
                 {stats.contratsSignes} contrats signés
               </span>
             )}
             {commercial?.email && (
-              <span className="text-xs text-blue-100 opacity-80 text-right">
+              <span className="text-xs text-blue-100 text-right hidden lg:inline">
                 {commercial.email}
               </span>
             )}

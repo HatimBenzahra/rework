@@ -11,6 +11,7 @@ import { CommercialModule } from './commercial/commercial.module';
 import { ZoneModule } from './zone/zone.module';
 import { ImmeubleModule } from './immeuble/immeuble.module';
 import { StatisticModule } from './statistic/statistic.module';
+import { PorteModule } from './porte/porte.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { StatisticModule } from './statistic/statistic.module';
     ZoneModule,
     ImmeubleModule,
     StatisticModule,
+    PorteModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

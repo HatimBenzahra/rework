@@ -95,6 +95,7 @@ model Immeuble {
   commercial        Commercial? @relation(fields: [commercialId], references: [id])
   zone              Zone?       @relation(fields: [zoneId], references: [id])
   statistics        Statistic[]
+  portes            Porte[]
 }
 
 model Statistic {
@@ -126,4 +127,33 @@ model CommercialZone {
   zone         Zone       @relation(fields: [zoneId], references: [id])
 
   @@unique([commercialId, zoneId])
+}
+
+model Porte {
+  id                Int       @id @default(autoincrement())
+  numero            String    // Ex: "101", "201A"
+  nomPersonnalise   String?   // Ex: "Porte à droite", "Appartement A"
+  etage             Int
+  immeubleId        Int
+  statut            StatutPorte @default(NON_VISITE)
+  nbRepassages      Int       @default(0)
+  rdvDate           DateTime?
+  rdvTime           String?   // Ex: "14:30"
+  commentaire       String?
+  derniereVisite    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  immeuble          Immeuble  @relation(fields: [immeubleId], references: [id])
+
+  @@unique([immeubleId, numero])
+}
+
+enum StatutPorte {
+  NON_VISITE
+  CONTRAT_SIGNE
+  REFUS
+  RENDEZ_VOUS_PRIS
+  CURIEUX
+  NECESSITE_REPASSAGE
 }

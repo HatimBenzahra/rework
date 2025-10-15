@@ -69,6 +69,28 @@ export interface Statistic extends BaseEntity {
   refus: number;
 }
 
+export enum StatutPorte {
+  NON_VISITE = 'NON_VISITE',
+  CONTRAT_SIGNE = 'CONTRAT_SIGNE',
+  REFUS = 'REFUS',
+  RENDEZ_VOUS_PRIS = 'RENDEZ_VOUS_PRIS',
+  CURIEUX = 'CURIEUX',
+  NECESSITE_REPASSAGE = 'NECESSITE_REPASSAGE',
+}
+
+export interface Porte extends BaseEntity {
+  numero: string;
+  nomPersonnalise?: string | null;
+  etage: number;
+  immeubleId: number;
+  statut: StatutPorte;
+  nbRepassages: number;
+  rdvDate?: string | null;
+  rdvTime?: string | null;
+  commentaire?: string | null;
+  derniereVisite?: string | null;
+}
+
 // =============================================================================
 // Input Types for Mutations
 // =============================================================================
@@ -119,6 +141,18 @@ export interface CreateStatisticInput {
   immeublesVisites: number;
   rendezVousPris: number;
   refus: number;
+}
+
+export interface CreatePorteInput {
+  numero: string;
+  etage: number;
+  immeubleId: number;
+  statut?: StatutPorte;
+  nbRepassages?: number;
+  rdvDate?: string;
+  rdvTime?: string;
+  commentaire?: string;
+  derniereVisite?: string;
 }
 
 // =============================================================================
@@ -177,6 +211,19 @@ export interface UpdateStatisticInput {
   immeublesVisites?: number;
   rendezVousPris?: number;
   refus?: number;
+}
+
+export interface UpdatePorteInput {
+  id: number;
+  numero?: string;
+  nomPersonnalise?: string;
+  etage?: number;
+  statut?: StatutPorte;
+  nbRepassages?: number;
+  rdvDate?: string;
+  rdvTime?: string;
+  commentaire?: string;
+  derniereVisite?: string;
 }
 
 // =============================================================================

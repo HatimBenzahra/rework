@@ -61,6 +61,19 @@ input CreateManagerInput {
   prenom: String!
 }
 
+input CreatePorteInput {
+  commentaire: String
+  derniereVisite: DateTime
+  etage: Int!
+  immeubleId: Int!
+  nbRepassages: Int! = 0
+  nomPersonnalise: String
+  numero: String!
+  rdvDate: DateTime
+  rdvTime: String
+  statut: StatutPorte! = NON_VISITE
+}
+
 input CreateStatisticInput {
   commercialId: Int
   contratsSignes: Int!
@@ -128,12 +141,15 @@ type Mutation {
   createDirecteur(createDirecteurInput: CreateDirecteurInput!): Directeur!
   createImmeuble(createImmeubleInput: CreateImmeubleInput!): Immeuble!
   createManager(createManagerInput: CreateManagerInput!): Manager!
+  createPorte(createPorteInput: CreatePorteInput!): Porte!
+  createPortesForImmeuble(immeubleId: Int!, nbEtages: Int!, nbPortesParEtage: Int!): Boolean!
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!
   removeImmeuble(id: Int!): Immeuble!
   removeManager(id: Int!): Manager!
+  removePorte(id: Int!): Porte!
   removeStatistic(id: Int!): Statistic!
   removeZone(id: Int!): Zone!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
@@ -141,8 +157,25 @@ type Mutation {
   updateDirecteur(updateDirecteurInput: UpdateDirecteurInput!): Directeur!
   updateImmeuble(updateImmeubleInput: UpdateImmeubleInput!): Immeuble!
   updateManager(updateManagerInput: UpdateManagerInput!): Manager!
+  updatePorte(updatePorteInput: UpdatePorteInput!): Porte!
   updateStatistic(updateStatisticInput: UpdateStatisticInput!): Statistic!
   updateZone(updateZoneInput: UpdateZoneInput!): Zone!
+}
+
+type Porte {
+  commentaire: String
+  createdAt: DateTime!
+  derniereVisite: DateTime
+  etage: Int!
+  id: Int!
+  immeubleId: Int!
+  nbRepassages: Int!
+  nomPersonnalise: String
+  numero: String!
+  rdvDate: DateTime
+  rdvTime: String
+  statut: StatutPorte!
+  updatedAt: DateTime!
 }
 
 type Query {
@@ -154,8 +187,11 @@ type Query {
   immeubles: [Immeuble!]!
   manager(id: Int!): Manager!
   managers: [Manager!]!
+  porte(id: Int!): Porte!
+  portes: [Porte!]!
+  portesByImmeuble(immeubleId: Int!): [Porte!]!
   statistic(id: Int!): Statistic!
-  statistics: [Statistic!]!
+  statistics(commercialId: Int): [Statistic!]!
   zone(id: Int!): Zone!
   zones: [Zone!]!
 }
@@ -173,6 +209,16 @@ type Statistic {
   rendezVousPris: Int!
   updatedAt: DateTime!
   zoneId: Int
+}
+
+"""Statut possible pour une porte"""
+enum StatutPorte {
+  CONTRAT_SIGNE
+  CURIEUX
+  NECESSITE_REPASSAGE
+  NON_VISITE
+  REFUS
+  RENDEZ_VOUS_PRIS
 }
 
 input UpdateCommercialInput {
@@ -213,6 +259,19 @@ input UpdateManagerInput {
   nom: String
   numTelephone: String
   prenom: String
+}
+
+input UpdatePorteInput {
+  commentaire: String
+  derniereVisite: DateTime
+  etage: Int
+  id: Int!
+  nbRepassages: Int
+  nomPersonnalise: String
+  numero: String
+  rdvDate: DateTime
+  rdvTime: String
+  statut: StatutPorte
 }
 
 input UpdateStatisticInput {

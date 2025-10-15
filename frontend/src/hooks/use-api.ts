@@ -13,18 +13,21 @@ import type {
   Zone,
   Immeuble,
   Statistic,
+  Porte,
   CreateDirecteurInput,
   CreateManagerInput,
   CreateCommercialInput,
   CreateZoneInput,
   CreateImmeubleInput,
   CreateStatisticInput,
+  CreatePorteInput,
   UpdateDirecteurInput,
   UpdateManagerInput,
   UpdateCommercialInput,
   UpdateZoneInput,
   UpdateImmeubleInput,
   UpdateStatisticInput,
+  UpdatePorteInput,
 } from '../types/api'
 
 // =============================================================================
@@ -256,7 +259,7 @@ export function useCommercial(id: number): UseApiState<Commercial> & UseApiActio
 
 /**
  * Hook pour charger un commercial avec toutes ses relations (immeubles, zones, statistics)
- * ⚡ Optimisé pour les pages de détails - charge plus de données que useCommercial
+ * Optimisé pour les pages de détails - charge plus de données que useCommercial
  */
 export function useCommercialFull(id: number): UseApiState<Commercial> & UseApiActions {
   return useApiCall(() => api.commercials.getFullById(id), [id], 'commercials-full')
@@ -347,6 +350,12 @@ export function useStatistics(): UseApiListState<Statistic> & UseApiActions {
   return useApiCall(api.statistics.getAll, [], 'statistics')
 }
 
+export function useStatisticsByCommercial(
+  commercialId: number
+): UseApiListState<Statistic> & UseApiActions {
+  return useApiCall(() => api.statistics.getAll(commercialId), [commercialId], 'statistics')
+}
+
 export function useStatistic(id: number): UseApiState<Statistic> & UseApiActions {
   return useApiCall(() => api.statistics.getById(id), [id], 'statistics')
 }
@@ -361,4 +370,32 @@ export function useUpdateStatistic(): UseApiMutation<UpdateStatisticInput, Stati
 
 export function useRemoveStatistic(): UseApiMutation<number, Statistic> {
   return useApiMutation(api.statistics.remove, 'statistics')
+}
+
+// =============================================================================
+// Porte Hooks
+// =============================================================================
+
+export function usePortes(): UseApiListState<Porte> & UseApiActions {
+  return useApiCall(api.portes.getAll, [], 'portes')
+}
+
+export function usePorte(id: number): UseApiState<Porte> & UseApiActions {
+  return useApiCall(() => api.portes.getById(id), [id], 'portes')
+}
+
+export function usePortesByImmeuble(immeubleId: number): UseApiListState<Porte> & UseApiActions {
+  return useApiCall(() => api.portes.getByImmeuble(immeubleId), [immeubleId], 'portes')
+}
+
+export function useCreatePorte(): UseApiMutation<CreatePorteInput, Porte> {
+  return useApiMutation(api.portes.create, 'portes')
+}
+
+export function useUpdatePorte(): UseApiMutation<UpdatePorteInput, Porte> {
+  return useApiMutation(api.portes.update, 'portes')
+}
+
+export function useRemovePorte(): UseApiMutation<number, Porte> {
+  return useApiMutation(api.portes.remove, 'portes')
 }

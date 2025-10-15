@@ -18,6 +18,9 @@ import {
   GET_IMMEUBLE,
   GET_STATISTICS,
   GET_STATISTIC,
+  GET_PORTES,
+  GET_PORTE,
+  GET_PORTES_BY_IMMEUBLE,
 } from './api-queries'
 
 import {
@@ -39,6 +42,9 @@ import {
   CREATE_STATISTIC,
   UPDATE_STATISTIC,
   REMOVE_STATISTIC,
+  CREATE_PORTE,
+  UPDATE_PORTE,
+  REMOVE_PORTE,
   ASSIGN_ZONE_TO_COMMERCIAL,
   UNASSIGN_ZONE_FROM_COMMERCIAL,
 } from './api-mutations'
@@ -56,6 +62,9 @@ import type {
   QueryImmeubleResponse,
   QueryStatisticsResponse,
   QueryStatisticResponse,
+  QueryPortesResponse,
+  QueryPorteResponse,
+  QueryPortesByImmeubleResponse,
   MutationCreateDirecteurResponse,
   MutationUpdateDirecteurResponse,
   MutationRemoveDirecteurResponse,
@@ -74,6 +83,9 @@ import type {
   MutationCreateStatisticResponse,
   MutationUpdateStatisticResponse,
   MutationRemoveStatisticResponse,
+  MutationCreatePorteResponse,
+  MutationUpdatePorteResponse,
+  MutationRemovePorteResponse,
   MutationAssignZoneResponse,
   MutationUnassignZoneResponse,
   GetEntityByIdVariables,
@@ -89,11 +101,14 @@ import type {
   UpdateImmeubleVariables,
   CreateStatisticVariables,
   UpdateStatisticVariables,
+  CreatePorteVariables,
+  UpdatePorteVariables,
+  GetPortesByImmeubleVariables,
   AssignZoneVariables,
   UnassignZoneVariables,
 } from '../types/graphql'
 
-import type { Directeur, Manager, Commercial, Zone, Immeuble, Statistic } from '../types/api'
+import type { Directeur, Manager, Commercial, Zone, Immeuble, Statistic, Porte } from '../types/api'
 
 // =============================================================================
 // Directeur API Service
@@ -329,8 +344,11 @@ export const immeubleApi = {
 // =============================================================================
 
 export const statisticApi = {
-  async getAll(): Promise<Statistic[]> {
-    const response = await gql<QueryStatisticsResponse>(GET_STATISTICS)
+  async getAll(commercialId?: number): Promise<Statistic[]> {
+    const response = await gql<QueryStatisticsResponse>(
+      GET_STATISTICS,
+      commercialId ? { commercialId } : undefined
+    )
     return response.statistics
   },
 
@@ -367,6 +385,51 @@ export const statisticApi = {
 }
 
 // =============================================================================
+// Porte API Service
+// =============================================================================
+
+export const porteApi = {
+  async getAll(): Promise<Porte[]> {
+    const response = await gql<QueryPortesResponse>(GET_PORTES)
+    return response.portes
+  },
+
+  async getById(id: number): Promise<Porte> {
+    const response = await gql<QueryPorteResponse, GetEntityByIdVariables>(GET_PORTE, { id })
+    return response.porte
+  },
+
+  async getByImmeuble(immeubleId: number): Promise<Porte[]> {
+    const response = await gql<QueryPortesByImmeubleResponse, GetPortesByImmeubleVariables>(
+      GET_PORTES_BY_IMMEUBLE,
+      { immeubleId }
+    )
+    return response.portesByImmeuble
+  },
+
+  async create(input: CreatePorteVariables['createPorteInput']): Promise<Porte> {
+    const response = await gql<MutationCreatePorteResponse, CreatePorteVariables>(CREATE_PORTE, {
+      createPorteInput: input,
+    })
+    return response.createPorte
+  },
+
+  async update(input: UpdatePorteVariables['updatePorteInput']): Promise<Porte> {
+    const response = await gql<MutationUpdatePorteResponse, UpdatePorteVariables>(UPDATE_PORTE, {
+      updatePorteInput: input,
+    })
+    return response.updatePorte
+  },
+
+  async remove(id: number): Promise<Porte> {
+    const response = await gql<MutationRemovePorteResponse, GetEntityByIdVariables>(REMOVE_PORTE, {
+      id,
+    })
+    return response.removePorte
+  },
+}
+
+// =============================================================================
 // Main API Export
 // =============================================================================
 
@@ -377,6 +440,7 @@ export const api = {
   zones: zoneApi,
   immeubles: immeubleApi,
   statistics: statisticApi,
+  portes: porteApi,
 }
 
 export default api

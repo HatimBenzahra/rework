@@ -24,6 +24,7 @@ import GPSTracking from '@/pages-ADMIN-DIRECTEUR-MANAGER/gps-tracking/GPSTrackin
 
 // Import Commercial Layout & Pages
 import CommercialDashboard from '@/pages-COMMERCIAL/dashboard/CommercialDashboard'
+import PortesGestion from '@/pages-COMMERCIAL/portes/PortesGestion'
 
 // Layout pour Admin/Directeur/Manager (avec sidebar)
 function AdminLayout() {
@@ -63,12 +64,18 @@ function AdminLayout() {
   )
 }
 
-// Layout pour Commercial (sans sidebar, interface mobile)
+// Layout pour Commercial (sans sidebar, interface mobile) && light mode pour les pages commerciales
+
 function CommercialLayout() {
   return (
-    <Routes>
-      <Route path="/*" element={<CommercialDashboard />} />
-    </Routes>
+    <div className="light" data-theme="light">
+      <Routes>
+        <Route path="/" element={<CommercialDashboard />} />
+        <Route path="/immeubles" element={<CommercialDashboard initialTab="immeubles" />} />
+        <Route path="/portes/:immeubleId" element={<PortesGestion />} />
+        <Route path="/*" element={<CommercialDashboard />} />
+      </Routes>
+    </div>
   )
 }
 

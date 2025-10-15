@@ -303,8 +303,8 @@ export const GET_IMMEUBLE = `
 // =============================================================================
 
 export const GET_STATISTICS = `
-  query GetStatistics {
-    statistics {
+  query GetStatistics($commercialId: Int) {
+    statistics(commercialId: $commercialId) {
       id
       commercialId
       contratsSignes
@@ -326,6 +326,70 @@ export const GET_STATISTIC = `
       immeublesVisites
       rendezVousPris
       refus
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+// =============================================================================
+// Porte Queries
+// =============================================================================
+
+export const GET_PORTES = `
+  query GetPortes {
+    portes {
+      id
+      numero
+      nomPersonnalise
+      etage
+      immeubleId
+      statut
+      nbRepassages
+      rdvDate
+      rdvTime
+      commentaire
+      derniereVisite
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_PORTE = `
+  query GetPorte($id: Int!) {
+    porte(id: $id) {
+      id
+      numero
+      nomPersonnalise
+      etage
+      immeubleId
+      statut
+      nbRepassages
+      rdvDate
+      rdvTime
+      commentaire
+      derniereVisite
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_PORTES_BY_IMMEUBLE = `
+  query GetPortesByImmeuble($immeubleId: Int!) {
+    portesByImmeuble(immeubleId: $immeubleId) {
+      id
+      numero
+      nomPersonnalise
+      etage
+      immeubleId
+      statut
+      nbRepassages
+      rdvDate
+      rdvTime
+      commentaire
+      derniereVisite
       createdAt
       updatedAt
     }

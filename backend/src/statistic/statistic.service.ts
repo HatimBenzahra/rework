@@ -15,8 +15,9 @@ export class StatisticService {
     });
   }
 
-  async findAll() {
+  async findAll(commercialId?: number) {
     return this.prisma.statistic.findMany({
+      where: commercialId ? { commercialId } : undefined,
       include: {
         commercial: true,
       },
