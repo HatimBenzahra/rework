@@ -15,10 +15,9 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext'
-import { useCommercialFull } from '@/hooks/use-api'
 import { immeubleApi } from '@/services/api-service'
 import AddImmeubleModal from '@/components/AddImmeubleModal'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 
 const ITEMS_PER_PAGE = 8
@@ -34,11 +33,11 @@ export default function ImmeublesList() {
   // Hook pour le thème commercial - centralise TOUS les styles
   const { base, components, getButtonClasses, getInputClasses } = useCommercialTheme()
 
-  const {
-    data: commercial,
-    loading: commercialLoading,
-    refetch,
-  } = useCommercialFull(parseInt(currentUserId))
+  // ✅ Récupérer les données du contexte (déjà chargées par le Layout) - ZERO requête redondante !
+  const context = useOutletContext()
+  const commercial = context?.commercial
+  const commercialLoading = context?.commercialLoading
+  const refetch = context?.refetch
 
   // Filter immeubles based on search query
   const filteredImmeubles =

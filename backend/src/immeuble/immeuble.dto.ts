@@ -1,5 +1,12 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, IsOptional, IsInt, Min, IsBoolean } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  IsBoolean,
+} from 'class-validator';
 
 @ObjectType()
 export class Immeuble {

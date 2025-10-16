@@ -66,6 +66,13 @@ export function useCommercialTheme() {
       textOnBg: 'text-white',
       border: 'border-yellow-500',
     },
+    black: {
+      text: 'text-black',
+    },
+    primaryLight: {
+      bg: 'bg-blue-500',
+      text: 'text-blue-600',
+    },
   }
 
   // ========================================

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
-import { User, Calendar, Award, Crown, Star, Gem, Trophy, UserPlus } from 'lucide-react'
+import { User, Calendar, Award, Crown, Star, Gem, Trophy, UserPlus, MapPin } from 'lucide-react'
 
 export default function CommercialHeader({
   commercial,
@@ -8,6 +8,8 @@ export default function CommercialHeader({
   stats,
   pageTitle = null,
 }) {
+  // Récupérer la zone assignée
+  const assignedZone = commercial?.zones?.[0]
   // Système de badges basé sur les performances
   const getBadgeLevel = stats => {
     const contracts = stats?.contratsSignes || 0
@@ -103,6 +105,13 @@ export default function CommercialHeader({
           <div className="flex items-center space-x-1.5 text-blue-50">
             <Calendar className="w-3 h-3" />
             <span>{currentTime}</span>
+            {assignedZone && (
+              <>
+                <span className="text-blue-100">•</span>
+                <MapPin className="w-3 h-3" />
+                <span className="truncate">{assignedZone.nom}</span>
+              </>
+            )}
           </div>
           {stats?.contratsSignes !== undefined && (
             <span className="text-xs text-blue-50 font-medium">
@@ -140,6 +149,13 @@ export default function CommercialHeader({
               </span>
               <span className="text-blue-100">•</span>
               <span>{currentTime}</span>
+              {assignedZone && (
+                <>
+                  <span className="text-blue-100">•</span>
+                  <MapPin className="w-4 h-4" />
+                  <span>{assignedZone.nom}</span>
+                </>
+              )}
             </div>
           </div>
         </div>

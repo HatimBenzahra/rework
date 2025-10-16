@@ -40,15 +40,26 @@ export class ZoneService {
   }
 
   async assignToCommercial(zoneId: number, commercialId: number) {
-    return this.prisma.commercialZone.create({
-      data: {
-        zoneId,
-        commercialId,
-      },
-      include: {
-        zone: true,
-        commercial: true,
-      },
+    // Utiliser une transaction pour garantir l'atomicité
+    return this.prisma.$transaction(async (prisma) => {
+      // D'abord, supprimer toutes les assignations existantes de ce commercial
+      await prisma.commercialZone.deleteMany({
+        where: {
+          commercialId,
+        },
+      });
+
+      // Ensuite, créer la nouvelle assignation
+      return prisma.commercialZone.create({
+        data: {
+          zoneId,
+          commercialId,
+        },
+        include: {
+          zone: true,
+          commercial: true,
+        },
+      });
     });
   }
 

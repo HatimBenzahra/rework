@@ -18,9 +18,11 @@ export default function CommercialLayout() {
   const { base, components } = useCommercialTheme()
 
   // Récupérer les données du commercial pour le header et bottom bar
-  const { data: commercial, loading: commercialLoading } = useCommercialFull(
-    parseInt(currentUserId)
-  )
+  const {
+    data: commercial,
+    loading: commercialLoading,
+    refetch,
+  } = useCommercialFull(parseInt(currentUserId))
 
   // Statistiques du commercial
   const myStats = commercial?.statistics?.[0] || {
@@ -34,7 +36,7 @@ export default function CommercialLayout() {
   const navigationItems = [
     {
       id: 'stats',
-      label: 'Mes Stats',
+      label: 'Tableau de bord',
       icon: BarChart3,
       badge: myStats.contratsSignes,
       path: '/',
@@ -125,7 +127,7 @@ export default function CommercialLayout() {
       <div
         className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 commercial-scroll-container`}
       >
-        <Outlet context={{ commercial, myStats, commercialLoading }} />
+        <Outlet context={{ commercial, myStats, commercialLoading, refetch }} />
       </div>
 
       {/* Bottom Navigation Bar */}

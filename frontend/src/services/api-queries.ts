@@ -143,6 +143,7 @@ export const GET_COMMERCIAL_FULL = `
         ascenseurPresent
         digitalCode
         commercialId
+        zoneId
         createdAt
         updatedAt
       }

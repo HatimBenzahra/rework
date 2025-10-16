@@ -92,7 +92,12 @@ export function AppSidebar() {
   const switchRole = (role, userId) => {
     localStorage.setItem('userRole', role)
     localStorage.setItem('userId', userId)
-    window.location.reload()
+    // Rediriger vers la page d'accueil appropriée selon le rôle
+    if (role === ROLES.COMMERCIAL) {
+      window.location.href = '/' // Dashboard commercial
+    } else {
+      window.location.reload() // Recharger pour les autres rôles
+    }
   }
 
   // Filtrer les éléments du menu selon les permissions

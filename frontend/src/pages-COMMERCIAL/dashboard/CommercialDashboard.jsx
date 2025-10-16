@@ -1,10 +1,58 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { TrendingUp, Target, CheckCircle2, Clock, Phone, Building2 } from 'lucide-react'
+import { TrendingUp, CheckCircle2, Building2, Award, Trophy, Target, Clock } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+
+// Système de rangs basé sur les points
+const RANKS = [
+  {
+    name: 'Bronze',
+    minPoints: 0,
+    maxPoints: 99,
+    color: '#CD7F32',
+    bgColor: 'bg-orange-100',
+    textColor: 'text-orange-700',
+    borderColor: 'border-orange-300',
+  },
+  {
+    name: 'Silver',
+    minPoints: 100,
+    maxPoints: 249,
+    color: '#C0C0C0',
+    bgColor: 'bg-gray-100',
+    textColor: 'text-gray-700',
+    borderColor: 'border-gray-300',
+  },
+  {
+    name: 'Gold',
+    minPoints: 250,
+    maxPoints: 499,
+    color: '#FFD700',
+    bgColor: 'bg-yellow-100',
+    textColor: 'text-yellow-700',
+    borderColor: 'border-yellow-300',
+  },
+  {
+    name: 'Platinum',
+    minPoints: 500,
+    maxPoints: 999,
+    color: '#E5E4E2',
+    bgColor: 'bg-blue-100',
+    textColor: 'text-blue-700',
+    borderColor: 'border-blue-300',
+  },
+  {
+    name: 'Diamond',
+    minPoints: 1000,
+    maxPoints: Infinity,
+    color: '#B9F2FF',
+    bgColor: 'bg-cyan-100',
+    textColor: 'text-cyan-700',
+    borderColor: 'border-cyan-300',
+  },
+]
 
 /**
  * Dashboard commercial - Page des statistiques
@@ -12,10 +60,49 @@ import { useCommercialTheme } from '@/hooks/use-commercial-theme'
  */
 export default function CommercialDashboard() {
   // Récupérer les données du contexte du layout
-  const { myStats } = useOutletContext()
+  const context = useOutletContext()
+  const myStats = useMemo(
+    () =>
+      context?.myStats || {
+        contratsSignes: 0,
+        immeublesVisites: 0,
+        rendezVousPris: 0,
+        refus: 0,
+      },
+    [context?.myStats]
+  )
 
   // Hook pour le thème commercial - centralise TOUS les styles
-  const { colors, base, components, getButtonClasses } = useCommercialTheme()
+  const { colors, base } = useCommercialTheme()
+
+  // Calculer les points (contrats = 10 pts, RDV = 3 pts, visites = 1 pt)
+  const totalPoints = useMemo(() => {
+    return myStats.contratsSignes * 10 + myStats.rendezVousPris * 3 + myStats.immeublesVisites * 1
+  }, [myStats])
+
+  // Déterminer le rang actuel
+  const currentRank = useMemo(() => {
+    return (
+      RANKS.find(rank => totalPoints >= rank.minPoints && totalPoints <= rank.maxPoints) || RANKS[0]
+    )
+  }, [totalPoints])
+
+  // Calculer la progression vers le prochain rang
+  const rankProgress = useMemo(() => {
+    const currentRankIndex = RANKS.indexOf(currentRank)
+    const nextRank = RANKS[currentRankIndex + 1]
+
+    if (!nextRank) {
+      return { percentage: 100, pointsNeeded: 0, nextRank: null }
+    }
+
+    const pointsInCurrentRank = totalPoints - currentRank.minPoints
+    const pointsNeededForNextRank = nextRank.minPoints - currentRank.minPoints
+    const percentage = Math.min((pointsInCurrentRank / pointsNeededForNextRank) * 100, 100)
+    const pointsNeeded = nextRank.minPoints - totalPoints
+
+    return { percentage, pointsNeeded, nextRank }
+  }, [totalPoints, currentRank])
 
   const StatCard = ({ title, value, icon, trend }) => {
     const Icon = icon
@@ -50,9 +137,9 @@ export default function CommercialDashboard() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4 max-w-full">
+    <div className="flex flex-col space-y-3 sm:space-y-4 max-w-full h-full">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
         <StatCard
           title="Contrats signés"
           value={myStats.contratsSignes}
@@ -73,69 +160,67 @@ export default function CommercialDashboard() {
         />
       </div>
 
-      {/* Performance mensuelle */}
-      <Card className={`${base.bg.card} ${base.border.card}`}>
-        <CardHeader className="p-2.5 sm:p-3 md:p-4">
-          <CardTitle className={`text-sm sm:text-base ${base.text.primary}`}>
-            Performance mensuelle
+      {/* Rang et progression */}
+      <Card className={`${base.bg.card} ${base.border.card} h-fit`}>
+        <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
+          <CardTitle
+            className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1 leading-none`}
+          >
+            <Trophy className="w-4 h-4 " />
+            Rang du mois
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-2.5 sm:p-3 md:p-4 pt-0">
-          <div className="space-y-2 sm:space-y-3">
-            <div className="flex justify-between items-center gap-2">
-              <span className={`text-xs sm:text-sm ${base.text.secondary}`}>Objectif mensuel</span>
-              <Badge variant="outline" className={`${components.badge.outline} text-xs`}>
-                25 contrats
+        <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-0 -mt-1">
+          <div className="space-y-3 sm:space-y-4">
+            {/* Rang actuel */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Award className={`w-5 h-5 ${currentRank.textColor}`} />
+                <span className={`text-base sm:text-lg font-bold ${base.text.primary}`}>
+                  Rang {currentRank.name}
+                </span>
+              </div>
+              <Badge
+                className={`${currentRank.bgColor} ${currentRank.textColor} ${currentRank.borderColor} border text-xs font-semibold px-2 py-1`}
+              >
+                {totalPoints} pts
               </Badge>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className={`${colors.primary.bg} h-2 rounded-full`}
-                style={{
-                  width: `${Math.min((myStats.contratsSignes / 25) * 100, 100)}%`,
-                }}
-              ></div>
-            </div>
-            <div className={`text-xs ${base.text.muted}`}>
-              {myStats.contratsSignes} / 25 contrats
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Actions rapides */}
-      <Card className={`${base.bg.card} ${base.border.card}`}>
-        <CardHeader className="p-2.5 sm:p-3 md:p-4">
-          <CardTitle className={`text-sm sm:text-base ${base.text.primary}`}>
-            Actions rapides
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-2.5 sm:p-3 md:p-4 pt-0">
-          <div className="grid grid-cols-1 gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`justify-start ${getButtonClasses('outline')} h-9 text-sm`}
-            >
-              <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
-              Appeler un prospect
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`justify-start ${getButtonClasses('outline')} h-9 text-sm`}
-            >
-              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
-              Planifier une visite
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`justify-start ${getButtonClasses('outline')} h-9 text-sm`}
-            >
-              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2" />
-              Programmer un rappel
-            </Button>
+            {/* Progression vers le prochain rang */}
+            {rankProgress.nextRank && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center gap-2">
+                  <span className={`text-xs sm:text-sm ${base.text.secondary}`}>
+                    Prochain rang : {rankProgress.nextRank.name}
+                  </span>
+                  <span className={`text-xs ${base.text.muted}`}>
+                    {rankProgress.pointsNeeded} pts restants
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className={`h-2.5 rounded-full transition-all duration-500 ${currentRank.textColor === 'text-orange-700' ? 'bg-orange-500' : currentRank.textColor === 'text-gray-700' ? 'bg-gray-500' : currentRank.textColor === 'text-yellow-700' ? 'bg-yellow-500' : currentRank.textColor === 'text-blue-700' ? 'bg-blue-500' : 'bg-cyan-500'}`}
+                    style={{
+                      width: `${rankProgress.percentage}%`,
+                    }}
+                  ></div>
+                </div>
+                <div className={`text-[10px] sm:text-xs ${base.text.muted}`}>
+                  {Math.round(rankProgress.percentage)}% complété
+                </div>
+              </div>
+            )}
+
+            {/* Message si rang max atteint */}
+            {!rankProgress.nextRank && (
+              <div
+                className={`text-xs sm:text-sm ${colors.success.text} bg-green-50 p-2 rounded-lg flex items-center gap-2`}
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Rang maximum atteint !</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
