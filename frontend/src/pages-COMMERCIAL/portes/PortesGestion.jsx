@@ -171,7 +171,7 @@ export default function PortesGestion() {
 
   // Récupérer les portes de l'immeuble
   const { data: portesData, loading, refetch } = usePortesByImmeuble(parseInt(immeubleId))
-  const portes = portesData || []
+  const portes = portesData
 
   // Mutation pour mettre à jour une porte
   const { mutate: updatePorte, loading: isUpdating } = useUpdatePorte()
@@ -241,8 +241,7 @@ export default function PortesGestion() {
       curieux,
       refus,
       repassages,
-      tauxVisite: total > 0 ? (((total - nonVisitees) / total) * 100).toFixed(1) : '0',
-      tauxConversion: total > 0 ? ((contratsSigne / total) * 100).toFixed(1) : '0',
+      taux_couverture: total > 0 ? (((total - nonVisitees) / total) * 100).toFixed(1) : '0',
     }
   }, [portes])
 

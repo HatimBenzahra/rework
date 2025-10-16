@@ -9,9 +9,9 @@
 // =============================================================================
 
 export interface BaseEntity {
-  id: number;
-  createdAt: string;
-  updatedAt: string;
+  id: number
+  createdAt: string
+  updatedAt: string
 }
 
 // =============================================================================
@@ -19,54 +19,54 @@ export interface BaseEntity {
 // =============================================================================
 
 export interface Directeur extends BaseEntity {
-  nom: string;
-  prenom: string;
-  adresse: string;
-  email: string;
-  numTelephone: string;
+  nom: string
+  prenom: string
+  adresse: string
+  email: string
+  numTelephone: string
 }
 
 export interface Manager extends BaseEntity {
-  nom: string;
-  prenom: string;
-  email?: string | null;
-  numTelephone?: string | null;
-  directeurId?: number | null;
+  nom: string
+  prenom: string
+  email?: string | null
+  numTelephone?: string | null
+  directeurId?: number | null
 }
 
 export interface Commercial extends BaseEntity {
-  nom: string;
-  prenom: string;
-  email: string;
-  numTel: string;
-  age: number;
-  managerId?: number | null;
-  directeurId?: number | null;
-  immeubles: Immeuble[];
-  zones: Zone[];
-  statistics: Statistic[];
+  nom: string
+  prenom: string
+  email: string
+  numTel: string
+  age: number
+  managerId?: number | null
+  directeurId?: number | null
+  immeubles: Immeuble[]
+  zones: Zone[]
+  statistics: Statistic[]
 }
 
 export interface Zone extends BaseEntity {
-  nom: string;
-  xOrigin: number;
-  yOrigin: number;
-  rayon: number;
+  nom: string
+  xOrigin: number
+  yOrigin: number
+  rayon: number
 }
 
 export interface Immeuble extends BaseEntity {
-  adresse: string;
-  nbEtages: number;
-  nbPortesParEtage: number;
-  commercialId: number;
+  adresse: string
+  nbEtages: number
+  nbPortesParEtage: number
+  commercialId: number
 }
 
 export interface Statistic extends BaseEntity {
-  commercialId: number;
-  contratsSignes: number;
-  immeublesVisites: number;
-  rendezVousPris: number;
-  refus: number;
+  commercialId: number
+  contratsSignes: number
+  immeublesVisites: number
+  rendezVousPris: number
+  refus: number
 }
 
 export enum StatutPorte {
@@ -79,16 +79,16 @@ export enum StatutPorte {
 }
 
 export interface Porte extends BaseEntity {
-  numero: string;
-  nomPersonnalise?: string | null;
-  etage: number;
-  immeubleId: number;
-  statut: StatutPorte;
-  nbRepassages: number;
-  rdvDate?: string | null;
-  rdvTime?: string | null;
-  commentaire?: string | null;
-  derniereVisite?: string | null;
+  numero: string
+  nomPersonnalise?: string | null
+  etage: number
+  immeubleId: number
+  statut: StatutPorte
+  nbRepassages: number
+  rdvDate?: string | null
+  rdvTime?: string | null
+  commentaire?: string | null
+  derniereVisite?: string | null
 }
 
 // =============================================================================
@@ -96,63 +96,63 @@ export interface Porte extends BaseEntity {
 // =============================================================================
 
 export interface CreateDirecteurInput {
-  nom: string;
-  prenom: string;
-  adresse: string;
-  email: string;
-  numTelephone: string;
+  nom: string
+  prenom: string
+  adresse: string
+  email: string
+  numTelephone: string
 }
 
 export interface CreateManagerInput {
-  nom: string;
-  prenom: string;
-  email?: string;
-  numTelephone?: string;
-  directeurId?: number;
+  nom: string
+  prenom: string
+  email?: string
+  numTelephone?: string
+  directeurId?: number
 }
 
 export interface CreateCommercialInput {
-  nom: string;
-  prenom: string;
-  email: string;
-  numTel: string;
-  age: number;
-  managerId?: number;
-  directeurId?: number;
+  nom: string
+  prenom: string
+  email: string
+  numTel: string
+  age: number
+  managerId?: number
+  directeurId?: number
 }
 
 export interface CreateZoneInput {
-  nom: string;
-  xOrigin: number;
-  yOrigin: number;
-  rayon: number;
+  nom: string
+  xOrigin: number
+  yOrigin: number
+  rayon: number
 }
 
 export interface CreateImmeubleInput {
-  adresse: string;
-  nbEtages: number;
-  nbPortesParEtage: number;
-  commercialId: number;
+  adresse: string
+  nbEtages: number
+  nbPortesParEtage: number
+  commercialId: number
 }
 
 export interface CreateStatisticInput {
-  commercialId: number;
-  contratsSignes: number;
-  immeublesVisites: number;
-  rendezVousPris: number;
-  refus: number;
+  commercialId: number
+  contratsSignes: number
+  immeublesVisites: number
+  rendezVousPris: number
+  refus: number
 }
 
 export interface CreatePorteInput {
-  numero: string;
-  etage: number;
-  immeubleId: number;
-  statut?: StatutPorte;
-  nbRepassages?: number;
-  rdvDate?: string;
-  rdvTime?: string;
-  commentaire?: string;
-  derniereVisite?: string;
+  numero: string
+  etage: number
+  immeubleId: number
+  statut?: StatutPorte
+  nbRepassages?: number
+  rdvDate?: string
+  rdvTime?: string
+  commentaire?: string
+  derniereVisite?: string
 }
 
 // =============================================================================
@@ -160,70 +160,70 @@ export interface CreatePorteInput {
 // =============================================================================
 
 export interface UpdateDirecteurInput {
-  id: number;
-  nom?: string;
-  prenom?: string;
-  adresse?: string;
-  email?: string;
-  numTelephone?: string;
+  id: number
+  nom?: string
+  prenom?: string
+  adresse?: string
+  email?: string
+  numTelephone?: string
 }
 
 export interface UpdateManagerInput {
-  id: number;
-  nom?: string;
-  prenom?: string;
-  email?: string;
-  numTelephone?: string;
-  directeurId?: number;
+  id: number
+  nom?: string
+  prenom?: string
+  email?: string
+  numTelephone?: string
+  directeurId?: number
 }
 
 export interface UpdateCommercialInput {
-  id: number;
-  nom?: string;
-  prenom?: string;
-  email?: string;
-  numTel?: string;
-  age?: number;
-  managerId?: number;
-  directeurId?: number;
+  id: number
+  nom?: string
+  prenom?: string
+  email?: string
+  numTel?: string
+  age?: number
+  managerId?: number
+  directeurId?: number
 }
 
 export interface UpdateZoneInput {
-  id: number;
-  nom?: string;
-  xOrigin?: number;
-  yOrigin?: number;
-  rayon?: number;
+  id: number
+  nom?: string
+  xOrigin?: number
+  yOrigin?: number
+  rayon?: number
 }
 
 export interface UpdateImmeubleInput {
-  id: number;
-  adresse?: string;
-  nbEtages?: number;
-  nbPortesParEtage?: number;
-  commercialId?: number;
+  id: number
+  adresse?: string
+  nbEtages?: number
+  nbPortesParEtage?: number
+  commercialId?: number
 }
 
 export interface UpdateStatisticInput {
-  id: number;
-  commercialId?: number;
-  contratsSignes?: number;
-  immeublesVisites?: number;
-  rendezVousPris?: number;
-  refus?: number;
+  id: number
+  commercialId?: number
+  contratsSignes?: number
+  immeublesVisites?: number
+  rendezVousPris?: number
+  refus?: number
 }
 
 export interface UpdatePorteInput {
-  id: number;
-  numero?: string;
-  nomPersonnalise?: string;
-  etage?: number;
-  statut?: StatutPorte;
-  nbRepassages?: number;
-  rdvDate?: string;
-  rdvTime?: string;
-  commentaire?: string;
-  derniereVisite?: string;
+  id: number
+  numero?: string
+  nomPersonnalise?: string
+  etage?: number
+  statut?: StatutPorte
+  nbRepassages?: number
+  rdvDate?: string
+  rdvTime?: string
+  commentaire?: string
+  derniereVisite?: string
 }
 
 // =============================================================================
@@ -231,15 +231,15 @@ export interface UpdatePorteInput {
 // =============================================================================
 
 export interface GraphQLResponse<T> {
-  data?: T;
+  data?: T
   errors?: Array<{
-    message: string;
+    message: string
     locations?: Array<{
-      line: number;
-      column: number;
-    }>;
-    path?: Array<string | number>;
-  }>;
+      line: number
+      column: number
+    }>
+    path?: Array<string | number>
+  }>
 }
 
 // =============================================================================
@@ -247,10 +247,10 @@ export interface GraphQLResponse<T> {
 // =============================================================================
 
 export interface ApiError {
-  message: string;
-  statusCode?: number;
-  timestamp?: string;
-  path?: string;
+  message: string
+  statusCode?: number
+  timestamp?: string
+  path?: string
 }
 
 export class ApiException extends Error {
@@ -259,7 +259,7 @@ export class ApiException extends Error {
     public statusCode?: number,
     public errors?: ApiError[]
   ) {
-    super(message);
-    this.name = 'ApiException';
+    super(message)
+    this.name = 'ApiException'
   }
 }
