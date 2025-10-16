@@ -3,7 +3,17 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Building2, Plus, Search, ArrowUp, Key, MapPin, DoorOpen } from 'lucide-react'
+import {
+  Building2,
+  Plus,
+  Search,
+  ArrowUp,
+  Key,
+  MapPin,
+  DoorOpen,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext'
 import { useCommercialFull } from '@/hooks/use-api'
 import { immeubleApi } from '@/services/api-service'
@@ -11,11 +21,15 @@ import AddImmeubleModal from '@/components/AddImmeubleModal'
 import { useNavigate } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 
+const ITEMS_PER_PAGE = 8
+
 export default function ImmeublesList() {
   const { currentUserId } = useRole()
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [showScrollToTop, setShowScrollToTop] = useState(false)
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { base, components, getButtonClasses, getInputClasses } = useCommercialTheme()
@@ -31,6 +45,50 @@ export default function ImmeublesList() {
     commercial?.immeubles?.filter(immeuble =>
       immeuble.adresse.toLowerCase().includes(searchQuery.toLowerCase())
     ) || []
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredImmeubles.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedImmeubles = filteredImmeubles.slice(startIndex, endIndex)
+
+  // Reset to page 1 when search query changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Détecter le scroll pour afficher le bouton "Remonter"
+  React.useEffect(() => {
+    const handleScroll = e => {
+      const scrollContainer = e.target
+      // Afficher le bouton si on a scrollé plus de 300px
+      setShowScrollToTop(scrollContainer.scrollTop > 300)
+    }
+
+    // Attendre que le DOM soit complètement monté
+    const timer = setTimeout(() => {
+      const scrollContainer = document.querySelector('.commercial-scroll-container')
+      if (scrollContainer) {
+        scrollContainer.addEventListener('scroll', handleScroll)
+      }
+    }, 200)
+
+    return () => {
+      clearTimeout(timer)
+      const scrollContainer = document.querySelector('.commercial-scroll-container')
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [])
+
+  // Fonction pour remonter en haut de la page
+  const scrollToTop = () => {
+    const scrollContainer = document.querySelector('.commercial-scroll-container')
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ behavior: 'smooth', top: 0 })
+    }
+  }
 
   const handleAddImmeuble = async immeubleData => {
     try {
@@ -63,18 +121,14 @@ export default function ImmeublesList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
       {/* Page header */}
-      <div className="flex flex-col space-y-4">
+      <div className="flex flex-col space-y-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className={`text-2xl font-bold ${base.text.primary}`}>Mes Immeubles</h1>
-            <p className={base.text.muted}>Gérez vos immeubles assignés</p>
-          </div>
           <Button
             variant="ghost"
             onClick={() => setShowAddModal(true)}
-            className={`flex items-center space-x-2 ${getButtonClasses('primary')}`}
+            className={`w-full flex items-center space-x-2 ${getButtonClasses('primary')}`}
           >
             <Plus className="h-4 w-4" />
             <span>Ajouter</span>
@@ -82,37 +136,39 @@ export default function ImmeublesList() {
         </div>
 
         {/* Stats summary - Responsive grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-2 sm:gap-3">
           <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardContent className="p-2 sm:p-2.5 md:p-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted} mb-1`}>Immeubles</p>
-                  <p className={`text-xl md:text-2xl font-bold ${base.text.primary}`}>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5`}>Immeubles</p>
+                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                     {filteredImmeubles.length}
                   </p>
                 </div>
-                <div className="p-2 md:p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <Building2 className={`h-4 w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <Building2
+                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className={`${base.bg.card} ${base.border.card} `}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardContent className="p-2 sm:p-2.5 md:p-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted} mb-1`}>Total portes</p>
-                  <p className={`text-xl md:text-2xl font-bold ${base.text.primary}`}>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5`}>Total portes</p>
+                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                     {filteredImmeubles.reduce(
                       (total, i) => total + i.nbEtages * i.nbPortesParEtage,
                       0
                     )}
                   </p>
                 </div>
-                <div className="p-2 md:p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <Key className={`h-4 w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <Key className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`} />
                 </div>
               </div>
             </CardContent>
@@ -164,30 +220,30 @@ export default function ImmeublesList() {
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredImmeubles.map(immeuble => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-3">
+            {paginatedImmeubles.map(immeuble => (
               <Card
                 key={immeuble.id}
                 className={`${components.card.base} ${components.card.hover}`}
               >
-                <CardContent className="p-5">
-                  <div className="space-y-4">
+                <CardContent className="p-3 sm:p-3.5 md:p-4">
+                  <div className="space-y-2.5 sm:space-y-3">
                     {/* Address header */}
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-3 flex-1">
+                      <div className="flex items-start space-x-2 flex-1">
                         <div
-                          className={`p-2 rounded-lg border ${base.border.default} ${base.bg.muted} flex-shrink-0`}
+                          className={`p-1.5 rounded-lg border ${base.border.default} ${base.bg.muted} flex-shrink-0`}
                         >
-                          <MapPin className={`h-4 w-4 ${base.icon.default}`} />
+                          <MapPin className={`h-3.5 w-3.5 ${base.icon.default}`} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3
-                            className={`font-semibold text-base leading-tight mb-1 ${base.text.primary}`}
+                            className={`font-semibold text-sm sm:text-base leading-tight mb-0.5 ${base.text.primary}`}
                             title={immeuble.adresse}
                           >
                             {immeuble.adresse}
                           </h3>
-                          <p className={`text-xs ${base.text.muted}`}>
+                          <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>
                             {new Date(immeuble.createdAt).toLocaleDateString('fr-FR')}
                           </p>
                         </div>
@@ -195,21 +251,21 @@ export default function ImmeublesList() {
                     </div>
 
                     {/* Building info grid */}
-                    <div className={`grid grid-cols-2 gap-4 pt-2 border-t ${base.border.default}`}>
-                      <div className="space-y-1">
-                        <p className={`text-xs ${base.text.muted}`}>Étages</p>
-                        <div className="flex items-center space-x-2">
-                          <Building2 className={`h-4 w-4 ${base.icon.default}`} />
+                    <div className={`grid grid-cols-2 gap-3 pt-2 border-t ${base.border.default}`}>
+                      <div className="space-y-0.5">
+                        <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>Étages</p>
+                        <div className="flex items-center space-x-1.5">
+                          <Building2 className={`h-3.5 w-3.5 ${base.icon.default}`} />
                           <span className={`font-semibold text-sm ${base.text.primary}`}>
                             {immeuble.nbEtages}
                           </span>
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <p className={`text-xs ${base.text.muted}`}>Portes/étage</p>
-                        <div className="flex items-center space-x-2">
-                          <Key className={`h-4 w-4 ${base.icon.default}`} />
+                      <div className="space-y-0.5">
+                        <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>Portes/étage</p>
+                        <div className="flex items-center space-x-1.5">
+                          <Key className={`h-3.5 w-3.5 ${base.icon.default}`} />
                           <span className={`font-semibold text-sm ${base.text.primary}`}>
                             {immeuble.nbPortesParEtage}
                           </span>
@@ -218,30 +274,36 @@ export default function ImmeublesList() {
                     </div>
 
                     {/* Badges row */}
-                    <div className={`flex flex-wrap gap-2 pt-2 border-t ${base.border.default}`}>
+                    <div className={`flex flex-wrap gap-1.5 pt-2 border-t ${base.border.default}`}>
                       <Badge
                         variant={immeuble.ascenseurPresent ? 'default' : 'secondary'}
                         className={components.badge.default}
                       >
-                        <ArrowUp className="h-3 w-3 mr-1" />
-                        {immeuble.ascenseurPresent ? 'Ascenseur' : 'Sans ascenseur'}
+                        <ArrowUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
+                        <span className="text-[10px] sm:text-xs">
+                          {immeuble.ascenseurPresent ? 'Ascenseur' : 'Sans ascenseur'}
+                        </span>
                       </Badge>
 
                       {immeuble.digitalCode && (
                         <Badge variant="outline" className={components.badge.outline}>
-                          <Key className="h-3 w-3 mr-1" />
-                          Code: {immeuble.digitalCode}
+                          <Key className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-1" />
+                          <span className="text-[10px] sm:text-xs">
+                            Code: {immeuble.digitalCode}
+                          </span>
                         </Badge>
                       )}
                     </div>
 
                     {/* Total doors */}
                     <div
-                      className={`p-3 rounded-lg border ${base.border.default} ${base.bg.muted}`}
+                      className={`p-2 sm:p-2.5 rounded-lg border ${base.border.default} ${base.bg.muted}`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`text-sm ${base.text.muted}`}>Total des portes</span>
-                        <span className={`text-xl font-bold ${base.text.primary}`}>
+                        <span className={`text-xs sm:text-sm ${base.text.muted}`}>
+                          Total des portes
+                        </span>
+                        <span className={`text-base sm:text-lg font-bold ${base.text.primary}`}>
                           {immeuble.nbEtages * immeuble.nbPortesParEtage}
                         </span>
                       </div>
@@ -257,13 +319,88 @@ export default function ImmeublesList() {
                       className={`w-full ${getButtonClasses('primary')}`}
                       size="sm"
                     >
-                      <DoorOpen className="h-4 w-4 mr-2" />
+                      <DoorOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                       Gérer les portes
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* Pagination controls */}
+        {filteredImmeubles.length > ITEMS_PER_PAGE && (
+          <div className="mt-6 mb-20 sm:mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className={`text-sm ${base.text.muted}`}>
+              Affichage de {startIndex + 1} à {Math.min(endIndex, filteredImmeubles.length)} sur{' '}
+              {filteredImmeubles.length} immeuble{filteredImmeubles.length > 1 ? 's' : ''}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className={`${base.bg.card} ${base.border.card} border hover:${base.bg.hover} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Précédent
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                  // Show first page, last page, current page, and pages around current
+                  const showPage =
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+
+                  if (!showPage) {
+                    // Show ellipsis for skipped pages
+                    if (
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 && currentPage < totalPages - 2)
+                    ) {
+                      return (
+                        <span key={page} className={`px-2 ${base.text.muted}`}>
+                          ...
+                        </span>
+                      )
+                    }
+                    return null
+                  }
+
+                  return (
+                    <Button
+                      key={page}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(page)}
+                      className={
+                        currentPage === page
+                          ? getButtonClasses('primary')
+                          : `${base.bg.card} ${base.border.card} border hover:${base.bg.hover} min-w-[2.5rem] ${base.text.primary}`
+                      }
+                    >
+                      {page}
+                    </Button>
+                  )
+                })}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className={`${base.bg.card} ${base.border.card} border hover:${base.bg.hover} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -274,6 +411,18 @@ export default function ImmeublesList() {
         onOpenChange={setShowAddModal}
         onSave={handleAddImmeuble}
       />
+
+      {/* Bouton flottant "Remonter" avec animation */}
+      {showScrollToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-28 sm:bottom-24 right-4 sm:right-6 z-50 flex flex-col items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 active:scale-95 border-2 border-blue-400"
+          aria-label="Remonter"
+        >
+          <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce mb-0.5 sm:mb-1" />
+          <span className="font-bold text-[10px] sm:text-xs whitespace-nowrap">Haut</span>
+        </button>
+      )}
     </div>
   )
 }

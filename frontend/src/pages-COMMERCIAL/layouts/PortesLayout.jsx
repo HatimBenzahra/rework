@@ -65,7 +65,12 @@ export default function PortesLayout() {
   if (commercialLoading) {
     return (
       <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
-        <CommercialHeader commercial={null} showGreeting={false} stats={myStats} />
+        <CommercialHeader
+          commercial={null}
+          showGreeting={false}
+          stats={myStats}
+          pageTitle="Gestion des Portes"
+        />
         <div className={components.loading.container}>
           <div className="text-center">
             <div className={`${components.loading.spinner} mx-auto mb-4`}></div>
@@ -84,7 +89,12 @@ export default function PortesLayout() {
   return (
     <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
       {/* Header Commercial sans greeting */}
-      <CommercialHeader commercial={commercial} showGreeting={false} stats={myStats} />
+      <CommercialHeader
+        commercial={commercial}
+        showGreeting={false}
+        stats={myStats}
+        pageTitle="Gestion des Portes"
+      />
 
       {/* Content avec padding bottom pour la bottom bar et classe spéciale pour le scroll */}
       <div

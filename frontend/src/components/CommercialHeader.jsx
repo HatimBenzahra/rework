@@ -2,7 +2,12 @@ import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { User, Calendar, Award, Crown, Star, Gem, Trophy, UserPlus } from 'lucide-react'
 
-export default function CommercialHeader({ commercial, showGreeting = true, stats }) {
+export default function CommercialHeader({
+  commercial,
+  showGreeting = true,
+  stats,
+  pageTitle = null,
+}) {
   // Système de badges basé sur les performances
   const getBadgeLevel = stats => {
     const contracts = stats?.contratsSignes || 0
@@ -80,6 +85,9 @@ export default function CommercialHeader({ commercial, showGreeting = true, stat
               <h1 className="text-base font-bold text-white truncate">
                 Bonjour {commercial?.prenom || 'Commercial'} !
               </h1>
+              {pageTitle && (
+                <p className="text-xs text-blue-100 font-medium truncate">{pageTitle}</p>
+              )}
             </div>
           </div>
           <Badge
@@ -111,9 +119,19 @@ export default function CommercialHeader({ commercial, showGreeting = true, stat
             <User className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-lg md:text-xl font-bold text-white">
-              Bonjour {commercial?.prenom || 'Commercial'} !
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg md:text-xl font-bold text-white">
+                Bonjour {commercial?.prenom || 'Commercial'} !
+              </h1>
+              {pageTitle && (
+                <>
+                  <span className="text-blue-200">•</span>
+                  <span className="text-sm md:text-base text-blue-100 font-medium">
+                    {pageTitle}
+                  </span>
+                </>
+              )}
+            </div>
             <div className="flex items-center space-x-2 text-blue-50 text-xs md:text-sm">
               <Calendar className="w-4 h-4" />
               <span className="capitalize hidden md:inline">{currentDate}</span>

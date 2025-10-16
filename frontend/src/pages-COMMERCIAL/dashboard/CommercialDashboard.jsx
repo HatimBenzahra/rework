@@ -21,16 +21,16 @@ export default function CommercialDashboard() {
     const Icon = icon
     return (
       <Card className={`flex-1 min-w-0 ${base.bg.card} ${base.border.card}`}>
-        <CardContent className="p-2.5 sm:p-3 md:p-4">
-          <div className="flex flex-col gap-2">
+        <CardContent className="p-2 sm:p-2.5 md:p-3">
+          <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
               <p className={`text-[10px] sm:text-xs ${base.text.muted} truncate`}>{title}</p>
-              <div className="p-1.5 sm:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+              <div className="p-1 sm:p-1.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                <Icon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className={`text-lg sm:text-xl md:text-2xl font-bold ${base.text.primary}`}>
+            <div className="space-y-0.5">
+              <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                 {value}
               </p>
               {trend && (
@@ -50,9 +50,9 @@ export default function CommercialDashboard() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-full">
+    <div className="space-y-3 sm:space-y-4 max-w-full">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <StatCard
           title="Contrats signés"
           value={myStats.contratsSignes}
@@ -75,13 +75,13 @@ export default function CommercialDashboard() {
 
       {/* Performance mensuelle */}
       <Card className={`${base.bg.card} ${base.border.card}`}>
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <CardTitle className={`text-base sm:text-lg ${base.text.primary}`}>
+        <CardHeader className="p-2.5 sm:p-3 md:p-4">
+          <CardTitle className={`text-sm sm:text-base ${base.text.primary}`}>
             Performance mensuelle
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
-          <div className="space-y-3 sm:space-y-4">
+        <CardContent className="p-2.5 sm:p-3 md:p-4 pt-0">
+          <div className="space-y-2 sm:space-y-3">
             <div className="flex justify-between items-center gap-2">
               <span className={`text-xs sm:text-sm ${base.text.secondary}`}>Objectif mensuel</span>
               <Badge variant="outline" className={`${components.badge.outline} text-xs`}>
@@ -105,13 +105,13 @@ export default function CommercialDashboard() {
 
       {/* Actions rapides */}
       <Card className={`${base.bg.card} ${base.border.card}`}>
-        <CardHeader className="p-3 sm:p-4 md:p-6">
-          <CardTitle className={`text-base sm:text-lg ${base.text.primary}`}>
+        <CardHeader className="p-2.5 sm:p-3 md:p-4">
+          <CardTitle className={`text-sm sm:text-base ${base.text.primary}`}>
             Actions rapides
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-4 md:p-6 pt-0">
-          <div className="grid grid-cols-1 gap-2">
+        <CardContent className="p-2.5 sm:p-3 md:p-4 pt-0">
+          <div className="grid grid-cols-1 gap-1.5">
             <Button
               variant="ghost"
               size="sm"

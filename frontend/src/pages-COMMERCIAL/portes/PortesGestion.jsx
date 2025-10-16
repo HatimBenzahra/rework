@@ -353,16 +353,16 @@ export default function PortesGestion() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Titre et bouton retour - Optimisé Mobile */}
-      <div className="mb-4 md:mb-6">
-        {/* Bouton retour - Full width sur mobile */}
-        <div className="mb-3">
+      <div className="mb-3 md:mb-4">
+        {/* Bouton retour - Sticky sur mobile pour être toujours accessible */}
+        <div className="top-0 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-3 backdrop-blur-sm border-b border-border/50 md:static md:z-auto md:mx-0 md:px-0 md:py-0 md:mb-2 md:bg-transparent md:backdrop-blur-none md:border-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/immeubles')}
-            className={`flex items-center gap-2 ${getButtonClasses('primary')}`}
+            className={`flex items-center gap-2 ${getButtonClasses('primary')} w-full md:w-auto justify-center md:justify-start h-9`}
           >
             <ArrowLeft className="h-4 w-4" />
             Retour
@@ -370,17 +370,23 @@ export default function PortesGestion() {
         </div>
 
         {/* Adresse et infos - Card optimisée mobile */}
-        <Card className={`${base.bg.card} ${base.border.card} shadow-md mb-4 md:mb-6`}>
-          <CardContent className="p-4 md:p-5">
+        <Card className={`${base.bg.card} ${base.border.card} shadow-md mb-3 md:mb-4`}>
+          <CardContent className="p-3 sm:p-3.5 md:p-4">
             {/* Adresse principale */}
-            <div className="flex items-start gap-3 mb-4">
-              <div className={`p-2 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
-                <MapPin className={`h-5 w-5 md:h-6 md:w-6 ${colors.primary.text}`} />
+            <div className="flex items-start gap-2 sm:gap-2.5 mb-3">
+              <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
+                <MapPin
+                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`}
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-xs ${base.text.muted} mb-1 uppercase tracking-wide`}>Adresse</p>
+                <p
+                  className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 uppercase tracking-wide`}
+                >
+                  Adresse
+                </p>
                 <h1
-                  className={`text-base md:text-xl font-bold ${base.text.primary} leading-tight break-words`}
+                  className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}
                 >
                   {immeuble?.adresse || 'Chargement...'}
                 </h1>
@@ -388,16 +394,16 @@ export default function PortesGestion() {
             </div>
 
             {/* Séparateur */}
-            <div className={`h-px ${base.border.default} mb-4`}></div>
+            <div className={`h-px ${base.border.default} mb-3`}></div>
 
             {/* Infos compactes - Grid responsive */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <div className={`p-2 rounded-lg ${base.bg.muted} flex-shrink-0`}>
-                  <Home className={`h-4 w-4 ${base.text.primary}`} />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className={`p-1.5 rounded-lg ${base.bg.muted} flex-shrink-0`}>
+                  <Home className={`h-3.5 w-3.5 ${base.text.primary}`} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted}`}>Portes</p>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>Portes</p>
                   <p className={`text-sm md:text-base font-bold ${base.text.primary}`}>
                     {stats.total}
                   </p>
@@ -405,13 +411,15 @@ export default function PortesGestion() {
               </div>
 
               {immeuble?.createdAt && (
-                <div className="flex items-center gap-2">
-                  <div className={`p-2 rounded-lg ${base.bg.muted} flex-shrink-0`}>
-                    <CalendarDays className={`h-4 w-4 ${base.text.primary}`} />
+                <div className="flex items-center gap-1.5">
+                  <div className={`p-1.5 rounded-lg ${base.bg.muted} flex-shrink-0`}>
+                    <CalendarDays className={`h-3.5 w-3.5 ${base.text.primary}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs ${base.text.muted}`}>Créé le</p>
-                    <p className={`text-xs md:text-sm font-semibold ${base.text.primary} truncate`}>
+                    <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>Créé le</p>
+                    <p
+                      className={`text-[10px] sm:text-xs md:text-sm font-semibold ${base.text.primary} truncate`}
+                    >
                       {new Date(immeuble.createdAt).toLocaleDateString('fr-FR', {
                         day: '2-digit',
                         month: '2-digit',
@@ -426,66 +434,80 @@ export default function PortesGestion() {
         </Card>
 
         {/* Stats Cards - Responsive */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5 md:gap-3 mb-4">
           <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardContent className="p-2 sm:p-2.5 md:p-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted} mb-1 truncate`}>Taux de visite</p>
-                  <p className={`text-xl md:text-2xl font-bold ${base.text.primary}`}>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
+                    Taux de visite
+                  </p>
+                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                     {stats.tauxVisite}%
                   </p>
                 </div>
-                <div className="p-2 md:p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <Eye className={`h-4 w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <Eye className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`} />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardContent className="p-2 sm:p-2.5 md:p-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted} mb-1 truncate`}>Contrats signés</p>
-                  <p className={`text-xl md:text-2xl font-bold ${base.text.primary}`}>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
+                    Contrats signés
+                  </p>
+                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                     {stats.contratsSigne}
                   </p>
                 </div>
-                <div className="p-2 md:p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <CheckCircle2 className={`h-4 w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <CheckCircle2
+                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardContent className="p-2 sm:p-2.5 md:p-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted} mb-1 truncate`}>RDV programmés</p>
-                  <p className={`text-xl md:text-2xl font-bold ${base.text.primary}`}>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
+                    RDV programmés
+                  </p>
+                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                     {stats.rdvPris}
                   </p>
                 </div>
-                <div className="p-2 md:p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <Calendar className={`h-4 w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <Calendar
+                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
+                  />
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardContent className="p-2 sm:p-2.5 md:p-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <p className={`text-xs ${base.text.muted} mb-1 truncate`}>Repassages</p>
-                  <p className={`text-xl md:text-2xl font-bold ${base.text.primary}`}>
+                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
+                    Repassages
+                  </p>
+                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                     {stats.repassages}
                   </p>
                 </div>
-                <div className="p-2 md:p-2.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <RotateCcw className={`h-4 w-4 md:h-5 md:w-5 ${base.icon.default}`} />
+                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <RotateCcw
+                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -495,30 +517,32 @@ export default function PortesGestion() {
         {/* BARRE DE NAVIGATION RAPIDE - STICKY */}
         <div
           ref={etageSelecteurRef}
-          className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-4 mb-6 shadow-lg`}
+          className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
         >
           {/* Sélecteur d'étage GROS et VISIBLE */}
-          <div className="mb-4">
-            <h3 className={`text-lg font-bold ${base.text.primary} mb-3 flex items-center gap-2`}>
-              <Building2 className="h-5 w-5" />
+          <div className="mb-3">
+            <h3
+              className={`text-base sm:text-lg font-bold ${base.text.primary} mb-2 flex items-center gap-2`}
+            >
+              <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
               Je suis à l'étage :
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
               {etagesDisponibles.map(etage => (
                 <Button
                   key={etage}
                   variant="ghost"
                   size="lg"
                   onClick={() => handleEtageChange(etage)}
-                  className={`h-16 text-2xl font-bold ${
+                  className={`h-12 sm:h-14 text-lg sm:text-xl font-bold ${
                     selectedEtage === etage
-                      ? `${colors.primary.bg} ${colors.primary.text} border-4 ${colors.primary.border} shadow-lg scale-105`
-                      : `${base.bg.muted} ${base.text.primary} hover:bg-gray-300 border-2 ${base.border.default}`
+                      ? `${colors.primary.bg} ${colors.primary.text} border-2 sm:border-3 ${colors.primary.border} shadow-lg scale-105`
+                      : `${base.bg.muted} ${base.text.primary} hover:bg-gray-300 border ${base.border.default}`
                   } transition-all duration-200`}
                 >
                   {etage}
                   <span
-                    className={`ml-2 text-sm ${selectedEtage === etage ? 'opacity-100' : 'opacity-60'}`}
+                    className={`ml-1 sm:ml-2 text-xs sm:text-sm ${selectedEtage === etage ? 'opacity-100' : 'opacity-60'}`}
                   >
                     ({portesByEtage[etage]?.length || 0})
                   </span>
@@ -528,7 +552,7 @@ export default function PortesGestion() {
           </div>
 
           {/* Filtres rapides */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             <Button
               variant="ghost"
               size="sm"
@@ -537,10 +561,10 @@ export default function PortesGestion() {
                 showOnlyVisited
                   ? `${colors.success.bgLight} ${colors.success.text} border ${colors.success.border}`
                   : `${base.bg.muted} ${base.text.muted}`
-              } px-4 py-2`}
+              } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
             >
-              <Eye className="h-4 w-4 mr-2" />
-              {showOnlyVisited ? 'Portes visitées' : 'Toutes les portes'}
+              <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+              {showOnlyVisited ? 'Visitées' : 'Toutes'}
             </Button>
 
             <Button
@@ -551,27 +575,27 @@ export default function PortesGestion() {
                 selectedEtage === 'all'
                   ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
                   : `${base.bg.muted} ${base.text.muted}`
-              } px-4 py-2`}
+              } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
             >
-              <Building2 className="h-4 w-4 mr-2" />
-              Tous les étages ({filteredPortes.length})
+              <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+              Tous ({filteredPortes.length})
             </Button>
           </div>
         </div>
       </div>
 
       {/* Liste des portes groupées par étage */}
-      <div className="space-y-6">
+      <div className="space-y-4 mb-20 sm:mb-4">
         {Object.entries(etagesAffiches).map(([etage, portesEtage]) => (
-          <div key={etage} className="space-y-4">
+          <div key={etage} className="space-y-3">
             {/* En-tête de l'étage */}
             <div
               ref={el => (etageRefs.current[etage] = el)}
-              className="flex items-center space-x-3 scroll-mt-32"
+              className="flex items-center space-x-2 sm:space-x-3 scroll-mt-32"
             >
               <div className={`h-px flex-1 ${base.border.default}`}></div>
               <div
-                className={`px-6 py-3 ${colors.primary.bgLight} ${colors.primary.textLight} rounded-full border-2 ${colors.primary.border} font-bold text-lg shadow-md`}
+                className={`px-3 sm:px-4 py-2 sm:py-2.5 ${colors.primary.bgLight} ${colors.primary.textLight} rounded-full border ${colors.primary.border} font-bold text-sm sm:text-base shadow-md`}
               >
                 <h3>
                   Étage {etage} ({portesEtage.length} porte{portesEtage.length > 1 ? 's' : ''})
@@ -581,7 +605,7 @@ export default function PortesGestion() {
             </div>
 
             {/* Grille des portes pour cet étage - FULL WIDTH sur mobile */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               {portesEtage.map(porte => {
                 const statutInfo = getStatutInfo(porte.statut)
                 const IconComponent = statutInfo.icon
@@ -598,43 +622,49 @@ export default function PortesGestion() {
                         : `${statutInfo.color.split(' ')[0].replace('bg-', 'border-')}`
                     } shadow-md hover:shadow-xl transition-all duration-200`}
                   >
-                    <CardContent className="p-5">
-                      <div className="space-y-4">
+                    <CardContent className="p-3 sm:p-3.5 md:p-4">
+                      <div className="space-y-3">
                         {/* En-tête avec numéro de porte */}
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className={`font-bold text-2xl ${base.text.primary}`}>
+                            <p className={`font-bold text-lg sm:text-xl ${base.text.primary}`}>
                               {porte.nomPersonnalise || `Porte ${porte.numero}`}
                             </p>
                             {porte.nomPersonnalise && (
-                              <p className={`text-sm ${base.text.muted}`}>N° {porte.numero}</p>
+                              <p className={`text-xs sm:text-sm ${base.text.muted}`}>
+                                N° {porte.numero}
+                              </p>
                             )}
                           </div>
-                          <Badge className={`${statutInfo.color} text-sm px-3 py-1`}>
-                            <IconComponent className="h-4 w-4 mr-1" />
-                            {statutInfo.label}
+                          <Badge
+                            className={`${statutInfo.color} text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1`}
+                          >
+                            <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" />
+                            <span className="hidden sm:inline">{statutInfo.label}</span>
                           </Badge>
                         </div>
 
                         {/* BOUTONS D'ACTION RAPIDE - GROS ET VISIBLES */}
-                        <div className="space-y-2">
-                          <p className={`text-xs font-semibold ${base.text.muted} uppercase`}>
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <p
+                            className={`text-[10px] sm:text-xs font-semibold ${base.text.muted} uppercase`}
+                          >
                             Action rapide :
                           </p>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                             {/* Contrat signé */}
                             <Button
                               variant="ghost"
                               size="lg"
                               onClick={() => handleQuickStatusChange(porte, 'CONTRAT_SIGNE')}
-                              className={`h-20 flex flex-col items-center justify-center gap-2 ${
+                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
                                 porte.statut === 'CONTRAT_SIGNE'
                                   ? `${colors.success.bg} ${colors.success.text} border-2 ${colors.success.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.success.bgLight} border-2 ${base.border.default}`
+                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.success.bgLight} border ${base.border.default}`
                               } font-bold transition-all duration-200`}
                             >
-                              <CheckCircle2 className="h-6 w-6" />
-                              <span className="text-xs">Contrat</span>
+                              <CheckCircle2 className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                              <span className="text-[10px] sm:text-xs">Contrat</span>
                             </Button>
 
                             {/* RDV */}
@@ -642,14 +672,14 @@ export default function PortesGestion() {
                               variant="ghost"
                               size="lg"
                               onClick={() => handleQuickStatusChange(porte, 'RENDEZ_VOUS_PRIS')}
-                              className={`h-20 flex flex-col items-center justify-center gap-2 ${
+                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
                                 porte.statut === 'RENDEZ_VOUS_PRIS'
                                   ? `${colors.primary.bg} ${colors.primary.text} border-2 ${colors.primary.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border-2 ${base.border.default}`
+                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default}`
                               } font-bold transition-all duration-200`}
                             >
-                              <Calendar className="h-6 w-6" />
-                              <span className="text-xs">RDV</span>
+                              <Calendar className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                              <span className="text-[10px] sm:text-xs">RDV</span>
                             </Button>
 
                             {/* Refus */}
@@ -657,14 +687,14 @@ export default function PortesGestion() {
                               variant="ghost"
                               size="lg"
                               onClick={() => handleQuickStatusChange(porte, 'REFUS')}
-                              className={`h-20 flex flex-col items-center justify-center gap-2 ${
+                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
                                 porte.statut === 'REFUS'
                                   ? `${colors.danger.bg} ${colors.danger.text} border-2 ${colors.danger.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.danger.bgLight} border-2 ${base.border.default}`
+                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.danger.bgLight} border ${base.border.default}`
                               } font-bold transition-all duration-200`}
                             >
-                              <XCircle className="h-6 w-6" />
-                              <span className="text-xs">Refus</span>
+                              <XCircle className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                              <span className="text-[10px] sm:text-xs">Refus</span>
                             </Button>
 
                             {/* Curieux */}
@@ -672,14 +702,14 @@ export default function PortesGestion() {
                               variant="ghost"
                               size="lg"
                               onClick={() => handleQuickStatusChange(porte, 'CURIEUX')}
-                              className={`h-20 flex flex-col items-center justify-center gap-2 ${
+                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
                                 porte.statut === 'CURIEUX'
                                   ? `${colors.info.bg} ${colors.info.text} border-2 ${colors.info.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.info.bgLight} border-2 ${base.border.default}`
+                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.info.bgLight} border ${base.border.default}`
                               } font-bold transition-all duration-200`}
                             >
-                              <MessageSquare className="h-6 w-6" />
-                              <span className="text-xs">Curieux</span>
+                              <MessageSquare className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                              <span className="text-[10px] sm:text-xs">Curieux</span>
                             </Button>
                           </div>
                         </div>
@@ -687,32 +717,36 @@ export default function PortesGestion() {
                         {/* GESTION DES REPASSAGES avec +/- */}
                         {needsRepassage && (
                           <div
-                            className={`${colors.warning.bgLight} border-2 ${colors.warning.border} rounded-lg p-3`}
+                            className={`${colors.warning.bgLight} border ${colors.warning.border} rounded-lg p-2 sm:p-2.5`}
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <RotateCcw className={`h-5 w-5 ${colors.warning.text}`} />
-                                <span className={`font-bold ${colors.warning.text}`}>
+                              <div className="flex items-center gap-1.5 sm:gap-2">
+                                <RotateCcw
+                                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${colors.warning.text}`}
+                                />
+                                <span
+                                  className={`font-bold text-xs sm:text-sm ${colors.warning.text}`}
+                                >
                                   Repassages : {porte.nbRepassages}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5 sm:gap-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleRepassageChange(porte, -1)}
                                   disabled={porte.nbRepassages === 0}
-                                  className={`h-10 w-10 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
+                                  className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
                                 >
-                                  <Minus className="h-5 w-5" />
+                                  <Minus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleRepassageChange(porte, 1)}
-                                  className={`h-10 w-10 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
+                                  className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
                                 >
-                                  <Plus className="h-5 w-5" />
+                                  <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                                 </Button>
                               </div>
                             </div>
@@ -722,12 +756,12 @@ export default function PortesGestion() {
                         {/* RDV info */}
                         {porte.rdvDate && (
                           <div
-                            className={`${colors.primary.bgLight} border ${colors.primary.border} rounded-lg pr-1 pl-2`}
+                            className={`${colors.primary.bgLight} border ${colors.primary.border} rounded-lg p-2 sm:p-2.5`}
                           >
                             <div
-                              className={`flex items-center gap-2 ${colors.primary.textLight} font-semibold`}
+                              className={`flex items-center gap-1.5 sm:gap-2 ${colors.primary.textLight} font-semibold text-xs sm:text-sm`}
                             >
-                              <Calendar className="h-5 w-5" />
+                              <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
                               <span>{new Date(porte.rdvDate).toLocaleDateString('fr-FR')}</span>
                               {porte.rdvTime && <span>à {porte.rdvTime}</span>}
                             </div>
@@ -737,9 +771,11 @@ export default function PortesGestion() {
                         {/* Commentaire */}
                         {porte.commentaire && (
                           <div
-                            className={`${base.bg.muted} border ${base.border.default} rounded-lg p-3`}
+                            className={`${base.bg.muted} border ${base.border.default} rounded-lg p-2 sm:p-2.5`}
                           >
-                            <p className={`text-sm ${base.text.secondary}`}>{porte.commentaire}</p>
+                            <p className={`text-xs sm:text-sm ${base.text.secondary}`}>
+                              {porte.commentaire}
+                            </p>
                           </div>
                         )}
 
@@ -748,9 +784,9 @@ export default function PortesGestion() {
                           variant="ghost"
                           size="lg"
                           onClick={() => handleEditPorte(porte)}
-                          className={`w-full h-12 ${getButtonClasses('outline')} text-base font-semibold`}
+                          className={`w-full h-10 sm:h-11 ${getButtonClasses('outline')} text-sm sm:text-base font-semibold`}
                         >
-                          <MessageSquare className="h-5 w-5 mr-2" />
+                          <MessageSquare className="h-4 w-4 sm:h-4.5 sm:w-4.5 mr-2" />
                           {porte.commentaire || porte.nomPersonnalise
                             ? 'Modifier les détails'
                             : 'Ajouter des détails'}
@@ -781,11 +817,11 @@ export default function PortesGestion() {
       {showScrollToTop && (
         <button
           onClick={scrollToEtageSelector}
-          className="fixed bottom-24 right-6 z-50 flex flex-col items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 active:scale-95 border-2 border-blue-400"
+          className="fixed bottom-28 sm:bottom-24 right-4 sm:right-6 z-50 flex flex-col items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 active:scale-95 border-2 border-blue-400"
           aria-label="Remonter"
         >
-          <ArrowUp className="w-6 h-6 animate-bounce mb-1" />
-          <span className="font-bold text-xs whitespace-nowrap">Étages</span>
+          <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce mb-0.5 sm:mb-1" />
+          <span className="font-bold text-[10px] sm:text-xs whitespace-nowrap">Étages</span>
         </button>
       )}
 
@@ -798,10 +834,10 @@ export default function PortesGestion() {
         }}
       >
         <DialogContent
-          className={`w-[95vw] sm:w-[90vw] max-w-lg mx-auto ${base.bg.card} ${base.border.light} max-h-[85vh] sm:max-h-[90vh] overflow-hidden flex flex-col p-0`}
+          className={`w-[95vw] sm:w-[90vw] max-w-lg mx-auto ${base.bg.card} ${base.border.light} h-[90vh] overflow-hidden flex flex-col p-0`}
         >
           {/* Header fixe */}
-          <DialogHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <DialogHeader className="px-[2vh] py-[1.5vh] border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <DialogTitle
               className={`text-base sm:text-lg font-bold ${base.text.primary} line-clamp-1`}
             >
@@ -815,12 +851,12 @@ export default function PortesGestion() {
           </DialogHeader>
 
           {/* Contenu scrollable */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-            <div className="space-y-5">
+          <div className="flex-1 overflow-y-auto px-[2vh] py-[1.5vh] min-h-0">
+            <div className="space-y-[1.5vh]">
               {/* Nom personnalisé */}
-              <div className="space-y-2">
+              <div className="space-y-[0.5vh]">
                 <label
-                  className={`text-sm font-semibold ${base.text.primary} flex items-center gap-2`}
+                  className={`text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold ${base.text.primary} flex items-center gap-2`}
                 >
                   Nom personnalisé (optionnel)
                 </label>
@@ -848,8 +884,10 @@ export default function PortesGestion() {
               </div>
 
               {/* Statut */}
-              <div className="space-y-2">
-                <label className={`text-sm font-semibold ${base.text.primary} block`}>
+              <div className="space-y-[0.5vh]">
+                <label
+                  className={`text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold ${base.text.primary} block`}
+                >
                   Statut *
                 </label>
                 <Select
@@ -877,7 +915,7 @@ export default function PortesGestion() {
               {/* RDV si nécessaire */}
               {editForm.statut === 'RENDEZ_VOUS_PRIS' && (
                 <div
-                  className={`p-3 sm:p-4 ${colors.primary.bgLight} rounded-lg border ${colors.primary.border} space-y-3`}
+                  className={`p-[1.5vh] ${colors.primary.bgLight} rounded-lg border ${colors.primary.border} space-y-[1vh]`}
                 >
                   <p
                     className={`text-sm font-semibold ${colors.primary.text} flex items-center gap-2`}
@@ -887,8 +925,8 @@ export default function PortesGestion() {
                   </p>
 
                   {/* Grid responsive pour date et heure */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1vh]">
+                    <div className="space-y-[0.5vh]">
                       <label className={`text-xs font-medium ${base.text.primary} block`}>
                         Date *
                       </label>
@@ -900,7 +938,7 @@ export default function PortesGestion() {
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-[0.5vh]">
                       <label
                         className={`text-xs font-medium ${base.text.primary} flex items-center gap-1.5`}
                       >
@@ -919,23 +957,25 @@ export default function PortesGestion() {
               )}
 
               {/* Commentaire */}
-              <div className="space-y-2">
-                <label className={`text-sm font-semibold ${base.text.primary} block`}>
+              <div className="space-y-[0.5vh]">
+                <label
+                  className={`text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold ${base.text.primary} block`}
+                >
                   Commentaire
                 </label>
                 <Textarea
                   placeholder="Ajouter un commentaire..."
                   value={editForm.commentaire}
                   onChange={e => setEditForm(prev => ({ ...prev, commentaire: e.target.value }))}
-                  rows={3}
-                  className={`text-sm sm:text-base ${getInputClasses()} resize-none min-h-[80px]`}
+                  rows={2}
+                  className={`text-sm sm:text-base ${getInputClasses()} resize-none min-h-[8vh] max-h-[12vh]`}
                 />
               </div>
 
               {/* Info repassages */}
               {selectedPorte?.nbRepassages > 0 && (
                 <div
-                  className={`p-3 sm:p-4 ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
+                  className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
                 >
                   <div className={`flex items-start gap-2.5 ${colors.warning.text}`}>
                     <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
@@ -955,8 +995,8 @@ export default function PortesGestion() {
           </div>
 
           {/* Footer fixe */}
-          <DialogFooter className="px-4 py-3 sm:px-6 sm:py-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3 w-full">
+          <DialogFooter className="px-[2vh] py-[1.5vh] border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div className="flex flex-col-reverse sm:flex-row gap-[1vh] w-full">
               <Button
                 variant="ghost"
                 onClick={() => {

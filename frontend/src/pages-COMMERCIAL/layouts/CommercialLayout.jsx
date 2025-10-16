@@ -70,6 +70,15 @@ export default function CommercialLayout() {
     return 'stats' // Par défaut
   }
 
+  // Déterminer le titre de la page
+  const getPageTitle = () => {
+    const path = location.pathname
+    if (path === '/') return 'Tableau de bord'
+    if (path === '/immeubles') return 'Mes Immeubles'
+    if (path === '/historique') return 'Historique'
+    return null
+  }
+
   // Gestion du changement d'onglet
   const handleTabChange = tabId => {
     const navItem = navigationItems.find(item => item.id === tabId)
@@ -81,7 +90,12 @@ export default function CommercialLayout() {
   if (commercialLoading) {
     return (
       <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
-        <CommercialHeader commercial={null} showGreeting={false} stats={myStats} />
+        <CommercialHeader
+          commercial={null}
+          showGreeting={true}
+          stats={myStats}
+          pageTitle={getPageTitle()}
+        />
         <div className={components.loading.container}>
           <div className="text-center">
             <div className={`${components.loading.spinner} mx-auto mb-4`}></div>
@@ -99,16 +113,17 @@ export default function CommercialLayout() {
 
   return (
     <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
-      {/* Header Commercial */}
+      {/* Header Commercial - visible sur toutes les pages sauf portes */}
       <CommercialHeader
         commercial={commercial}
-        showGreeting={location.pathname === '/'}
+        showGreeting={true}
         stats={myStats}
+        pageTitle={getPageTitle()}
       />
 
       {/* Content avec padding bottom pour la bottom bar */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24`}
+        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 commercial-scroll-container`}
       >
         <Outlet context={{ commercial, myStats, commercialLoading }} />
       </div>
