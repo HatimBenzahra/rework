@@ -54,7 +54,7 @@ export default function PortesGestion() {
   useOutletContext()
 
   // Hook pour le thème commercial - centralise TOUS les styles
-  const { colors, base, components, getButtonClasses, getInputClasses } = useCommercialTheme()
+  const { colors, base, components, getButtonClasses } = useCommercialTheme()
 
   // Configuration des statuts avec les couleurs du thème
   const statutOptions = STATUT_OPTIONS()
@@ -833,19 +833,13 @@ export default function PortesGestion() {
           if (!open) setIsSaving(false) // Réinitialiser lors de la fermeture
         }}
       >
-        <DialogContent
-          className={`w-[95vw] sm:w-[90vw] max-w-lg mx-auto ${base.bg.card} ${base.border.light} h-[90vh] overflow-hidden flex flex-col p-0`}
-        >
+        <DialogContent className="w-[95vw] sm:w-[90vw] max-w-lg mx-auto !bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200 h-[90vh] overflow-hidden flex flex-col p-0">
           {/* Header fixe */}
-          <DialogHeader className="px-[2vh] py-[1.5vh] border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <DialogTitle
-              className={`text-base sm:text-lg font-bold ${base.text.primary} line-clamp-1`}
-            >
+          <DialogHeader className="px-[2vh] py-[1.5vh] border-b !border-gray-200 dark:!border-gray-200 flex-shrink-0">
+            <DialogTitle className="text-base sm:text-lg font-bold !text-gray-900 dark:!text-gray-900 line-clamp-1">
               {selectedPorte?.nomPersonnalise || `Porte ${selectedPorte?.numero}`}
             </DialogTitle>
-            <DialogDescription
-              className={`text-xs sm:text-sm ${base.text.muted} line-clamp-1 mt-1`}
-            >
+            <DialogDescription className="text-xs sm:text-sm !text-gray-600 dark:!text-gray-600 line-clamp-1 mt-1">
               Étage {selectedPorte?.etage} • {immeuble?.adresse}
             </DialogDescription>
           </DialogHeader>
@@ -855,9 +849,7 @@ export default function PortesGestion() {
             <div className="space-y-[1.5vh]">
               {/* Nom personnalisé */}
               <div className="space-y-[0.5vh]">
-                <label
-                  className={`text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold ${base.text.primary} flex items-center gap-2`}
-                >
+                <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 flex items-center gap-2">
                   Nom personnalisé (optionnel)
                 </label>
                 <Input
@@ -866,9 +858,9 @@ export default function PortesGestion() {
                   onChange={e =>
                     setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))
                   }
-                  className={`h-11 sm:h-12 text-sm sm:text-base ${base.bg.input} ${base.border.input} ${base.text.primary}`}
+                  className="h-11 sm:h-12 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900"
                 />
-                <p className={`text-xs ${base.text.muted} leading-relaxed`}>
+                <p className="text-xs !text-gray-500 dark:!text-gray-500 leading-relaxed">
                   Ex: "Porte à droite", "Appt A", etc.
                 </p>
                 {editForm.nomPersonnalise && (
@@ -885,26 +877,28 @@ export default function PortesGestion() {
 
               {/* Statut */}
               <div className="space-y-[0.5vh]">
-                <label
-                  className={`text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold ${base.text.primary} block`}
-                >
+                <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 block">
                   Statut *
                 </label>
                 <Select
                   value={editForm.statut}
                   onValueChange={value => setEditForm(prev => ({ ...prev, statut: value }))}
                 >
-                  <SelectTrigger
-                    className={`h-11 sm:h-12 ${base.bg.input} ${base.border.input} ${base.text.primary} text-sm sm:text-base`}
-                  >
+                  <SelectTrigger className="h-11 sm:h-12 !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 text-sm sm:text-base">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className={`${base.bg.card} ${base.border.light}`}>
+                  <SelectContent className="!bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200">
                     {statutOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
+                      <SelectItem
+                        key={option.value}
+                        value={option.value}
+                        className="!text-gray-900 dark:!text-gray-900 focus:!bg-blue-50 dark:focus:!bg-blue-50"
+                      >
                         <div className="flex items-center gap-2 py-0.5">
-                          <option.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                          <span className="text-sm sm:text-base">{option.label}</span>
+                          <option.icon className="h-4 w-4 sm:h-5 sm:w-5 !text-gray-700 dark:!text-gray-700" />
+                          <span className="text-sm sm:text-base !text-gray-900 dark:!text-gray-900">
+                            {option.label}
+                          </span>
                         </div>
                       </SelectItem>
                     ))}
@@ -927,40 +921,75 @@ export default function PortesGestion() {
                   {/* Grid responsive pour date et heure */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1vh]">
                     <div className="space-y-[0.5vh]">
-                      <label className={`text-xs font-medium ${base.text.primary} block`}>
+                      <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 block">
                         Date *
                       </label>
                       <input
                         type="date"
                         value={editForm.rdvDate}
                         onChange={e => setEditForm(prev => ({ ...prev, rdvDate: e.target.value }))}
-                        className={`w-fit px-3 py-2.5 text-sm sm:text-base ${base.bg.input} ${base.border.input} ${base.text.primary} rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200`}
+                        className="w-fit px-3 py-2.5 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
                         min={new Date().toISOString().split('T')[0]}
                       />
                     </div>
                     <div className="space-y-[0.5vh]">
-                      <label
-                        className={`text-xs font-medium ${base.text.primary} flex items-center gap-1.5`}
-                      >
-                        <Clock className="h-3.5 w-3.5" />
+                      <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 !text-gray-700 dark:!text-gray-700" />
                         Heure
                       </label>
                       <input
                         type="time"
                         value={editForm.rdvTime}
                         onChange={e => setEditForm(prev => ({ ...prev, rdvTime: e.target.value }))}
-                        className={`w-fit px-3 py-2.5 text-sm sm:text-base ${base.bg.input} ${base.border.input} ${base.text.primary} rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200`}
+                        className="w-fit px-3 py-2.5 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
                       />
                     </div>
                   </div>
                 </div>
               )}
 
+              {/* Gestion des repassages dans le modal */}
+              {(editForm.statut === 'CURIEUX' || editForm.statut === 'NECESSITE_REPASSAGE') && (
+                <div
+                  className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.warning.text}`} />
+                      <span className={`font-bold text-sm sm:text-base ${colors.warning.text}`}>
+                        Repassages : {selectedPorte?.nbRepassages || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRepassageChange(selectedPorte, -1)}
+                        disabled={!selectedPorte || selectedPorte.nbRepassages === 0}
+                        className={`h-9 w-9 sm:h-10 sm:w-10 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
+                      >
+                        <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRepassageChange(selectedPorte, 1)}
+                        disabled={!selectedPorte}
+                        className={`h-9 w-9 sm:h-10 sm:w-10 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
+                      >
+                        <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className={`text-xs ${colors.warning.text} opacity-80 mt-1.5`}>
+                    Utilisez les boutons pour ajuster le nombre de repassages
+                  </p>
+                </div>
+              )}
+
               {/* Commentaire */}
               <div className="space-y-[0.5vh]">
-                <label
-                  className={`text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold ${base.text.primary} block`}
-                >
+                <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 block">
                   Commentaire
                 </label>
                 <Textarea
@@ -968,7 +997,7 @@ export default function PortesGestion() {
                   value={editForm.commentaire}
                   onChange={e => setEditForm(prev => ({ ...prev, commentaire: e.target.value }))}
                   rows={2}
-                  className={`text-sm sm:text-base ${getInputClasses()} resize-none min-h-[8vh] max-h-[12vh]`}
+                  className="text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 resize-none min-h-[8vh] max-h-[12vh] focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!ring-offset-0 focus-visible:!border-gray-300"
                 />
               </div>
 
@@ -995,7 +1024,7 @@ export default function PortesGestion() {
           </div>
 
           {/* Footer fixe */}
-          <DialogFooter className="px-[2vh] py-[1.5vh] border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <DialogFooter className="px-[2vh] py-[1.5vh] border-t !border-gray-200 dark:!border-gray-200 flex-shrink-0">
             <div className="flex flex-col-reverse sm:flex-row gap-[1vh] w-full">
               <Button
                 variant="ghost"
