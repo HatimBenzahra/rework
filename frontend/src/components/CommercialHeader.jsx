@@ -67,26 +67,26 @@ export default function CommercialHeader({ commercial, showGreeting = true, stat
   if (!showGreeting) return null
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-4 sm:py-6 rounded-b-3xl shadow-2xl">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 sm:px-6 py-4 sm:py-6 rounded-b-3xl shadow-2xl overflow-hidden">
       {/* Layout Mobile - Stack vertical */}
       <div className="flex flex-col sm:hidden space-y-3">
         {/* Top row: Avatar + Nom + Badge */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
+            <div className="w-10 h-10 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
               <User className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <h1 className="text-base font-bold text-white">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-base font-bold text-white truncate">
                 Bonjour {commercial?.prenom || 'Commercial'} !
               </h1>
             </div>
           </div>
           <Badge
-            className={`${badgeInfo.color} border-none shadow-xl flex items-center space-x-1 px-2 py-1`}
+            className={`${badgeInfo.color} border-none shadow-xl flex items-center space-x-1 px-2 py-1 flex-shrink-0`}
           >
             <badgeInfo.icon className="w-3 h-3" />
-            <span className="font-bold text-xs">{badgeInfo.level}</span>
+            <span className="font-bold text-xs whitespace-nowrap">{badgeInfo.level}</span>
           </Badge>
         </div>
 

@@ -206,16 +206,18 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
     switch (currentStep) {
       case 0: // Address step
         return (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="adresse">Adresse de l'immeuble *</Label>
+              <Label htmlFor="adresse" className="text-sm sm:text-base">
+                Adresse de l'immeuble *
+              </Label>
               <div className="relative">
                 <Input
                   id="adresse"
                   value={formData.adresse}
                   onChange={e => handleInputChange('adresse', e.target.value)}
                   placeholder="Tapez une adresse..."
-                  className={errors.adresse ? 'border-red-500' : ''}
+                  className={`${errors.adresse ? 'border-red-500' : ''} text-sm sm:text-base`}
                 />
                 {loadingSuggestions && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -257,10 +259,12 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
       case 1: // Details step
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nbEtages">Nombre d'étages *</Label>
+                <Label htmlFor="nbEtages" className="text-sm sm:text-base">
+                  Nombre d'étages *
+                </Label>
                 <Input
                   id="nbEtages"
                   type="number"
@@ -268,13 +272,15 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.nbEtages}
                   onChange={e => handleInputChange('nbEtages', e.target.value)}
                   placeholder="Ex: 5"
-                  className={errors.nbEtages ? 'border-red-500' : ''}
+                  className={`${errors.nbEtages ? 'border-red-500' : ''} text-sm sm:text-base`}
                 />
                 {errors.nbEtages && <p className="text-xs text-red-500">{errors.nbEtages}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nbPortesParEtage">Portes par étage *</Label>
+                <Label htmlFor="nbPortesParEtage" className="text-sm sm:text-base">
+                  Portes par étage *
+                </Label>
                 <Input
                   id="nbPortesParEtage"
                   type="number"
@@ -282,7 +288,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.nbPortesParEtage}
                   onChange={e => handleInputChange('nbPortesParEtage', e.target.value)}
                   placeholder="Ex: 4"
-                  className={errors.nbPortesParEtage ? 'border-red-500' : ''}
+                  className={`${errors.nbPortesParEtage ? 'border-red-500' : ''} text-sm sm:text-base`}
                 />
                 {errors.nbPortesParEtage && (
                   <p className="text-xs text-red-500">{errors.nbPortesParEtage}</p>
@@ -292,7 +298,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
             {/* Summary card */}
             {formData.nbEtages && formData.nbPortesParEtage && (
-              <div className="p-4 rounded-lg border bg-muted/50">
+              <div className="p-3 sm:p-4 rounded-lg border bg-muted/50">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Total des portes</p>
@@ -314,8 +320,8 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
       case 2: // Access step
         return (
-          <div className="space-y-6">
-            <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label className="text-base font-medium">Ascenseur présent</Label>
@@ -348,52 +354,6 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                 <p className="text-xs text-muted-foreground">Laissez vide si aucun code d'accès</p>
               </div>
             </div>
-
-            {/* Final summary */}
-            <div className="bg-gray-50 p-4 rounded-lg space-y-3 border-l-4 border-l-blue-500">
-              <h4 className="font-medium text-sm flex items-center space-x-2">
-                <Check className="h-4 w-4" />
-                <span>Récapitulatif</span>
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-start space-x-2">
-                  <MapPin className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <span className="text-gray-600 text-xs">Adresse:</span>
-                    <p className="font-medium">{formData.adresse}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Building2 className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600 text-xs">Étages:</span>
-                  <span className="font-medium">{formData.nbEtages}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Key className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600 text-xs">Portes/étage:</span>
-                  <span className="font-medium">{formData.nbPortesParEtage}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <ArrowUp className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600 text-xs">Ascenseur:</span>
-                  <Badge
-                    variant={formData.ascenseurPresent ? 'default' : 'secondary'}
-                    className={formData.ascenseurPresent ? 'bg-green-600' : ''}
-                  >
-                    {formData.ascenseurPresent ? 'Oui' : 'Non'}
-                  </Badge>
-                </div>
-                {formData.digitalCode && (
-                  <div className="flex items-center space-x-2">
-                    <Key className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-600 text-xs">Code:</span>
-                    <Badge variant="outline" className="border-blue-300 text-blue-700">
-                      {formData.digitalCode}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )
 
@@ -408,74 +368,96 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Ajouter un immeuble</DialogTitle>
-          <DialogDescription className="text-sm">
+      <DialogContent className="w-[96vw] max-w-md sm:max-w-lg max-h-[85vh] sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+        <DialogHeader className="space-y-1 sm:space-y-2">
+          <DialogTitle className="text-base sm:text-xl leading-tight">
+            Ajouter un immeuble
+          </DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Remplissez les informations de l'immeuble en suivant les étapes
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step indicator */}
-        <div className="flex items-center justify-between py-3">
-          {STEPS.map((step, index) => {
-            const StepIcon = step.icon
-            const isActive = index === currentStep
-            const isCompleted = index < currentStep
+        {/* Step indicator - Responsive */}
+        <div className="py-2 sm:py-3 px-1">
+          <div className="flex items-start justify-between gap-1 sm:gap-2">
+            {STEPS.map((step, index) => {
+              const StepIcon = step.icon
+              const isActive = index === currentStep
+              const isCompleted = index < currentStep
 
-            return (
-              <div key={step.id} className="flex items-center flex-1">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-9 h-9 rounded-full flex items-center justify-center border-2 ${
-                      isCompleted
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : isActive
-                          ? 'bg-blue-600 border-blue-600 text-white'
-                          : 'border-gray-300 text-gray-400'
-                    }`}
-                  >
-                    {isCompleted ? <Check className="h-4 w-4" /> : <StepIcon className="h-4 w-4" />}
-                  </div>
-                  <div className="text-center mt-1.5">
+              return (
+                <React.Fragment key={step.id}>
+                  <div className="flex flex-col items-center flex-1 min-w-0">
+                    {/* Circle with icon */}
                     <div
-                      className={`text-xs font-medium ${isActive ? 'text-blue-600' : 'text-gray-600'}`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${
+                        isCompleted
+                          ? 'bg-green-600 border-green-600 text-white'
+                          : isActive
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'border-gray-300 text-gray-400'
+                      }`}
                     >
-                      {step.title}
+                      {isCompleted ? (
+                        <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      ) : (
+                        <StepIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      )}
                     </div>
-                    <div className="text-[10px] text-gray-400 hidden sm:block">
-                      {step.description}
+
+                    {/* Text labels */}
+                    <div className="text-center mt-1.5 sm:mt-2 w-full px-0.5">
+                      <div
+                        className={`text-[10px] sm:text-xs font-medium leading-tight truncate ${
+                          isActive ? 'text-blue-600' : 'text-gray-600'
+                        }`}
+                        title={step.title}
+                      >
+                        {step.title}
+                      </div>
+                      <div className="text-[9px] sm:text-[10px] text-gray-400 leading-tight mt-0.5 hidden sm:block truncate">
+                        {step.description}
+                      </div>
                     </div>
                   </div>
-                </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={`flex-1 h-0.5 mx-2 ${
-                      index < currentStep ? 'bg-green-600' : 'bg-gray-300'
-                    }`}
-                  />
-                )}
-              </div>
-            )
-          })}
+
+                  {/* Connector line */}
+                  {index < STEPS.length - 1 && (
+                    <div className="flex items-start pt-4">
+                      <div
+                        className={`w-6 sm:w-12 md:w-16 h-0.5 transition-colors ${
+                          index < currentStep ? 'bg-green-600' : 'bg-gray-300'
+                        }`}
+                      />
+                    </div>
+                  )}
+                </React.Fragment>
+              )
+            })}
+          </div>
         </div>
 
-        <Separator className="my-3" />
+        <Separator className="my-2 sm:my-3" />
 
         {/* Step content */}
-        <div className="py-3 min-h-[280px]">{renderStepContent()}</div>
+        <div className="py-2 sm:py-3 min-h-[200px] sm:min-h-[280px]">{renderStepContent()}</div>
 
-        <Separator className="my-3" />
+        <Separator className="my-2 sm:my-3" />
 
         {/* Footer buttons */}
-        <DialogFooter>
-          <div className="flex justify-between w-full gap-3">
-            <Button variant="outline" onClick={isFirstStep ? () => onOpenChange(false) : prevStep}>
+        <DialogFooter className="pt-2 sm:pt-4">
+          <div className="flex w-full gap-2 sm:gap-3 flex-col-reverse sm:flex-row sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={isFirstStep ? () => onOpenChange(false) : prevStep}
+              className="w-full sm:w-auto h-9 sm:h-10 text-sm"
+            >
               {isFirstStep ? (
                 'Annuler'
               ) : (
                 <>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                   Précédent
                 </>
               )}
@@ -485,24 +467,27 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               <Button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-9 sm:h-10 text-sm"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 animate-spin" />
                     Enregistrement...
                   </>
                 ) : (
                   <>
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                     Créer l'immeuble
                   </>
                 )}
               </Button>
             ) : (
-              <Button onClick={nextStep} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button
+                onClick={nextStep}
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto h-9 sm:h-10 text-sm"
+              >
                 Suivant
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-2" />
               </Button>
             )}
           </div>

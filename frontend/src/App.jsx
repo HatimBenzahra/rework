@@ -22,8 +22,12 @@ import ImmeubleDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/immeubles/ImmeubleD
 import ZoneDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/ZoneDetails'
 import GPSTracking from '@/pages-ADMIN-DIRECTEUR-MANAGER/gps-tracking/GPSTracking'
 
-// Import Commercial Layout & Pages
+// Import Commercial Layouts & Pages
+import CommercialLayoutComponent from '@/pages-COMMERCIAL/layouts/CommercialLayout'
+import PortesLayoutComponent from '@/pages-COMMERCIAL/layouts/PortesLayout'
 import CommercialDashboard from '@/pages-COMMERCIAL/dashboard/CommercialDashboard'
+import ImmeublesList from '@/pages-COMMERCIAL/immeubles/ImmeublesList'
+import Historique from '@/pages-COMMERCIAL/historique/Historique'
 import PortesGestion from '@/pages-COMMERCIAL/portes/PortesGestion'
 
 // Layout pour Admin/Directeur/Manager (avec sidebar)
@@ -65,14 +69,23 @@ function AdminLayout() {
 }
 
 // Layout pour Commercial (sans sidebar, interface mobile) && light mode pour les pages commerciales
-
 function CommercialLayout() {
   return (
     <div className="light" data-theme="light">
       <Routes>
-        <Route path="/" element={<CommercialDashboard />} />
-        <Route path="/immeubles" element={<CommercialDashboard initialTab="immeubles" />} />
-        <Route path="/portes/:immeubleId" element={<PortesGestion />} />
+        {/* Routes principales avec le layout commercial */}
+        <Route element={<CommercialLayoutComponent />}>
+          <Route path="/" element={<CommercialDashboard />} />
+          <Route path="/immeubles" element={<ImmeublesList />} />
+          <Route path="/historique" element={<Historique />} />
+        </Route>
+
+        {/* Route spéciale pour les portes avec son propre layout */}
+        <Route element={<PortesLayoutComponent />}>
+          <Route path="/portes/:immeubleId" element={<PortesGestion />} />
+        </Route>
+
+        {/* Fallback */}
         <Route path="/*" element={<CommercialDashboard />} />
       </Routes>
     </div>

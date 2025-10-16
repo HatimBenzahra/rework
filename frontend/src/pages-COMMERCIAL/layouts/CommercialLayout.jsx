@@ -1,0 +1,124 @@
+import React from 'react'
+import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { BarChart3, Building2, History } from 'lucide-react'
+import { useRole } from '@/contexts/RoleContext'
+import { useCommercialFull } from '@/hooks/use-api'
+import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import CommercialHeader from '@/components/CommercialHeader'
+import CommercialBottomBar from '@/components/CommercialBottomBar'
+
+/**
+ * Layout principal pour l'espace commercial
+ * Gère le header, la bottombar et la navigation de manière centralisée
+ */
+export default function CommercialLayout() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { currentUserId } = useRole()
+  const { base, components } = useCommercialTheme()
+
+  // Récupérer les données du commercial pour le header et bottom bar
+  const { data: commercial, loading: commercialLoading } = useCommercialFull(
+    parseInt(currentUserId)
+  )
+
+  // Statistiques du commercial
+  const myStats = commercial?.statistics?.[0] || {
+    contratsSignes: 0,
+    immeublesVisites: 0,
+    rendezVousPris: 0,
+    refus: 0,
+  }
+
+  // Configuration des onglets de navigation
+  const navigationItems = [
+    {
+      id: 'stats',
+      label: 'Mes Stats',
+      icon: BarChart3,
+      badge: myStats.contratsSignes,
+      path: '/',
+    },
+    {
+      id: 'immeubles',
+      label: 'Immeubles',
+      icon: Building2,
+      badge: commercial?.immeubles?.length || 0,
+      path: '/immeubles',
+    },
+    {
+      id: 'historique',
+      label: 'Historique',
+      icon: History,
+      badge: 0,
+      path: '/historique',
+    },
+  ]
+
+  // Déterminer l'onglet actif basé sur le chemin
+  const getActiveTab = () => {
+    const path = location.pathname
+
+    // Cas spécial pour la page des portes
+    if (path.startsWith('/portes/')) {
+      return 'immeubles'
+    }
+
+    // Mapping des paths vers les tabs
+    if (path === '/immeubles') return 'immeubles'
+    if (path === '/historique') return 'historique'
+    return 'stats' // Par défaut
+  }
+
+  // Gestion du changement d'onglet
+  const handleTabChange = tabId => {
+    const navItem = navigationItems.find(item => item.id === tabId)
+    if (navItem) {
+      navigate(navItem.path)
+    }
+  }
+
+  if (commercialLoading) {
+    return (
+      <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
+        <CommercialHeader commercial={null} showGreeting={false} stats={myStats} />
+        <div className={components.loading.container}>
+          <div className="text-center">
+            <div className={`${components.loading.spinner} mx-auto mb-4`}></div>
+            <p className={components.loading.text}>Chargement...</p>
+          </div>
+        </div>
+        <CommercialBottomBar
+          navigationItems={navigationItems}
+          activeTab={getActiveTab()}
+          onTabChange={handleTabChange}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
+      {/* Header Commercial */}
+      <CommercialHeader
+        commercial={commercial}
+        showGreeting={location.pathname === '/'}
+        stats={myStats}
+      />
+
+      {/* Content avec padding bottom pour la bottom bar */}
+      <div
+        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24`}
+      >
+        <Outlet context={{ commercial, myStats, commercialLoading }} />
+      </div>
+
+      {/* Bottom Navigation Bar */}
+      <CommercialBottomBar
+        navigationItems={navigationItems}
+        activeTab={getActiveTab()}
+        onTabChange={handleTabChange}
+      />
+    </div>
+  )
+}
