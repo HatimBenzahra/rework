@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -20,26 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Building2,
-  ArrowLeft,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Eye,
-  RotateCcw,
-  Calendar,
-  MessageSquare,
-  Plus,
-  Minus,
-  MapPin,
-  CalendarDays,
-  Home,
-  ArrowUp,
-} from 'lucide-react'
+import { Building2, Clock, Eye, RotateCcw, Calendar, Plus, Minus } from 'lucide-react'
 import { usePortesByImmeuble, useUpdatePorte, useImmeuble } from '@/hooks/use-api'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 import { STATUT_OPTIONS } from './Statut_options'
+import PortesTemplate from './components/PortesTemplate'
 /**
  * Page de gestion des portes d'un immeuble
  * Utilise le contexte du layout parent (PortesLayout)
@@ -54,13 +37,11 @@ export default function PortesGestion() {
   useOutletContext()
 
   // Hook pour le thème commercial - centralise TOUS les styles
-  const { colors, base, components, getButtonClasses } = useCommercialTheme()
+  const { colors, base, getButtonClasses } = useCommercialTheme()
 
   // Configuration des statuts avec les couleurs du thème
   const statutOptions = STATUT_OPTIONS()
 
-  const [searchQuery] = useState('')
-  const [statutFilter] = useState('all')
   const [selectedPorte, setSelectedPorte] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedEtage, setSelectedEtage] = useState(() => {
@@ -68,7 +49,6 @@ export default function PortesGestion() {
     return localStorage.getItem(`etage-${immeubleId}`) || 'all'
   })
   const [showOnlyVisited, setShowOnlyVisited] = useState(false)
-  const [showScrollToTop, setShowScrollToTop] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [editForm, setEditForm] = useState({
     statut: '',
@@ -78,7 +58,6 @@ export default function PortesGestion() {
     nomPersonnalise: '',
   })
 
-  const etageRefs = useRef({})
   const etageSelecteurRef = useRef(null)
 
   // Sauvegarder l'étage sélectionné dans localStorage
@@ -88,35 +67,10 @@ export default function PortesGestion() {
     }
   }, [selectedEtage, immeubleId])
 
-  // Détecter le scroll pour afficher le bouton "Remonter"
-  useEffect(() => {
-    const handleScroll = e => {
-      const scrollContainer = e.target
-      // Afficher le bouton si on a scrollé plus de 300px
-      setShowScrollToTop(scrollContainer.scrollTop > 300)
-    }
-
-    // Attendre que le DOM soit complètement monté
-    const timer = setTimeout(() => {
-      const scrollContainer = document.querySelector('.portes-scroll-container')
-      if (scrollContainer) {
-        scrollContainer.addEventListener('scroll', handleScroll)
-      }
-    }, 200)
-
-    return () => {
-      clearTimeout(timer)
-      const scrollContainer = document.querySelector('.portes-scroll-container')
-      if (scrollContainer) {
-        scrollContainer.removeEventListener('scroll', handleScroll)
-      }
-    }
-  }, [])
-
   // Récupérer les informations de l'immeuble
   const { data: immeuble, loading: immeubleLoading } = useImmeuble(parseInt(immeubleId))
 
-  // Récupérer les portes de l'immeuble
+  // Récupérer les portes de l'immeuble avec cache management
   const { data: portesData, loading, refetch } = usePortesByImmeuble(parseInt(immeubleId))
 
   // S'assurer que portes est toujours un tableau avec useMemo pour éviter les re-renders
@@ -125,81 +79,14 @@ export default function PortesGestion() {
   // Mutation pour mettre à jour une porte
   const { mutate: updatePorte } = useUpdatePorte()
 
-  // Filtrage des portes
+  // Filtrage des portes selon les critères locaux
   const filteredPortes = useMemo(() => {
     return portes.filter(porte => {
-      const matchesSearch =
-        porte.numero.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        porte.etage.toString().includes(searchQuery) ||
-        (porte.nomPersonnalise &&
-          porte.nomPersonnalise.toLowerCase().includes(searchQuery.toLowerCase()))
-      const matchesStatut = statutFilter === 'all' || porte.statut === statutFilter
       const matchesVisited = !showOnlyVisited || porte.statut !== 'NON_VISITE'
-      return matchesSearch && matchesStatut && matchesVisited
+      return matchesVisited
     })
-  }, [portes, searchQuery, statutFilter, showOnlyVisited])
+  }, [portes, showOnlyVisited])
 
-  // Grouper les portes par étage
-  const portesByEtage = useMemo(() => {
-    const grouped = {}
-    filteredPortes.forEach(porte => {
-      const etage = porte.etage
-      if (!grouped[etage]) {
-        grouped[etage] = []
-      }
-      grouped[etage].push(porte)
-    })
-
-    // Trier les étages par ordre décroissant (du plus haut au plus bas)
-    return Object.keys(grouped)
-      .sort((a, b) => parseInt(b) - parseInt(a))
-      .reduce((acc, etage) => {
-        acc[etage] = grouped[etage].sort((a, b) => a.numero.localeCompare(b.numero))
-        return acc
-      }, {})
-  }, [filteredPortes])
-
-  // Obtenir la liste des étages disponibles
-  const etagesDisponibles = useMemo(() => {
-    return Object.keys(portesByEtage).sort((a, b) => parseInt(b) - parseInt(a))
-  }, [portesByEtage])
-
-  // Filtrer les étages selon la sélection
-  const etagesAffiches = useMemo(() => {
-    if (selectedEtage === 'all') {
-      return portesByEtage
-    }
-    return { [selectedEtage]: portesByEtage[selectedEtage] }
-  }, [portesByEtage, selectedEtage])
-
-  // Statistiques des portes
-  const stats = useMemo(() => {
-    const total = portes.length
-    const nonVisitees = portes.filter(p => p.statut === 'NON_VISITE').length
-    const contratsSigne = portes.filter(p => p.statut === 'CONTRAT_SIGNE').length
-    const rdvPris = portes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
-    const curieux = portes.filter(p => p.statut === 'CURIEUX').length
-    const refus = portes.filter(p => p.statut === 'REFUS').length
-    const repassages = portes.filter(p => p.statut === 'NECESSITE_REPASSAGE').length
-
-    const tauxVisite = total > 0 ? (((total - nonVisitees) / total) * 100).toFixed(1) : '0'
-
-    return {
-      total,
-      nonVisitees,
-      contratsSigne,
-      rdvPris,
-      curieux,
-      refus,
-      repassages,
-      tauxVisite,
-      taux_couverture: tauxVisite, // Alias pour compatibilité
-    }
-  }, [portes])
-
-  const getStatutInfo = statut => {
-    return statutOptions.find(option => option.value === statut) || statutOptions[0]
-  }
 
   const handleEditPorte = porte => {
     setSelectedPorte(porte)
@@ -325,505 +212,107 @@ export default function PortesGestion() {
     }
   }
 
-  // Navigation rapide entre étages
-  const handleEtageChange = etage => {
-    setSelectedEtage(etage)
-    // Scroll vers l'étage si ce n'est pas "all"
-    if (etage !== 'all' && etageRefs.current[etage]) {
-      setTimeout(() => {
-        etageRefs.current[etage]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 100)
-    }
+  // Navigation vers la liste des immeubles
+  const handleBackToImmeubles = () => {
+    navigate('/immeubles')
   }
 
-  // Fonction pour remonter au sélecteur d'étages
-  const scrollToEtageSelector = () => {
-    etageSelecteurRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-
-  if (loading || immeubleLoading) {
-    return (
-      <div className={components.loading.container}>
-        <div className="text-center">
-          <div className={`${components.loading.spinner} mx-auto mb-4`}></div>
-          <p className={components.loading.text}>Chargement des portes...</p>
+  // Composant personnalisé pour les filtres supplémentaires de la page gestion
+  const customFilters = (
+    <div
+      ref={etageSelecteurRef}
+      className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
+    >
+      {/* Sélecteur d'étage GROS et VISIBLE */}
+      <div className="mb-3">
+        <h3
+          className={`text-base sm:text-lg font-bold ${base.text.primary} mb-2 flex items-center gap-2`}
+        >
+          <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
+          Je suis à l'étage :
+        </h3>
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+          {Object.keys(portes.reduce((acc, p) => ({ ...acc, [p.etage]: true }), {}))
+            .sort((a, b) => parseInt(b) - parseInt(a))
+            .map(etage => (
+              <Button
+                key={etage}
+                variant="ghost"
+                size="lg"
+                onClick={() => setSelectedEtage(etage)}
+                className={`h-12 sm:h-14 text-lg sm:text-xl font-bold ${
+                  selectedEtage === etage
+                    ? `${colors.primary.bg} ${colors.primary.text} border-2 sm:border-3 ${colors.primary.border} shadow-lg scale-105`
+                    : `${base.bg.muted} ${base.text.primary} hover:bg-gray-300 border ${base.border.default}`
+                } transition-all duration-200`}
+              >
+                {etage}
+                <span
+                  className={`ml-1 sm:ml-2 text-xs sm:text-sm ${selectedEtage === etage ? 'opacity-100' : 'opacity-60'}`}
+                >
+                  ({portes.filter(p => p.etage === etage).length || 0})
+                </span>
+              </Button>
+            ))}
         </div>
       </div>
-    )
-  }
+
+      {/* Filtres rapides */}
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowOnlyVisited(!showOnlyVisited)}
+          className={`${
+            showOnlyVisited
+              ? `${colors.success.bgLight} ${colors.success.text} border ${colors.success.border}`
+              : `${base.bg.muted} ${base.text.muted}`
+          } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+        >
+          <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+          {showOnlyVisited ? 'Visitées' : 'Toutes'}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedEtage('all')}
+          className={`${
+            selectedEtage === 'all'
+              ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
+              : `${base.bg.muted} ${base.text.muted}`
+          } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+        >
+          <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+          Tous ({filteredPortes.length})
+        </Button>
+      </div>
+    </div>
+  )
+
+  // Filtrer par étage sélectionné
+  const portesFiltered = useMemo(() => {
+    if (selectedEtage === 'all') return filteredPortes
+    return filteredPortes.filter(porte => porte.etage.toString() === selectedEtage)
+  }, [filteredPortes, selectedEtage])
 
   return (
     <div className="space-y-3">
-      {/* Titre et bouton retour - Optimisé Mobile */}
-      <div className="mb-3 md:mb-4">
-        {/* Bouton retour - Sticky sur mobile pour être toujours accessible */}
-        <div className="top-0 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 mb-3 backdrop-blur-sm border-b border-border/50 md:static md:z-auto md:mx-0 md:px-0 md:py-0 md:mb-2 md:bg-transparent md:backdrop-blur-none md:border-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/immeubles')}
-            className={`flex items-center gap-2 ${getButtonClasses('primary')} w-full md:w-auto justify-center md:justify-start h-9`}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour
-          </Button>
-        </div>
-
-        {/* Adresse et infos - Card optimisée mobile */}
-        <Card className={`${base.bg.card} ${base.border.card} shadow-md mb-3 md:mb-4`}>
-          <CardContent className="p-3 sm:p-3.5 md:p-4">
-            {/* Adresse principale */}
-            <div className="flex items-start gap-2 sm:gap-2.5 mb-3">
-              <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
-                <MapPin
-                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p
-                  className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 uppercase tracking-wide`}
-                >
-                  Adresse
-                </p>
-                <h1
-                  className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}
-                >
-                  {immeuble?.adresse || 'Chargement...'}
-                </h1>
-              </div>
-            </div>
-
-            {/* Séparateur */}
-            <div className={`h-px ${base.border.default} mb-3`}></div>
-
-            {/* Infos compactes - Grid responsive */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-1.5">
-                <div className={`p-1.5 rounded-lg ${base.bg.muted} flex-shrink-0`}>
-                  <Home className={`h-3.5 w-3.5 ${base.text.primary}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>Portes</p>
-                  <p className={`text-sm md:text-base font-bold ${base.text.primary}`}>
-                    {stats.total}
-                  </p>
-                </div>
-              </div>
-
-              {immeuble?.createdAt && (
-                <div className="flex items-center gap-1.5">
-                  <div className={`p-1.5 rounded-lg ${base.bg.muted} flex-shrink-0`}>
-                    <CalendarDays className={`h-3.5 w-3.5 ${base.text.primary}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>Créé le</p>
-                    <p
-                      className={`text-[10px] sm:text-xs md:text-sm font-semibold ${base.text.primary} truncate`}
-                    >
-                      {new Date(immeuble.createdAt).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Cards - Responsive */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5 md:gap-3 mb-4">
-          <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-2 sm:p-2.5 md:p-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
-                    Taux de visite
-                  </p>
-                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
-                    {stats.tauxVisite}%
-                  </p>
-                </div>
-                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <Eye className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-2 sm:p-2.5 md:p-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
-                    Contrats signés
-                  </p>
-                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
-                    {stats.contratsSigne}
-                  </p>
-                </div>
-                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <CheckCircle2
-                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-2 sm:p-2.5 md:p-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
-                    RDV programmés
-                  </p>
-                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
-                    {stats.rdvPris}
-                  </p>
-                </div>
-                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <Calendar
-                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardContent className="p-2 sm:p-2.5 md:p-3">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
-                    Repassages
-                  </p>
-                  <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
-                    {stats.repassages}
-                  </p>
-                </div>
-                <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                  <RotateCcw
-                    className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* BARRE DE NAVIGATION RAPIDE - STICKY */}
-        <div
-          ref={etageSelecteurRef}
-          className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
-        >
-          {/* Sélecteur d'étage GROS et VISIBLE */}
-          <div className="mb-3">
-            <h3
-              className={`text-base sm:text-lg font-bold ${base.text.primary} mb-2 flex items-center gap-2`}
-            >
-              <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
-              Je suis à l'étage :
-            </h3>
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-              {etagesDisponibles.map(etage => (
-                <Button
-                  key={etage}
-                  variant="ghost"
-                  size="lg"
-                  onClick={() => handleEtageChange(etage)}
-                  className={`h-12 sm:h-14 text-lg sm:text-xl font-bold ${
-                    selectedEtage === etage
-                      ? `${colors.primary.bg} ${colors.primary.text} border-2 sm:border-3 ${colors.primary.border} shadow-lg scale-105`
-                      : `${base.bg.muted} ${base.text.primary} hover:bg-gray-300 border ${base.border.default}`
-                  } transition-all duration-200`}
-                >
-                  {etage}
-                  <span
-                    className={`ml-1 sm:ml-2 text-xs sm:text-sm ${selectedEtage === etage ? 'opacity-100' : 'opacity-60'}`}
-                  >
-                    ({portesByEtage[etage]?.length || 0})
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          {/* Filtres rapides */}
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowOnlyVisited(!showOnlyVisited)}
-              className={`${
-                showOnlyVisited
-                  ? `${colors.success.bgLight} ${colors.success.text} border ${colors.success.border}`
-                  : `${base.bg.muted} ${base.text.muted}`
-              } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-            >
-              <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-              {showOnlyVisited ? 'Visitées' : 'Toutes'}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedEtage('all')}
-              className={`${
-                selectedEtage === 'all'
-                  ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
-                  : `${base.bg.muted} ${base.text.muted}`
-              } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-            >
-              <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-              Tous ({filteredPortes.length})
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Liste des portes groupées par étage */}
-      <div className="space-y-4 mb-20 sm:mb-4">
-        {Object.entries(etagesAffiches).map(([etage, portesEtage]) => (
-          <div key={etage} className="space-y-3">
-            {/* En-tête de l'étage */}
-            <div
-              ref={el => (etageRefs.current[etage] = el)}
-              className="flex items-center space-x-2 sm:space-x-3 scroll-mt-32"
-            >
-              <div className={`h-px flex-1 ${base.border.default}`}></div>
-              <div
-                className={`px-3 sm:px-4 py-2 sm:py-2.5 ${colors.primary.bgLight} ${colors.primary.textLight} rounded-full border ${colors.primary.border} font-bold text-sm sm:text-base shadow-md`}
-              >
-                <h3>
-                  Étage {etage} ({portesEtage.length} porte{portesEtage.length > 1 ? 's' : ''})
-                </h3>
-              </div>
-              <div className={`h-px flex-1 ${base.border.default}`}></div>
-            </div>
-
-            {/* Grille des portes pour cet étage - FULL WIDTH sur mobile */}
-            <div className="grid grid-cols-1 gap-3">
-              {portesEtage.map(porte => {
-                const statutInfo = getStatutInfo(porte.statut)
-                const IconComponent = statutInfo.icon
-
-                const needsRepassage =
-                  porte.statut === 'CURIEUX' || porte.statut === 'NECESSITE_REPASSAGE'
-
-                return (
-                  <Card
-                    key={porte.id}
-                    className={`${base.bg.card} border-2 ${
-                      porte.statut === 'NON_VISITE'
-                        ? base.border.default
-                        : `${statutInfo.color.split(' ')[0].replace('bg-', 'border-')}`
-                    } shadow-md hover:shadow-xl transition-all duration-200`}
-                  >
-                    <CardContent className="p-3 sm:p-3.5 md:p-4">
-                      <div className="space-y-3">
-                        {/* En-tête avec numéro de porte */}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className={`font-bold text-lg sm:text-xl ${base.text.primary}`}>
-                              {porte.nomPersonnalise || `Porte ${porte.numero}`}
-                            </p>
-                            {porte.nomPersonnalise && (
-                              <p className={`text-xs sm:text-sm ${base.text.muted}`}>
-                                N° {porte.numero}
-                              </p>
-                            )}
-                          </div>
-                          <Badge
-                            className={`${statutInfo.color} text-xs sm:text-sm px-2 sm:px-2.5 py-0.5 sm:py-1`}
-                          >
-                            <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1" />
-                            <span className="hidden sm:inline">{statutInfo.label}</span>
-                          </Badge>
-                        </div>
-
-                        {/* BOUTONS D'ACTION RAPIDE - GROS ET VISIBLES */}
-                        <div className="space-y-1.5 sm:space-y-2">
-                          <p
-                            className={`text-[10px] sm:text-xs font-semibold ${base.text.muted} uppercase`}
-                          >
-                            Action rapide :
-                          </p>
-                          <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-                            {/* Contrat signé */}
-                            <Button
-                              variant="ghost"
-                              size="lg"
-                              onClick={() => handleQuickStatusChange(porte, 'CONTRAT_SIGNE')}
-                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                                porte.statut === 'CONTRAT_SIGNE'
-                                  ? `${colors.success.bg} ${colors.success.text} border-2 ${colors.success.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.success.bgLight} border ${base.border.default}`
-                              } font-bold transition-all duration-200`}
-                            >
-                              <CheckCircle2 className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                              <span className="text-[10px] sm:text-xs">Contrat</span>
-                            </Button>
-
-                            {/* RDV */}
-                            <Button
-                              variant="ghost"
-                              size="lg"
-                              onClick={() => handleQuickStatusChange(porte, 'RENDEZ_VOUS_PRIS')}
-                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                                porte.statut === 'RENDEZ_VOUS_PRIS'
-                                  ? `${colors.primary.bg} ${colors.primary.text} border-2 ${colors.primary.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default}`
-                              } font-bold transition-all duration-200`}
-                            >
-                              <Calendar className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                              <span className="text-[10px] sm:text-xs">RDV</span>
-                            </Button>
-
-                            {/* Refus */}
-                            <Button
-                              variant="ghost"
-                              size="lg"
-                              onClick={() => handleQuickStatusChange(porte, 'REFUS')}
-                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                                porte.statut === 'REFUS'
-                                  ? `${colors.danger.bg} ${colors.danger.text} border-2 ${colors.danger.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.danger.bgLight} border ${base.border.default}`
-                              } font-bold transition-all duration-200`}
-                            >
-                              <XCircle className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                              <span className="text-[10px] sm:text-xs">Refus</span>
-                            </Button>
-
-                            {/* Curieux */}
-                            <Button
-                              variant="ghost"
-                              size="lg"
-                              onClick={() => handleQuickStatusChange(porte, 'CURIEUX')}
-                              className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                                porte.statut === 'CURIEUX'
-                                  ? `${colors.info.bg} ${colors.info.text} border-2 ${colors.info.border} shadow-lg`
-                                  : `${base.bg.muted} ${base.text.primary} hover:${colors.info.bgLight} border ${base.border.default}`
-                              } font-bold transition-all duration-200`}
-                            >
-                              <MessageSquare className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                              <span className="text-[10px] sm:text-xs">Curieux</span>
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* GESTION DES REPASSAGES avec +/- */}
-                        {needsRepassage && (
-                          <div
-                            className={`${colors.warning.bgLight} border ${colors.warning.border} rounded-lg p-2 sm:p-2.5`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1.5 sm:gap-2">
-                                <RotateCcw
-                                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${colors.warning.text}`}
-                                />
-                                <span
-                                  className={`font-bold text-xs sm:text-sm ${colors.warning.text}`}
-                                >
-                                  Repassages : {porte.nbRepassages}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 sm:gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRepassageChange(porte, -1)}
-                                  disabled={porte.nbRepassages === 0}
-                                  className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
-                                >
-                                  <Minus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleRepassageChange(porte, 1)}
-                                  className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
-                                >
-                                  <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* RDV info */}
-                        {porte.rdvDate && (
-                          <div
-                            className={`${colors.primary.bgLight} border ${colors.primary.border} rounded-lg p-2 sm:p-2.5`}
-                          >
-                            <div
-                              className={`flex items-center gap-1.5 sm:gap-2 ${colors.primary.textLight} font-semibold text-xs sm:text-sm`}
-                            >
-                              <Calendar className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                              <span>{new Date(porte.rdvDate).toLocaleDateString('fr-FR')}</span>
-                              {porte.rdvTime && <span>à {porte.rdvTime}</span>}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Commentaire */}
-                        {porte.commentaire && (
-                          <div
-                            className={`${base.bg.muted} border ${base.border.default} rounded-lg p-2 sm:p-2.5`}
-                          >
-                            <p className={`text-xs sm:text-sm ${base.text.secondary}`}>
-                              {porte.commentaire}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Bouton pour ajouter/modifier détails */}
-                        <Button
-                          variant="ghost"
-                          size="lg"
-                          onClick={() => handleEditPorte(porte)}
-                          className={`w-full h-10 sm:h-11 ${getButtonClasses('outline')} text-sm sm:text-base font-semibold`}
-                        >
-                          <MessageSquare className="h-4 w-4 sm:h-4.5 sm:w-4.5 mr-2" />
-                          {porte.commentaire || porte.nomPersonnalise
-                            ? 'Modifier les détails'
-                            : 'Ajouter des détails'}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredPortes.length === 0 && (
-        <div className="text-center py-12">
-          <Building2 className={`h-12 w-12 mx-auto ${base.icon.default} mb-4`} />
-          <h3 className={`text-lg font-medium ${base.text.primary} mb-2`}>Aucune porte trouvée</h3>
-          <p className={base.text.muted}>
-            {searchQuery || statutFilter !== 'all'
-              ? 'Aucune porte ne correspond à vos critères de recherche'
-              : "Aucune porte n'est disponible pour cet immeuble"}
-          </p>
-        </div>
-      )}
-
-      {/* Bouton flottant "Remonter" avec animation */}
-      {showScrollToTop && (
-        <button
-          onClick={scrollToEtageSelector}
-          className="fixed bottom-28 sm:bottom-24 right-4 sm:right-6 z-50 flex flex-col items-center justify-center px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 active:scale-95 border-2 border-blue-400"
-          aria-label="Remonter"
-        >
-          <ArrowUp className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce mb-0.5 sm:mb-1" />
-          <span className="font-bold text-[10px] sm:text-xs whitespace-nowrap">Étages</span>
-        </button>
-      )}
+      {/* Utilisation du template avec les configurations spécifiques à la gestion */}
+      <PortesTemplate
+        portes={portesFiltered}
+        loading={loading || immeubleLoading}
+        readOnly={false}
+        showStatusFilters={false}
+        onPorteEdit={handleEditPorte}
+        onQuickStatusChange={handleQuickStatusChange}
+        onRepassageChange={handleRepassageChange}
+        onBack={handleBackToImmeubles}
+        backButtonText="Retour"
+        scrollTarget={etageSelecteurRef}
+        scrollTargetText="Étages"
+        customFilters={customFilters}
+      />
 
       {/* Modal d'édition - Optimisé mobile */}
       <Dialog

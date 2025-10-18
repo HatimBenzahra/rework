@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate, Outlet } from 'react-router-dom'
+import { useNavigate, Outlet, useLocation } from 'react-router-dom'
 import { BarChart3, Building2, History } from 'lucide-react'
 import { useRole } from '@/contexts/RoleContext'
 import { useCommercialFull } from '@/hooks/use-api'
@@ -13,6 +13,7 @@ import CommercialBottomBar from '@/components/CommercialBottomBar'
  */
 export default function PortesLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { currentUserId } = useRole()
   const { base, components } = useCommercialTheme()
 
@@ -28,6 +29,11 @@ export default function PortesLayout() {
     rendezVousPris: 0,
     refus: 0,
   }
+
+  // Déterminer l'onglet actif selon la route
+  // Si c'est /portes/lecture/:immeubleId => "historique"
+  // Si c'est /portes/:immeubleId => "immeubles"
+  const activeTab = location.pathname.includes('/portes/lecture/') ? 'historique' : 'immeubles'
 
   // Configuration des onglets de navigation
   const navigationItems = [
@@ -79,7 +85,7 @@ export default function PortesLayout() {
         </div>
         <CommercialBottomBar
           navigationItems={navigationItems}
-          activeTab="immeubles"
+          activeTab={activeTab}
           onTabChange={handleTabChange}
         />
       </div>
@@ -106,7 +112,7 @@ export default function PortesLayout() {
       {/* Bottom Navigation Bar */}
       <CommercialBottomBar
         navigationItems={navigationItems}
-        activeTab="immeubles"
+        activeTab={activeTab}
         onTabChange={handleTabChange}
       />
     </div>

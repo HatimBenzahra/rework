@@ -28,6 +28,7 @@ import CommercialDashboard from '@/pages-COMMERCIAL/dashboard/CommercialDashboar
 import ImmeublesList from '@/pages-COMMERCIAL/immeubles/ImmeublesList'
 import Historique from '@/pages-COMMERCIAL/historique/Historique'
 import PortesGestion from '@/pages-COMMERCIAL/portes/PortesGestion'
+import PortesLecture from '@/pages-COMMERCIAL/portes/PortesLecture'
 
 // Layout pour Admin/Directeur/Manager (avec sidebar)
 function AdminLayout() {
@@ -82,6 +83,7 @@ function CommercialLayout() {
         {/* Route spéciale pour les portes avec son propre layout */}
         <Route element={<PortesLayoutComponent />}>
           <Route path="/portes/:immeubleId" element={<PortesGestion />} />
+          <Route path="/portes/lecture/:immeubleId" element={<PortesLecture />} />
         </Route>
 
         {/* Fallback */}
