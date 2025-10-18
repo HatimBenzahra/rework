@@ -32,31 +32,41 @@ export class PorteService {
   async findByImmeuble(immeubleId: number) {
     return this.prisma.porte.findMany({
       where: { immeubleId },
-      orderBy: [
-        { etage: 'asc' },
-        { numero: 'asc' },
-      ],
+      orderBy: [{ etage: 'asc' }, { numero: 'asc' }],
     });
   }
 
   async update(updatePorteInput: UpdatePorteInput) {
     const { id, ...data } = updatePorteInput;
-    
+
     // Si le statut change vers NECESSITE_REPASSAGE, incrémenter le nombre de repassages
     if (data.statut === StatutPorte.NECESSITE_REPASSAGE) {
-      const currentPorte = await this.prisma.porte.findUnique({ where: { id } });
-      if (currentPorte && currentPorte.statut !== StatutPorte.NECESSITE_REPASSAGE) {
+      const currentPorte = await this.prisma.porte.findUnique({
+        where: { id },
+      });
+      if (
+        currentPorte &&
+        currentPorte.statut !== StatutPorte.NECESSITE_REPASSAGE
+      ) {
         data.nbRepassages = (currentPorte.nbRepassages || 0) + 1;
       }
     }
 
-    return this.prisma.porte.update({
+    const updatedPorte = await this.prisma.porte.update({
       where: { id },
       data,
       include: {
         immeuble: true,
       },
     });
+
+    // tri du plus récent au plus ancien
+    await this.prisma.immeuble.update({
+      where: { id: updatedPorte.immeubleId },
+      data: { updatedAt: new Date() },
+    });
+
+    return updatedPorte;
   }
 
   async remove(id: number) {
@@ -65,9 +75,13 @@ export class PorteService {
     });
   }
 
-  async createPortesForImmeuble(immeubleId: number, nbEtages: number, nbPortesParEtage: number) {
+  async createPortesForImmeuble(
+    immeubleId: number,
+    nbEtages: number,
+    nbPortesParEtage: number,
+  ) {
     const portes: any[] = [];
-    
+
     for (let etage = 1; etage <= nbEtages; etage++) {
       for (let porte = 1; porte <= nbPortesParEtage; porte++) {
         portes.push({
@@ -88,7 +102,7 @@ export class PorteService {
 
   async getStatistiquesPortes(immeubleId?: number) {
     const whereClause = immeubleId ? { immeubleId } : {};
-    
+
     const [
       totalPortes,
       contratsSigne,
@@ -99,12 +113,24 @@ export class PorteService {
       necessiteRepassage,
     ] = await Promise.all([
       this.prisma.porte.count({ where: whereClause }),
-      this.prisma.porte.count({ where: { ...whereClause, statut: StatutPorte.CONTRAT_SIGNE } }),
-      this.prisma.porte.count({ where: { ...whereClause, statut: StatutPorte.RENDEZ_VOUS_PRIS } }),
-      this.prisma.porte.count({ where: { ...whereClause, statut: StatutPorte.CURIEUX } }),
-      this.prisma.porte.count({ where: { ...whereClause, statut: StatutPorte.REFUS } }),
-      this.prisma.porte.count({ where: { ...whereClause, statut: StatutPorte.NON_VISITE } }),
-      this.prisma.porte.count({ where: { ...whereClause, statut: StatutPorte.NECESSITE_REPASSAGE } }),
+      this.prisma.porte.count({
+        where: { ...whereClause, statut: StatutPorte.CONTRAT_SIGNE },
+      }),
+      this.prisma.porte.count({
+        where: { ...whereClause, statut: StatutPorte.RENDEZ_VOUS_PRIS },
+      }),
+      this.prisma.porte.count({
+        where: { ...whereClause, statut: StatutPorte.CURIEUX },
+      }),
+      this.prisma.porte.count({
+        where: { ...whereClause, statut: StatutPorte.REFUS },
+      }),
+      this.prisma.porte.count({
+        where: { ...whereClause, statut: StatutPorte.NON_VISITE },
+      }),
+      this.prisma.porte.count({
+        where: { ...whereClause, statut: StatutPorte.NECESSITE_REPASSAGE },
+      }),
     ]);
 
     return {
@@ -116,7 +142,10 @@ export class PorteService {
       nonVisitees,
       necessiteRepassage,
       portesVisitees: totalPortes - nonVisitees,
-      tauxConversion: totalPortes > 0 ? (contratsSigne / totalPortes * 100).toFixed(2) : '0',
+      tauxConversion:
+        totalPortes > 0
+          ? ((contratsSigne / totalPortes) * 100).toFixed(2)
+          : '0',
     };
   }
 }

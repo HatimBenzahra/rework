@@ -3,7 +3,7 @@ import DetailsPage from '@/components/DetailsPage'
 import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useImmeuble, useCommercials } from '@/services'
+import { useImmeuble, useCommercials, usePortesByImmeuble } from '@/services'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 
@@ -14,65 +14,47 @@ export default function ImmeubleDetails() {
   // API hooks
   const { data: immeuble, loading: immeubleLoading, error } = useImmeuble(parseInt(id))
   const { data: commercials } = useCommercials()
+  const { data: portes, loading: portesLoading } = usePortesByImmeuble(parseInt(id))
 
   // Transformation des données API vers format UI
   const immeubleData = useMemo(() => {
     if (!immeuble) return null
 
     const commercial = commercials?.find(c => c.id === immeuble.commercialId)
-    const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
+    const totalDoors = portes?.length || immeuble.nbEtages * immeuble.nbPortesParEtage
 
-    // Informations de prospection pour l'immeuble
-    const prospectionMode = Math.random() < 0.6 ? 'solo' : 'duo'
-    const commercialNames = [
-      'Ahmed Ben Ali',
-      'Fatma Trabelsi',
-      'Mohamed Khelifi',
-      'Samia Gharbi',
-      'Karim Sassi',
-    ]
-    const prospectedBy = commercialNames[Math.floor(Math.random() * commercialNames.length)]
-    const duoPartner =
-      prospectionMode === 'duo'
-        ? commercialNames.filter(name => name !== prospectedBy)[
-            Math.floor(Math.random() * (commercialNames.length - 1))
-          ]
-        : null
+    // Informations de prospection pour l'immeuble (si disponibles dans les données)
+    const prospectionMode = 'solo' // À adapter selon les données backend
+    const prospectedBy = commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné'
 
-    // Génération des données de portes par étage avec nouveaux statuts
-    const floorDetails = Array.from({ length: immeuble.nbEtages }, (_, index) => {
-      const floorNumber = index + 1
-      const statusOptions = ['contrat_signe', 'refus', 'curieux', 'rdv_pris', 'non_visite']
-
-      return {
-        floor: floorNumber,
-        totalDoors: immeuble.nbPortesParEtage,
-        doors: Array.from({ length: immeuble.nbPortesParEtage }, (_, doorIndex) => {
-          const randomStatus = statusOptions[Math.floor(Math.random() * statusOptions.length)]
-          const futureDate = new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000) // 30 jours dans le futur
+    // Grouper les portes par étage à partir des vraies données
+    const floorDetails = portes
+      ? Array.from({ length: immeuble.nbEtages }, (_, index) => {
+          const floorNumber = index + 1
+          const portesEtage = portes.filter(p => p.etage === floorNumber)
 
           return {
-            number: `${floorNumber}${String(doorIndex + 1).padStart(2, '0')}`,
-            status: randomStatus,
-            rdvDate: randomStatus === 'rdv_pris' ? futureDate.toLocaleDateString() : null,
-            rdvTime:
-              randomStatus === 'rdv_pris'
-                ? `${Math.floor(Math.random() * 12) + 8}:${Math.random() < 0.5 ? '00' : '30'}`
+            floor: floorNumber,
+            totalDoors: portesEtage.length,
+            doors: portesEtage.map(porte => ({
+              id: porte.id,
+              number: porte.numero,
+              status: porte.statut.toLowerCase().replace(/_/g, '_'),
+              rdvDate: porte.rdvDate
+                ? new Date(porte.rdvDate).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  })
                 : null,
-            comment:
-              Math.random() < 0.3
-                ? `Commentaire pour la porte ${floorNumber}${String(doorIndex + 1).padStart(2, '0')}`
-                : null,
-            lastVisit:
-              randomStatus !== 'non_visite'
-                ? new Date(
-                    Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
-                  ).toLocaleDateString()
-                : null,
+              rdvTime: porte.rdvTime || null,
+              comment: porte.commentaire || null,
+              lastVisit: porte.updatedAt ? new Date(porte.updatedAt).toLocaleDateString() : null,
+              nbRepassages: porte.nbRepassages || 0,
+            })),
           }
-        }),
-      }
-    })
+        })
+      : []
 
     return {
       ...immeuble,
@@ -92,10 +74,10 @@ export default function ImmeubleDetails() {
       zone: immeuble.adresse.split(',')[1]?.trim() || 'Non spécifiée',
       prospectedBy,
       prospectionMode,
-      duoPartner,
+      duoPartner: null,
       floorDetails,
     }
-  }, [immeuble, commercials])
+  }, [immeuble, commercials, portes])
 
   // Préparer les données pour le tableau - DOIT être après immeubleData mais avant les returns conditionnels
   const doorsData = useMemo(() => {
@@ -115,7 +97,7 @@ export default function ImmeubleDetails() {
     return allDoors
   }, [immeubleData?.floorDetails])
 
-  if (loading || immeubleLoading) return <DetailsPageSkeleton />
+  if (loading || immeubleLoading || portesLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!immeubleData) return <div>Immeuble non trouvé</div>
 
@@ -164,6 +146,16 @@ export default function ImmeubleDetails() {
       icon: 'users',
     },
     {
+      title: 'Repassages nécessaires',
+      value: immeubleData.floorDetails.reduce(
+        (acc, floor) =>
+          acc + floor.doors.filter(door => door.status === 'necessite_repassage').length,
+        0
+      ),
+      description: 'Portes à revoir',
+      icon: 'refresh',
+    },
+    {
       title: 'Refus',
       value: immeubleData.floorDetails.reduce(
         (acc, floor) => acc + floor.doors.filter(door => door.status === 'refus').length,
@@ -203,6 +195,8 @@ export default function ImmeubleDetails() {
               return 'bg-yellow-100 text-yellow-800'
             case 'refus':
               return 'bg-red-100 text-red-800'
+            case 'necessite_repassage':
+              return 'bg-orange-100 text-orange-800'
             default:
               return 'bg-gray-100 text-gray-800'
           }
@@ -220,6 +214,8 @@ export default function ImmeubleDetails() {
               return 'Refus'
             case 'non_visite':
               return 'Non visité'
+            case 'necessite_repassage':
+              return 'Repassage nécessaire'
             default:
               return status
           }
@@ -251,6 +247,22 @@ export default function ImmeubleDetails() {
       cell: row => row.lastVisit || <span className="text-muted-foreground">-</span>,
     },
     {
+      header: 'Repassages',
+      accessor: 'nbRepassages',
+      sortable: true,
+      cell: row => {
+        const count = row.nbRepassages || 0
+        if (count > 0) {
+          return (
+            <Badge className="bg-orange-100 text-orange-800">
+              {count} repassage{count > 1 ? 's' : ''}
+            </Badge>
+          )
+        }
+        return <span className="text-muted-foreground">-</span>
+      },
+    },
+    {
       header: 'Commentaire',
       accessor: 'comment',
       cell: row => {
@@ -280,6 +292,7 @@ export default function ImmeubleDetails() {
           { value: 'contrat_signe', label: 'Contrats signés' },
           { value: 'rdv_pris', label: 'RDV programmés' },
           { value: 'curieux', label: 'Curieux' },
+          { value: 'necessite_repassage', label: 'Repassages nécessaires' },
           { value: 'refus', label: 'Refus' },
           { value: 'non_visite', label: 'Non visités' },
         ],

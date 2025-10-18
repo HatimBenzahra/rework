@@ -24,13 +24,33 @@ export default function CommercialLayout() {
     refetch,
   } = useCommercialFull(parseInt(currentUserId))
 
-  // Statistiques du commercial
-  const myStats = commercial?.statistics?.[0] || {
-    contratsSignes: 0,
-    immeublesVisites: 0,
-    rendezVousPris: 0,
-    refus: 0,
-  }
+  // Statistiques du commercial - Somme de toutes les zones
+  const myStats = React.useMemo(() => {
+    if (!commercial?.statistics || commercial.statistics.length === 0) {
+      return {
+        contratsSignes: 0,
+        immeublesVisites: 0,
+        rendezVousPris: 0,
+        refus: 0,
+      }
+    }
+
+    // Calculer la somme des statistiques de toutes les zones
+    return commercial.statistics.reduce(
+      (acc, stat) => ({
+        contratsSignes: acc.contratsSignes + stat.contratsSignes,
+        immeublesVisites: acc.immeublesVisites + stat.immeublesVisites,
+        rendezVousPris: acc.rendezVousPris + stat.rendezVousPris,
+        refus: acc.refus + stat.refus,
+      }),
+      {
+        contratsSignes: 0,
+        immeublesVisites: 0,
+        rendezVousPris: 0,
+        refus: 0,
+      }
+    )
+  }, [commercial?.statistics])
 
   // Configuration des onglets de navigation
   const navigationItems = [
