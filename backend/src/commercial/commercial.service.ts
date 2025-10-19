@@ -138,12 +138,17 @@ export class CommercialService {
       include: {
         manager: true,
         directeur: true,
-        immeubles: true,
+        immeubles: {
+          include: {
+            portes: true,
+          },
+        },
         zones: {
           include: {
             zone: {
               include: {
                 commercials: true,
+                immeubles: true,
               },
             },
           },

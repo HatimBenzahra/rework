@@ -438,7 +438,7 @@ export const CACHE_INVALIDATION_MAP: Record<string, string[]> = {
   // When managers change, invalidate commercials cache
   managers: ['managers', 'commercials'],
   // When commercials change, invalidate zones and immeubles
-  commercials: ['commercials', 'zones', 'immeubles'],
+  commercials: ['commercials', 'zones', 'immeubles', 'portes'],
   // Zones and immeubles are independent
   zones: ['zones'],
   // When immeubles change, invalidate portes cache (portes belong to immeubles)

@@ -15,7 +15,6 @@ import {
   Search,
   Filter,
   ChevronDown,
-  MoreHorizontal,
 } from 'lucide-react'
 import {
   Table,
@@ -51,7 +50,13 @@ import { useState, useMemo, useEffect } from 'react'
 /**
  * Composant de tableau sans Card wrapper pour éviter les doubles cards
  */
-function DoorsTableContent({ data, columns, customStatusFilter }) {
+function DoorsTableContent({
+  data,
+  columns,
+  customStatusFilter,
+  searchPlaceholder = 'Rechercher...',
+  searchKey = 'number',
+}) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
@@ -61,7 +66,7 @@ function DoorsTableContent({ data, columns, customStatusFilter }) {
   // Filtrage et tri des données
   const filteredAndSortedData = useMemo(() => {
     let filtered = data.filter(item => {
-      const searchMatch = item.number?.toLowerCase().includes(searchTerm.toLowerCase())
+      const searchMatch = item[searchKey]?.toLowerCase().includes(searchTerm.toLowerCase())
       const statusMatch = statusFilter === 'all' || item.status === statusFilter
       return searchMatch && statusMatch
     })
@@ -79,7 +84,7 @@ function DoorsTableContent({ data, columns, customStatusFilter }) {
     }
 
     return filtered
-  }, [data, searchTerm, sortConfig, statusFilter])
+  }, [data, searchTerm, sortConfig, statusFilter, searchKey])
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedData.length / itemsPerPage)
@@ -108,7 +113,7 @@ function DoorsTableContent({ data, columns, customStatusFilter }) {
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par numéro de porte..."
+            placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="pl-8"
@@ -473,6 +478,17 @@ export default function DetailsPage({
                   data={section.data.doors}
                   columns={section.data.columns}
                   customStatusFilter={section.data.customFilters}
+                  searchPlaceholder="Rechercher par numéro de porte..."
+                  searchKey="number"
+                />
+              )}
+              {section.type === 'custom' && section.component === 'ImmeublesTable' && (
+                <DoorsTableContent
+                  data={section.data.immeubles}
+                  columns={section.data.columns}
+                  customStatusFilter={section.data.customFilters}
+                  searchPlaceholder="Rechercher par adresse..."
+                  searchKey="address"
                 />
               )}
               {section.type === 'custom' && section.component === 'FloorDetails' && (

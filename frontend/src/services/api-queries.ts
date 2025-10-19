@@ -156,6 +156,16 @@ export const GET_COMMERCIAL_FULL = `
         zoneId
         createdAt
         updatedAt
+        portes {
+          id
+          numero
+          etage
+          statut
+          nbRepassages
+          rdvDate
+          rdvTime
+          derniereVisite
+        }
       }
       zones {
         id

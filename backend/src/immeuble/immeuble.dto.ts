@@ -7,6 +7,7 @@ import {
   Min,
   IsBoolean,
 } from 'class-validator';
+import { Porte } from '../porte/porte.dto';
 
 @ObjectType()
 export class Immeuble {
@@ -33,6 +34,9 @@ export class Immeuble {
 
   @Field(() => Int, { nullable: true })
   zoneId?: number;
+
+  @Field(() => [Porte], { nullable: true })
+  portes?: Porte[];
 
   @Field()
   createdAt: Date;

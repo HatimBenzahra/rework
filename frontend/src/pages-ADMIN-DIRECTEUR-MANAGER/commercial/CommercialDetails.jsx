@@ -5,6 +5,7 @@ import { useCommercialFull, useManagers } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { RANKS, calculateRank } from '@/share/ranks'
+import { Badge } from '@/components/ui/badge'
 
 export default function CommercialDetails() {
   const { id } = useParams()
@@ -72,6 +73,48 @@ export default function CommercialDetails() {
       }
     })
   }, [commercialData])
+
+  // Préparer les données des immeubles avec statistiques calculées à partir des portes
+  const immeublesTableData = useMemo(() => {
+    if (!commercial?.immeubles) return []
+
+    // Trier les immeubles du plus récent au plus ancien
+    const sortedImmeubles = [...commercial.immeubles].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+    return sortedImmeubles.map(immeuble => {
+      // Utiliser les portes de l'immeuble directement (chargées avec l'immeuble)
+      const portesImmeuble = immeuble.portes || []
+      const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
+
+      // Calculer les statistiques à partir des portes
+      const contratsSignes = portesImmeuble.filter(p => p.statut === 'CONTRAT_SIGNE').length
+      const rdvPris = portesImmeuble.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
+      const refus = portesImmeuble.filter(p => p.statut === 'REFUS').length
+      const curieux = portesImmeuble.filter(p => p.statut === 'CURIEUX').length
+      const repassages = portesImmeuble.reduce((sum, p) => sum + (p.nbRepassages || 0), 0)
+      const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
+      const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
+
+      return {
+        id: immeuble.id,
+        address: immeuble.adresse,
+        floors: immeuble.nbEtages,
+        doors_per_floor: immeuble.nbPortesParEtage,
+        total_doors: totalDoors,
+        couverture: couverture,
+        contrats_signes: contratsSignes,
+        rdv_pris: rdvPris,
+        refus: refus,
+        curieux: curieux,
+        repassages: repassages,
+        portes_prospectees: portesProspectees,
+        status: 'actif',
+        createdAt: immeuble.createdAt,
+      }
+    })
+  }, [commercial])
 
   if (loading) return <DetailsPageSkeleton />
 
@@ -170,7 +213,96 @@ export default function CommercialDetails() {
     },
   ]
 
-  const additionalSections = []
+  // Définir les colonnes du tableau des immeubles
+  const immeublesColumns = [
+    {
+      header: 'Adresse',
+      accessor: 'address',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Étages',
+      accessor: 'floors',
+      className: 'hidden md:table-cell text-center',
+      cell: row => `${row.floors} étages`,
+    },
+    {
+      header: 'Total Portes',
+      accessor: 'total_doors',
+      className: 'hidden lg:table-cell text-center',
+    },
+    {
+      header: 'Couverture',
+      accessor: 'couverture',
+      sortable: true,
+      className: 'hidden lg:table-cell text-center',
+      cell: row => {
+        const couverture = row.couverture || 0
+        const colorClass =
+          couverture >= 80
+            ? 'bg-green-100 text-green-800'
+            : couverture >= 50
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-red-100 text-red-800'
+        return <Badge className={colorClass}>{couverture}%</Badge>
+      },
+    },
+    {
+      header: 'Contrats signés',
+      accessor: 'contrats_signes',
+      sortable: true,
+      className: 'text-center',
+      cell: row => (
+        <Badge className="bg-green-100 text-green-800">{row.contrats_signes || 0}</Badge>
+      ),
+    },
+    {
+      header: 'RDV pris',
+      accessor: 'rdv_pris',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => <Badge className="bg-blue-100 text-blue-800">{row.rdv_pris || 0}</Badge>,
+    },
+    {
+      header: 'Refus',
+      accessor: 'refus',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => <Badge className="bg-red-100 text-red-800">{row.refus || 0}</Badge>,
+    },
+    {
+      header: 'Repassages',
+      accessor: 'repassages',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => {
+        const count = row.repassages || 0
+        return count > 0 ? (
+          <Badge className="bg-orange-100 text-orange-800">{count}</Badge>
+        ) : (
+          <span className="text-muted-foreground">0</span>
+        )
+      },
+    },
+  ]
+
+  const additionalSections = [
+    {
+      title: 'Immeubles prospectés',
+      description: 'Liste des immeubles assignés à ce commercial avec leurs statistiques',
+      type: 'custom',
+      component: 'ImmeublesTable',
+      data: {
+        immeubles: immeublesTableData,
+        columns: immeublesColumns,
+        customFilters: [
+          { value: 'all', label: 'Tous les immeubles' },
+          { value: 'actif', label: 'Actifs' },
+        ],
+      },
+    },
+  ]
 
   return (
     <DetailsPage

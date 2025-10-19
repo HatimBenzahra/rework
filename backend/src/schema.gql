@@ -120,6 +120,7 @@ type Immeuble {
   id: Int!
   nbEtages: Int!
   nbPortesParEtage: Int!
+  portes: [Porte!]
   updatedAt: DateTime!
   zoneId: Int
 }
