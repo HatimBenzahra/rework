@@ -163,6 +163,11 @@ export default function CommercialDetails() {
       description: 'Contrats / RDV pris',
       icon: 'trendingUp',
     },
+    {
+      title: 'La zone actuellement assignée',
+      value: commercialData.zones.map(zone => zone.nom).join(', '),
+      icon: 'mapPin',
+    },
   ]
 
   const additionalSections = []
