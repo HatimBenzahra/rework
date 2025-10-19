@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { TrendingUp, CheckCircle2, Building2, Award, Trophy, Target, Clock } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
-import { RANKS } from './ranks'
+import { calculateRank, RANKS } from '@/share/ranks'
 
 export default function CommercialDashboard() {
   // Récupérer les données du contexte du layout
@@ -23,17 +23,10 @@ export default function CommercialDashboard() {
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base } = useCommercialTheme()
 
-  // Calculer les points (contrats = 10 pts, RDV = 3 pts, visites = 1 pt)
-  const totalPoints = useMemo(() => {
-    return myStats.contratsSignes * 10 + myStats.rendezVousPris * 3 + myStats.immeublesVisites * 1
-  }, [myStats])
-
-  // Déterminer le rang actuel
-  const currentRank = useMemo(() => {
-    return (
-      RANKS.find(rank => totalPoints >= rank.minPoints && totalPoints <= rank.maxPoints) || RANKS[0]
-    )
-  }, [totalPoints])
+  // Calculer le rang et les points avec le système unifié
+  const { rank: currentRank, points: totalPoints } = useMemo(() => {
+    return calculateRank(myStats.contratsSignes, myStats.rendezVousPris, myStats.immeublesVisites)
+  }, [myStats.contratsSignes, myStats.rendezVousPris, myStats.immeublesVisites])
 
   // Calculer la progression vers le prochain rang
   const rankProgress = useMemo(() => {
@@ -115,7 +108,7 @@ export default function CommercialDashboard() {
             className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1 leading-none`}
           >
             <Trophy className="w-4 h-4 " />
-            Rang du mois
+            Rang
           </CardTitle>
         </CardHeader>
         <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-0 -mt-1">

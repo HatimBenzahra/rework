@@ -1,6 +1,7 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
-import { User, Calendar, Award, Crown, Star, Gem, Trophy, UserPlus, MapPin } from 'lucide-react'
+import { User, Calendar, Award, Crown, Star, Gem, Trophy, MapPin } from 'lucide-react'
+import { calculateRank } from '@/share/ranks'
 
 export default function CommercialHeader({
   commercial,
@@ -10,56 +11,51 @@ export default function CommercialHeader({
 }) {
   // Récupérer la zone assignée
   const assignedZone = commercial?.zones?.[0]
-  // Système de badges basé sur les performances
-  const getBadgeLevel = stats => {
-    const contracts = stats?.contratsSignes || 0
 
-    if (contracts >= 100)
-      return {
-        level: 'Expert',
-        color: 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
-        icon: Crown,
-      }
-    if (contracts >= 50)
-      return {
-        level: 'Pro',
-        color: 'bg-gradient-to-r from-green-500 to-teal-500 text-white',
-        icon: Star,
-      }
-    if (contracts >= 30)
-      return {
-        level: 'Diamond',
-        color: 'bg-gradient-to-r from-blue-400 to-purple-500 text-white',
-        icon: Gem,
-      }
-    if (contracts >= 20)
-      return {
-        level: 'Gold',
-        color: 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white',
-        icon: Trophy,
-      }
-    if (contracts >= 10)
-      return {
-        level: 'Silver',
-        color: 'bg-gradient-to-r from-gray-300 to-gray-500 text-white',
-        icon: Award,
-      }
-    if (contracts > 0)
-      return {
-        level: 'Bronze',
+  // Système de badges unifié basé sur les points
+  const getBadgeInfo = stats => {
+    const contratsSignes = stats?.contratsSignes || 0
+    const rendezVousPris = stats?.rendezVousPris || 0
+    const immeublesVisites = stats?.immeublesVisites || 0
+
+    // Calculer le rang avec le système unifié
+    const { rank, points } = calculateRank(contratsSignes, rendezVousPris, immeublesVisites)
+
+    // Mapper les rangs aux couleurs et icônes
+    const rankStyles = {
+      Bronze: {
         color: 'bg-gradient-to-r from-orange-600 to-red-600 text-white',
         icon: Award,
-      }
+      },
+      Silver: {
+        color: 'bg-gradient-to-r from-gray-300 to-gray-500 text-white',
+        icon: Award,
+      },
+      Gold: {
+        color: 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white',
+        icon: Trophy,
+      },
+      Platinum: {
+        color: 'bg-gradient-to-r from-blue-400 to-purple-400 text-white',
+        icon: Star,
+      },
+      Diamond: {
+        color: 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white',
+        icon: Gem,
+      },
+    }
 
-    // Cas pour 0 contrats
+    const style = rankStyles[rank.name] || rankStyles.Bronze
+
     return {
-      level: 'Débutant',
-      color: 'bg-gradient-to-r from-slate-400 to-slate-500 text-white',
-      icon: UserPlus,
+      level: rank.name,
+      points,
+      color: style.color,
+      icon: style.icon,
     }
   }
 
-  const badgeInfo = getBadgeLevel(stats)
+  const badgeInfo = getBadgeInfo(stats)
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
     day: 'numeric',
@@ -96,7 +92,10 @@ export default function CommercialHeader({
             className={`${badgeInfo.color} border-none shadow-xl flex items-center space-x-1 px-2 py-1 flex-shrink-0`}
           >
             <badgeInfo.icon className="w-3 h-3" />
-            <span className="font-bold text-xs whitespace-nowrap">{badgeInfo.level}</span>
+            <span className="font-bold text-xs whitespace-nowrap">
+              {badgeInfo.level}
+              <span className="text-[10px] opacity-75 ml-1">({badgeInfo.points}pts)</span>
+            </span>
           </Badge>
         </div>
 
@@ -165,7 +164,10 @@ export default function CommercialHeader({
             className={`${badgeInfo.color} border-none shadow-xl flex items-center space-x-1 px-3 py-1.5`}
           >
             <badgeInfo.icon className="w-4 h-4" />
-            <span className="font-bold text-sm">{badgeInfo.level}</span>
+            <span className="font-bold text-sm">
+              {badgeInfo.level}
+              <span className="text-xs opacity-75 ml-1.5">({badgeInfo.points}pts)</span>
+            </span>
           </Badge>
           <div className="flex flex-col items-end space-y-0.5">
             {stats?.contratsSignes !== undefined && (

@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCommercialInput, UpdateCommercialInput } from './commercial.dto';
-import forbiddenError from '../errors/forbidden.error';
+
 @Injectable()
 export class CommercialService {
   constructor(private prisma: PrismaService) {}
@@ -36,7 +36,7 @@ export class CommercialService {
   async findAll(userId?: number, userRole?: string) {
     // Si pas de paramètres de filtrage, retourner tous les commerciaux
     if (!userId || !userRole) {
-      throw new forbiddenError('UNAUTHORIZED');
+      throw new ForbiddenException('UNAUTHORIZED');
     }
 
     switch (userRole) {

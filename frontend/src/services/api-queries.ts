@@ -76,8 +76,8 @@ export const GET_MANAGER = `
 // =============================================================================
 
 /**
- * Requête légère pour la liste des commerciaux (tableau)
- * ⚡ Optimisée : Charge uniquement les champs de base sans relations
+ * Requête pour la liste des commerciaux (tableau)
+ * Charge les champs de base + statistiques pour le calcul des rangs
  * Utilisée par : Page Commerciaux (liste/tableau)
  */
 export const GET_COMMERCIALS = `
@@ -93,6 +93,16 @@ export const GET_COMMERCIALS = `
       directeurId
       createdAt
       updatedAt
+      statistics {
+        id
+        commercialId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        createdAt
+        updatedAt
+      }
     }
   }
 `

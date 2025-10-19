@@ -4,6 +4,7 @@ import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercialFull, useManagers } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
+import { RANKS, calculateRank } from '@/share/ranks'
 
 export default function CommercialDetails() {
   const { id } = useParams()
@@ -33,6 +34,13 @@ export default function CommercialDetails() {
     const tauxConversion =
       totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
 
+    // Calculer le rang du commercial
+    const { rank, points } = calculateRank(
+      totalContratsSignes,
+      totalRendezVousPris,
+      totalImmeublesVisites
+    )
+
     return {
       ...commercial,
       name: `${commercial.prenom} ${commercial.nom}`,
@@ -44,6 +52,8 @@ export default function CommercialDetails() {
       tauxConversion: `${tauxConversion}%`,
       zonesCount: commercial.zones?.length || 0,
       immeublesCount: commercial.immeubles?.length || 0,
+      rank,
+      points,
     }
   }, [commercial, managers])
 
@@ -103,14 +113,22 @@ export default function CommercialDetails() {
       icon: 'users',
     },
     {
+      label: 'Rang',
+      value: (
+        <span
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${commercialData.rank.bgColor} ${commercialData.rank.textColor} ${commercialData.rank.borderColor} border font-semibold`}
+        >
+          <span className="text-lg">🏆</span>
+          {commercialData.rank.name}
+          <span className="text-xs opacity-75">({commercialData.points} pts)</span>
+        </span>
+      ),
+      icon: 'award',
+    },
+    {
       label: 'Date de création',
       value: new Date(commercialData.createdAt).toLocaleDateString('fr-FR'),
       icon: 'calendar',
-    },
-    {
-      label: 'Zones assignées',
-      value: `${commercialData.zonesCount} zone(s)`,
-      icon: 'mapPin',
     },
   ]
 
@@ -118,19 +136,19 @@ export default function CommercialDetails() {
     {
       title: 'Contrats signés',
       value: commercialData.totalContratsSignes,
-      description: 'Total historique',
+      description: 'Total historique (50 pts/contrat)',
       icon: 'fileText',
     },
     {
       title: 'Immeubles visités',
       value: commercialData.totalImmeublesVisites,
-      description: 'Total historique',
+      description: 'Total historique (5 pts/immeuble)',
       icon: 'building',
     },
     {
       title: 'Rendez-vous pris',
       value: commercialData.totalRendezVousPris,
-      description: 'Total historique',
+      description: 'Total historique (10 pts/RDV)',
       icon: 'calendar',
     },
     {
@@ -147,40 +165,7 @@ export default function CommercialDetails() {
     },
   ]
 
-  const additionalSections = [
-    {
-      title: 'Statistiques détaillées',
-      description: 'Historique des performances par période',
-      type: 'list',
-      items: commercialData.statistics?.map(stat => ({
-        label: new Date(stat.createdAt).toLocaleDateString('fr-FR'),
-        value: `${stat.contratsSignes} contrats, ${stat.immeublesVisites} immeubles, ${stat.rendezVousPris} RDV, ${stat.refus} refus`,
-      })) || [{ label: 'Aucune donnée', value: 'Pas de statistiques disponibles' }],
-    },
-    {
-      title: 'Zones et immeubles',
-      description: 'Territoire et portfolio assignés',
-      type: 'grid',
-      items: [
-        {
-          label: 'Zones assignées',
-          value: commercialData.zones?.map(zone => zone.nom).join(', ') || 'Aucune zone',
-        },
-        {
-          label: 'Immeubles sous responsabilité',
-          value: `${commercialData.immeublesCount} immeuble(s)`,
-        },
-        {
-          label: 'Manager responsable',
-          value: commercialData.managerName,
-        },
-        {
-          label: 'Dernière mise à jour',
-          value: new Date(commercialData.updatedAt).toLocaleDateString('fr-FR'),
-        },
-      ],
-    },
-  ]
+  const additionalSections = []
 
   return (
     <DetailsPage

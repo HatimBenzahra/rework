@@ -47,3 +47,22 @@ export const RANKS = [
     borderColor: 'border-cyan-300',
   },
 ]
+
+export const calculateRank = (contratsSignes = 0, rendezVousPris = 0, immeublesVisites = 0) => {
+  // Système de points:
+  // - 50 points par contrat signé
+  // - 10 points par rendez-vous pris
+  // - 5 points par immeuble visité
+  const points = contratsSignes * 50 + rendezVousPris * 10 + immeublesVisites * 5
+
+  // Trouver le rang correspondant
+  const rank = RANKS.find(r => points >= r.minPoints && points <= r.maxPoints) || RANKS[0]
+
+  return { rank, points }
+}
+
+export const getNextRank = currentPoints => {
+  const nextRank = RANKS.find(r => r.minPoints > currentPoints)
+  const pointsToNextRank = nextRank ? nextRank.minPoints - currentPoints : 0
+  return { nextRank, pointsToNextRank }
+}
