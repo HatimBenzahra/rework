@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { ToastProvider } from '@/components/ui/toast'
 import { RoleProvider } from '@/contexts/RoleContext'
-import { useRole } from '@/contexts/RoleContext'
+import { useRole } from '@/contexts/userole'
 // Import Admin/Directeur/Manager Layout & Pages
 import { AppSidebar } from '@/components/sidebar'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'

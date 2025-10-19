@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCommercialInput, UpdateCommercialInput } from './commercial.dto';
-
+import forbiddenError from '../errors/forbidden.error';
 @Injectable()
 export class CommercialService {
   constructor(private prisma: PrismaService) {}
@@ -33,24 +33,103 @@ export class CommercialService {
     });
   }
 
-  async findAll() {
-    return this.prisma.commercial.findMany({
-      include: {
-        manager: true,
-        directeur: true,
-        immeubles: true,
-        zones: {
+  async findAll(userId?: number, userRole?: string) {
+    // Si pas de paramètres de filtrage, retourner tous les commerciaux
+    if (!userId || !userRole) {
+      throw new forbiddenError('UNAUTHORIZED');
+    }
+
+    switch (userRole) {
+      case 'admin':
+        return this.prisma.commercial.findMany({
           include: {
-            zone: {
+            manager: true,
+            directeur: true,
+            immeubles: true,
+            zones: {
               include: {
-                commercials: true,
+                zone: {
+                  include: {
+                    commercials: true,
+                  },
+                },
               },
             },
+            statistics: true,
           },
-        },
-        statistics: true,
-      },
-    });
+        });
+
+      case 'directeur':
+        return this.prisma.commercial.findMany({
+          where: {
+            directeurId: userId,
+          },
+          include: {
+            manager: true,
+            directeur: true,
+            immeubles: true,
+            zones: {
+              include: {
+                zone: {
+                  include: {
+                    commercials: true,
+                  },
+                },
+              },
+            },
+            statistics: true,
+          },
+        });
+
+      case 'manager':
+        // Commerciaux assignés au manager
+        return this.prisma.commercial.findMany({
+          where: {
+            managerId: userId,
+          },
+          include: {
+            manager: true,
+            directeur: true,
+            immeubles: true,
+            zones: {
+              include: {
+                zone: {
+                  include: {
+                    commercials: true,
+                  },
+                },
+              },
+            },
+            statistics: true,
+          },
+        });
+
+      case 'commercial':
+        // Le commercial lui-même
+        return this.prisma.commercial.findMany({
+          where: {
+            id: userId,
+          },
+          include: {
+            manager: true,
+            directeur: true,
+            immeubles: true,
+            zones: {
+              include: {
+                zone: {
+                  include: {
+                    commercials: true,
+                  },
+                },
+              },
+            },
+            statistics: true,
+          },
+        });
+
+      default:
+        return [];
+    }
   }
 
   async findOne(id: number) {

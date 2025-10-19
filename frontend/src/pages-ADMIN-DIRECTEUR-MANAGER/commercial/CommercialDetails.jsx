@@ -2,12 +2,14 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercialFull, useManagers } from '@/services'
+import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 
 export default function CommercialDetails() {
   const { id } = useParams()
+  const { currentRole, currentUserId } = useRole()
   const { data: commercial, loading, error } = useCommercialFull(parseInt(id))
-  const { data: managers } = useManagers()
+  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
 
   // Préparer les données pour l'affichage
   const commercialData = useMemo(() => {

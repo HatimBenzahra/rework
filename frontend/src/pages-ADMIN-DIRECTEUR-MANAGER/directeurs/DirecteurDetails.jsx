@@ -3,7 +3,7 @@ import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useDirecteur, useManagers, useUpdateManager, useZones } from '@/services'
-import { useRole } from '@/contexts/RoleContext'
+import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -20,15 +20,18 @@ import {
 export default function DirecteurDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
-  const { isAdmin } = useRole()
+  const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningManager, setAssigningManager] = useState(null)
 
   // API hooks
   const { data: directeur, loading: directeurLoading, error, refetch } = useDirecteur(parseInt(id))
-  const { data: allManagers, refetch: refetchManagers } = useManagers()
+  const { data: allManagers, refetch: refetchManagers } = useManagers(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
   const { mutate: updateManager, loading: updatingManager } = useUpdateManager()
-  const { data: allZones } = useZones()
+  const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
 
   // Transformation des données API vers format UI
   const directeurData = useMemo(() => {

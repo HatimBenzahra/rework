@@ -1,5 +1,7 @@
-import { useContext } from 'react'
-import { RoleContext } from './RoleContext'
+import { useContext, createContext } from 'react'
+
+export const RoleContext = createContext()
+
 export const useRole = () => {
   const context = useContext(RoleContext)
   if (context === undefined) {

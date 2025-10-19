@@ -4,15 +4,17 @@ import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useZone, useCommercials } from '@/services'
 import { useEntityPermissions } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 
 export default function ZoneDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
+  const { currentRole, currentUserId } = useRole()
 
   // API hooks
   const { data: zone, loading: zoneLoading, error } = useZone(parseInt(id))
-  const { data: commercials } = useCommercials()
+  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const permissions = useEntityPermissions('zones')
 
   // Transformation des données API vers format UI

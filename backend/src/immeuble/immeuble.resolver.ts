@@ -18,8 +18,11 @@ export class ImmeubleResolver {
   }
 
   @Query(() => [Immeuble], { name: 'immeubles' })
-  findAll() {
-    return this.immeubleService.findAll();
+  findAll(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.immeubleService.findAll(userId, userRole);
   }
 
   @Query(() => Immeuble, { name: 'immeuble' })

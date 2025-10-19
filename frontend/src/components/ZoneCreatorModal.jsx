@@ -258,7 +258,9 @@ export const ZoneCreatorModal = ({
     center &&
     zoneName &&
     radius > 0 &&
-    (userRole === 'admin' || userRole === 'directeur' ? assignedUserId : true)
+    (userRole === 'directeur' || userRole === 'manager' || userRole === 'admin'
+      ? assignedUserId
+      : true)
   const currentCircleGeoJSON = center && radius > 0 ? createGeoJSONCircle(center, radius) : null
 
   return (
@@ -435,10 +437,14 @@ export const ZoneCreatorModal = ({
                 />
               </div>
 
-              {(userRole === 'admin' || userRole === 'directeur') && (
+              {(userRole === 'admin' || userRole === 'directeur' || userRole === 'manager') && (
                 <div className="space-y-2">
                   <Label htmlFor="assigned-user">
-                    {userRole === 'admin' ? 'Assigner à *' : 'Assigner au manager/commercial *'}
+                    {userRole === 'admin'
+                      ? 'Assigner à *'
+                      : userRole === 'directeur'
+                        ? 'Assigner au manager/commercial *'
+                        : 'Assigner au commercial *'}
                   </Label>
                   <Select value={assignedUserId} onValueChange={setAssignedUserId}>
                     <SelectTrigger id="assigned-user">
@@ -446,7 +452,11 @@ export const ZoneCreatorModal = ({
                         placeholder={
                           userRole === 'admin'
                             ? 'Sélectionnez directeur/manager/commercial'
-                            : 'Sélectionnez manager/commercial'
+                            : userRole === 'directeur'
+                              ? 'Sélectionnez manager/commercial'
+                              : userRole === 'manager'
+                                ? 'Sélectionnez commercial'
+                                : 'Sélectionnez un utilisateur'
                         }
                       />
                     </SelectTrigger>

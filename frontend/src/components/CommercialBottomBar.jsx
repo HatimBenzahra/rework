@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
-import { useRole } from '@/contexts/RoleContext'
+import { useRole } from '@/contexts/userole'
 import { LogOut, X } from 'lucide-react'
 
 export default function CommercialBottomBar({ navigationItems, activeTab, onTabChange }) {

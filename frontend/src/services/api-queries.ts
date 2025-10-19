@@ -8,8 +8,8 @@
 // =============================================================================
 
 export const GET_DIRECTEURS = `
-  query GetDirecteurs {
-    directeurs {
+  query GetDirecteurs($userId: Int, $userRole: String) {
+    directeurs(userId: $userId, userRole: $userRole) {
       id
       nom
       prenom
@@ -42,8 +42,8 @@ export const GET_DIRECTEUR = `
 // =============================================================================
 
 export const GET_MANAGERS = `
-  query GetManagers {
-    managers {
+  query GetManagers($userId: Int, $userRole: String) {
+    managers(userId: $userId, userRole: $userRole) {
       id
       nom
       prenom
@@ -81,8 +81,8 @@ export const GET_MANAGER = `
  * Utilisée par : Page Commerciaux (liste/tableau)
  */
 export const GET_COMMERCIALS = `
-  query GetCommercials {
-    commercials {
+  query GetCommercials($userId: Int, $userRole: String) {
+    commercials(userId: $userId, userRole: $userRole) {
       id
       nom
       prenom
@@ -183,8 +183,8 @@ export const GET_COMMERCIAL_FULL = `
 // =============================================================================
 
 export const GET_ZONES = `
-  query GetZones {
-    zones {
+  query GetZones($userId: Int, $userRole: String) {
+    zones(userId: $userId, userRole: $userRole) {
       id
       nom
       xOrigin
@@ -268,8 +268,8 @@ export const GET_ZONE = `
 // =============================================================================
 
 export const GET_IMMEUBLES = `
-  query GetImmeubles {
-    immeubles {
+  query GetImmeubles($userId: Int, $userRole: String) {
+    immeubles(userId: $userId, userRole: $userRole) {
       id
       adresse
       nbEtages
@@ -304,8 +304,8 @@ export const GET_IMMEUBLE = `
 // =============================================================================
 
 export const GET_STATISTICS = `
-  query GetStatistics($commercialId: Int) {
-    statistics(commercialId: $commercialId) {
+  query GetStatistics($commercialId: Int, $userId: Int, $userRole: String) {
+    statistics(commercialId: $commercialId, userId: $userId, userRole: $userRole) {
       id
       commercialId
       contratsSignes

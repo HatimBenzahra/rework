@@ -4,16 +4,18 @@ import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeuble, useCommercials, usePortesByImmeuble } from '@/services'
+import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 
 export default function ImmeubleDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
+  const { currentRole, currentUserId } = useRole()
 
   // API hooks
   const { data: immeuble, loading: immeubleLoading, error } = useImmeuble(parseInt(id))
-  const { data: commercials } = useCommercials()
+  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { data: portes, loading: portesLoading } = usePortesByImmeuble(parseInt(id))
 
   // Transformation des données API vers format UI

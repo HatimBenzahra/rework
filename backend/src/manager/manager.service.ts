@@ -16,13 +16,51 @@ export class ManagerService {
     });
   }
 
-  async findAll() {
-    return this.prisma.manager.findMany({
-      include: {
-        directeur: true,
-        commercials: true,
-      },
-    });
+  async findAll(userId?: number, userRole?: string) {
+    // Si pas de filtrage explicite, retourner tous les managers
+    if (!userId || !userRole) {
+      return this.prisma.manager.findMany({
+        include: {
+          directeur: true,
+          commercials: true,
+        },
+      });
+    }
+
+    switch (userRole) {
+      case 'admin':
+        return this.prisma.manager.findMany({
+          include: {
+            directeur: true,
+            commercials: true,
+          },
+        });
+
+      case 'directeur':
+        return this.prisma.manager.findMany({
+          where: {
+            directeurId: userId,
+          },
+          include: {
+            directeur: true,
+            commercials: true,
+          },
+        });
+
+      case 'manager':
+        return this.prisma.manager.findMany({
+          where: {
+            id: userId,
+          },
+          include: {
+            directeur: true,
+            commercials: true,
+          },
+        });
+
+      default:
+        return [];
+    }
   }
 
   async findOne(id: number) {

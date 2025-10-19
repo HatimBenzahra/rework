@@ -195,6 +195,16 @@ export interface GetEntityByIdVariables {
   id: number
 }
 
+export interface QueryDirecteursVariables {
+  userId?: number
+  userRole?: string
+}
+
+export interface QueryManagersVariables {
+  userId?: number
+  userRole?: string
+}
+
 export interface CreateDirecteurVariables {
   createDirecteurInput: CreateDirecteurInput
 }

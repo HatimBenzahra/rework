@@ -18,8 +18,11 @@ export class DirecteurResolver {
   }
 
   @Query(() => [Directeur], { name: 'directeurs' })
-  findAll() {
-    return this.directeurService.findAll();
+  findAll(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.directeurService.findAll(userId, userRole);
   }
 
   @Query(() => Directeur, { name: 'directeur' })

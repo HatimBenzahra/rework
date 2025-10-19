@@ -201,8 +201,11 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
 // Directeur Hooks
 // =============================================================================
 
-export function useDirecteurs(): UseApiListState<Directeur> & UseApiActions {
-  return useApiCall(api.directeurs.getAll, [], 'directeurs')
+export function useDirecteurs(
+  userId?: number,
+  userRole?: string
+): UseApiListState<Directeur> & UseApiActions {
+  return useApiCall(() => api.directeurs.getAll(userId, userRole), [userId, userRole], 'directeurs')
 }
 
 export function useDirecteur(id: number): UseApiState<Directeur> & UseApiActions {
@@ -225,8 +228,11 @@ export function useRemoveDirecteur(): UseApiMutation<number, Directeur> {
 // Manager Hooks
 // =============================================================================
 
-export function useManagers(): UseApiListState<Manager> & UseApiActions {
-  return useApiCall(api.managers.getAll, [], 'managers')
+export function useManagers(
+  userId?: number,
+  userRole?: string
+): UseApiListState<Manager> & UseApiActions {
+  return useApiCall(() => api.managers.getAll(userId, userRole), [userId, userRole], 'managers')
 }
 
 export function useManager(id: number): UseApiState<Manager> & UseApiActions {
@@ -249,8 +255,15 @@ export function useRemoveManager(): UseApiMutation<number, Manager> {
 // Commercial Hooks
 // =============================================================================
 
-export function useCommercials(): UseApiListState<Commercial> & UseApiActions {
-  return useApiCall(api.commercials.getAll, [], 'commercials')
+export function useCommercials(
+  userId?: number,
+  userRole?: string
+): UseApiListState<Commercial> & UseApiActions {
+  return useApiCall(
+    () => api.commercials.getAll(userId, userRole),
+    [userId, userRole],
+    'commercials'
+  )
 }
 
 export function useCommercial(id: number): UseApiState<Commercial> & UseApiActions {
@@ -298,8 +311,11 @@ export function useUnassignZone(): UseApiMutation<
 // Zone Hooks
 // =============================================================================
 
-export function useZones(): UseApiListState<Zone> & UseApiActions {
-  return useApiCall(api.zones.getAll, [], 'zones')
+export function useZones(
+  userId?: number,
+  userRole?: string
+): UseApiListState<Zone> & UseApiActions {
+  return useApiCall(() => api.zones.getAll(userId, userRole), [userId, userRole], 'zones')
 }
 
 export function useZone(id: number): UseApiState<Zone> & UseApiActions {
@@ -322,8 +338,11 @@ export function useRemoveZone(): UseApiMutation<number, Zone> {
 // Immeuble Hooks
 // =============================================================================
 
-export function useImmeubles(): UseApiListState<Immeuble> & UseApiActions {
-  return useApiCall(api.immeubles.getAll, [], 'immeubles')
+export function useImmeubles(
+  userId?: number,
+  userRole?: string
+): UseApiListState<Immeuble> & UseApiActions {
+  return useApiCall(() => api.immeubles.getAll(userId, userRole), [userId, userRole], 'immeubles')
 }
 
 export function useImmeuble(id: number): UseApiState<Immeuble> & UseApiActions {
@@ -346,8 +365,15 @@ export function useRemoveImmeuble(): UseApiMutation<number, Immeuble> {
 // Statistic Hooks
 // =============================================================================
 
-export function useStatistics(): UseApiListState<Statistic> & UseApiActions {
-  return useApiCall(api.statistics.getAll, [], 'statistics')
+export function useStatistics(
+  userId?: number,
+  userRole?: string
+): UseApiListState<Statistic> & UseApiActions {
+  return useApiCall(
+    () => api.statistics.getAll(undefined, userId, userRole),
+    [userId, userRole],
+    'statistics'
+  )
 }
 
 export function useStatisticsByCommercial(

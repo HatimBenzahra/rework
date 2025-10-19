@@ -180,20 +180,20 @@ type Porte {
 
 type Query {
   commercial(id: Int!): Commercial!
-  commercials: [Commercial!]!
+  commercials(userId: Int, userRole: String): [Commercial!]!
   directeur(id: Int!): Directeur!
-  directeurs: [Directeur!]!
+  directeurs(userId: Int, userRole: String): [Directeur!]!
   immeuble(id: Int!): Immeuble!
-  immeubles: [Immeuble!]!
+  immeubles(userId: Int, userRole: String): [Immeuble!]!
   manager(id: Int!): Manager!
-  managers: [Manager!]!
+  managers(userId: Int, userRole: String): [Manager!]!
   porte(id: Int!): Porte!
   portes: [Porte!]!
   portesByImmeuble(immeubleId: Int!): [Porte!]!
   statistic(id: Int!): Statistic!
-  statistics(commercialId: Int): [Statistic!]!
+  statistics(commercialId: Int, userId: Int, userRole: String): [Statistic!]!
   zone(id: Int!): Zone!
-  zones: [Zone!]!
+  zones(userId: Int, userRole: String): [Zone!]!
 }
 
 type Statistic {

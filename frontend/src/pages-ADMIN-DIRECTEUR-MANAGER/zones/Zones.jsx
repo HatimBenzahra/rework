@@ -3,8 +3,8 @@ import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
 import { ActionConfirmation } from '@/components/ActionConfirmation'
-import { useEntityPage } from '@/hooks/useRoleBasedData'
-import { useRole } from '@/contexts/RoleContext'
+import { useEntityPermissions, useEntityDescription } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/userole'
 import {
   useZones,
   useCreateZone,
@@ -18,6 +18,7 @@ import {
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useState, useMemo } from 'react'
 import { apiCache } from '@/services/api-cache'
+import { ROLES } from '@/utils/roleFilters'
 
 // Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
 const fetchLocationName = async (longitude, latitude) => {
@@ -64,24 +65,27 @@ export default function Zones() {
   })
 
   // Récupération du rôle de l'utilisateur
-  const { currentRole } = useRole()
+  const { currentRole, currentUserId } = useRole()
 
   // API hooks
-  const { data: zonesApi, refetch: refetchZones } = useZones()
+  const { data: zonesApi, refetch: refetchZones } = useZones(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
   const { mutate: createZone } = useCreateZone()
   const { mutate: updateZone } = useUpdateZone()
   const { mutate: removeZone } = useRemoveZone()
   const { mutate: assignZoneToCommercial } = useAssignZone()
-  const { data: directeurs } = useDirecteurs()
-  const { data: managers } = useManagers()
-  const { data: commercials } = useCommercials()
+  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
 
-  // Utilisation du système de rôles pour filtrer les données
-  const {
-    data: filteredZones,
-    permissions,
-    description,
-  } = useEntityPage('zones', zonesApi || [], { commercials })
+  // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
+  const filteredZones = useMemo(() => zonesApi || [], [zonesApi])
+
+  // Récupération des permissions et description
+  const permissions = useEntityPermissions('zones')
+  const description = useEntityDescription('zones')
 
   // Configuration pour le lazy loading des adresses
   const mapboxLazyLoader = useMemo(
@@ -203,41 +207,78 @@ export default function Zones() {
 
   // Préparer les utilisateurs assignables selon le rôle
   const getAssignableUsers = () => {
-    const users = []
-
-    // Les permissions sont déjà gérées par le système de rôles
-    // On peut toujours proposer l'assignation si on a les droits d'ajout/édition
-    if (permissions.canAdd || permissions.canEdit) {
-      if (directeurs) {
-        users.push(
-          ...directeurs.map(d => ({
-            id: d.id,
-            name: `${d.prenom} ${d.nom}`,
-            role: 'directeur',
-          }))
-        )
-      }
-      if (managers) {
-        users.push(
-          ...managers.map(m => ({
-            id: m.id,
-            name: `${m.prenom} ${m.nom}`,
-            role: 'manager',
-          }))
-        )
-      }
-      if (commercials) {
-        users.push(
-          ...commercials.map(c => ({
-            id: c.id,
-            name: `${c.prenom} ${c.nom}`,
-            role: 'commercial',
-          }))
-        )
-      }
+    if (!permissions.canAdd && !permissions.canEdit) {
+      return []
     }
 
-    return users
+    const userIdInt = parseInt(currentUserId, 10)
+    const safeUserId = Number.isNaN(userIdInt) ? null : userIdInt
+
+    const formatUsers = (collection, role) =>
+      (collection || []).map(item => ({
+        id: item.id,
+        name: `${item.prenom} ${item.nom}`,
+        role,
+      }))
+
+    switch (currentRole) {
+      case ROLES.ADMIN:
+        return [
+          ...formatUsers(directeurs, 'directeur'),
+          ...formatUsers(managers, 'manager'),
+          ...formatUsers(commercials, 'commercial'),
+        ]
+
+      case ROLES.DIRECTEUR: {
+        const scopedDirecteur = directeurs?.find(d => d.id === safeUserId)
+        const directeurOption = scopedDirecteur
+          ? [
+              {
+                id: scopedDirecteur.id,
+                name: `${scopedDirecteur.prenom} ${scopedDirecteur.nom}`,
+                role: 'directeur',
+              },
+            ]
+          : []
+
+        return [
+          ...directeurOption,
+          ...formatUsers(managers, 'manager'),
+          ...formatUsers(commercials, 'commercial'),
+        ]
+      }
+
+      case ROLES.MANAGER: {
+        const scopedManager = managers?.find(m => m.id === safeUserId)
+        const managerOption = scopedManager
+          ? [
+              {
+                id: scopedManager.id,
+                name: `${scopedManager.prenom} ${scopedManager.nom}`,
+                role: 'manager',
+              },
+            ]
+          : []
+        const scopedCommercials = (commercials || []).filter(c => c.managerId === safeUserId)
+        return [...managerOption, ...formatUsers(scopedCommercials, 'commercial')]
+      }
+
+      case ROLES.COMMERCIAL: {
+        const scopedCommercial = commercials?.find(c => c.id === safeUserId)
+        return scopedCommercial
+          ? [
+              {
+                id: scopedCommercial.id,
+                name: `${scopedCommercial.prenom} ${scopedCommercial.nom}`,
+                role: 'commercial',
+              },
+            ]
+          : []
+      }
+
+      default:
+        return []
+    }
   }
 
   const handleAddZone = () => {

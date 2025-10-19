@@ -2,7 +2,8 @@ import { AdvancedDataTable } from '@/components/tableau'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials } from '@/services'
-import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useEntityPermissions, useEntityDescription } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo } from 'react'
 
@@ -95,18 +96,25 @@ export default function Immeubles() {
   const loading = useSimpleLoading(1000)
   const { showError, showSuccess } = useErrorToast()
 
+  // Récupération du rôle de l'utilisateur
+  const { currentRole, currentUserId } = useRole()
+
   // API hooks
-  const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
-  const { data: commercials } = useCommercials()
+  const {
+    data: immeublesApi,
+    loading: immeublesLoading,
+    refetch,
+  } = useImmeubles(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 
-  // Utilisation du système de rôles pour filtrer les données
-  const {
-    data: filteredImmeubles,
-    permissions,
-    description,
-  } = useEntityPage('immeubles', immeublesApi || [], { commercials })
+  // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
+  const filteredImmeubles = useMemo(() => immeublesApi || [], [immeublesApi])
+
+  // Récupération des permissions et description
+  const permissions = useEntityPermissions('immeubles')
+  const description = useEntityDescription('immeubles')
 
   // Préparation des données pour le tableau avec mapping API → UI
   const tableData = useMemo(() => {

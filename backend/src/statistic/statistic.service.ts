@@ -15,9 +15,48 @@ export class StatisticService {
     });
   }
 
-  async findAll(commercialId?: number) {
+  async findAll(commercialId?: number, userId?: number, userRole?: string) {
+    // Construire les conditions de filtrage
+    let whereConditions: any = {};
+
+    // Si commercialId est spécifié, filtrer par commercial
+    if (commercialId) {
+      whereConditions.commercialId = commercialId;
+    }
+
+    // Si userId et userRole sont fournis, appliquer la filtration par rôle
+    if (userId && userRole) {
+      switch (userRole) {
+        case 'admin':
+          // Pas de filtrage supplémentaire pour admin
+          break;
+
+        case 'directeur':
+          // Statistiques des commerciaux du directeur
+          whereConditions.commercial = {
+            directeurId: userId,
+          };
+          break;
+
+        case 'manager':
+          // Statistiques des commerciaux du manager
+          whereConditions.commercial = {
+            managerId: userId,
+          };
+          break;
+
+        case 'commercial':
+          // Statistiques du commercial lui-même
+          whereConditions.commercialId = userId;
+          break;
+
+        default:
+          return [];
+      }
+    }
+
     return this.prisma.statistic.findMany({
-      where: commercialId ? { commercialId } : undefined,
+      where: whereConditions,
       include: {
         commercial: true,
       },

@@ -37,8 +37,11 @@ export class CommercialResolver {
   }
 
   @Query(() => [Commercial], { name: 'commercials' })
-  findAll() {
-    return this.commercialService.findAll();
+  findAll(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.commercialService.findAll(userId, userRole);
   }
 
   @Query(() => Commercial, { name: 'commercial' })

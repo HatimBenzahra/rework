@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateImmeubleInput, UpdateImmeubleInput } from './immeuble.dto';
 
@@ -36,8 +36,48 @@ export class ImmeubleService {
     return immeuble;
   }
 
-  async findAll() {
-    return this.prisma.immeuble.findMany();
+  async findAll(userId?: number, userRole?: string) {
+    // Si pas de paramètres de filtrage, retourner tous les immeubles
+    if (!userId || !userRole) {
+      throw new ForbiddenException('UNAUTHORIZED');
+    }
+
+    // Filtrage selon le rôle
+    switch (userRole) {
+      case 'admin':
+        return this.prisma.immeuble.findMany();
+
+      case 'directeur':
+        // Immeubles des commerciaux du directeur
+        return this.prisma.immeuble.findMany({
+          where: {
+            commercial: {
+              directeurId: userId,
+            },
+          },
+        });
+
+      case 'manager':
+        // Immeubles des commerciaux du manager
+        return this.prisma.immeuble.findMany({
+          where: {
+            commercial: {
+              managerId: userId,
+            },
+          },
+        });
+
+      case 'commercial':
+        // Immeubles du commercial
+        return this.prisma.immeuble.findMany({
+          where: {
+            commercialId: userId,
+          },
+        });
+
+      default:
+        return [];
+    }
   }
 
   async findOne(id: number) {

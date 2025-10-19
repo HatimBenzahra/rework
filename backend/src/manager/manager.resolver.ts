@@ -14,8 +14,11 @@ export class ManagerResolver {
   }
 
   @Query(() => [Manager], { name: 'managers' })
-  findAll() {
-    return this.managerService.findAll();
+  findAll(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.managerService.findAll(userId, userRole);
   }
 
   @Query(() => Manager, { name: 'manager' })

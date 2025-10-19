@@ -9,7 +9,7 @@ import {
   useUpdateCommercial,
   useZones,
 } from '@/services'
-import { useRole } from '@/contexts/RoleContext'
+import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -26,16 +26,19 @@ import {
 export default function ManagerDetails() {
   const { id } = useParams()
   const loading = useSimpleLoading(1000)
-  const { isAdmin } = useRole()
+  const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
   // API hooks
   const { data: manager, loading: managerLoading, error, refetch } = useManager(parseInt(id))
-  const { data: directeurs } = useDirecteurs()
-  const { data: allCommercials, refetch: refetchCommercials } = useCommercials()
+  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
-  const { data: allZones } = useZones()
+  const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
 
   // Transformation des données API vers format UI
   const managerData = useMemo(() => {

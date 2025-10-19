@@ -12,8 +12,11 @@ export class ZoneResolver {
   }
 
   @Query(() => [Zone], { name: 'zones' })
-  findAll() {
-    return this.zoneService.findAll();
+  findAll(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.zoneService.findAll(userId, userRole);
   }
 
   @Query(() => Zone, { name: 'zone' })

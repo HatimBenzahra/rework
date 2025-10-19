@@ -9,7 +9,7 @@ import {
   useDirecteurs,
 } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
-import { useRole } from '@/contexts/RoleContext'
+import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo } from 'react'
 
@@ -53,12 +53,16 @@ const getManagersColumns = isAdmin => {
 
 export default function Managers() {
   const loading = useSimpleLoading(1000)
-  const { isAdmin } = useRole()
+  const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
   // API hooks
-  const { data: managersApi, loading: managersLoading, refetch } = useManagers()
-  const { data: directeurs } = useDirecteurs()
+  const {
+    data: managersApi,
+    loading: managersLoading,
+    refetch,
+  } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
   const { mutate: createManager } = useCreateManager()
   const { mutate: updateManager } = useUpdateManager()
   const { mutate: removeManager } = useRemoveManager()

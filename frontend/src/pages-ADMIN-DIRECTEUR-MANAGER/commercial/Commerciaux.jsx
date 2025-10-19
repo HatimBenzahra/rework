@@ -9,8 +9,8 @@ import {
   useDirecteurs,
 } from '@/services'
 import { useMemo } from 'react'
-import { useEntityPage } from '@/hooks/useRoleBasedData'
-import { useRole } from '@/contexts/RoleContext'
+import { useEntityPermissions, useEntityDescription } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 
 const getCommerciauxColumns = (isAdmin, isDirecteur) => {
@@ -67,21 +67,26 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
 }
 
 export default function Commerciaux() {
-  const { isAdmin, isDirecteur } = useRole()
-  const { data: commercials, loading, error, refetch } = useCommercials()
-  const { data: managers } = useManagers()
-  const { data: directeurs } = useDirecteurs()
+  const { isAdmin, isDirecteur, currentRole, currentUserId } = useRole()
+  const {
+    data: commercials,
+    loading,
+    error,
+    refetch,
+  } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
   const { mutate: createCommercial, loading: creating } = useCreateCommercial()
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
   const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()
   const { showError, showSuccess } = useErrorToast()
 
-  // Utilisation du nouveau système de rôles
-  const {
-    data: filteredCommercials,
-    permissions,
-    description,
-  } = useEntityPage('commerciaux', commercials, { managers })
+  // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
+  const filteredCommercials = useMemo(() => commercials || [], [commercials])
+
+  // Récupération des permissions et description
+  const permissions = useEntityPermissions('commerciaux')
+  const description = useEntityDescription('commerciaux')
 
   // Préparer les données pour le tableau
   const tableData = useMemo(() => {

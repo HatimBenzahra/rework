@@ -2,13 +2,13 @@ import React, { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import Map, { Marker, NavigationControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import mapboxgl from 'mapbox-gl'
-
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { MapSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercials, useManagers } from '@/services'
 import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import {
   MapPin,
@@ -29,7 +29,6 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
 if (MAPBOX_TOKEN) {
   mapboxgl.accessToken = MAPBOX_TOKEN
 }
-
 // Générer position GPS simulée
 const generateMockGPSPosition = commercialId => {
   const centerLat = 48.8566
@@ -157,8 +156,13 @@ const CommercialListItem = React.memo(function CommercialListItem({
 })
 
 export default function GPSTracking() {
-  const { data: commercials, loading, error } = useCommercials()
-  const { data: managers } = useManagers()
+  const { currentRole, currentUserId } = useRole()
+  const {
+    data: commercials,
+    loading,
+    error,
+  } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { showError, showInfo } = useErrorToast()
 
   // Utilisation du système de rôles
