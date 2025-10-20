@@ -392,3 +392,15 @@ export const UNASSIGN_ZONE_FROM_COMMERCIAL = `
     unassignZoneFromCommercial(commercialId: $commercialId, zoneId: $zoneId)
   }
 `
+
+export const ASSIGN_ZONE_TO_DIRECTEUR = `
+  mutation AssignZoneToDirecteur($directeurId: Int!, $zoneId: Int!) {
+    assignZoneToDirecteur(directeurId: $directeurId, zoneId: $zoneId)
+  }
+`
+
+export const ASSIGN_ZONE_TO_MANAGER = `
+  mutation AssignZoneToManager($managerId: Int!, $zoneId: Int!) {
+    assignZoneToManager(managerId: $managerId, zoneId: $zoneId)
+  }
+`

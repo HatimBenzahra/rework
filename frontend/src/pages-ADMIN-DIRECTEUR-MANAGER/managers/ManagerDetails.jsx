@@ -12,6 +12,7 @@ import {
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
+import { RANKS, calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -47,22 +48,80 @@ export default function ManagerDetails() {
     const directeur = directeurs?.find(d => d.id === manager.directeurId)
     const assignedCommercials = allCommercials?.filter(c => c.managerId === manager.id) || []
 
+    // Calculer les statistiques agrégées du manager depuis son équipe
+    const totalContratsSignes = assignedCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.contratsSignes, 0)
+    }, 0)
+    
+    const totalImmeublesVisites = assignedCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.immeublesVisites, 0)
+    }, 0)
+    
+    const totalRendezVousPris = assignedCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.rendezVousPris, 0)
+    }, 0)
+    
+    const totalRefus = assignedCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.refus, 0)
+    }, 0)
+
+    // Taux de conversion
+    const tauxConversion = totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
+
+    // Calculer le rang du manager basé sur ses stats agrégées
+    const { rank, points } = calculateRank(totalContratsSignes, totalRendezVousPris, totalImmeublesVisites)
+
+    // Trouver le meilleur commercial de l'équipe
+    let meilleurCommercial = 'Aucun commercial'
+    let meilleurBadge = 'Aucun'
+    
+    if (assignedCommercials.length > 0) {
+      const commercialAvecRangs = assignedCommercials.map(commercial => {
+        const stats = commercial.statistics || []
+        const contratsSignes = stats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
+        const rendezVous = stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
+        const immeubles = stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0)
+        const { rank: commercialRank, points: commercialPoints } = calculateRank(contratsSignes, rendezVous, immeubles)
+        
+        return {
+          ...commercial,
+          totalPoints: commercialPoints,
+          rank: commercialRank
+        }
+      })
+      
+      const meilleur = commercialAvecRangs.reduce((prev, current) => 
+        current.totalPoints > prev.totalPoints ? current : prev
+      )
+      
+      meilleurCommercial = `${meilleur.prenom} ${meilleur.nom}`
+      meilleurBadge = meilleur.rank.name
+    }
+
     return {
       ...manager,
       name: `${manager.prenom} ${manager.nom}`,
       directeur: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Aucun directeur',
       email: manager.email || 'Non renseigné',
       phone: manager.numTelephone || 'Non renseigné',
-      region: 'Non assignée',
       equipe_taille: assignedCommercials.length,
       status: 'actif',
-      ca_equipe: '0 TND',
-      objectif_equipe: '0 TND',
       date_promotion: new Date(manager.createdAt).toLocaleDateString('fr-FR'),
-      address: 'Adresse non renseignée',
-      commerciaux_actifs: assignedCommercials.length,
-      clients_total: 0,
-      taux_atteinte: '0%',
+      // Stats commerciales du manager
+      totalContratsSignes,
+      totalImmeublesVisites,
+      totalRendezVousPris,
+      totalRefus,
+      tauxConversion: `${tauxConversion}%`,
+      rank,
+      points,
+      // Indicateurs de l'équipe
+      meilleurCommercial,
+      meilleurBadge,
     }
   }, [manager, directeurs, allCommercials])
 
@@ -227,68 +286,92 @@ export default function ManagerDetails() {
   if (!managerData) return <div>Manager non trouvé</div>
 
   const personalInfo = [
-    { label: 'Email', value: managerData.email, icon: 'mail' },
-    { label: 'Téléphone', value: managerData.phone, icon: 'phone' },
-    { label: 'Région', value: managerData.region, icon: 'mapPin' },
-    { label: 'Directeur', value: managerData.directeur, icon: 'users' },
-    { label: 'Date de création', value: managerData.date_promotion, icon: 'calendar' },
-    { label: 'Adresse', value: managerData.address, icon: 'mapPin' },
+    {
+      label: 'Email',
+      value: managerData.email,
+      icon: 'mail',
+    },
+    {
+      label: 'Téléphone',
+      value: managerData.phone,
+      icon: 'phone',
+    },
+    {
+      label: 'Directeur',
+      value: managerData.directeur,
+      icon: 'users',
+    },
+    {
+      label: 'Rang',
+      value: (
+        <span
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${managerData.rank.bgColor} ${managerData.rank.textColor} ${managerData.rank.borderColor} border font-semibold`}
+        >
+          <span className="text-lg">🏆</span>
+          {managerData.rank.name}
+          <span className="text-xs opacity-75">({managerData.points} pts)</span>
+        </span>
+      ),
+      icon: 'award',
+    },
+    {
+      label: 'Date de création',
+      value: managerData.date_promotion,
+      icon: 'calendar',
+    },
   ]
 
   const statsCards = [
     {
-      title: "CA de l'équipe",
-      value: managerData.ca_equipe,
-      description: `Objectif: ${managerData.objectif_equipe}`,
-      icon: 'trendingUp',
-      trend: { type: 'positive', value: '+8% vs mois dernier' },
+      title: 'Contrats signés',
+      value: managerData.totalContratsSignes,
+      description: 'Total de l’équipe (50 pts/contrat)',
+      icon: 'fileText',
     },
     {
-      title: "Taille de l'équipe",
+      title: 'Immeubles visités',
+      value: managerData.totalImmeublesVisites,
+      description: 'Total de l’équipe (5 pts/immeuble)',
+      icon: 'building',
+    },
+    {
+      title: 'Rendez-vous pris',
+      value: managerData.totalRendezVousPris,
+      description: 'Total de l’équipe (10 pts/RDV)',
+      icon: 'calendar',
+    },
+    {
+      title: 'Refus',
+      value: managerData.totalRefus,
+      description: 'Total de l’équipe',
+      icon: 'x',
+    },
+    {
+      title: 'Taux de conversion',
+      value: managerData.tauxConversion,
+      description: 'Contrats / RDV pris',
+      icon: 'trendingUp',
+    },
+    {
+      title: 'Meilleur commercial',
+      value: managerData.meilleurCommercial,
+      description: `Badge: ${managerData.meilleurBadge}`,
+      icon: 'award',
+    },
+    {
+      title: 'Taille de l’équipe',
       value: managerData.equipe_taille,
-      description: 'Commerciaux actifs',
+      description: 'Commerciaux assignés',
       icon: 'users',
     },
     {
-      title: 'Clients total',
-      value: managerData.clients_total,
-      description: "Portfolio de l'équipe",
-      icon: 'users',
-    },
-    {
-      title: "Taux d'atteinte",
-      value: managerData.taux_atteinte,
-      description: 'Performance équipe',
-      icon: 'trendingUp',
+      title: 'Zones actuellement assignées',
+      value: managerZones.map(zone => zone.nom).join(', ') || 'Aucune zone assignée',
+      icon: 'mapPin',
     },
   ]
 
-  const additionalSections = [
-    {
-      title: "Performance de l'équipe",
-      description: 'CA mensuel des 6 derniers mois',
-      type: 'list',
-      items: [
-        { label: 'Janvier 2024', value: '320 000 TND' },
-        { label: 'Février 2024', value: '310 000 TND' },
-        { label: 'Mars 2024', value: '335 000 TND' },
-        { label: 'Avril 2024', value: '342 000 TND' },
-        { label: 'Mai 2024', value: '358 000 TND' },
-        { label: 'Juin 2024', value: '350 000 TND' },
-      ],
-    },
-    {
-      title: "Composition de l'équipe",
-      description: 'Détails des commerciaux sous supervision',
-      type: 'grid',
-      items: [
-        { label: 'Commerciaux seniors', value: '0' },
-        { label: 'Commerciaux juniors', value: managerData.commerciaux_actifs },
-        { label: 'En formation', value: '0' },
-        { label: 'Top performer', value: 'N/A' },
-      ],
-    },
-  ]
+  const additionalSections = []
 
   // Ajouter la section d'assignation des commerciaux pour les admins
   if (isAdmin) {
@@ -303,7 +386,7 @@ export default function ManagerDetails() {
   return (
     <DetailsPage
       title={managerData.name}
-      subtitle={`Manager Régional - ${managerData.region}`}
+      subtitle={`Manager - ID: ${managerData.id}`}
       status={managerData.status}
       data={managerData}
       personalInfo={personalInfo}

@@ -149,6 +149,66 @@ export class ZoneService {
     });
   }
 
+  async assignToDirecteur(zoneId: number, directeurId: number) {
+    // Utiliser une transaction pour garantir l'atomicité
+    return this.prisma.$transaction(async (prisma) => {
+      // D'abord, retirer ce directeur de toutes les autres zones
+      await prisma.zone.updateMany({
+        where: {
+          directeurId,
+        },
+        data: {
+          directeurId: null,
+        },
+      });
+
+      // Ensuite, l'assigner à cette zone
+      return prisma.zone.update({
+        where: { id: zoneId },
+        data: { directeurId },
+        include: {
+          directeur: true,
+          commercials: {
+            include: {
+              commercial: true,
+            },
+          },
+          immeubles: true,
+        },
+      });
+    });
+  }
+
+  async assignToManager(zoneId: number, managerId: number) {
+    // Utiliser une transaction pour garantir l'atomicité
+    return this.prisma.$transaction(async (prisma) => {
+      // D'abord, retirer ce manager de toutes les autres zones
+      await prisma.zone.updateMany({
+        where: {
+          managerId,
+        },
+        data: {
+          managerId: null,
+        },
+      });
+
+      // Ensuite, l'assigner à cette zone
+      return prisma.zone.update({
+        where: { id: zoneId },
+        data: { managerId },
+        include: {
+          manager: true,
+          commercials: {
+            include: {
+              commercial: true,
+            },
+          },
+          immeubles: true,
+        },
+      });
+    });
+  }
+
   async unassignFromCommercial(zoneId: number, commercialId: number) {
     return this.prisma.commercialZone.delete({
       where: {

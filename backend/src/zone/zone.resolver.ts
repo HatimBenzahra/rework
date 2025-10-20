@@ -45,6 +45,23 @@ export class ZoneResolver {
   }
 
   @Mutation(() => Boolean)
+  assignZoneToDirecteur(
+    @Args('zoneId', { type: () => Int }) zoneId: number,
+    @Args('directeurId', { type: () => Int }) directeurId: number,
+  ) {
+    return this.zoneService
+      .assignToDirecteur(zoneId, directeurId)
+      .then(() => true);
+  }
+
+  @Mutation(() => Boolean)
+  assignZoneToManager(
+    @Args('zoneId', { type: () => Int }) zoneId: number,
+    @Args('managerId', { type: () => Int }) managerId: number,
+  ) {
+    return this.zoneService.assignToManager(zoneId, managerId).then(() => true);
+  }
+  @Mutation(() => Boolean)
   unassignZoneFromCommercial(
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('commercialId', { type: () => Int }) commercialId: number,

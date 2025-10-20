@@ -47,6 +47,8 @@ import {
   REMOVE_PORTE,
   ASSIGN_ZONE_TO_COMMERCIAL,
   UNASSIGN_ZONE_FROM_COMMERCIAL,
+  ASSIGN_ZONE_TO_DIRECTEUR,
+  ASSIGN_ZONE_TO_MANAGER,
 } from './api-mutations'
 
 import type {
@@ -310,6 +312,22 @@ export const zoneApi = {
       id,
     })
     return response.removeZone
+  },
+
+  async assignToDirecteur(directeurId: number, zoneId: number): Promise<boolean> {
+    const response = await gql<
+      { assignZoneToDirecteur: boolean },
+      { directeurId: number; zoneId: number }
+    >(ASSIGN_ZONE_TO_DIRECTEUR, { directeurId, zoneId })
+    return response.assignZoneToDirecteur
+  },
+
+  async assignToManager(managerId: number, zoneId: number): Promise<boolean> {
+    const response = await gql<
+      { assignZoneToManager: boolean },
+      { managerId: number; zoneId: number }
+    >(ASSIGN_ZONE_TO_MANAGER, { managerId, zoneId })
+    return response.assignZoneToManager
   },
 }
 

@@ -334,6 +334,26 @@ export function useRemoveZone(): UseApiMutation<number, Zone> {
   return useApiMutation(api.zones.remove, 'zones')
 }
 
+export function useAssignZoneToDirecteur(): UseApiMutation<
+  { directeurId: number; zoneId: number },
+  boolean
+> {
+  return useApiMutation(
+    ({ directeurId, zoneId }) => api.zones.assignToDirecteur(directeurId, zoneId),
+    'zones'
+  )
+}
+
+export function useAssignZoneToManager(): UseApiMutation<
+  { managerId: number; zoneId: number },
+  boolean
+> {
+  return useApiMutation(
+    ({ managerId, zoneId }) => api.zones.assignToManager(managerId, zoneId),
+    'zones'
+  )
+}
+
 // =============================================================================
 // Immeuble Hooks
 // =============================================================================

@@ -2,10 +2,11 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useDirecteur, useManagers, useUpdateManager, useZones } from '@/services'
+import { useDirecteur, useManagers, useUpdateManager, useZones, useCommercials } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
+import { RANKS, calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -30,6 +31,7 @@ export default function DirecteurDetails() {
     parseInt(currentUserId, 10),
     currentRole
   )
+  const { data: allCommercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { mutate: updateManager, loading: updatingManager } = useUpdateManager()
   const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
 
@@ -39,24 +41,133 @@ export default function DirecteurDetails() {
 
     const assignedManagers = allManagers?.filter(m => m.directeurId === directeur.id) || []
 
+    // Tous les commerciaux sous la supervision de ce directeur (via les managers ou directement)
+    const allDirecteurCommercials =
+      allCommercials?.filter(
+        c => c.directeurId === directeur.id || assignedManagers.some(m => m.id === c.managerId)
+      ) || []
+
+    // Calculer les statistiques agrégées du directeur depuis toute sa division
+    const totalContratsSignes = allDirecteurCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.contratsSignes, 0)
+    }, 0)
+
+    const totalImmeublesVisites = allDirecteurCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.immeublesVisites, 0)
+    }, 0)
+
+    const totalRendezVousPris = allDirecteurCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.rendezVousPris, 0)
+    }, 0)
+
+    const totalRefus = allDirecteurCommercials.reduce((sum, commercial) => {
+      const commercialStats = commercial.statistics || []
+      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.refus, 0)
+    }, 0)
+
+    // Taux de conversion
+    const tauxConversion =
+      totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
+
+    // Trouver le meilleur manager
+    let meilleurManager = 'Aucun manager'
+    let meilleurManagerBadge = 'Aucun'
+
+    if (assignedManagers.length > 0) {
+      const managersAvecStats = assignedManagers.map(manager => {
+        const managerCommercials = allCommercials?.filter(c => c.managerId === manager.id) || []
+        const managerContratsSignes = managerCommercials.reduce((sum, commercial) => {
+          const stats = commercial.statistics || []
+          return sum + stats.reduce((statSum, stat) => statSum + stat.contratsSignes, 0)
+        }, 0)
+        const managerRendezVous = managerCommercials.reduce((sum, commercial) => {
+          const stats = commercial.statistics || []
+          return sum + stats.reduce((statSum, stat) => statSum + stat.rendezVousPris, 0)
+        }, 0)
+        const managerImmeubles = managerCommercials.reduce((sum, commercial) => {
+          const stats = commercial.statistics || []
+          return sum + stats.reduce((statSum, stat) => statSum + stat.immeublesVisites, 0)
+        }, 0)
+
+        const { rank: managerRank, points: managerPoints } = calculateRank(
+          managerContratsSignes,
+          managerRendezVous,
+          managerImmeubles
+        )
+
+        return {
+          ...manager,
+          totalPoints: managerPoints,
+          rank: managerRank,
+        }
+      })
+
+      if (managersAvecStats.length > 0) {
+        const meilleur = managersAvecStats.reduce((prev, current) =>
+          current.totalPoints > prev.totalPoints ? current : prev
+        )
+
+        meilleurManager = `${meilleur.prenom} ${meilleur.nom}`
+        meilleurManagerBadge = meilleur.rank.name
+      }
+    }
+
+    // Trouver le meilleur commercial global
+    let meilleurCommercial = 'Aucun commercial'
+    let meilleurCommercialBadge = 'Aucun'
+
+    if (allDirecteurCommercials.length > 0) {
+      const commercialAvecRangs = allDirecteurCommercials.map(commercial => {
+        const stats = commercial.statistics || []
+        const contratsSignes = stats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
+        const rendezVous = stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
+        const immeubles = stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0)
+        const { rank: commercialRank, points: commercialPoints } = calculateRank(
+          contratsSignes,
+          rendezVous,
+          immeubles
+        )
+
+        return {
+          ...commercial,
+          totalPoints: commercialPoints,
+          rank: commercialRank,
+        }
+      })
+
+      const meilleur = commercialAvecRangs.reduce((prev, current) =>
+        current.totalPoints > prev.totalPoints ? current : prev
+      )
+
+      meilleurCommercial = `${meilleur.prenom} ${meilleur.nom}`
+      meilleurCommercialBadge = meilleur.rank.name
+    }
+
     return {
       ...directeur,
       name: `${directeur.prenom} ${directeur.nom}`,
       email: directeur.email || 'Non renseigné',
       phone: directeur.numTelephone || 'Non renseigné',
-      division: 'Division régionale',
       managers_count: assignedManagers.length,
-      commerciaux_count: 0, // À calculer si nécessaire
+      commerciaux_count: allDirecteurCommercials.length,
       status: 'actif',
-      ca_division: '0 TND',
-      objectif_division: '0 TND',
       date_nomination: new Date(directeur.createdAt).toLocaleDateString('fr-FR'),
-      experience: '0 ans',
-      address: directeur.adresse || 'Non renseignée',
-      clients_total: 0,
-      taux_atteinte: '0%',
+      // Stats commerciales du directeur
+      totalContratsSignes,
+      totalImmeublesVisites,
+      totalRendezVousPris,
+      totalRefus,
+      tauxConversion: `${tauxConversion}%`,
+      // Indicateurs de la division
+      meilleurManager,
+      meilleurManagerBadge,
+      meilleurCommercial,
+      meilleurCommercialBadge,
     }
-  }, [directeur, allManagers])
+  }, [directeur, allManagers, allCommercials])
 
   // Récupérer les zones assignées à ce directeur
   const directeurZones = useMemo(() => {
@@ -210,26 +321,127 @@ export default function DirecteurDetails() {
     )
   }
 
+  // Tableau des commerciaux pour les admins
+  const renderCommercialsTable = () => {
+    if (!isAdmin || !allCommercials) return null
+
+    // Commerciaux directement assignés au directeur ou via ses managers
+    const assignedManagers = allManagers?.filter(m => m.directeurId === directeur.id) || []
+    const directeurCommercials = allCommercials.filter(
+      c => c.directeurId === directeur.id || assignedManagers.some(m => m.id === c.managerId)
+    )
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h4 className="text-lg font-semibold mb-3">
+            Commerciaux de la division ({directeurCommercials.length})
+          </h4>
+          {directeurCommercials.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Téléphone</TableHead>
+                  <TableHead>Age</TableHead>
+                  <TableHead>Manager</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {directeurCommercials.map(commercial => {
+                  const manager = allManagers?.find(m => m.id === commercial.managerId)
+                  return (
+                    <TableRow key={commercial.id}>
+                      <TableCell className="font-medium">
+                        {commercial.prenom} {commercial.nom}
+                      </TableCell>
+                      <TableCell>{commercial.email || 'Non renseigné'}</TableCell>
+                      <TableCell>{commercial.numTel || 'Non renseigné'}</TableCell>
+                      <TableCell>{commercial.age} ans</TableCell>
+                      <TableCell>
+                        {manager ? `${manager.prenom} ${manager.nom}` : 'Direct'}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">
+              Aucun commercial dans cette division
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (loading || directeurLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!directeurData) return <div>Directeur non trouvé</div>
 
   const personalInfo = [
-    { label: 'Email', value: directeurData.email, icon: 'mail' },
-    { label: 'Téléphone', value: directeurData.phone, icon: 'phone' },
-    { label: 'Division', value: directeurData.division, icon: 'building' },
-    { label: 'Date de nomination', value: directeurData.date_nomination, icon: 'calendar' },
-    { label: 'Expérience', value: directeurData.experience, icon: 'calendar' },
-    { label: 'Bureau', value: directeurData.address, icon: 'mapPin' },
+    {
+      label: 'Email',
+      value: directeurData.email,
+      icon: 'mail',
+    },
+    {
+      label: 'Téléphone',
+      value: directeurData.phone,
+      icon: 'phone',
+    },
+
+    {
+      label: 'Date de nomination',
+      value: directeurData.date_nomination,
+      icon: 'calendar',
+    },
   ]
 
   const statsCards = [
     {
-      title: 'CA de la division',
-      value: directeurData.ca_division,
-      description: `Objectif: ${directeurData.objectif_division}`,
+      title: 'Contrats signés',
+      value: directeurData.totalContratsSignes,
+      description: 'Total de la division (50 pts/contrat)',
+      icon: 'fileText',
+    },
+    {
+      title: 'Immeubles visités',
+      value: directeurData.totalImmeublesVisites,
+      description: 'Total de la division (5 pts/immeuble)',
+      icon: 'building',
+    },
+    {
+      title: 'Rendez-vous pris',
+      value: directeurData.totalRendezVousPris,
+      description: 'Total de la division (10 pts/RDV)',
+      icon: 'calendar',
+    },
+    {
+      title: 'Refus',
+      value: directeurData.totalRefus,
+      description: 'Total de la division',
+      icon: 'x',
+    },
+    {
+      title: 'Taux de conversion',
+      value: directeurData.tauxConversion,
+      description: 'Contrats / RDV pris',
       icon: 'trendingUp',
-      trend: { type: 'positive', value: '+15% vs année dernière' },
+    },
+    {
+      title: 'Meilleur manager',
+      value: directeurData.meilleurManager,
+      description: `Badge: ${directeurData.meilleurManagerBadge}`,
+      icon: 'award',
+    },
+    {
+      title: 'Meilleur commercial',
+      value: directeurData.meilleurCommercial,
+      description: `Badge: ${directeurData.meilleurCommercialBadge}`,
+      icon: 'star',
     },
     {
       title: 'Managers',
@@ -244,58 +456,36 @@ export default function DirecteurDetails() {
       icon: 'users',
     },
     {
-      title: 'Clients total',
-      value: directeurData.clients_total,
-      description: 'Portfolio division',
-      icon: 'users',
-    },
-    {
-      title: "Taux d'atteinte",
-      value: directeurData.taux_atteinte,
-      description: 'Performance globale',
-      icon: 'trendingUp',
+      title: 'Zones actuellement assignées',
+      value: directeurZones.map(zone => zone.nom).join(', ') || 'Aucune zone assignée',
+      icon: 'mapPin',
     },
   ]
 
-  const additionalSections = [
-    {
-      title: 'Performance de la division',
-      description: 'CA trimestriel 2024',
-      type: 'list',
-      items: [
-        { label: 'Q1 2024', value: '2 100 000 TND' },
-        { label: 'Q2 2024', value: '2 350 000 TND' },
-        { label: 'Q3 2024 (prévision)', value: '2 500 000 TND' },
-        { label: 'Q4 2024 (objectif)', value: '2 600 000 TND' },
-      ],
-    },
-    {
-      title: 'Structure de la division',
-      description: 'Organisation et effectifs',
-      type: 'grid',
-      items: [
-        { label: 'Nombre de managers', value: directeurData.managers_count },
-        { label: 'Nombre de commerciaux', value: directeurData.commerciaux_count },
-        { label: 'Zones couvertes', value: '8' },
-        { label: 'Taux de satisfaction', value: '92%' },
-      ],
-    },
-  ]
+  const additionalSections = []
 
-  // Ajouter la section d'assignation des managers pour les admins
+  // Ajouter les sections de gestion pour les admins
   if (isAdmin) {
-    additionalSections.push({
-      title: 'Gestion des managers',
-      description: 'Assignation et gestion des managers de cette division',
-      type: 'custom',
-      render: () => renderManagersTable(),
-    })
+    additionalSections.push(
+      {
+        title: 'Gestion des managers',
+        description: 'Assignation et gestion des managers de cette division',
+        type: 'custom',
+        render: () => renderManagersTable(),
+      },
+      {
+        title: 'Commerciaux de la division',
+        description: 'Liste des commerciaux sous la supervision de ce directeur',
+        type: 'custom',
+        render: () => renderCommercialsTable(),
+      }
+    )
   }
 
   return (
     <DetailsPage
       title={directeurData.name}
-      subtitle={`Directeur - ${directeurData.division}`}
+      subtitle={`Directeur - ID: ${directeurData.id}`}
       status={directeurData.status}
       data={directeurData}
       personalInfo={personalInfo}

@@ -14,6 +14,8 @@ import {
   useManagers,
   useCommercials,
   useAssignZone,
+  useAssignZoneToDirecteur,
+  useAssignZoneToManager,
 } from '@/services'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useState, useMemo } from 'react'
@@ -76,6 +78,8 @@ export default function Zones() {
   const { mutate: updateZone } = useUpdateZone()
   const { mutate: removeZone } = useRemoveZone()
   const { mutate: assignZoneToCommercial } = useAssignZone()
+  const { mutate: assignZoneToDirecteur } = useAssignZoneToDirecteur()
+  const { mutate: assignZoneToManager } = useAssignZoneToManager()
   const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
@@ -372,77 +376,60 @@ export default function Zones() {
     return { role, id }
   }
 
-  /**
-   * Prépare les données de la zone avec l'assignation appropriée
-   * @param {object} zoneData - Données de base de la zone
-   * @param {string} assignedUserId - Format: "role-id"
-   * @returns {object} Données enrichies avec directeurId ou managerId
-   */
-  const prepareZoneDataWithAssignment = (zoneData, assignedUserId) => {
-    const assignment = parseAssignedUserId(assignedUserId)
-
-    if (!assignment) return zoneData
-
-    const enrichedData = { ...zoneData }
-
-    // Réinitialiser les assignations existantes
-    enrichedData.directeurId = null
-    enrichedData.managerId = null
-
-    // Ajouter l'assignation appropriée selon le rôle
-    if (assignment.role === 'directeur') {
-      enrichedData.directeurId = assignment.id
-    } else if (assignment.role === 'manager') {
-      enrichedData.managerId = assignment.id
-    }
-    // Pour les commerciaux, on ne définit pas directeurId/managerId
-    // L'assignation se fait via la mutation assignZoneToCommercial
-
-    return enrichedData
-  }
-
   const handleZoneValidate = async (zoneData, assignedUserId) => {
     try {
       const assignment = parseAssignedUserId(assignedUserId)
 
       if (editingZone) {
-        // Modifier la zone existante
-        const enrichedData = prepareZoneDataWithAssignment(zoneData, assignedUserId)
+        // Modifier la zone existante (sans directeurId/managerId)
         const updatedZone = await updateZone({
           id: editingZone.id,
-          ...enrichedData,
+          ...zoneData,
         })
 
-        // Si c'est un commercial, gérer l'assignation via la mutation spécifique
+        // Assigner selon le rôle via les mutations spécifiques
         if (assignment?.role === 'commercial') {
-          // Note: Pour l'instant on ne gère que l'ajout, pas le remplacement
-          // Une amélioration future serait de gérer les assignations multiples
-          console.log(
-            'Assignation commercial lors de la modification - à implémenter si nécessaire'
-          )
+          await assignZoneToCommercial({
+            commercialId: assignment.id,
+            zoneId: editingZone.id,
+          })
+        } else if (assignment?.role === 'directeur') {
+          await assignZoneToDirecteur({
+            directeurId: assignment.id,
+            zoneId: editingZone.id,
+          })
+        } else if (assignment?.role === 'manager') {
+          await assignZoneToManager({
+            managerId: assignment.id,
+            zoneId: editingZone.id,
+          })
         }
 
         console.log('Zone modifiée avec succès:', updatedZone)
       } else {
-        // Créer une nouvelle zone
-        const enrichedData = prepareZoneDataWithAssignment(zoneData, assignedUserId)
-        const newZone = await createZone(enrichedData)
+        // Créer une nouvelle zone (sans directeurId/managerId)
+        const newZone = await createZone(zoneData)
 
-        // Si c'est un commercial, l'assigner à la zone via la mutation spécifique
+        // Assigner selon le rôle via les mutations spécifiques
         if (assignment?.role === 'commercial' && newZone?.id) {
-          try {
-            await assignZoneToCommercial({
-              commercialId: assignment.id,
-              zoneId: newZone.id,
-            })
-            console.log(`Zone ${newZone.id} assignée au commercial ${assignment.id}`)
-          } catch (assignError) {
-            showError(assignError, 'Zones.handleZoneValidate.assignCommercial')
-          }
+          await assignZoneToCommercial({
+            commercialId: assignment.id,
+            zoneId: newZone.id,
+          })
+        } else if (assignment?.role === 'directeur' && newZone?.id) {
+          await assignZoneToDirecteur({
+            directeurId: assignment.id,
+            zoneId: newZone.id,
+          })
+        } else if (assignment?.role === 'manager' && newZone?.id) {
+          await assignZoneToManager({
+            managerId: assignment.id,
+            zoneId: newZone.id,
+          })
         }
-
-        showSuccess(editingZone ? 'Zone modifiée avec succès' : 'Zone créée avec succès')
       }
+
+      showSuccess(editingZone ? 'Zone modifiée avec succès' : 'Zone créée avec succès')
 
       // Rafraîchir la liste des zones
       await refetchZones()

@@ -138,6 +138,8 @@ type Manager {
 
 type Mutation {
   assignZoneToCommercial(commercialId: Int!, zoneId: Int!): Boolean!
+  assignZoneToDirecteur(directeurId: Int!, zoneId: Int!): Boolean!
+  assignZoneToManager(managerId: Int!, zoneId: Int!): Boolean!
   createCommercial(createCommercialInput: CreateCommercialInput!): Commercial!
   createDirecteur(createDirecteurInput: CreateDirecteurInput!): Directeur!
   createImmeuble(createImmeubleInput: CreateImmeubleInput!): Immeuble!
