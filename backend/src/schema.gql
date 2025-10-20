@@ -196,6 +196,7 @@ type Query {
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int, userId: Int, userRole: String): [Statistic!]!
   zone(id: Int!): Zone!
+  zoneStatistics(userId: Int, userRole: String): [ZoneStatistic!]!
   zones(userId: Int, userRole: String): [Zone!]!
 }
 
@@ -312,4 +313,19 @@ type Zone {
   updatedAt: DateTime!
   xOrigin: Float!
   yOrigin: Float!
+}
+
+type ZoneStatistic {
+  nombreCommerciaux: Int!
+  performanceGlobale: Float!
+  tauxConversion: Float!
+  tauxSuccesRdv: Float!
+  totalContratsSignes: Int!
+  totalImmeublesProspectes: Int!
+  totalImmeublesVisites: Int!
+  totalPortesProspectes: Int!
+  totalRefus: Int!
+  totalRendezVousPris: Int!
+  zoneId: Int!
+  zoneName: String!
 }

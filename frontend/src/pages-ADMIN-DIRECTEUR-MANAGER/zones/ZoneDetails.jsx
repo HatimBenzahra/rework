@@ -2,10 +2,11 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useZone, useCommercials } from '@/services'
+import { useZone, useStatisticsByZone, useCommercials, useZoneStatistics } from '@/services'
 import { useEntityPermissions } from '@/hooks/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
+import AssignedZoneCard from '@/components/AssignedZoneCard'
 
 export default function ZoneDetails() {
   const { id } = useParams()
@@ -14,6 +15,15 @@ export default function ZoneDetails() {
 
   // API hooks
   const { data: zone, loading: zoneLoading, error } = useZone(parseInt(id))
+  const { data: statistics, loading: statsLoading } = useStatisticsByZone(
+    parseInt(id),
+    parseInt(currentUserId, 10),
+    currentRole
+  )
+  const { data: allZoneStats, loading: zoneStatsLoading } = useZoneStatistics(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const permissions = useEntityPermissions('zones')
 
@@ -21,23 +31,23 @@ export default function ZoneDetails() {
   const zoneData = useMemo(() => {
     if (!zone) return null
 
-    // Trouver les commercials assignés à cette zone
-    const assignedCommercials =
-      commercials?.filter(commercial => commercial.zones?.some(z => z.id === zone.id)) || []
+    // Trouver les commercials assignés à cette zone via la relation commercials
+    const assignedCommercialIds = zone.commercials?.map(cz => cz.commercialId) || []
+    const assignedCommercials = commercials?.filter(c => assignedCommercialIds.includes(c.id)) || []
+
+    // Compter les immeubles dans cette zone
+    const immeubles_count = zone.immeubles?.length || 0
 
     return {
       ...zone,
       name: zone.nom,
       region: `Zone ${zone.nom}`,
-      immeubles_count: 0, // TODO: Calculer depuis les immeubles
-      total_apartments: 0, // TODO: Calculer depuis les immeubles
+      immeubles_count,
       manager:
         assignedCommercials.length > 0
           ? assignedCommercials.map(c => `${c.prenom} ${c.nom}`).join(', ')
           : 'Non assigné',
       status: 'actif',
-      occupancy_rate: '0%', // TODO: Calculer depuis les statistiques
-      monthly_revenue: '0 TND', // TODO: Calculer depuis les statistiques
       commercial_count: assignedCommercials.length,
       description: `Zone géographique ${zone.nom}`,
       surface_area: `${(zone.rayon / 1000).toFixed(1)} km de rayon`,
@@ -46,7 +56,83 @@ export default function ZoneDetails() {
     }
   }, [zone, commercials])
 
-  if (loading || zoneLoading) return <DetailsPageSkeleton />
+  // Obtenir les statistiques agrégées de la zone depuis l'API
+  const zoneStats = useMemo(() => {
+    if (!allZoneStats || !id) return null
+    return allZoneStats.find(stat => stat.zoneId === parseInt(id))
+  }, [allZoneStats, id])
+
+  // Calculer les statistiques agrégées de la zone (fallback si API pas disponible)
+  const aggregatedStats = useMemo(() => {
+    // Utiliser les stats de l'API si disponibles
+    if (zoneStats) {
+      return {
+        contratsSignes: zoneStats.totalContratsSignes,
+        immeublesVisites: zoneStats.totalImmeublesVisites,
+        rendezVousPris: zoneStats.totalRendezVousPris,
+        refus: zoneStats.totalRefus,
+        nbImmeublesProspectes: zoneStats.totalImmeublesProspectes,
+        nbPortesProspectes: zoneStats.totalPortesProspectes,
+        tauxConversion: zoneStats.tauxConversion,
+        tauxSuccesRdv: zoneStats.tauxSuccesRdv,
+        nombreCommerciaux: zoneStats.nombreCommerciaux,
+        performanceGlobale: zoneStats.performanceGlobale,
+      }
+    }
+
+    // Fallback vers le calcul manuel si API pas disponible
+    if (!statistics || statistics.length === 0) {
+      return {
+        contratsSignes: 0,
+        immeublesVisites: 0,
+        rendezVousPris: 0,
+        refus: 0,
+        nbImmeublesProspectes: 0,
+        nbPortesProspectes: 0,
+        tauxConversion: 0,
+        tauxSuccesRdv: 0,
+        nombreCommerciaux: 0,
+        performanceGlobale: 0,
+      }
+    }
+
+    const totals = statistics.reduce(
+      (acc, stat) => ({
+        contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
+        immeublesVisites: acc.immeublesVisites + (stat.immeublesVisites || 0),
+        rendezVousPris: acc.rendezVousPris + (stat.rendezVousPris || 0),
+        refus: acc.refus + (stat.refus || 0),
+        nbImmeublesProspectes: acc.nbImmeublesProspectes + (stat.nbImmeublesProspectes || 0),
+        nbPortesProspectes: acc.nbPortesProspectes + (stat.nbPortesProspectes || 0),
+      }),
+      {
+        contratsSignes: 0,
+        immeublesVisites: 0,
+        rendezVousPris: 0,
+        refus: 0,
+        nbImmeublesProspectes: 0,
+        nbPortesProspectes: 0,
+      }
+    )
+
+    // Calcul des taux
+    const tauxConversion = totals.nbPortesProspectes > 0 
+      ? (totals.contratsSignes / totals.nbPortesProspectes) * 100 
+      : 0
+    const tauxSuccesRdv = totals.immeublesVisites > 0 
+      ? (totals.rendezVousPris / totals.immeublesVisites) * 100 
+      : 0
+
+    return {
+      ...totals,
+      tauxConversion: Math.round(tauxConversion * 100) / 100,
+      tauxSuccesRdv: Math.round(tauxSuccesRdv * 100) / 100,
+      nombreCommerciaux: new Set(statistics.map(s => s.commercialId).filter(Boolean)).size,
+      performanceGlobale: Math.round(((tauxConversion * 0.4) + (tauxSuccesRdv * 0.6)) * 100) / 100,
+    }
+  }, [zoneStats, statistics, id])
+
+  if (loading || zoneLoading || statsLoading || zoneStatsLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!zoneData) return <div>Zone non trouvée</div>
 
@@ -59,6 +145,7 @@ export default function ZoneDetails() {
     { label: 'Région', value: zoneData.region, icon: 'mapPin' },
     { label: 'Commerciaux assignés', value: zoneData.manager, icon: 'users' },
     { label: 'Nombre de commerciaux', value: zoneData.commercial_count, icon: 'users' },
+    { label: "Nombre d'immeubles", value: zoneData.immeubles_count, icon: 'building' },
     { label: 'Rayon de couverture', value: zoneData.surface_area, icon: 'mapPin' },
     {
       label: 'Coordonnées centre',
@@ -68,89 +155,77 @@ export default function ZoneDetails() {
     { label: 'Description', value: zoneData.description, icon: 'building' },
   ]
 
-  const statsCards = [
+  const additionalSections = []
+
+  // Statistiques personnalisées pour la zone
+  const customStatsCards = [
     {
-      title: 'Revenu mensuel',
-      value: zoneData.monthly_revenue,
-      description: 'Total zone (à calculer)',
-      icon: 'trendingUp',
-      trend: { type: 'neutral', value: 'Données en cours' },
+      title: 'Contrats signés',
+      value: aggregatedStats.contratsSignes,
+      description: 'Total des contrats dans cette zone',
+      icon: 'fileText',
     },
     {
-      title: "Taux d'occupation",
-      value: zoneData.occupancy_rate,
-      description: 'À calculer depuis les immeubles',
-      icon: 'users',
+      title: 'Rendez-vous pris',
+      value: aggregatedStats.rendezVousPris,
+      description: 'Total des rendez-vous dans cette zone',
+      icon: 'calendar',
     },
     {
-      title: 'Immeubles',
-      value: zoneData.immeubles_count,
-      description: 'Dans la zone (à calculer)',
+      title: 'Immeubles visités',
+      value: aggregatedStats.immeublesVisites,
+      description: 'Immeubles visités dans cette zone',
       icon: 'building',
     },
     {
-      title: 'Commerciaux actifs',
-      value: zoneData.commercial_count,
-      description: 'Assignés à cette zone',
-      icon: 'users',
+      title: 'Refus',
+      value: aggregatedStats.refus,
+      description: 'Total des refus dans cette zone',
+      icon: 'x',
     },
     {
-      title: 'Surface couverte',
-      value: `${Math.PI * Math.pow(zone.rayon / 1000, 2).toFixed(1)} km²`,
-      description: 'Zone circulaire',
-      icon: 'mapPin',
+      title: 'Taux de conversion',
+      value: `${aggregatedStats.tauxConversion || 0}%`,
+      description: 'Pourcentage de contrats signés / portes prospectées',
+      icon: 'trendingUp',
+    },
+    {
+      title: 'Taux succès RDV',
+      value: `${aggregatedStats.tauxSuccesRdv || 0}%`,
+      description: 'Pourcentage de RDV obtenus / immeubles visités',
+      icon: 'target',
+    },
+    {
+      title: 'Performance globale',
+      value: `${aggregatedStats.performanceGlobale || 0} pts`,
+      description: 'Score de performance composite de la zone',
+      icon: 'award',
+    },
+    {
+      title: 'Portes prospectées',
+      value: aggregatedStats.nbPortesProspectes,
+      description: 'Total des portes prospectées dans cette zone',
+      icon: 'door',
     },
   ]
 
-  const additionalSections = [
+  // Sections personnalisées avec la carte de zone
+  const customSections = [
     {
-      title: 'Détails techniques',
-      description: 'Paramètres de la zone',
-      type: 'grid',
-      items: [
-        { label: 'Latitude centre', value: `${zone.yOrigin.toFixed(6)}°` },
-        { label: 'Longitude centre', value: `${zone.xOrigin.toFixed(6)}°` },
-        { label: 'Rayon (mètres)', value: `${zone.rayon.toLocaleString()} m` },
-        { label: 'Créée le', value: new Date(zone.createdAt).toLocaleDateString('fr-FR') },
-      ],
+      title: 'Visualisation de la zone',
+      description: 'Carte interactive avec limites géographiques',
+      type: 'custom',
+      render: () => (
+        <AssignedZoneCard
+          zone={zone}
+          assignmentDate={zone?.createdAt}
+          immeublesCount={zoneData?.immeubles_count || 0}
+          className="w-full"
+          fullWidth={true}
+        />
+      ),
     },
-    {
-      title: 'Commerciaux assignés',
-      description: 'Équipe commerciale de la zone',
-      type: 'list',
-      items:
-        zoneData.commercial_count > 0
-          ? commercials
-              ?.filter(c => c.zones?.some(z => z.id === zone.id))
-              ?.map(commercial => ({
-                label: `${commercial.prenom} ${commercial.nom}`,
-                value: commercial.email || 'Email non renseigné',
-              })) || []
-          : [{ label: 'Aucun commercial assigné', value: 'Zone non attribuée' }],
-    },
-    {
-      title: 'Actions possibles',
-      description: 'Selon vos permissions',
-      type: 'grid',
-      items: [
-        {
-          label: 'Voir les détails',
-          value: permissions.canView ? '✅ Autorisé' : '❌ Non autorisé',
-        },
-        {
-          label: 'Modifier la zone',
-          value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé',
-        },
-        {
-          label: 'Supprimer la zone',
-          value: permissions.canDelete ? '✅ Autorisé' : '❌ Non autorisé',
-        },
-        {
-          label: 'Assigner commerciaux',
-          value: permissions.canEdit ? '✅ Autorisé' : '❌ Non autorisé',
-        },
-      ],
-    },
+    ...additionalSections,
   ]
 
   return (
@@ -160,8 +235,8 @@ export default function ZoneDetails() {
       status={zoneData.status}
       data={zoneData}
       personalInfo={personalInfo}
-      statsCards={statsCards}
-      additionalSections={additionalSections}
+      statsCards={customStatsCards}
+      additionalSections={customSections}
       backUrl="/zones"
     />
   )

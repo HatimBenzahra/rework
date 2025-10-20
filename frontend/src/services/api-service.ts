@@ -18,6 +18,7 @@ import {
   GET_IMMEUBLE,
   GET_STATISTICS,
   GET_STATISTIC,
+  GET_ZONE_STATISTICS,
   GET_PORTES,
   GET_PORTE,
   GET_PORTES_BY_IMMEUBLE,
@@ -66,6 +67,7 @@ import type {
   QueryImmeubleResponse,
   QueryStatisticsResponse,
   QueryStatisticResponse,
+  QueryZoneStatisticsResponse,
   QueryPortesResponse,
   QueryPorteResponse,
   QueryPortesByImmeubleResponse,
@@ -112,7 +114,7 @@ import type {
   UnassignZoneVariables,
 } from '../types/graphql'
 
-import type { Directeur, Manager, Commercial, Zone, Immeuble, Statistic, Porte } from '../types/api'
+import type { Directeur, Manager, Commercial, Zone, Immeuble, Statistic, ZoneStatistic, Porte } from '../types/api'
 
 // =============================================================================
 // Directeur API Service
@@ -416,6 +418,14 @@ export const statisticApi = {
       { id }
     )
     return response.removeStatistic
+  },
+
+  async getZoneStatistics(userId?: number, userRole?: string): Promise<ZoneStatistic[]> {
+    const response = await gql<
+      QueryZoneStatisticsResponse,
+      { userId?: number; userRole?: string }
+    >(GET_ZONE_STATISTICS, { userId, userRole })
+    return response.zoneStatistics
   },
 }
 

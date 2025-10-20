@@ -6,7 +6,7 @@ import { useDirecteur, useManagers, useUpdateManager, useZones, useCommercials }
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
-import { RANKS, calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {

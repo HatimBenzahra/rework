@@ -4,6 +4,7 @@ import {
   Statistic,
   CreateStatisticInput,
   UpdateStatisticInput,
+  ZoneStatistic,
 } from './statistic.dto';
 
 @Resolver(() => Statistic)
@@ -42,5 +43,13 @@ export class StatisticResolver {
   @Mutation(() => Statistic)
   removeStatistic(@Args('id', { type: () => Int }) id: number) {
     return this.statisticService.remove(id);
+  }
+
+  @Query(() => [ZoneStatistic], { name: 'zoneStatistics' })
+  getZoneStatistics(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.statisticService.getZoneStatistics(userId, userRole);
   }
 }

@@ -4,6 +4,7 @@ import {
   Int,
   InputType,
   PartialType,
+  Float,
 } from '@nestjs/graphql';
 
 @ObjectType()
@@ -79,4 +80,43 @@ export class CreateStatisticInput {
 export class UpdateStatisticInput extends PartialType(CreateStatisticInput) {
   @Field(() => Int)
   id: number;
+}
+
+@ObjectType()
+export class ZoneStatistic {
+  @Field(() => Int)
+  zoneId: number;
+
+  @Field(() => String)
+  zoneName: string;
+
+  @Field(() => Int)
+  totalContratsSignes: number;
+
+  @Field(() => Int)
+  totalImmeublesVisites: number;
+
+  @Field(() => Int)
+  totalRendezVousPris: number;
+
+  @Field(() => Int)
+  totalRefus: number;
+
+  @Field(() => Int)
+  totalImmeublesProspectes: number;
+
+  @Field(() => Int)
+  totalPortesProspectes: number;
+
+  @Field(() => Float)
+  tauxConversion: number;
+
+  @Field(() => Float)
+  tauxSuccesRdv: number;
+
+  @Field(() => Int)
+  nombreCommerciaux: number;
+
+  @Field(() => Float)
+  performanceGlobale: number;
 }

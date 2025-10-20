@@ -10,6 +10,7 @@ import type {
   Zone,
   Immeuble,
   Statistic,
+  ZoneStatistic,
   Porte,
   CreateDirecteurInput,
   CreateManagerInput,
@@ -77,6 +78,10 @@ export interface QueryStatisticsResponse {
 
 export interface QueryStatisticResponse {
   statistic: Statistic
+}
+
+export interface QueryZoneStatisticsResponse {
+  zoneStatistics: ZoneStatistic[]
 }
 
 export interface QueryPortesResponse {

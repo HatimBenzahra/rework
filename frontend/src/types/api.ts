@@ -62,11 +62,30 @@ export interface Immeuble extends BaseEntity {
 }
 
 export interface Statistic extends BaseEntity {
-  commercialId: number
+  commercialId?: number
+  immeubleId?: number
+  zoneId?: number
   contratsSignes: number
   immeublesVisites: number
   rendezVousPris: number
   refus: number
+  nbImmeublesProspectes: number
+  nbPortesProspectes: number
+}
+
+export interface ZoneStatistic {
+  zoneId: number
+  zoneName: string
+  totalContratsSignes: number
+  totalImmeublesVisites: number
+  totalRendezVousPris: number
+  totalRefus: number
+  totalImmeublesProspectes: number
+  totalPortesProspectes: number
+  tauxConversion: number
+  tauxSuccesRdv: number
+  nombreCommerciaux: number
+  performanceGlobale: number
 }
 
 export enum StatutPorte {

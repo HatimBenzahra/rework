@@ -328,10 +328,14 @@ export const GET_STATISTICS = `
     statistics(commercialId: $commercialId, userId: $userId, userRole: $userRole) {
       id
       commercialId
+      immeubleId
+      zoneId
       contratsSignes
       immeublesVisites
       rendezVousPris
       refus
+      nbImmeublesProspectes
+      nbPortesProspectes
       createdAt
       updatedAt
     }
@@ -349,6 +353,25 @@ export const GET_STATISTIC = `
       refus
       createdAt
       updatedAt
+    }
+  }
+`
+
+export const GET_ZONE_STATISTICS = `
+  query GetZoneStatistics($userId: Int, $userRole: String) {
+    zoneStatistics(userId: $userId, userRole: $userRole) {
+      zoneId
+      zoneName
+      totalContratsSignes
+      totalImmeublesVisites
+      totalRendezVousPris
+      totalRefus
+      totalImmeublesProspectes
+      totalPortesProspectes
+      tauxConversion
+      tauxSuccesRdv
+      nombreCommerciaux
+      performanceGlobale
     }
   }
 `

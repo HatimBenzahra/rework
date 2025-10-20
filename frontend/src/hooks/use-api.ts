@@ -13,6 +13,7 @@ import type {
   Zone,
   Immeuble,
   Statistic,
+  ZoneStatistic,
   Porte,
   CreateDirecteurInput,
   CreateManagerInput,
@@ -400,6 +401,37 @@ export function useStatisticsByCommercial(
   commercialId: number
 ): UseApiListState<Statistic> & UseApiActions {
   return useApiCall(() => api.statistics.getAll(commercialId), [commercialId], 'statistics')
+}
+
+export function useStatisticsByZone(
+  zoneId: number,
+  userId?: number,
+  userRole?: string
+): UseApiListState<Statistic> & UseApiActions {
+  const result = useApiCall(
+    () => api.statistics.getAll(undefined, userId, userRole),
+    [userId, userRole],
+    'statistics'
+  )
+
+  // Filtrer les statistiques par zoneId côté client
+  const filteredData = result.data?.filter(stat => stat.zoneId === zoneId) || []
+
+  return {
+    ...result,
+    data: filteredData,
+  }
+}
+
+export function useZoneStatistics(
+  userId?: number,
+  userRole?: string
+): UseApiListState<ZoneStatistic> & UseApiActions {
+  return useApiCall(
+    () => api.statistics.getZoneStatistics(userId, userRole),
+    [userId, userRole],
+    'zoneStatistics'
+  )
 }
 
 export function useStatistic(id: number): UseApiState<Statistic> & UseApiActions {

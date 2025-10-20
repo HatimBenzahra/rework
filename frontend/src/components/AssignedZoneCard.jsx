@@ -102,6 +102,7 @@ export default function AssignedZoneCard({
   assignmentDate,
   immeublesCount = 0,
   className = '',
+  fullWidth = false,
 }) {
   const mapRef = useRef(null)
   const [mapLoading, setMapLoading] = useState(true)
@@ -223,115 +224,220 @@ export default function AssignedZoneCard({
     <>
       <Card className={`border-2 ${className}`}>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Informations à gauche */}
-            <div className="flex flex-col justify-between space-y-4">
-              {/* Header avec infos */}
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <h3 className="text-xl font-semibold">{zone.nom}</h3>
-                  <Badge variant="secondary">Zone assignée</Badge>
-                </div>
+          {fullWidth ? (
+            /* Layout pleine largeur avec map en haut */
+            <div className="space-y-6">
+              {/* Map en pleine largeur */}
+              <div className="relative">
+                <div className="aspect-[21/9] rounded-lg overflow-hidden border-2 relative">
+                  <MapContent height="100%" showControls={true} />
 
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                        Localisation
-                      </p>
-                      <p className="font-semibold">{locationName}</p>
-                    </div>
+                  {/* Boutons de contrôle */}
+                  <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center justify-between gap-2">
+                    <Button
+                      variant={isMapLocked ? 'secondary' : 'default'}
+                      size="sm"
+                      onClick={() => setIsMapLocked(!isMapLocked)}
+                      className="shadow-lg"
+                      title={isMapLocked ? 'Déverrouiller la carte' : 'Verrouiller la carte'}
+                    >
+                      {isMapLocked ? (
+                        <>
+                          <Lock className="h-4 w-4 mr-2" />
+                          Verrouillée
+                        </>
+                      ) : (
+                        <>
+                          <Unlock className="h-4 w-4 mr-2" />
+                          Déverrouillée
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => setIsFullscreen(true)}
+                      className="shadow-lg"
+                      title="Agrandir la carte"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  {assignmentDate && (
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                          Date d'assignation
-                        </p>
-                        <p className="font-semibold">
-                          {new Date(assignmentDate).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Informations supplémentaires */}
-              <div className="space-y-4 pt-4 border-t">
-                <div>
-                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-2">
+              {/* Informations sous la map */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                      Zone
+                    </p>
+                  </div>
+                  <p className="text-xl font-bold">{zone.nom}</p>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                      Localisation
+                    </p>
+                  </div>
+                  <p className="font-semibold">{locationName}</p>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
                     Rayon de couverture
                   </p>
-                  <p className="text-2xl font-bold">{(zone.rayon / 1000).toFixed(1)} km</p>
+                  <p className="text-xl font-bold">{(zone.rayon / 1000).toFixed(1)} km</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                      Surface
-                    </p>
-                    <p className="font-semibold">
-                      {(Math.PI * Math.pow(zone.rayon / 1000, 2)).toFixed(1)} km²
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                      Nombre d'immeubles
-                    </p>
-                    <p className="font-semibold text-lg">{immeublesCount}</p>
-                  </div>
+                <div className="flex flex-col space-y-2">
+                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                    Surface totale
+                  </p>
+                  <p className="text-xl font-bold">
+                    {(Math.PI * Math.pow(zone.rayon / 1000, 2)).toFixed(1)} km²
+                  </p>
                 </div>
               </div>
+
+              {assignmentDate && (
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                        Date d'assignation
+                      </p>
+                      <p className="font-semibold">
+                        {new Date(assignmentDate).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+          ) : (
+            /* Layout original avec 2 colonnes */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Informations à gauche */}
+              <div className="flex flex-col justify-between space-y-4">
+                {/* Header avec infos */}
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <h3 className="text-xl font-semibold">{zone.nom}</h3>
+                    <Badge variant="secondary">Zone assignée</Badge>
+                  </div>
 
-            {/* Carte carrée à droite */}
-            <div className="relative">
-              <div className="aspect-square rounded-lg overflow-hidden border-2 relative">
-                <MapContent height="100%" />
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                          Localisation
+                        </p>
+                        <p className="font-semibold">{locationName}</p>
+                      </div>
+                    </div>
 
-                {/* Boutons de contrôle */}
-                <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center justify-between gap-2">
-                  <Button
-                    variant={isMapLocked ? 'secondary' : 'default'}
-                    size="sm"
-                    onClick={() => setIsMapLocked(!isMapLocked)}
-                    className="shadow-lg"
-                    title={isMapLocked ? 'Déverrouiller la carte' : 'Verrouiller la carte'}
-                  >
-                    {isMapLocked ? (
-                      <>
-                        <Lock className="h-4 w-4 mr-2" />
-                        Verrouillée
-                      </>
-                    ) : (
-                      <>
-                        <Unlock className="h-4 w-4 mr-2" />
-                        Déverrouillée
-                      </>
+                    {assignmentDate && (
+                      <div className="flex items-start gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                            Date d'assignation
+                          </p>
+                          <p className="font-semibold">
+                            {new Date(assignmentDate).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
                     )}
-                  </Button>
+                  </div>
+                </div>
 
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    onClick={() => setIsFullscreen(true)}
-                    className="shadow-lg"
-                    title="Agrandir la carte"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </Button>
+                {/* Informations supplémentaires */}
+                <div className="space-y-4 pt-4 border-t">
+                  <div>
+                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-2">
+                      Rayon de couverture
+                    </p>
+                    <p className="text-2xl font-bold">{(zone.rayon / 1000).toFixed(1)} km</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                        Surface
+                      </p>
+                      <p className="font-semibold">
+                        {(Math.PI * Math.pow(zone.rayon / 1000, 2)).toFixed(1)} km²
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                        Nombre d'immeubles
+                      </p>
+                      <p className="font-semibold text-lg">{immeublesCount}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Carte carrée à droite */}
+              <div className="relative">
+                <div className="aspect-square rounded-lg overflow-hidden border-2 relative">
+                  <MapContent height="100%" />
+
+                  {/* Boutons de contrôle */}
+                  <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center justify-between gap-2">
+                    <Button
+                      variant={isMapLocked ? 'secondary' : 'default'}
+                      size="sm"
+                      onClick={() => setIsMapLocked(!isMapLocked)}
+                      className="shadow-lg"
+                      title={isMapLocked ? 'Déverrouiller la carte' : 'Verrouiller la carte'}
+                    >
+                      {isMapLocked ? (
+                        <>
+                          <Lock className="h-4 w-4 mr-2" />
+                          Verrouillée
+                        </>
+                      ) : (
+                        <>
+                          <Unlock className="h-4 w-4 mr-2" />
+                          Déverrouillée
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      variant="secondary"
+                      size="icon"
+                      onClick={() => setIsFullscreen(true)}
+                      className="shadow-lg"
+                      title="Agrandir la carte"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
