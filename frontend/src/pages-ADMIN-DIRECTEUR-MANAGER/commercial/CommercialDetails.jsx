@@ -6,6 +6,8 @@ import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { RANKS, calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
+import PortesProspectionChart from '@/components/charts/PortesProspectionChart'
+import PortesWeeklyChart from '@/components/charts/PortesWeeklyChart'
 
 export default function CommercialDetails() {
   const { id } = useParams()
@@ -114,6 +116,19 @@ export default function CommercialDetails() {
         createdAt: immeuble.createdAt,
       }
     })
+  }, [commercial])
+
+  // Préparer toutes les portes du commercial pour les graphiques
+  const allPortes = useMemo(() => {
+    if (!commercial?.immeubles) return []
+    
+    // Collecter toutes les portes de tous les immeubles du commercial
+    return commercial.immeubles.reduce((acc, immeuble) => {
+      if (immeuble.portes) {
+        return [...acc, ...immeuble.portes]
+      }
+      return acc
+    }, [])
   }, [commercial])
 
   if (loading) return <DetailsPageSkeleton />
@@ -288,6 +303,34 @@ export default function CommercialDetails() {
   ]
 
   const additionalSections = [
+    {
+      title: 'Statistiques de prospection',
+      description: "Analyse de l'activité de prospection",
+      type: 'custom',
+      component: 'ChartsSection',
+      data: {
+        charts: [
+          {
+            type: 'PortesProspectionChart',
+            props: {
+              portes: allPortes,
+              title: 'Portes prospectées par jour',
+              description: 'Activité quotidienne des 7 derniers jours',
+              daysToShow: 7,
+            },
+          },
+          {
+            type: 'PortesWeeklyChart',
+            props: {
+              portes: allPortes,
+              title: 'Évolution hebdomadaire',
+              description: 'Tendance sur les 4 dernières semaines',
+              weeksToShow: 4,
+            },
+          },
+        ],
+      },
+    },
     {
       title: 'Immeubles prospectés',
       description: 'Liste des immeubles assignés à ce commercial avec leurs statistiques',

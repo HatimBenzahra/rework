@@ -46,6 +46,8 @@ import AssignedZoneCard from './AssignedZoneCard'
 import { AdvancedDataTable } from './tableau'
 import { useEntityPermissions } from '@/hooks/useRoleBasedData'
 import { useState, useMemo, useEffect } from 'react'
+import PortesProspectionChart from './charts/PortesProspectionChart'
+import PortesWeeklyChart from './charts/PortesWeeklyChart'
 
 /**
  * Composant de tableau sans Card wrapper pour éviter les doubles cards
@@ -490,6 +492,19 @@ export default function DetailsPage({
                   searchPlaceholder="Rechercher par adresse..."
                   searchKey="address"
                 />
+              )}
+              {section.type === 'custom' && section.component === 'ChartsSection' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {section.data.charts.map((chart, index) => {
+                    if (chart.type === 'PortesProspectionChart') {
+                      return <PortesProspectionChart key={index} {...chart.props} />
+                    }
+                    if (chart.type === 'PortesWeeklyChart') {
+                      return <PortesWeeklyChart key={index} {...chart.props} />
+                    }
+                    return null
+                  })}
+                </div>
               )}
               {section.type === 'custom' && section.component === 'FloorDetails' && (
                 <div className="space-y-6">
