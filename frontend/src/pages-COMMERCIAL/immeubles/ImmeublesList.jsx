@@ -33,7 +33,6 @@ export default function ImmeublesList() {
   // Hook pour le thème commercial - centralise TOUS les styles
   const { base, components, getButtonClasses, getInputClasses } = useCommercialTheme()
 
-  // ✅ Récupérer les données du contexte (déjà chargées par le Layout) - ZERO requête redondante !
   const context = useOutletContext()
   const commercial = context?.commercial
   const commercialLoading = context?.commercialLoading
@@ -45,11 +44,16 @@ export default function ImmeublesList() {
       immeuble.adresse.toLowerCase().includes(searchQuery.toLowerCase())
     ) || []
 
+  // Sort filtered immeubles by updatedAt (most recent first)
+  const sortedImmeubles = [...filteredImmeubles].sort((a, b) => {
+    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  })
+
   // Pagination logic
-  const totalPages = Math.ceil(filteredImmeubles.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(sortedImmeubles.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedImmeubles = filteredImmeubles.slice(startIndex, endIndex)
+  const paginatedImmeubles = sortedImmeubles.slice(startIndex, endIndex)
 
   // Reset to page 1 when search query changes
   React.useEffect(() => {
@@ -329,11 +333,11 @@ export default function ImmeublesList() {
         )}
 
         {/* Pagination controls */}
-        {filteredImmeubles.length > ITEMS_PER_PAGE && (
+        {sortedImmeubles.length > ITEMS_PER_PAGE && (
           <div className="mt-6 mb-20 sm:mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className={`text-sm ${base.text.muted}`}>
-              Affichage de {startIndex + 1} à {Math.min(endIndex, filteredImmeubles.length)} sur{' '}
-              {filteredImmeubles.length} immeuble{filteredImmeubles.length > 1 ? 's' : ''}
+              Affichage de {startIndex + 1} à {Math.min(endIndex, sortedImmeubles.length)} sur{' '}
+              {sortedImmeubles.length} immeuble{sortedImmeubles.length > 1 ? 's' : ''}
             </div>
 
             <div className="flex items-center gap-2">

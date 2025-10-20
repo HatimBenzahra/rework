@@ -48,7 +48,11 @@ export default function PortesGestion() {
     // Récupérer l'étage sauvegardé dans localStorage
     return localStorage.getItem(`etage-${immeubleId}`) || 'all'
   })
-  const [showOnlyVisited, setShowOnlyVisited] = useState(false)
+  const [activeFilters, setActiveFilters] = useState(() => {
+    // Récupérer les filtres sauvegardés dans localStorage
+    const saved = localStorage.getItem(`filters-${immeubleId}`)
+    return saved ? JSON.parse(saved) : []
+  })
   const [isSaving, setIsSaving] = useState(false)
   const [editForm, setEditForm] = useState({
     statut: '',
@@ -67,6 +71,11 @@ export default function PortesGestion() {
     }
   }, [selectedEtage, immeubleId])
 
+  // Sauvegarder les filtres actifs dans localStorage
+  useEffect(() => {
+    localStorage.setItem(`filters-${immeubleId}`, JSON.stringify(activeFilters))
+  }, [activeFilters, immeubleId])
+
   // Récupérer les informations de l'immeuble
   const { data: immeuble, loading: immeubleLoading } = useImmeuble(parseInt(immeubleId))
 
@@ -79,14 +88,33 @@ export default function PortesGestion() {
   // Mutation pour mettre à jour une porte
   const { mutate: updatePorte } = useUpdatePorte()
 
+  // Fonctions pour gérer les filtres multiples
+  const toggleFilter = filterValue => {
+    setActiveFilters(prev => {
+      if (prev.includes(filterValue)) {
+        return prev.filter(f => f !== filterValue)
+      } else {
+        return [...prev, filterValue]
+      }
+    })
+  }
+
+  const clearAllFilters = () => {
+    setActiveFilters([])
+  }
+
   // Filtrage des portes selon les critères locaux
   const filteredPortes = useMemo(() => {
     return portes.filter(porte => {
-      const matchesVisited = !showOnlyVisited || porte.statut !== 'NON_VISITE'
-      return matchesVisited
-    })
-  }, [portes, showOnlyVisited])
+      // Si aucun filtre n'est actif, afficher toutes les portes sauf les contrats signés
+      if (activeFilters.length === 0) {
+        return porte.statut !== 'CONTRAT_SIGNE'
+      }
 
+      // Si des filtres sont actifs, afficher seulement les portes correspondantes
+      return activeFilters.includes(porte.statut)
+    })
+  }, [portes, activeFilters])
 
   const handleEditPorte = porte => {
     setSelectedPorte(porte)
@@ -223,69 +251,106 @@ export default function PortesGestion() {
       ref={etageSelecteurRef}
       className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
     >
-      {/* Sélecteur d'étage GROS et VISIBLE */}
-      <div className="mb-3">
-        <h3
-          className={`text-base sm:text-lg font-bold ${base.text.primary} mb-2 flex items-center gap-2`}
-        >
-          <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
-          Je suis à l'étage :
-        </h3>
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-          {Object.keys(portes.reduce((acc, p) => ({ ...acc, [p.etage]: true }), {}))
-            .sort((a, b) => parseInt(b) - parseInt(a))
-            .map(etage => (
-              <Button
-                key={etage}
-                variant="ghost"
-                size="lg"
-                onClick={() => setSelectedEtage(etage)}
-                className={`h-12 sm:h-14 text-lg sm:text-xl font-bold ${
-                  selectedEtage === etage
-                    ? `${colors.primary.bg} ${colors.primary.text} border-2 sm:border-3 ${colors.primary.border} shadow-lg scale-105`
-                    : `${base.bg.muted} ${base.text.primary} hover:bg-gray-300 border ${base.border.default}`
-                } transition-all duration-200`}
-              >
-                {etage}
-                <span
-                  className={`ml-1 sm:ml-2 text-xs sm:text-sm ${selectedEtage === etage ? 'opacity-100' : 'opacity-60'}`}
+      {/* Accès rapide aux étages */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-gray-700">Étages</h3>
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedEtage('all')}
+            className={`${
+              selectedEtage === 'all'
+                ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
+                : `${base.bg.muted} ${base.text.muted}`
+            } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+          >
+            <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+            Tous ({filteredPortes.length})
+          </Button>
+
+          {/* Boutons d'étages dynamiques */}
+          {Array.from(new Set(portes.map(p => p.etage)))
+            .sort((a, b) => b - a) // Tri décroissant (étages supérieurs en premier)
+            .map(etage => {
+              const count = filteredPortes.filter(p => p.etage === etage).length
+              const isActive = selectedEtage === etage.toString()
+
+              return (
+                <Button
+                  key={etage}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedEtage(etage.toString())}
+                  className={`${
+                    isActive
+                      ? `${colors.success.bgLight} ${colors.success.text} border ${colors.success.border}`
+                      : `${base.bg.muted} ${base.text.muted}`
+                  } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
                 >
-                  ({portes.filter(p => p.etage === etage).length || 0})
-                </span>
-              </Button>
-            ))}
+                  Étage {etage} ({count})
+                </Button>
+              )
+            })}
         </div>
       </div>
 
-      {/* Filtres rapides */}
-      <div className="flex flex-wrap gap-1.5 sm:gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowOnlyVisited(!showOnlyVisited)}
-          className={`${
-            showOnlyVisited
-              ? `${colors.success.bgLight} ${colors.success.text} border ${colors.success.border}`
-              : `${base.bg.muted} ${base.text.muted}`
-          } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-        >
-          <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-          {showOnlyVisited ? 'Visitées' : 'Toutes'}
-        </Button>
+      {/* Filtres par statut */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">Filtres par statut</h3>
+          {activeFilters.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Effacer tout
+            </Button>
+          )}
+        </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSelectedEtage('all')}
-          className={`${
-            selectedEtage === 'all'
-              ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
-              : `${base.bg.muted} ${base.text.muted}`
-          } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-        >
-          <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-          Tous ({filteredPortes.length})
-        </Button>
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          {/* Bouton "Toutes" */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAllFilters}
+            className={`${
+              activeFilters.length === 0
+                ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
+                : `${base.bg.muted} ${base.text.muted}`
+            } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+          >
+            <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+            Toutes ({portes.filter(p => p.statut !== 'CONTRAT_SIGNE').length})
+          </Button>
+
+          {/* Filtres par statut */}
+          {statutOptions
+            .filter(option => option.value !== 'CONTRAT_SIGNE')
+            .map(option => {
+              const count = portes.filter(p => p.statut === option.value).length
+              const isActive = activeFilters.includes(option.value)
+              const IconComponent = option.icon
+
+              return (
+                <Button
+                  key={option.value}
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleFilter(option.value)}
+                  className={`${
+                    isActive ? option.color + ' border' : `${base.bg.muted} ${base.text.muted}`
+                  } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+                >
+                  <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+                  {option.label} ({count})
+                </Button>
+              )
+            })}
+        </div>
       </div>
     </div>
   )
