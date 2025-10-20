@@ -164,7 +164,11 @@ export class CommercialService {
     // Si le managerId est modifié, mettre à jour automatiquement le directeurId
     let directeurId = updateData.directeurId;
 
-    if (updateData.managerId !== undefined && !directeurId) {
+    if (
+      updateData.managerId !== undefined &&
+      updateData.managerId !== null &&
+      !directeurId
+    ) {
       const manager = await this.prisma.manager.findUnique({
         where: { id: updateData.managerId },
         select: { directeurId: true },

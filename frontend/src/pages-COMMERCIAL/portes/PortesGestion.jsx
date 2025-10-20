@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Building2, Clock, RotateCcw, Calendar, Plus, Minus } from 'lucide-react'
+import {
+  usePortesByImmeuble,
+  useUpdatePorte,
+  useImmeuble,
+  useAddEtageToImmeuble,
+  useAddPorteToEtage,
+} from '@/hooks/use-api'
+import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { STATUT_OPTIONS } from './Statut_options'
+import PortesTemplate from './components/PortesTemplate'
 import {
   Select,
   SelectContent,
@@ -18,11 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Building2, Clock, Eye, RotateCcw, Calendar, Plus, Minus } from 'lucide-react'
-import { usePortesByImmeuble, useUpdatePorte, useImmeuble } from '@/hooks/use-api'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
-import { STATUT_OPTIONS } from './Statut_options'
-import PortesTemplate from './components/PortesTemplate'
+
 /**
  * Page de gestion des portes d'un immeuble
  * Utilise le contexte du layout parent (PortesLayout)
@@ -31,25 +38,37 @@ export default function PortesGestion() {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
 
-  // Récupérer les données du contexte (venant du layout)
-  // Note: commercial et myStats sont disponibles mais pas utilisés directement dans ce composant
-  // Ils peuvent être utiles pour des fonctionnalités futures
-  useOutletContext()
+  // Récupère la ref de scroll depuis le layout (fallback possible si non fourni)
+  const { scrollContainerRef } = useOutletContext() || {}
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base, getButtonClasses } = useCommercialTheme()
 
-  // Configuration des statuts avec les couleurs du thème
-  const statutOptions = STATUT_OPTIONS()
+  // Configuration des statuts avec les couleurs du thème (mémo pour éviter recréations)
+  const statutOptions = useMemo(() => STATUT_OPTIONS(), [])
 
   const [selectedPorte, setSelectedPorte] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [activeFilters, setActiveFilters] = useState(() => {
-    // Récupérer les filtres sauvegardés dans localStorage
-    const saved = localStorage.getItem(`filters-${immeubleId}`)
-    return saved ? JSON.parse(saved) : []
-  })
   const [isSaving, setIsSaving] = useState(false)
+
+  // Filtres (lecture/écriture localStorage sécurisée)
+  const [activeFilters, setActiveFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`filters-${immeubleId}`)
+      const parsed = saved ? JSON.parse(saved) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem(`filters-${immeubleId}`, JSON.stringify(activeFilters))
+    } catch {
+      /* ignore */
+    }
+  }, [activeFilters, immeubleId])
+
   const [editForm, setEditForm] = useState({
     statut: '',
     commentaire: '',
@@ -60,52 +79,69 @@ export default function PortesGestion() {
 
   const etageSelecteurRef = useRef(null)
 
-  // Sauvegarder les filtres actifs dans localStorage
-  useEffect(() => {
-    localStorage.setItem(`filters-${immeubleId}`, JSON.stringify(activeFilters))
-  }, [activeFilters, immeubleId])
-
-  // Récupérer les informations de l'immeuble
-  const { data: immeuble, loading: immeubleLoading } = useImmeuble(parseInt(immeubleId))
-
-  // Récupérer les portes de l'immeuble avec cache management
-  const { data: portesData, loading, refetch } = usePortesByImmeuble(parseInt(immeubleId))
-
-  // S'assurer que portes est toujours un tableau avec useMemo pour éviter les re-renders
+  // Données
+  const { data: immeuble, loading: immeubleLoading } = useImmeuble(parseInt(immeubleId, 10))
+  const { data: portesData, loading, refetch } = usePortesByImmeuble(parseInt(immeubleId, 10))
   const portes = useMemo(() => portesData || [], [portesData])
 
-  // Mutation pour mettre à jour une porte
+  // Mutations
   const { mutate: updatePorte } = useUpdatePorte()
+  const { mutate: addEtage } = useAddEtageToImmeuble()
+  const { mutate: addPorteToEtage } = useAddPorteToEtage()
 
-  // Fonctions pour gérer les filtres multiples
-  const toggleFilter = filterValue => {
-    setActiveFilters(prev => {
-      if (prev.includes(filterValue)) {
-        return prev.filter(f => f !== filterValue)
-      } else {
-        return [...prev, filterValue]
-      }
-    })
-  }
+  // States locaux pour gérer le loading des boutons
+  const [addingEtage, setAddingEtage] = useState(false)
+  const [addingPorteToEtage, setAddingPorteToEtage] = useState(false)
 
-  const clearAllFilters = () => {
-    setActiveFilters([])
-  }
+  // Helper scroll robust (utilise ref du layout; fallback sur querySelector)
+  const withScrollRestore = useCallback(
+    async fn => {
+      const el = scrollContainerRef?.current || document.querySelector('.portes-scroll-container')
+      const y = el?.scrollTop ?? 0
+      await fn()
+      // double rAF pour laisser le DOM se peindre après refetch
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          if (el) el.scrollTop = y
+        })
+      )
+    },
+    [scrollContainerRef]
+  )
+
+  // Handlers filtres (stables)
+  const toggleFilter = useCallback(filterValue => {
+    setActiveFilters(prev =>
+      prev.includes(filterValue) ? prev.filter(f => f !== filterValue) : [...prev, filterValue]
+    )
+  }, [])
+
+  const clearAllFilters = useCallback(() => setActiveFilters([]), [])
+
+  // Comptes par statut mémoïsés (évite filter répétés par bouton)
+  const statusCounts = useMemo(() => {
+    const m = new Map()
+    let totalSansContrat = 0
+    for (const p of portes) {
+      m.set(p.statut, (m.get(p.statut) || 0) + 1)
+      if (p.statut !== 'CONTRAT_SIGNE') totalSansContrat++
+    }
+    return { byStatus: m, totalSansContrat }
+  }, [portes])
 
   // Filtrage des portes selon les critères locaux
   const filteredPortes = useMemo(() => {
     return portes.filter(porte => {
       // Si aucun filtre n'est actif, afficher toutes les portes sauf les contrats signés
       if (activeFilters.length === 0) {
-        return porte.statut !== ''
+        return porte.statut
       }
-
       // Si des filtres sont actifs, afficher seulement les portes correspondantes
       return activeFilters.includes(porte.statut)
     })
   }, [portes, activeFilters])
 
-  const handleEditPorte = porte => {
+  const handleEditPorte = useCallback(porte => {
     setSelectedPorte(porte)
     setEditForm({
       statut: porte.statut,
@@ -114,18 +150,13 @@ export default function PortesGestion() {
       rdvTime: porte.rdvTime || '',
       nomPersonnalise: porte.nomPersonnalise || '',
     })
-    setIsSaving(false) // Réinitialiser l'état de sauvegarde
+    setIsSaving(false)
     setShowEditModal(true)
-  }
+  }, [])
 
-  const handleSavePorte = async () => {
+  const handleSavePorte = useCallback(async () => {
     if (!selectedPorte || isSaving) return
-
     setIsSaving(true)
-
-    // Sauvegarder la position du scroll avant la mise à jour
-    const scrollContainer = document.querySelector('.portes-scroll-container')
-    const scrollPosition = scrollContainer?.scrollTop || 0
 
     const updateData = {
       id: selectedPorte.id,
@@ -134,170 +165,220 @@ export default function PortesGestion() {
       nomPersonnalise: editForm.nomPersonnalise.trim() || null,
       derniereVisite: new Date().toISOString(),
     }
-
-    // Ajouter RDV si nécessaire
     if (editForm.statut === 'RENDEZ_VOUS_PRIS') {
       if (editForm.rdvDate) updateData.rdvDate = editForm.rdvDate
       if (editForm.rdvTime) updateData.rdvTime = editForm.rdvTime
     }
 
     try {
-      await updatePorte(updateData)
-      await refetch()
+      await withScrollRestore(async () => {
+        await updatePorte(updateData)
+        await refetch()
+      })
       setShowEditModal(false)
       setSelectedPorte(null)
-
-      // Restaurer la position du scroll après la mise à jour
-      setTimeout(() => {
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollPosition
-        }
-      }, 50)
     } catch (error) {
       console.error('Error updating porte:', error)
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [selectedPorte, isSaving, editForm, updatePorte, refetch, withScrollRestore])
 
-  // Fonction pour changer le statut en un clic
-  const handleQuickStatusChange = async (porte, newStatut) => {
-    // Si c'est un RDV, ouvrir directement le modal avec la date d'aujourd'hui
-    if (newStatut === 'RENDEZ_VOUS_PRIS') {
-      setSelectedPorte(porte)
-      setEditForm({
+  // Changement rapide de statut
+  const handleQuickStatusChange = useCallback(
+    async (porte, newStatut) => {
+      if (newStatut === 'RENDEZ_VOUS_PRIS') {
+        setSelectedPorte(porte)
+        setEditForm({
+          statut: newStatut,
+          commentaire: porte.commentaire || '',
+          rdvDate: new Date().toISOString().split('T')[0],
+          rdvTime: new Date().toTimeString().slice(0, 5),
+          nomPersonnalise: porte.nomPersonnalise || '',
+        })
+        setShowEditModal(true)
+        return
+      }
+
+      const updateData = {
+        id: porte.id,
         statut: newStatut,
-        commentaire: porte.commentaire || '',
-        rdvDate: new Date().toISOString().split('T')[0], // Date d'aujourd'hui
-        rdvTime: new Date().toTimeString().slice(0, 5), // Heure actuelle
-        nomPersonnalise: porte.nomPersonnalise || '',
-      })
-      setShowEditModal(true)
-      return
-    }
+        derniereVisite: new Date().toISOString(),
+      }
 
-    // Sauvegarder la position du scroll avant la mise à jour
-    const scrollContainer = document.querySelector('.portes-scroll-container')
-    const scrollPosition = scrollContainer?.scrollTop || 0
+      try {
+        await withScrollRestore(async () => {
+          await updatePorte(updateData)
+          await refetch()
+        })
+      } catch (error) {
+        console.error('Error updating porte status:', error)
+      }
+    },
+    [updatePorte, refetch, withScrollRestore]
+  )
 
-    const updateData = {
-      id: porte.id,
-      statut: newStatut,
-      derniereVisite: new Date().toISOString(),
-    }
+  // Repassages +/-
+  const handleRepassageChange = useCallback(
+    async (porte, increment) => {
+      const newNbRepassages = Math.max(0, porte.nbRepassages + increment)
+      const updateData = { id: porte.id, nbRepassages: newNbRepassages }
 
-    try {
-      await updatePorte(updateData)
-      await refetch()
+      try {
+        await withScrollRestore(async () => {
+          await updatePorte(updateData)
+          await refetch()
+        })
+      } catch (error) {
+        console.error('Error updating repassages:', error)
+      }
+    },
+    [updatePorte, refetch, withScrollRestore]
+  )
 
-      // Restaurer la position du scroll après la mise à jour
-      setTimeout(() => {
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollPosition
-        }
-      }, 50)
-    } catch (error) {
-      console.error('Error updating porte status:', error)
-    }
-  }
-
-  // Fonction pour gérer les repassages avec +/-
-  const handleRepassageChange = async (porte, increment) => {
-    // Sauvegarder la position du scroll avant la mise à jour
-    const scrollContainer = document.querySelector('.portes-scroll-container')
-    const scrollPosition = scrollContainer?.scrollTop || 0
-
-    const newNbRepassages = Math.max(0, porte.nbRepassages + increment)
-
-    const updateData = {
-      id: porte.id,
-      nbRepassages: newNbRepassages,
-    }
-
-    try {
-      await updatePorte(updateData)
-      await refetch()
-
-      // Restaurer la position du scroll après la mise à jour
-      setTimeout(() => {
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollPosition
-        }
-      }, 50)
-    } catch (error) {
-      console.error('Error updating repassages:', error)
-    }
-  }
-
-  // Navigation vers la liste des immeubles
-  const handleBackToImmeubles = () => {
+  // Navigation
+  const handleBackToImmeubles = useCallback(() => {
     navigate('/immeubles')
-  }
+  }, [navigate])
 
-  // Composant personnalisé pour les filtres supplémentaires de la page gestion
-  const customFilters = (
-    <div
-      ref={etageSelecteurRef}
-      className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
-    >
-      {/* Filtres par statut */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Filtres par statut</h3>
-          {activeFilters.length > 0 && (
+  // Ajout d'étage
+  const handleAddEtage = useCallback(async () => {
+    if (!immeubleId || addingEtage) return
+    setAddingEtage(true)
+    try {
+      await withScrollRestore(async () => {
+        await addEtage(parseInt(immeubleId, 10))
+        await refetch()
+      })
+    } catch (error) {
+      console.error('Error adding etage:', error)
+    } finally {
+      setAddingEtage(false)
+    }
+  }, [immeubleId, addingEtage, addEtage, refetch, withScrollRestore])
+
+  // Ajout d'une porte sur un étage donné
+  const handleAddPorteToEtage = useCallback(
+    async etage => {
+      if (!immeubleId || addingPorteToEtage) return
+      setAddingPorteToEtage(true)
+      try {
+        await withScrollRestore(async () => {
+          await addPorteToEtage({ immeubleId: parseInt(immeubleId, 10), etage })
+          await refetch()
+        })
+      } catch (error) {
+        console.error('Error adding porte to etage:', error)
+      } finally {
+        setAddingPorteToEtage(false)
+      }
+    },
+    [immeubleId, addingPorteToEtage, addPorteToEtage, refetch, withScrollRestore]
+  )
+
+  // Composant personnalisé pour les filtres supplémentaires
+  const customFilters = useMemo(
+    () => (
+      <div
+        ref={etageSelecteurRef}
+        className={`${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
+      >
+        {/* Gestion de l'immeuble */}
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-700">Gestion de l'immeuble</h3>
+            {immeuble && (
+              <div className="text-xs text-gray-500">
+                {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
+              </div>
+            )}
+          </div>
+
+          <div className="text-xs md:text-sm text-gray-600 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200">
+            <div className="flex items-start gap-2">
+              <div className="text-blue-500 text-sm mt-0.5 flex-shrink-0">💡</div>
+              <div className="leading-relaxed">
+                <span className="font-medium">Astuce :</span> Utilisez les boutons + à la fin de
+                chaque étage pour ajouter des portes ou à la fin pour ajouter un étage complet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtres par statut */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-700">Filtres par statut</h3>
+            {activeFilters.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Effacer tout
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {/* Bouton "Toutes" */}
             <Button
               variant="ghost"
               size="sm"
               onClick={clearAllFilters}
-              className="text-xs text-gray-500 hover:text-gray-700"
+              className={`${
+                activeFilters.length === 0
+                  ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
+                  : `${base.bg.muted} ${base.text.muted}`
+              } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
             >
-              Effacer tout
+              <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+              Toutes ({statusCounts.totalSansContrat})
             </Button>
-          )}
-        </div>
 
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          {/* Bouton "Toutes" */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearAllFilters}
-            className={`${
-              activeFilters.length === 0
-                ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
-                : `${base.bg.muted} ${base.text.muted}`
-            } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-          >
-            <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-            Toutes ({portes.filter(p => p.statut !== 'CONTRAT_SIGNE').length})
-          </Button>
-
-          {/* Filtres par statut */}
-          {statutOptions
-            .filter(option => option.value !== 'CONTRAT_SIGNE')
-            .map(option => {
-              const count = portes.filter(p => p.statut === option.value).length
-              const isActive = activeFilters.includes(option.value)
-              const IconComponent = option.icon
-
-              return (
-                <Button
-                  key={option.value}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleFilter(option.value)}
-                  className={`${
-                    isActive ? option.color + ' border' : `${base.bg.muted} ${base.text.muted}`
-                  } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-                >
-                  <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-                  {option.label} ({count})
-                </Button>
-              )
-            })}
+            {/* Filtres par statut */}
+            {statutOptions
+              .filter(option => option.value !== 'CONTRAT_SIGNE')
+              .map(option => {
+                const count = statusCounts.byStatus.get(option.value) || 0
+                const isActive = activeFilters.includes(option.value)
+                const IconComponent = option.icon
+                return (
+                  <Button
+                    key={option.value}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleFilter(option.value)}
+                    className={`${
+                      isActive ? option.color + ' border' : `${base.bg.muted} ${base.text.muted}`
+                    } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+                  >
+                    <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+                    {option.label} ({count})
+                  </Button>
+                )
+              })}
+          </div>
         </div>
       </div>
-    </div>
+    ),
+    [
+      activeFilters,
+      base.bg.card,
+      base.border.default,
+      base.bg.muted,
+      base.text.muted,
+      clearAllFilters,
+      colors.primary.bgLight,
+      colors.primary.border,
+      colors.primary.textLight,
+      immeuble,
+      statutOptions,
+      statusCounts.byStatus,
+      statusCounts.totalSansContrat,
+      toggleFilter,
+    ]
   )
 
   return (
@@ -316,6 +397,10 @@ export default function PortesGestion() {
         scrollTarget={etageSelecteurRef}
         scrollTargetText="Étages"
         customFilters={customFilters}
+        onAddPorteToEtage={handleAddPorteToEtage}
+        onAddEtage={handleAddEtage}
+        addingPorteToEtage={addingPorteToEtage}
+        addingEtage={addingEtage}
       />
 
       {/* Modal d'édition - Optimisé mobile */}
@@ -411,7 +496,6 @@ export default function PortesGestion() {
                     Informations du rendez-vous
                   </p>
 
-                  {/* Grid responsive pour date et heure */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1vh]">
                     <div className="space-y-[0.5vh]">
                       <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 block">

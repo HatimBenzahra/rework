@@ -137,6 +137,8 @@ type Manager {
 }
 
 type Mutation {
+  addEtageToImmeuble(id: Int!): Immeuble!
+  addPorteToEtage(etage: Int!, immeubleId: Int!): Immeuble!
   assignZoneToCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   assignZoneToDirecteur(directeurId: Int!, zoneId: Int!): Boolean!
   assignZoneToManager(managerId: Int!, zoneId: Int!): Boolean!
@@ -150,9 +152,11 @@ type Mutation {
   createZone(createZoneInput: CreateZoneInput!): Zone!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!
+  removeEtageFromImmeuble(id: Int!): Immeuble!
   removeImmeuble(id: Int!): Immeuble!
   removeManager(id: Int!): Manager!
   removePorte(id: Int!): Porte!
+  removePorteFromEtage(etage: Int!, immeubleId: Int!): Immeuble!
   removeStatistic(id: Int!): Statistic!
   removeZone(id: Int!): Zone!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!

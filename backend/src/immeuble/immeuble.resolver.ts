@@ -41,4 +41,31 @@ export class ImmeubleResolver {
   removeImmeuble(@Args('id', { type: () => Int }) id: number) {
     return this.immeubleService.remove(id);
   }
+
+
+  @Mutation(() => Immeuble)
+  addPorteToEtage(
+    @Args('immeubleId', { type: () => Int }) immeubleId: number,
+    @Args('etage', { type: () => Int }) etage: number
+  ) {
+    return this.immeubleService.addPorteToEtage(immeubleId, etage);
+  }
+
+  @Mutation(() => Immeuble)
+  removePorteFromEtage(
+    @Args('immeubleId', { type: () => Int }) immeubleId: number,
+    @Args('etage', { type: () => Int }) etage: number
+  ) {
+    return this.immeubleService.removePorteFromEtage(immeubleId, etage);
+  }
+
+  @Mutation(() => Immeuble)
+  addEtageToImmeuble(@Args('id', { type: () => Int }) id: number) {
+    return this.immeubleService.addEtage(id);
+  }
+
+  @Mutation(() => Immeuble)
+  removeEtageFromImmeuble(@Args('id', { type: () => Int }) id: number) {
+    return this.immeubleService.removeEtage(id);
+  }
 }

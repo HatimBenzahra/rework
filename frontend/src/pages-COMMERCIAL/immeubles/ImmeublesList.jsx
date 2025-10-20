@@ -124,7 +124,7 @@ export default function ImmeublesList() {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-3 sm:space-y-4 mb-40">
       {/* Page header */}
       <div className="flex flex-col space-y-3">
         <div className="flex items-center justify-between">

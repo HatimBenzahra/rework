@@ -16,6 +16,7 @@ export default function PortesLayout() {
   const location = useLocation()
   const { currentUserId } = useRole()
   const { base, components } = useCommercialTheme()
+  const scrollContainerRef = React.useRef(null)
 
   // Charger les données du commercial
   const { data: commercial, loading: commercialLoading } = useCommercialFull(
@@ -88,6 +89,11 @@ export default function PortesLayout() {
     }
   }
 
+  const contextValue = React.useMemo(
+    () => ({ commercial, myStats, commercialLoading, scrollContainerRef }),
+    [commercial, myStats, commercialLoading, scrollContainerRef]
+  )
+
   if (commercialLoading) {
     return (
       <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
@@ -124,9 +130,10 @@ export default function PortesLayout() {
 
       {/* Content avec padding bottom pour la bottom bar et classe spéciale pour le scroll */}
       <div
+        ref={scrollContainerRef}
         className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 portes-scroll-container`}
       >
-        <Outlet context={{ commercial, myStats, commercialLoading }} />
+        <Outlet context={contextValue} />
       </div>
 
       {/* Bottom Navigation Bar */}

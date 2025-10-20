@@ -382,6 +382,23 @@ export function useRemoveImmeuble(): UseApiMutation<number, Immeuble> {
   return useApiMutation(api.immeubles.remove, 'immeubles')
 }
 
+
+export function useAddEtageToImmeuble(): UseApiMutation<number, Immeuble> {
+  return useApiMutation(api.immeubles.addEtage, 'immeubles')
+}
+
+export function useRemoveEtageFromImmeuble(): UseApiMutation<number, Immeuble> {
+  return useApiMutation(api.immeubles.removeEtage, 'immeubles')
+}
+
+export function useAddPorteToEtage(): UseApiMutation<{ immeubleId: number; etage: number }, Immeuble> {
+  return useApiMutation(({ immeubleId, etage }) => api.immeubles.addPorteToEtage(immeubleId, etage), 'immeubles')
+}
+
+export function useRemovePorteFromEtage(): UseApiMutation<{ immeubleId: number; etage: number }, Immeuble> {
+  return useApiMutation(({ immeubleId, etage }) => api.immeubles.removePorteFromEtage(immeubleId, etage), 'immeubles')
+}
+
 // =============================================================================
 // Statistic Hooks
 // =============================================================================

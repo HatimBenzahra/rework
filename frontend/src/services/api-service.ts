@@ -40,6 +40,10 @@ import {
   CREATE_IMMEUBLE,
   UPDATE_IMMEUBLE,
   REMOVE_IMMEUBLE,
+  ADD_ETAGE_TO_IMMEUBLE,
+  REMOVE_ETAGE_FROM_IMMEUBLE,
+  ADD_PORTE_TO_ETAGE,
+  REMOVE_PORTE_FROM_ETAGE,
   CREATE_STATISTIC,
   UPDATE_STATISTIC,
   REMOVE_STATISTIC,
@@ -373,6 +377,39 @@ export const immeubleApi = {
       { id }
     )
     return response.removeImmeuble
+  },
+
+
+  async addEtage(id: number): Promise<Immeuble> {
+    const response = await gql<{ addEtageToImmeuble: Immeuble }, GetEntityByIdVariables>(
+      ADD_ETAGE_TO_IMMEUBLE,
+      { id }
+    )
+    return response.addEtageToImmeuble
+  },
+
+  async removeEtage(id: number): Promise<Immeuble> {
+    const response = await gql<{ removeEtageFromImmeuble: Immeuble }, GetEntityByIdVariables>(
+      REMOVE_ETAGE_FROM_IMMEUBLE,
+      { id }
+    )
+    return response.removeEtageFromImmeuble
+  },
+
+  async addPorteToEtage(immeubleId: number, etage: number): Promise<Immeuble> {
+    const response = await gql<{ addPorteToEtage: Immeuble }, { immeubleId: number; etage: number }>(
+      ADD_PORTE_TO_ETAGE,
+      { immeubleId, etage }
+    )
+    return response.addPorteToEtage
+  },
+
+  async removePorteFromEtage(immeubleId: number, etage: number): Promise<Immeuble> {
+    const response = await gql<{ removePorteFromEtage: Immeuble }, { immeubleId: number; etage: number }>(
+      REMOVE_PORTE_FROM_ETAGE,
+      { immeubleId, etage }
+    )
+    return response.removePorteFromEtage
   },
 }
 

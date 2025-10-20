@@ -47,7 +47,7 @@ export default function Historique() {
   // ancien helpers retirés (vue détaillée déplacée sur une page dédiée)
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 mb-40">
       {/* Filtres temporels */}
       <div className="flex gap-2 overflow-x-auto pb-2">
         <Button

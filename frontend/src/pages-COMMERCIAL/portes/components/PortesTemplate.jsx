@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Building2, ArrowLeft, Eye, CheckCircle2, RotateCcw, MapPin } from 'lucide-react'
+import { Building2, ArrowLeft, Eye, CheckCircle2, RotateCcw, MapPin, Plus } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 import { useImmeuble } from '@/hooks/use-api'
 import PorteCardOriginal from './PorteCardOriginal'
@@ -42,6 +42,12 @@ export default function PortesTemplate({
   
   // Actions additionnelles
   additionalActions,
+  
+  // Nouvelles actions de gestion d'étages et portes
+  onAddPorteToEtage,
+  onAddEtage,
+  addingPorteToEtage = false,
+  addingEtage = false,
 }) {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
@@ -348,9 +354,41 @@ export default function PortesTemplate({
                   readOnly={readOnly}
                 />
               ))}
+              
+              {/* Bouton pour ajouter une porte à cet étage (mode édition seulement) */}
+              {!readOnly && onAddPorteToEtage && (
+                <div className="flex justify-center mt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onAddPorteToEtage(parseInt(etage))}
+                    disabled={addingPorteToEtage}
+                    className={`h-12 px-6 text-sm font-medium ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border-2 border-dashed ${colors.success.border} transition-all duration-200 hover:border-solid`}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {addingPorteToEtage ? 'Ajout...' : `Ajouter une porte à l'étage ${etage}`}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ))}
+        
+        {/* Bouton pour ajouter un étage complet (mode édition seulement) */}
+        {!readOnly && onAddEtage && Object.keys(portesByEtage).length > 0 && (
+          <div className="flex justify-center pt-6">
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={onAddEtage}
+              disabled={addingEtage}
+              className={`h-14 px-8 text-base font-medium ${colors.primary.bgLight} ${colors.primary.text} hover:${colors.primary.bg} border-2 border-dashed ${colors.primary.border} transition-all duration-200 hover:border-solid`}
+            >
+              <Plus className="h-5 w-5 mr-3" />
+              {addingEtage ? 'Ajout en cours...' : 'Ajouter un étage complet'}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Message quand aucune porte ne correspond aux filtres */}

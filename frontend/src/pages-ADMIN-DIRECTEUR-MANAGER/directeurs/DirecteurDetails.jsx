@@ -17,6 +17,13 @@ import { calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -494,27 +501,25 @@ export default function DirecteurDetails() {
                             : 'Assigner direct'}
                         </Button>
                         {assignedManagers.length > 0 && (
-                          <select
-                            className="px-2 py-1 border rounded text-sm"
-                            onChange={e => {
-                              if (e.target.value) {
-                                handleAssignCommercial(
-                                  commercial.id,
-                                  false,
-                                  parseInt(e.target.value)
-                                )
-                                e.target.value = ''
+                          <Select
+                            onValueChange={value => {
+                              if (value) {
+                                handleAssignCommercial(commercial.id, false, parseInt(value))
                               }
                             }}
                             disabled={assigningCommercial === commercial.id || updatingCommercial}
                           >
-                            <option value="">Assigner à un manager...</option>
-                            {assignedManagers.map(manager => (
-                              <option key={manager.id} value={manager.id}>
-                                {manager.prenom} {manager.nom}
-                              </option>
-                            ))}
-                          </select>
+                            <SelectTrigger className="w-[200px]">
+                              <SelectValue placeholder="Assigner à un manager..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {assignedManagers.map(manager => (
+                                <SelectItem key={manager.id} value={manager.id.toString()}>
+                                  {manager.prenom} {manager.nom}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         )}
                       </div>
                     </TableCell>
