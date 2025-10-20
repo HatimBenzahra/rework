@@ -25,9 +25,8 @@ export default function ImmeubleDetails() {
     const commercial = commercials?.find(c => c.id === immeuble.commercialId)
     const totalDoors = portes?.length || immeuble.nbEtages * immeuble.nbPortesParEtage
 
-    // Informations de prospection pour l'immeuble (si disponibles dans les données)
-    const prospectionMode = 'solo' // À adapter selon les données backend
-    const prospectedBy = commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné'
+    // Commercial responsable
+    const commercialName = commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné'
 
     // Grouper les portes par étage à partir des vraies données
     const floorDetails = portes
@@ -64,19 +63,12 @@ export default function ImmeubleDetails() {
       address: immeuble.adresse,
       floors: immeuble.nbEtages,
       apartments: totalDoors,
-      commercial_name: commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné',
-      status: 'actif',
-      occupancy_rate: '85%',
-      monthly_revenue: `${(totalDoors * 500).toLocaleString()} TND`,
-      year_built: new Date(immeuble.createdAt).getFullYear(),
-      total_surface: `${totalDoors * 120} m²`,
-      parking_spots: Math.floor(totalDoors * 0.8),
-      elevator_count: Math.max(1, Math.floor(immeuble.nbEtages / 4)),
-      maintenance_cost: `${Math.floor(totalDoors * 50)} TND`,
+      commercial_name: commercialName,
+      has_elevator: immeuble.ascenseurPresent,
+      digital_code: immeuble.digitalCode || 'Non défini',
       zone: immeuble.adresse.split(',')[1]?.trim() || 'Non spécifiée',
-      prospectedBy,
-      prospectionMode,
-      duoPartner: null,
+      created_at: immeuble.createdAt,
+      updated_at: immeuble.updatedAt,
       floorDetails,
     }
   }, [immeuble, commercials, portes])
@@ -107,16 +99,10 @@ export default function ImmeubleDetails() {
     { label: 'Adresse complète', value: immeubleData.address, icon: 'mapPin' },
     { label: 'Zone', value: immeubleData.zone, icon: 'mapPin' },
     { label: 'Commercial responsable', value: immeubleData.commercial_name, icon: 'users' },
-    {
-      label: 'Prospecté par',
-      value:
-        immeubleData.prospectionMode === 'duo'
-          ? `${immeubleData.prospectedBy} + ${immeubleData.duoPartner} (Duo)`
-          : `${immeubleData.prospectedBy} (Solo)`,
-      icon: 'users',
-    },
     { label: "Nombre d'étages", value: immeubleData.floors, icon: 'building' },
     { label: 'Portes par étage', value: immeubleData.nbPortesParEtage, icon: 'building' },
+    { label: 'Ascenseur', value: immeubleData.has_elevator ? 'Oui' : 'Non', icon: 'building' },
+    { label: 'Code digital', value: immeubleData.digital_code, icon: 'key' },
   ]
 
   const statsCards = [

@@ -44,10 +44,6 @@ export default function PortesGestion() {
 
   const [selectedPorte, setSelectedPorte] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [selectedEtage, setSelectedEtage] = useState(() => {
-    // Récupérer l'étage sauvegardé dans localStorage
-    return localStorage.getItem(`etage-${immeubleId}`) || 'all'
-  })
   const [activeFilters, setActiveFilters] = useState(() => {
     // Récupérer les filtres sauvegardés dans localStorage
     const saved = localStorage.getItem(`filters-${immeubleId}`)
@@ -63,13 +59,6 @@ export default function PortesGestion() {
   })
 
   const etageSelecteurRef = useRef(null)
-
-  // Sauvegarder l'étage sélectionné dans localStorage
-  useEffect(() => {
-    if (selectedEtage !== 'all') {
-      localStorage.setItem(`etage-${immeubleId}`, selectedEtage)
-    }
-  }, [selectedEtage, immeubleId])
 
   // Sauvegarder les filtres actifs dans localStorage
   useEffect(() => {
@@ -251,50 +240,6 @@ export default function PortesGestion() {
       ref={etageSelecteurRef}
       className={`sticky top-0 z-20 ${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
     >
-      {/* Accès rapide aux étages */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700">Étages</h3>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedEtage('all')}
-            className={`${
-              selectedEtage === 'all'
-                ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
-                : `${base.bg.muted} ${base.text.muted}`
-            } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-          >
-            <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-            Tous ({filteredPortes.length})
-          </Button>
-
-          {/* Boutons d'étages dynamiques */}
-          {Array.from(new Set(portes.map(p => p.etage)))
-            .sort((a, b) => b - a) // Tri décroissant (étages supérieurs en premier)
-            .map(etage => {
-              const count = filteredPortes.filter(p => p.etage === etage).length
-              const isActive = selectedEtage === etage.toString()
-
-              return (
-                <Button
-                  key={etage}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedEtage(etage.toString())}
-                  className={`${
-                    isActive
-                      ? `${colors.success.bgLight} ${colors.success.text} border ${colors.success.border}`
-                      : `${base.bg.muted} ${base.text.muted}`
-                  } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
-                >
-                  Étage {etage} ({count})
-                </Button>
-              )
-            })}
-        </div>
-      </div>
-
       {/* Filtres par statut */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -355,17 +300,11 @@ export default function PortesGestion() {
     </div>
   )
 
-  // Filtrer par étage sélectionné
-  const portesFiltered = useMemo(() => {
-    if (selectedEtage === 'all') return filteredPortes
-    return filteredPortes.filter(porte => porte.etage.toString() === selectedEtage)
-  }, [filteredPortes, selectedEtage])
-
   return (
     <div className="space-y-3">
       {/* Utilisation du template avec les configurations spécifiques à la gestion */}
       <PortesTemplate
-        portes={portesFiltered}
+        portes={filteredPortes}
         loading={loading || immeubleLoading}
         readOnly={false}
         showStatusFilters={false}
