@@ -2,7 +2,14 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { useSimpleLoading } from '@/hooks/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useDirecteur, useManagers, useUpdateManager, useZones, useCommercials } from '@/services'
+import {
+  useDirecteur,
+  useManagers,
+  useUpdateManager,
+  useZones,
+  useCommercials,
+  useUpdateCommercial,
+} from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useMemo, useState } from 'react'
@@ -24,6 +31,7 @@ export default function DirecteurDetails() {
   const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningManager, setAssigningManager] = useState(null)
+  const [assigningCommercial, setAssigningCommercial] = useState(null)
 
   // API hooks
   const { data: directeur, loading: directeurLoading, error, refetch } = useDirecteur(parseInt(id))
@@ -31,8 +39,12 @@ export default function DirecteurDetails() {
     parseInt(currentUserId, 10),
     currentRole
   )
-  const { data: allCommercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
   const { mutate: updateManager, loading: updatingManager } = useUpdateManager()
+  const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
   const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
 
   // Transformation des données API vers format UI
@@ -221,6 +233,57 @@ export default function DirecteurDetails() {
     }
   }
 
+  // Gestion de l'assignation/désassignation des commerciaux
+  const handleAssignCommercial = async (
+    commercialId,
+    directAssignMode = false,
+    targetManagerId = null
+  ) => {
+    setAssigningCommercial(commercialId)
+    try {
+      if (directAssignMode) {
+        // Assignation directe au directeur
+        await updateCommercial({
+          id: commercialId,
+          directeurId: directeur.id,
+          managerId: null, // Retirer de tout manager
+        })
+      } else if (targetManagerId) {
+        // Assignation à un manager spécifique
+        await updateCommercial({
+          id: commercialId,
+          managerId: targetManagerId,
+          directeurId: null, // Le directeur sera automatiquement déduit du manager
+        })
+      }
+      await refetchCommercials()
+      await refetch()
+      showSuccess('Commercial assigné avec succès')
+    } catch (error) {
+      showError(error, 'DirecteurDetails.handleAssignCommercial')
+    } finally {
+      setAssigningCommercial(null)
+    }
+  }
+
+  const handleUnassignCommercial = async commercialId => {
+    setAssigningCommercial(commercialId)
+    try {
+      await updateCommercial({
+        id: commercialId,
+        managerId: null,
+        directeurId: null,
+      })
+      await refetchCommercials()
+      await refetch()
+      showSuccess('Commercial désassigné avec succès')
+    } catch (error) {
+      showError(error, 'DirecteurDetails.handleUnassignCommercial')
+    } finally {
+      setAssigningCommercial(null)
+    }
+  }
+
   // Tableau des managers pour les admins
   const renderManagersTable = () => {
     if (!isAdmin || !allManagers) return null
@@ -331,11 +394,15 @@ export default function DirecteurDetails() {
       c => c.directeurId === directeur.id || assignedManagers.some(m => m.id === c.managerId)
     )
 
+    // Commerciaux non assignés (ni à un directeur ni à un manager)
+    const unassignedCommercials = allCommercials.filter(c => !c.directeurId && !c.managerId)
+
     return (
       <div className="space-y-6">
+        {/* Commerciaux assignés */}
         <div>
           <h4 className="text-lg font-semibold mb-3">
-            Commerciaux de la division ({directeurCommercials.length})
+            Commerciaux assignés ({directeurCommercials.length})
           </h4>
           {directeurCommercials.length > 0 ? (
             <Table>
@@ -346,6 +413,7 @@ export default function DirecteurDetails() {
                   <TableHead>Téléphone</TableHead>
                   <TableHead>Age</TableHead>
                   <TableHead>Manager</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -362,6 +430,16 @@ export default function DirecteurDetails() {
                       <TableCell>
                         {manager ? `${manager.prenom} ${manager.nom}` : 'Direct'}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnassignCommercial(commercial.id)}
+                          disabled={assigningCommercial === commercial.id || updatingCommercial}
+                        >
+                          {assigningCommercial === commercial.id ? 'Retrait...' : 'Retirer'}
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )
                 })}
@@ -369,10 +447,83 @@ export default function DirecteurDetails() {
             </Table>
           ) : (
             <p className="text-muted-foreground text-center py-4">
-              Aucun commercial dans cette division
+              Aucun commercial assigné à cette division
             </p>
           )}
         </div>
+
+        {/* Commerciaux disponibles */}
+        {unassignedCommercials.length > 0 && (
+          <div>
+            <h4 className="text-lg font-semibold mb-3">
+              Commerciaux disponibles ({unassignedCommercials.length})
+            </h4>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Téléphone</TableHead>
+                  <TableHead>Age</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unassignedCommercials.map(commercial => (
+                  <TableRow key={commercial.id}>
+                    <TableCell className="font-medium">
+                      {commercial.prenom} {commercial.nom}
+                    </TableCell>
+                    <TableCell>{commercial.email || 'Non renseigné'}</TableCell>
+                    <TableCell>{commercial.numTel || 'Non renseigné'}</TableCell>
+                    <TableCell>{commercial.age} ans</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">Non assigné</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleAssignCommercial(commercial.id, true)}
+                          disabled={assigningCommercial === commercial.id || updatingCommercial}
+                        >
+                          {assigningCommercial === commercial.id
+                            ? 'Assignation...'
+                            : 'Assigner direct'}
+                        </Button>
+                        {assignedManagers.length > 0 && (
+                          <select
+                            className="px-2 py-1 border rounded text-sm"
+                            onChange={e => {
+                              if (e.target.value) {
+                                handleAssignCommercial(
+                                  commercial.id,
+                                  false,
+                                  parseInt(e.target.value)
+                                )
+                                e.target.value = ''
+                              }
+                            }}
+                            disabled={assigningCommercial === commercial.id || updatingCommercial}
+                          >
+                            <option value="">Assigner à un manager...</option>
+                            {assignedManagers.map(manager => (
+                              <option key={manager.id} value={manager.id}>
+                                {manager.prenom} {manager.nom}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
     )
   }
@@ -474,8 +625,8 @@ export default function DirecteurDetails() {
         render: () => renderManagersTable(),
       },
       {
-        title: 'Commerciaux de la division',
-        description: 'Liste des commerciaux sous la supervision de ce directeur',
+        title: 'Gestion des commerciaux',
+        description: 'Assignation et gestion des commerciaux de cette division',
         type: 'custom',
         render: () => renderCommercialsTable(),
       }

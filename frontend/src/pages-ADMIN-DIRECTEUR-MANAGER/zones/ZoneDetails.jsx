@@ -116,21 +116,19 @@ export default function ZoneDetails() {
     )
 
     // Calcul des taux
-    const tauxConversion = totals.nbPortesProspectes > 0 
-      ? (totals.contratsSignes / totals.nbPortesProspectes) * 100 
-      : 0
-    const tauxSuccesRdv = totals.immeublesVisites > 0 
-      ? (totals.rendezVousPris / totals.immeublesVisites) * 100 
-      : 0
+    const tauxConversion =
+      totals.nbPortesProspectes > 0 ? (totals.contratsSignes / totals.nbPortesProspectes) * 100 : 0
+    const tauxSuccesRdv =
+      totals.immeublesVisites > 0 ? (totals.rendezVousPris / totals.immeublesVisites) * 100 : 0
 
     return {
       ...totals,
       tauxConversion: Math.round(tauxConversion * 100) / 100,
       tauxSuccesRdv: Math.round(tauxSuccesRdv * 100) / 100,
       nombreCommerciaux: new Set(statistics.map(s => s.commercialId).filter(Boolean)).size,
-      performanceGlobale: Math.round(((tauxConversion * 0.4) + (tauxSuccesRdv * 0.6)) * 100) / 100,
+      performanceGlobale: Math.round((tauxConversion * 0.4 + tauxSuccesRdv * 0.6) * 100) / 100,
     }
-  }, [zoneStats, statistics, id])
+  }, [zoneStats, statistics])
 
   if (loading || zoneLoading || statsLoading || zoneStatsLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
