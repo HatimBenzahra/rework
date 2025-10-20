@@ -97,7 +97,7 @@ export default function PortesGestion() {
     return portes.filter(porte => {
       // Si aucun filtre n'est actif, afficher toutes les portes sauf les contrats signés
       if (activeFilters.length === 0) {
-        return porte.statut !== 'CONTRAT_SIGNE'
+        return porte.statut !== ''
       }
 
       // Si des filtres sont actifs, afficher seulement les portes correspondantes

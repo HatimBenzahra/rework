@@ -8,6 +8,7 @@ import { RANKS, calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
 import PortesProspectionChart from '@/components/charts/PortesProspectionChart'
 import PortesWeeklyChart from '@/components/charts/PortesWeeklyChart'
+import PortesStatusChart from '@/components/charts/PortesStatusChart'
 
 export default function CommercialDetails() {
   const { id } = useParams()
@@ -121,7 +122,7 @@ export default function CommercialDetails() {
   // Préparer toutes les portes du commercial pour les graphiques
   const allPortes = useMemo(() => {
     if (!commercial?.immeubles) return []
-    
+
     // Collecter toutes les portes de tous les immeubles du commercial
     return commercial.immeubles.reduce((acc, immeuble) => {
       if (immeuble.portes) {
@@ -310,6 +311,15 @@ export default function CommercialDetails() {
       component: 'ChartsSection',
       data: {
         charts: [
+          {
+            type: 'PortesStatusChart',
+            props: {
+              portes: allPortes,
+              title: 'Répartition des statuts',
+              description: 'État actuel de toutes les portes',
+              showNonVisited: true,
+            },
+          },
           {
             type: 'PortesProspectionChart',
             props: {
