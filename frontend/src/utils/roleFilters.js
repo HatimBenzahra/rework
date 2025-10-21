@@ -20,6 +20,7 @@ export const PERMISSIONS = {
     immeubles: { view: true, add: true, edit: true, delete: true },
     statistics: { view: true, add: true, edit: true, delete: true },
     'gps-tracking': { view: true, add: false, edit: false, delete: false },
+    ecoutes: { view: true, add: true, edit: true, delete: true },
   },
   [ROLES.DIRECTEUR]: {
     commerciaux: { view: true, add: true, edit: true, delete: true },
@@ -29,6 +30,7 @@ export const PERMISSIONS = {
     immeubles: { view: true, add: true, edit: true, delete: false },
     statistics: { view: true, add: false, edit: false, delete: false },
     'gps-tracking': { view: true, add: false, edit: false, delete: false },
+    ecoutes: { view: true, add: true, edit: true, delete: true },
   },
   [ROLES.MANAGER]: {
     commerciaux: { view: true, add: true, edit: true, delete: false },
@@ -38,6 +40,7 @@ export const PERMISSIONS = {
     immeubles: { view: true, add: true, edit: true, delete: false },
     statistics: { view: true, add: true, edit: true, delete: false },
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
+    ecoutes: { view: false, add: false, edit: false, delete: false },
   },
   [ROLES.COMMERCIAL]: {
     commerciaux: { view: false, add: false, edit: false, delete: false },
@@ -47,6 +50,7 @@ export const PERMISSIONS = {
     immeubles: { view: true, add: false, edit: false, delete: false },
     statistics: { view: true, add: true, edit: true, delete: false },
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
+    ecoutes: { view: false, add: false, edit: false, delete: false },
   },
 }
 
@@ -263,6 +267,12 @@ export const getEntityDescription = (entity, userRole) => {
       [ROLES.DIRECTEUR]: 'Statistiques des commerciaux de votre division',
       [ROLES.MANAGER]: 'Statistiques de vos commerciaux',
       [ROLES.COMMERCIAL]: 'Vos statistiques personnelles',
+    },
+    ecoutes: {
+      [ROLES.ADMIN]: "Écoutes et enregistrements de tous les commerciaux de l'entreprise",
+      [ROLES.DIRECTEUR]: 'Écoutes et enregistrements des commerciaux de votre division',
+      [ROLES.MANAGER]: 'Pas d\'accès aux écoutes',
+      [ROLES.COMMERCIAL]: 'Pas d\'accès aux écoutes',
     },
   }
 

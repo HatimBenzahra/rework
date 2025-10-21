@@ -9,6 +9,7 @@ import {
   Building2,
   MapPin,
   Navigation2,
+  Headphones,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
@@ -42,10 +43,10 @@ const items = [
     entity: null, // Dashboard toujours visible
   },
   {
-    title: 'Commerciaux',
-    url: '/commerciaux',
-    icon: Inbox,
-    entity: 'commerciaux',
+    title: 'Directeurs',
+    url: '/directeurs',
+    icon: Search,
+    entity: 'directeurs',
   },
   {
     title: 'Managers',
@@ -54,11 +55,12 @@ const items = [
     entity: 'managers',
   },
   {
-    title: 'Directeurs',
-    url: '/directeurs',
-    icon: Search,
-    entity: 'directeurs',
+    title: 'Commerciaux',
+    url: '/commerciaux',
+    icon: Inbox,
+    entity: 'commerciaux',
   },
+
   {
     title: 'Immeubles',
     url: '/immeubles',
@@ -76,6 +78,12 @@ const items = [
     url: '/gps-tracking',
     icon: Navigation2,
     entity: 'gps-tracking',
+  },
+  {
+    title: 'Écoutes',
+    url: '/ecoutes',
+    icon: Headphones,
+    entity: 'ecoutes',
   },
   {
     title: 'Paramètres',

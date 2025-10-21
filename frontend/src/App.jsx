@@ -20,6 +20,7 @@ import DirecteurDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/directeurs/Directe
 import ImmeubleDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/immeubles/ImmeubleDetails'
 import ZoneDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/ZoneDetails'
 import GPSTracking from '@/pages-ADMIN-DIRECTEUR-MANAGER/gps-tracking/GPSTracking'
+import EcoutesManagement from '@/pages-ADMIN-DIRECTEUR-MANAGER/ecoutes/EcoutesManagement'
 
 // Import Commercial Layouts & Pages
 import CommercialLayoutComponent from '@/pages-COMMERCIAL/layouts/CommercialLayout'
@@ -61,6 +62,7 @@ function AdminLayout() {
             <Route path="/zones" element={<Zones />} />
             <Route path="/zones/:id" element={<ZoneDetails />} />
             <Route path="/gps-tracking" element={<GPSTracking />} />
+            <Route path="/ecoutes" element={<EcoutesManagement />} />
           </Routes>
         </div>
       </SidebarInset>
