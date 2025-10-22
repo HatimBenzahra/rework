@@ -1,4 +1,5 @@
 // Système de rangs basé sur les points
+// Couleurs alignées avec useCommercialTheme pour la cohérence visuelle
 
 export const RANKS = [
   {
@@ -6,7 +7,7 @@ export const RANKS = [
     minPoints: 0,
     maxPoints: 99,
     color: '#CD7F32',
-    bgColor: 'bg-orange-100',
+    bgColor: 'bg-orange-50',
     textColor: 'text-orange-700',
     borderColor: 'border-orange-300',
   },
@@ -15,36 +16,36 @@ export const RANKS = [
     minPoints: 100,
     maxPoints: 249,
     color: '#C0C0C0',
-    bgColor: 'bg-gray-100',
+    bgColor: 'bg-gray-50',
     textColor: 'text-gray-700',
-    borderColor: 'border-gray-300',
+    borderColor: 'border-gray-500',
   },
   {
     name: 'Gold',
     minPoints: 250,
     maxPoints: 499,
     color: '#FFD700',
-    bgColor: 'bg-yellow-100',
-    textColor: 'text-yellow-700',
-    borderColor: 'border-yellow-300',
+    bgColor: 'bg-yellow-50',
+    textColor: 'text-yellow-800',
+    borderColor: 'border-yellow-500',
   },
   {
     name: 'Platinum',
     minPoints: 500,
     maxPoints: 999,
     color: '#E5E4E2',
-    bgColor: 'bg-blue-100',
+    bgColor: 'bg-blue-50',
     textColor: 'text-blue-700',
-    borderColor: 'border-blue-300',
+    borderColor: 'border-blue-500',
   },
   {
     name: 'Diamond',
     minPoints: 1000,
     maxPoints: Infinity,
     color: '#B9F2FF',
-    bgColor: 'bg-cyan-100',
-    textColor: 'text-cyan-700',
-    borderColor: 'border-cyan-300',
+    bgColor: 'bg-green-50',
+    textColor: 'text-green-700',
+    borderColor: 'border-green-500',
   },
 ]
 
