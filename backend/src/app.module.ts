@@ -12,6 +12,7 @@ import { ZoneModule } from './zone/zone.module';
 import { ImmeubleModule } from './immeuble/immeuble.module';
 import { StatisticModule } from './statistic/statistic.module';
 import { PorteModule } from './porte/porte.module';
+import { AudioMonitoringModule } from './audio-monitoring/audio-monitoring.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { PorteModule } from './porte/porte.module';
     ImmeubleModule,
     StatisticModule,
     PorteModule,
+    AudioMonitoringModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

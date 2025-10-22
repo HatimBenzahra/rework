@@ -4,6 +4,7 @@ import { BarChart3, Building2, History } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
 import { useCommercialFull } from '@/hooks/use-api'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialAutoAudio } from '@/hooks/useCommercialAutoAudio'
 import CommercialHeader from '@/components/CommercialHeader'
 import CommercialBottomBar from '@/components/CommercialBottomBar'
 
@@ -23,6 +24,14 @@ export default function CommercialLayout() {
     loading: commercialLoading,
     refetch,
   } = useCommercialFull(parseInt(currentUserId))
+
+  // Activer l'audio monitoring automatique
+  const {
+    isConnected: audioConnected,
+    isConnecting: audioConnecting,
+    error: audioError,
+    roomName,
+  } = useCommercialAutoAudio(parseInt(currentUserId), true)
 
   // Statistiques du commercial - Somme de toutes les zones
   const myStats = React.useMemo(() => {
@@ -147,7 +156,13 @@ export default function CommercialLayout() {
       <div
         className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 commercial-scroll-container`}
       >
-        <Outlet context={{ commercial, myStats, commercialLoading, refetch }} />
+        <Outlet context={{ 
+          commercial, 
+          myStats, 
+          commercialLoading, 
+          refetch,
+          audioStatus: { audioConnected, audioConnecting, audioError, roomName }
+        }} />
       </div>
 
       {/* Bottom Navigation Bar */}

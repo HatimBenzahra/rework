@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>🎤 Commercial Publisher</title>
+  </head>
+  <body>
+    <h2>🎤 Commercial Publisher</h2>
+    <button id="connect">Start Publishing</button>
+
+    <script type="module">
+      import { Room } from "https://cdn.skypack.dev/livekit-client@2";
+
+      // 🔑 Token commercial
+      const token =
+        "eyJhbGciOiJIUzI1NiJ9.eyJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6InJvb206Y29tbWVyY2lhbDoxMCIsImNhblB1Ymxpc2giOnRydWUsImNhblN1YnNjcmliZSI6dHJ1ZX0sImlzcyI6IkFQSWE0RVhENlJQdHBpeiIsImV4cCI6MTc2MTA3MTQ4MSwibmJmIjowLCJzdWIiOiJjb21tZXJjaWFsLTEwIn0.aHd1trTUtUmeJxZ3k4LYmJK9tvZ-iFUh-LZXGJ-zmrw";
+
+      const url = "wss://prospection-22s07180.livekit.cloud";
+
+      document.getElementById("connect").onclick = async () => {
+        console.log("Connecting to LiveKit...");
+        const room = new Room();
+        await room.connect(url, token);
+        console.log("✅ Connected as:", room.localParticipant.identity);
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        await room.localParticipant.publishTrack(stream.getTracks()[0]);
+        console.log("🎙️ Audio publishing started");
+      };
+    </script>
+  </body>
+</html>

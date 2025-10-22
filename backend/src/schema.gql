@@ -2,6 +2,13 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ActiveRoom {
+  createdAt: DateTime!
+  numParticipants: Int!
+  participantNames: [String!]!
+  roomName: String!
+}
+
 type Commercial {
   age: Int!
   createdAt: DateTime!
@@ -125,6 +132,13 @@ type Immeuble {
   zoneId: Int
 }
 
+type LiveKitConnectionDetails {
+  participantName: String!
+  participantToken: String!
+  roomName: String!
+  serverUrl: String!
+}
+
 type Manager {
   createdAt: DateTime!
   directeurId: Int
@@ -134,6 +148,23 @@ type Manager {
   numTelephone: String
   prenom: String!
   updatedAt: DateTime!
+}
+
+type MonitoringSession {
+  commercialId: Int!
+  endedAt: DateTime
+  id: ID!
+  participantToken: String
+  roomName: String!
+  startedAt: DateTime!
+  status: MonitoringStatus!
+  supervisorId: Int!
+}
+
+enum MonitoringStatus {
+  ACTIVE
+  PAUSED
+  STOPPED
 }
 
 type Mutation {
@@ -150,6 +181,7 @@ type Mutation {
   createPortesForImmeuble(immeubleId: Int!, nbEtages: Int!, nbPortesParEtage: Int!): Boolean!
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
+  generateCommercialToken(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!
   removeEtageFromImmeuble(id: Int!): Immeuble!
@@ -159,8 +191,11 @@ type Mutation {
   removePorteFromEtage(etage: Int!, immeubleId: Int!): Immeuble!
   removeStatistic(id: Int!): Statistic!
   removeZone(id: Int!): Zone!
+  startMonitoring(input: StartMonitoringInput!): LiveKitConnectionDetails!
+  stopMonitoring(input: StopMonitoringInput!): Boolean!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
+  updateCommercialHeartbeat(commercialId: Int!): Boolean!
   updateDirecteur(updateDirecteurInput: UpdateDirecteurInput!): Directeur!
   updateImmeuble(updateImmeubleInput: UpdateImmeubleInput!): Immeuble!
   updateManager(updateManagerInput: UpdateManagerInput!): Manager!
@@ -190,6 +225,9 @@ type Query {
   commercials(userId: Int, userRole: String): [Commercial!]!
   directeur(id: Int!): Directeur!
   directeurs(userId: Int, userRole: String): [Directeur!]!
+  getActiveRooms: [ActiveRoom!]!
+  getActiveSessions: [MonitoringSession!]!
+  getCommercialConnection(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
   immeuble(id: Int!): Immeuble!
   immeubles(userId: Int, userRole: String): [Immeuble!]!
   manager(id: Int!): Manager!
@@ -202,6 +240,12 @@ type Query {
   zone(id: Int!): Zone!
   zoneStatistics(userId: Int, userRole: String): [ZoneStatistic!]!
   zones(userId: Int, userRole: String): [Zone!]!
+}
+
+input StartMonitoringInput {
+  commercialId: Int!
+  roomName: String
+  supervisorId: Int!
 }
 
 type Statistic {
@@ -227,6 +271,10 @@ enum StatutPorte {
   NON_VISITE
   REFUS
   RENDEZ_VOUS_PRIS
+}
+
+input StopMonitoringInput {
+  sessionId: ID!
 }
 
 input UpdateCommercialInput {

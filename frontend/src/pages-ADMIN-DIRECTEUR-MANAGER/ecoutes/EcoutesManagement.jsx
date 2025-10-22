@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,17 +22,16 @@ import { useRole } from '@/contexts/userole'
 import { useCommercials } from '@/services'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useErrorToast } from '@/hooks/use-error-toast'
+import { useActiveRooms } from '@/hooks/useActiveRooms'
+import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
 import {
   Play,
-  Pause,
   Square,
   Download,
   Eye,
   MoreHorizontal,
-  Phone,
   PhoneCall,
   Clock,
-  Calendar,
   User,
   Mic,
   MicOff,
@@ -49,16 +48,26 @@ export default function EcoutesManagement() {
     error,
     refetch,
   } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { showSuccess } = useErrorToast()
+  const { showSuccess, showError } = useErrorToast()
+
+  // Hook pour surveiller les rooms actives et les commerciaux en ligne
+  const {
+    activeRooms,
+    activeSessions,
+    loading: roomsLoading,
+    isCommercialOnline,
+    getActiveSessionsForCommercial,
+    refetch: refetchRooms,
+  } = useActiveRooms(3000) // Rafraîchir toutes les 3 secondes
 
   const [activeTab, setActiveTab] = useState('live')
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedCommercial, setSelectedCommercial] = useState(null)
   const [isMuted, setIsMuted] = useState(false)
+  const [activeListeningRooms, setActiveListeningRooms] = useState(new Map()) // Map<commercialId, { room, sessionId }>
 
-  // Mock data pour les écoutes en live et enregistrements
-  const [liveListeners, setLiveListeners] = useState([])
+  // État pour les écoutes en live
   const [recordings] = useState([
     {
       id: 1,
@@ -111,34 +120,101 @@ export default function EcoutesManagement() {
     })
   }, [recordings, searchTerm, statusFilter])
 
-  const handleStartListening = commercial => {
-    // Arrêter toutes les écoutes en cours avant d'en démarrer une nouvelle
-    if (liveListeners.length > 0) {
-      setLiveListeners([])
-      setSelectedCommercial(null)
-    }
+  const handleStartListening = async commercial => {
+    try {
+      // Vérifier si le commercial est en ligne
+      if (!isCommercialOnline(commercial.id)) {
+        showError('Ce commercial n\'est pas actuellement en ligne')
+        return
+      }
 
-    // Démarrer la nouvelle écoute
-    setSelectedCommercial(commercial)
-    setLiveListeners([
-      {
-        id: commercial.id,
-        name: `${commercial.prenom} ${commercial.nom}`,
-        status: 'active',
-        duration: '00:00:00',
-        clientPhone: '+216 XX XXX XXX',
-        startTime: new Date().toLocaleTimeString(),
-      },
-    ])
-    showSuccess(`Écoute en live démarrée pour ${commercial.prenom} ${commercial.nom}`)
+      // Arrêter toutes les écoutes en cours avant d'en démarrer une nouvelle
+      for (const [commercialId] of activeListeningRooms) {
+        await handleStopListening(commercialId)
+      }
+
+      // Démarrer la session de monitoring
+      const connectionDetails = await AudioMonitoringService.startMonitoring(
+        commercial.id,
+        parseInt(currentUserId)
+      )
+
+      // Créer un conteneur audio pour ce commercial
+      const audioContainer = document.createElement('div')
+      audioContainer.id = `audio-container-${commercial.id}`
+      document.body.appendChild(audioContainer)
+
+      // Se connecter à LiveKit comme superviseur
+      const room = await LiveKitUtils.connectAsSupervisor(
+        connectionDetails,
+        audioContainer
+      )
+
+      // Stocker la room et session
+      setActiveListeningRooms(prev => 
+        new Map(prev).set(commercial.id, { 
+          room, 
+          sessionId: connectionDetails.sessionId || `session-${Date.now()}`,
+          startTime: new Date().toLocaleTimeString(),
+          connectionDetails,
+          audioContainer
+        })
+      )
+
+      setSelectedCommercial(commercial)
+      showSuccess(`Écoute en live démarrée pour ${commercial.prenom} ${commercial.nom}`)
+      
+      // Rafraîchir les données
+      refetchRooms()
+    } catch (error) {
+      console.error('Erreur démarrage écoute:', error)
+      showError('Erreur lors du démarrage de l\'écoute: ' + error.message)
+    }
   }
 
-  const handleStopListening = commercialId => {
-    setLiveListeners(prev => prev.filter(l => l.id !== commercialId))
-    if (selectedCommercial?.id === commercialId) {
-      setSelectedCommercial(null)
+  const handleStopListening = async commercialId => {
+    try {
+      const listeningData = activeListeningRooms.get(commercialId)
+      if (!listeningData) return
+
+      // Déconnecter de LiveKit
+      if (listeningData.room) {
+        await LiveKitUtils.disconnect(listeningData.room)
+      }
+
+      // Nettoyer le conteneur audio
+      if (listeningData.audioContainer) {
+        listeningData.audioContainer.remove()
+      }
+
+      // Arrêter la session de monitoring si on a un sessionId
+      if (listeningData.sessionId) {
+        try {
+          await AudioMonitoringService.stopMonitoring(listeningData.sessionId)
+          console.log('✅ Session de monitoring arrêtée')
+        } catch (err) {
+          // Gestion d'erreur silencieuse - session déjà fermée est normal
+          console.log('ℹ️ Session déjà fermée:', err.message)
+        }
+      }
+
+      // Retirer de la map
+      setActiveListeningRooms(prev => {
+        const newMap = new Map(prev)
+        newMap.delete(commercialId)
+        return newMap
+      })
+
+      if (selectedCommercial?.id === commercialId) {
+        setSelectedCommercial(null)
+      }
+
+      showSuccess('Écoute arrêtée')
+      refetchRooms()
+    } catch (error) {
+      console.error('Erreur arrêt écoute:', error)
+      showError('Erreur lors de l\'arrêt de l\'écoute')
     }
-    showSuccess('Écoute arrêtée')
   }
 
   const handleDownloadRecording = recording => {
@@ -217,7 +293,7 @@ export default function EcoutesManagement() {
             <Mic className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{liveListeners.length}</div>
+            <div className="text-2xl font-bold">{activeListeningRooms.size}</div>
             <p className="text-xs text-muted-foreground">En cours maintenant</p>
           </CardContent>
         </Card>
@@ -228,8 +304,10 @@ export default function EcoutesManagement() {
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{filteredCommercials.length}</div>
-            <p className="text-xs text-muted-foreground">Peuvent être écoutés</p>
+            <div className="text-2xl font-bold">
+              {filteredCommercials.filter(c => isCommercialOnline(c.id)).length}
+            </div>
+            <p className="text-xs text-muted-foreground">En ligne maintenant</p>
           </CardContent>
         </Card>
 
@@ -304,12 +382,18 @@ export default function EcoutesManagement() {
                     </TableHeader>
                     <TableBody>
                       {filteredCommercials.map(commercial => {
-                        const isCurrentlyListening = liveListeners.some(l => l.id === commercial.id)
+                        const isOnline = isCommercialOnline(commercial.id)
+                        const isCurrentlyListening = activeListeningRooms.has(commercial.id)
+                        const listeningData = activeListeningRooms.get(commercial.id)
+                        
                         return (
-                          <>
-                            <TableRow key={commercial.id}>
+                          <React.Fragment key={`commercial-${commercial.id}`}>
+                            <TableRow>
                               <TableCell className="font-medium">
-                                {commercial.prenom} {commercial.nom}
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                  {commercial.prenom} {commercial.nom}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 {isCurrentlyListening ? (
@@ -319,8 +403,13 @@ export default function EcoutesManagement() {
                                       En écoute
                                     </Badge>
                                   </div>
+                                ) : isOnline ? (
+                                  <Badge className="bg-green-100 text-green-800">En ligne</Badge>
                                 ) : (
-                                  <Badge variant="outline">Disponible</Badge>
+                                  <Badge variant="outline" className="bg-gray-100 text-gray-600">
+                                    <MicOff className="w-3 h-3 mr-1" />
+                                    Hors ligne
+                                  </Badge>
                                 )}
                               </TableCell>
 
@@ -338,6 +427,7 @@ export default function EcoutesManagement() {
                                   <Button
                                     variant="outline"
                                     size="sm"
+                                    disabled={!isOnline}
                                     onClick={() => handleStartListening(commercial)}
                                   >
                                     <Play className="w-4 h-4 mr-2" />
@@ -346,9 +436,9 @@ export default function EcoutesManagement() {
                                 )}
                               </TableCell>
                             </TableRow>
-                            {isCurrentlyListening && (
+                            {isCurrentlyListening && listeningData && (
                               <TableRow className="bg-muted/30">
-                                <TableCell colSpan={4}>
+                                <TableCell colSpan={3}>
                                   <div className="flex items-center justify-between p-4 border rounded-md">
                                     <div className="flex items-center gap-4 flex-1">
                                       <div className="flex items-center gap-2">
@@ -358,12 +448,10 @@ export default function EcoutesManagement() {
                                         </span>
                                       </div>
                                       <Badge variant="outline">
-                                        {liveListeners.find(l => l.id === commercial.id)
-                                          ?.clientPhone || '+216 XX XXX XXX'}
+                                        {listeningData.connectionDetails?.roomName}
                                       </Badge>
                                       <span className="text-sm text-muted-foreground">
-                                        Depuis{' '}
-                                        {liveListeners.find(l => l.id === commercial.id)?.startTime}
+                                        Depuis {listeningData.startTime}
                                       </span>
                                     </div>
                                     <div className="flex-1 w-full mx-16">
@@ -397,7 +485,7 @@ export default function EcoutesManagement() {
                                 </TableCell>
                               </TableRow>
                             )}
-                          </>
+                          </React.Fragment>
                         )
                       })}
                     </TableBody>
