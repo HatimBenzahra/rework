@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import AudioWaveform from '@/components/AudioWaveform'
+import AudioPlayer from '@/components/AudioPlayer'
 import {
   Table,
   TableBody,
@@ -24,12 +25,11 @@ import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useActiveRooms } from '@/hooks/useActiveRooms'
 import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
+import { RecordingService } from '@/services/recordings'
 import {
   Play,
   Square,
   Download,
-  Eye,
-  MoreHorizontal,
   PhoneCall,
   Clock,
   User,
@@ -37,7 +37,6 @@ import {
   MicOff,
   Volume2,
   VolumeX,
-  Filter,
 } from 'lucide-react'
 
 export default function EcoutesManagement() {
@@ -51,49 +50,42 @@ export default function EcoutesManagement() {
   const { showSuccess, showError } = useErrorToast()
 
   // Hook pour surveiller les rooms actives et les commerciaux en ligne
-  const {
-    activeRooms,
-    activeSessions,
-    loading: roomsLoading,
-    isCommercialOnline,
-    getActiveSessionsForCommercial,
-    refetch: refetchRooms,
-  } = useActiveRooms(3000) // Rafraîchir toutes les 3 secondes
+  const { isCommercialOnline, refetch: refetchRooms } = useActiveRooms(3000) // Rafraîchir toutes les 3 secondes
 
   const [activeTab, setActiveTab] = useState('live')
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
   const [selectedCommercial, setSelectedCommercial] = useState(null)
   const [isMuted, setIsMuted] = useState(false)
   const [activeListeningRooms, setActiveListeningRooms] = useState(new Map()) // Map<commercialId, { room, sessionId }>
 
-  // État pour les écoutes en live
-  const [recordings] = useState([
-    {
-      id: 1,
-      commercialId: 10,
-      commercialName: 'Ahmed Ben Ali',
-      date: '2024-10-20',
-      time: '14:30',
-      duration: '00:15:23',
-      clientPhone: '+216 20 123 456',
-      status: 'completed',
-      quality: 'high',
-      notes: 'Appel prospection - client intéressé',
-    },
-    {
-      id: 2,
-      commercialId: 11,
-      commercialName: 'Sarra Mejri',
-      date: '2024-10-20',
-      time: '10:15',
-      duration: '00:08:45',
-      clientPhone: '+216 55 987 654',
-      status: 'completed',
-      quality: 'medium',
-      notes: 'Suivi contrat - signature prévue',
-    },
-  ])
+  // États pour les enregistrements
+  const [selectedCommercialForRecordings, setSelectedCommercialForRecordings] = useState(null)
+  const [recordings, setRecordings] = useState([])
+  const [loadingRecordings, setLoadingRecordings] = useState(false)
+  const [playingRecording, setPlayingRecording] = useState(null)
+
+  // Charger les enregistrements pour un commercial sélectionné
+  const loadRecordingsForCommercial = async commercial => {
+    if (!commercial) {
+      setRecordings([])
+      return
+    }
+
+    setLoadingRecordings(true)
+    try {
+      const recordingsData = await RecordingService.getRecordingsForCommercial(commercial.id)
+      setRecordings(recordingsData)
+      showSuccess(
+        `${recordingsData.length} enregistrement(s) chargé(s) pour ${commercial.prenom} ${commercial.nom}`
+      )
+    } catch (error) {
+      console.error('Erreur chargement enregistrements:', error)
+      showError('Erreur lors du chargement des enregistrements')
+      setRecordings([])
+    } finally {
+      setLoadingRecordings(false)
+    }
+  }
 
   // Filtrer les commerciaux selon le rôle (directeur ne voit que ses commerciaux)
   const filteredCommercials = useMemo(() => {
@@ -107,24 +99,11 @@ export default function EcoutesManagement() {
     })
   }, [commercials, searchTerm])
 
-  // Filtrer les enregistrements
-  const filteredRecordings = useMemo(() => {
-    return recordings.filter(recording => {
-      const searchMatch =
-        recording.commercialName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        recording.clientPhone?.includes(searchTerm)
-
-      const statusMatch = statusFilter === 'all' || recording.status === statusFilter
-
-      return searchMatch && statusMatch
-    })
-  }, [recordings, searchTerm, statusFilter])
-
   const handleStartListening = async commercial => {
     try {
       // Vérifier si le commercial est en ligne
       if (!isCommercialOnline(commercial.id)) {
-        showError('Ce commercial n\'est pas actuellement en ligne')
+        showError("Ce commercial n'est pas actuellement en ligne")
         return
       }
 
@@ -145,30 +124,27 @@ export default function EcoutesManagement() {
       document.body.appendChild(audioContainer)
 
       // Se connecter à LiveKit comme superviseur
-      const room = await LiveKitUtils.connectAsSupervisor(
-        connectionDetails,
-        audioContainer
-      )
+      const room = await LiveKitUtils.connectAsSupervisor(connectionDetails, audioContainer)
 
       // Stocker la room et session
-      setActiveListeningRooms(prev => 
-        new Map(prev).set(commercial.id, { 
-          room, 
+      setActiveListeningRooms(prev =>
+        new Map(prev).set(commercial.id, {
+          room,
           sessionId: connectionDetails.sessionId || `session-${Date.now()}`,
           startTime: new Date().toLocaleTimeString(),
           connectionDetails,
-          audioContainer
+          audioContainer,
         })
       )
 
       setSelectedCommercial(commercial)
       showSuccess(`Écoute en live démarrée pour ${commercial.prenom} ${commercial.nom}`)
-      
+
       // Rafraîchir les données
       refetchRooms()
     } catch (error) {
       console.error('Erreur démarrage écoute:', error)
-      showError('Erreur lors du démarrage de l\'écoute: ' + error.message)
+      showError("Erreur lors du démarrage de l'écoute: " + error.message)
     }
   }
 
@@ -213,34 +189,25 @@ export default function EcoutesManagement() {
       refetchRooms()
     } catch (error) {
       console.error('Erreur arrêt écoute:', error)
-      showError('Erreur lors de l\'arrêt de l\'écoute')
+      showError("Erreur lors de l'arrêt de l'écoute")
     }
   }
 
   const handleDownloadRecording = recording => {
-    showSuccess(`Téléchargement de l'enregistrement ${recording.id} démarré`)
+    if (recording.url) {
+      RecordingService.downloadRecording(recording.url, recording.filename)
+      showSuccess(`Téléchargement de ${recording.filename} démarré`)
+    } else {
+      showError('URL de téléchargement non disponible')
+    }
   }
 
-  const getStatusBadge = status => {
-    const statusConfig = {
-      completed: { label: 'Terminé', variant: 'default', className: 'bg-green-100 text-green-800' },
-      active: { label: 'En cours', variant: 'secondary', className: 'bg-blue-100 text-blue-800' },
-      failed: { label: 'Échec', variant: 'destructive', className: 'bg-red-100 text-red-800' },
+  const handlePlayRecording = recording => {
+    if (playingRecording?.id === recording.id) {
+      setPlayingRecording(null)
+    } else {
+      setPlayingRecording(recording)
     }
-
-    const config = statusConfig[status] || statusConfig.completed
-    return <Badge className={config.className}>{config.label}</Badge>
-  }
-
-  const getQualityBadge = quality => {
-    const qualityConfig = {
-      high: { label: 'Haute', className: 'bg-green-100 text-green-800' },
-      medium: { label: 'Moyenne', className: 'bg-yellow-100 text-yellow-800' },
-      low: { label: 'Faible', className: 'bg-red-100 text-red-800' },
-    }
-
-    const config = qualityConfig[quality] || qualityConfig.medium
-    return <Badge className={config.className}>{config.label}</Badge>
   }
 
   if (loading) {
@@ -318,7 +285,11 @@ export default function EcoutesManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{recordings.length}</div>
-            <p className="text-xs text-muted-foreground">Aujourd'hui</p>
+            <p className="text-xs text-muted-foreground">
+              {selectedCommercialForRecordings
+                ? `Pour ${selectedCommercialForRecordings.prenom}`
+                : 'Sélectionnez un commercial'}
+            </p>
           </CardContent>
         </Card>
 
@@ -385,13 +356,17 @@ export default function EcoutesManagement() {
                         const isOnline = isCommercialOnline(commercial.id)
                         const isCurrentlyListening = activeListeningRooms.has(commercial.id)
                         const listeningData = activeListeningRooms.get(commercial.id)
-                        
+
                         return (
                           <React.Fragment key={`commercial-${commercial.id}`}>
                             <TableRow>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
-                                  <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+                                  <div
+                                    className={`w-2 h-2 rounded-full ${
+                                      isOnline ? 'bg-green-500' : 'bg-gray-400'
+                                    }`}
+                                  />
                                   {commercial.prenom} {commercial.nom}
                                 </div>
                               </TableCell>
@@ -503,100 +478,151 @@ export default function EcoutesManagement() {
               <CardHeader>
                 <CardTitle>Enregistrements des Appels</CardTitle>
                 <CardDescription>
-                  Historique des appels enregistrés de vos commerciaux
+                  Sélectionnez un commercial pour voir ses enregistrements
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-4 mb-4">
-                  <Input
-                    placeholder="Rechercher par commercial ou téléphone..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
-                  />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline">
-                        <Filter className="w-4 h-4 mr-2" />
-                        Statut
+                        <User className="w-4 h-4 mr-2" />
+                        {selectedCommercialForRecordings
+                          ? `${selectedCommercialForRecordings.prenom} ${selectedCommercialForRecordings.nom}`
+                          : 'Sélectionner un commercial'}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => setStatusFilter('all')}>
-                        Tous
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedCommercialForRecordings(null)
+                          setRecordings([])
+                        }}
+                      >
+                        Aucun commercial
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStatusFilter('completed')}>
-                        Terminés
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStatusFilter('active')}>
-                        En cours
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStatusFilter('failed')}>
-                        Échecs
-                      </DropdownMenuItem>
+                      {filteredCommercials.map(commercial => (
+                        <DropdownMenuItem
+                          key={commercial.id}
+                          onClick={() => {
+                            setSelectedCommercialForRecordings(commercial)
+                            loadRecordingsForCommercial(commercial)
+                          }}
+                        >
+                          {commercial.prenom} {commercial.nom}
+                        </DropdownMenuItem>
+                      ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
+
+                  <Input
+                    placeholder="Rechercher dans les enregistrements..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                    disabled={!selectedCommercialForRecordings}
+                  />
                 </div>
 
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Commercial</TableHead>
-                        <TableHead>Date & Heure</TableHead>
-                        <TableHead>Durée</TableHead>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Qualité</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredRecordings.map(recording => (
-                        <TableRow key={recording.id}>
-                          <TableCell className="font-medium">{recording.commercialName}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span>{recording.date}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {recording.time}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{recording.duration}</TableCell>
-                          <TableCell>{recording.clientPhone}</TableCell>
-                          <TableCell>{getQualityBadge(recording.quality)}</TableCell>
-                          <TableCell>{getStatusBadge(recording.status)}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Play className="mr-2 h-4 w-4" />
-                                  Écouter
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDownloadRecording(recording)}
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Télécharger
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  Détails
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                {loadingRecordings ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+                      <span>Chargement des enregistrements...</span>
+                    </div>
+                  </div>
+                ) : !selectedCommercialForRecordings ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Sélectionnez un commercial pour voir ses enregistrements</p>
+                  </div>
+                ) : recordings.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Aucun enregistrement trouvé pour ce commercial</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Fichier</TableHead>
+                            <TableHead>Date & Heure</TableHead>
+                            <TableHead>Taille</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {recordings
+                            .filter(
+                              recording =>
+                                !searchTerm ||
+                                recording.filename.toLowerCase().includes(searchTerm.toLowerCase())
+                            )
+                            .map(recording => (
+                              <React.Fragment key={recording.id}>
+                                <TableRow>
+                                  <TableCell className="font-medium">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                                      {recording.filename}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                      <span>{recording.date}</span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {recording.time}
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>{recording.duration}</TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center gap-2 justify-end">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePlayRecording(recording)}
+                                        disabled={!recording.url}
+                                      >
+                                        <Play className="w-4 h-4 mr-1" />
+                                        {playingRecording?.id === recording.id
+                                          ? 'Masquer'
+                                          : 'Écouter'}
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownloadRecording(recording)}
+                                        disabled={!recording.url}
+                                      >
+                                        <Download className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {playingRecording?.id === recording.id && recording.url && (
+                                  <TableRow className="bg-muted/30">
+                                    <TableCell colSpan={4}>
+                                      <div className="p-4">
+                                        <AudioPlayer
+                                          src={recording.url}
+                                          title={`Enregistrement - ${recording.filename}`}
+                                          onDownload={() => handleDownloadRecording(recording)}
+                                          className="border-0 shadow-none bg-transparent"
+                                        />
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

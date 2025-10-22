@@ -118,6 +118,13 @@ type Directeur {
   updatedAt: DateTime!
 }
 
+type EgressState {
+  egressId: String!
+  error: String
+  roomName: String
+  status: String!
+}
+
 type Immeuble {
   adresse: String!
   ascenseurPresent: Boolean!
@@ -192,7 +199,9 @@ type Mutation {
   removeStatistic(id: Int!): Statistic!
   removeZone(id: Int!): Zone!
   startMonitoring(input: StartMonitoringInput!): LiveKitConnectionDetails!
+  startRecording(input: StartRecordingInput!): RecordingResult!
   stopMonitoring(input: StopMonitoringInput!): Boolean!
+  stopRecording(input: StopRecordingInput!): Boolean!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
   updateCommercialHeartbeat(commercialId: Int!): Boolean!
@@ -225,11 +234,13 @@ type Query {
   commercials(userId: Int, userRole: String): [Commercial!]!
   directeur(id: Int!): Directeur!
   directeurs(userId: Int, userRole: String): [Directeur!]!
+  egressState(egressId: String!): EgressState!
   getActiveRooms: [ActiveRoom!]!
   getActiveSessions: [MonitoringSession!]!
   getCommercialConnection(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
   immeuble(id: Int!): Immeuble!
   immeubles(userId: Int, userRole: String): [Immeuble!]!
+  listRecordings(roomName: String!): [RecordingItem!]!
   manager(id: Int!): Manager!
   managers(userId: Int, userRole: String): [Manager!]!
   porte(id: Int!): Porte!
@@ -242,10 +253,31 @@ type Query {
   zones(userId: Int, userRole: String): [Zone!]!
 }
 
+type RecordingItem {
+  key: String!
+  lastModified: DateTime
+  size: Float
+  url: String
+}
+
+type RecordingResult {
+  egressId: String!
+  roomName: String!
+  s3Key: String!
+  status: String!
+  url: String
+}
+
 input StartMonitoringInput {
   commercialId: Int!
   roomName: String
   supervisorId: Int!
+}
+
+input StartRecordingInput {
+  audioOnly: Boolean = true
+  participantIdentity: String
+  roomName: String!
 }
 
 type Statistic {
@@ -275,6 +307,10 @@ enum StatutPorte {
 
 input StopMonitoringInput {
   sessionId: ID!
+}
+
+input StopRecordingInput {
+  egressId: String!
 }
 
 input UpdateCommercialInput {
