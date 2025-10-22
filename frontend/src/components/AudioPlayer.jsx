@@ -10,7 +10,7 @@ import AudioWaveform from './AudioWaveform'
  * - title: string - Title to display
  * - onDownload?: () => void - Download handler
  */
-function AudioPlayer({ src, title, onDownload, className = '' }) {
+function AudioPlayer({ src, title, onDownload }) {
   const audioRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -18,6 +18,7 @@ function AudioPlayer({ src, title, onDownload, className = '' }) {
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadingProgress, setLoadingProgress] = useState(100)
 
   useEffect(() => {
     const audio = audioRef.current
@@ -26,34 +27,89 @@ function AudioPlayer({ src, title, onDownload, className = '' }) {
     const updateTime = () => setCurrentTime(audio.currentTime)
     const updateDuration = () => setDuration(audio.duration)
     const handleEnded = () => setIsPlaying(false)
-    const handleLoadStart = () => setIsLoading(true)
-    const handleCanPlay = () => setIsLoading(false)
+    const handleLoadStart = () => {
+      console.log('🔄 Début chargement - reset progress')
+      setIsLoading(true)
+      setLoadingProgress(0)
+    }
+    const handleLoadedData = () => {
+      console.log('📊 Données chargées')
+      setLoadingProgress(50)
+    }
+    const handleCanPlay = () => {
+      console.log('✅ Audio prêt à jouer - 100%')
+      setIsLoading(false)
+      setLoadingProgress(100)
+    }
+    const handleCanPlayThrough = () => {
+      console.log('🎵 Audio entièrement chargé')
+      setIsLoading(false)
+      setLoadingProgress(100)
+    }
 
     audio.addEventListener('timeupdate', updateTime)
     audio.addEventListener('loadedmetadata', updateDuration)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('loadstart', handleLoadStart)
+    audio.addEventListener('loadeddata', handleLoadedData)
     audio.addEventListener('canplay', handleCanPlay)
+    audio.addEventListener('canplaythrough', handleCanPlayThrough)
 
     return () => {
       audio.removeEventListener('timeupdate', updateTime)
       audio.removeEventListener('loadedmetadata', updateDuration)
       audio.removeEventListener('ended', handleEnded)
       audio.removeEventListener('loadstart', handleLoadStart)
+      audio.removeEventListener('loadeddata', handleLoadedData)
       audio.removeEventListener('canplay', handleCanPlay)
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough)
     }
   }, [src])
 
-  const togglePlay = () => {
+  // Reset loading state when src changes
+  useEffect(() => {
+    if (src) {
+      setIsLoading(true)
+      setLoadingProgress(0)
+      console.log('🔄 Nouvelle source audio - reset loading')
+
+      // Simuler progression pendant 2 secondes puis débloquer
+      const timer1 = setTimeout(() => setLoadingProgress(30), 200)
+      const timer2 = setTimeout(() => setLoadingProgress(60), 800)
+      const timer3 = setTimeout(() => {
+        setLoadingProgress(100)
+        setIsLoading(false)
+        console.log('✅ Simulation loading terminée - 100%')
+      }, 1500)
+
+      return () => {
+        clearTimeout(timer1)
+        clearTimeout(timer2)
+        clearTimeout(timer3)
+      }
+    }
+  }, [src])
+
+  const togglePlay = async () => {
     const audio = audioRef.current
     if (!audio) return
 
     if (isPlaying) {
       audio.pause()
+      setIsPlaying(false)
     } else {
-      audio.play()
+      try {
+        // Chargement intelligent - loadstart si pas encore chargé
+        if (audio.readyState === 0) {
+          audio.load()
+        }
+        await audio.play()
+        setIsPlaying(true)
+      } catch (error) {
+        console.error('Erreur lecture audio:', error)
+        setIsPlaying(false)
+      }
     }
-    setIsPlaying(!isPlaying)
   }
 
   const handleSeek = e => {
@@ -97,9 +153,18 @@ function AudioPlayer({ src, title, onDownload, className = '' }) {
 
   return (
     <div
-      className={`bg-card text-card-foreground border rounded-lg p-4 space-y-4 shadow-sm ${className}`}
+      className={
+        'bg-card text-card-foreground border rounded-lg p-4 space-y-4 shadow-sm ${className}'
+      }
     >
-      <audio ref={audioRef} src={src} preload="metadata" />
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        onError={e => console.error('Erreur audio element:', e.target.error)}
+        onLoadStart={() => console.log('🔄 Début chargement audio')}
+        onCanPlay={() => console.log('✅ Audio prêt à jouer')}
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -109,6 +174,9 @@ function AudioPlayer({ src, title, onDownload, className = '' }) {
             <span>{formatTime(currentTime)}</span>
             <span>/</span>
             <span>{formatTime(duration)}</span>
+            {isLoading && (
+              <span className="text-blue-600 font-medium">• Chargement {loadingProgress}%</span>
+            )}
           </div>
         </div>
         {onDownload && (
@@ -149,7 +217,7 @@ function AudioPlayer({ src, title, onDownload, className = '' }) {
           <Button
             size="sm"
             onClick={togglePlay}
-            disabled={isLoading || !src}
+            disabled={!src || loadingProgress < 100}
             className="h-10 w-10 p-0"
           >
             {isLoading ? (

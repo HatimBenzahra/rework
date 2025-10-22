@@ -51,13 +51,35 @@ export class RecordingService {
     return roomName.replace(/[:]/g, '_');
   }
 
+  private urlCache = new Map<string, { url: string; expiry: number }>();
+
   private async signedUrlOrUndefined(key: string): Promise<string | undefined> {
     try {
-      return await getSignedUrl(
-        this.s3,
-        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-        { expiresIn: 3600 },
-      );
+      // Vérifier le cache (URLs valides 50 minutes)
+      const cached = this.urlCache.get(key);
+      if (cached && Date.now() < cached.expiry) {
+        return cached.url;
+      }
+
+      // Générer nouvelle URL signée avec headers CORS pour streaming
+      const command = new GetObjectCommand({ 
+        Bucket: this.bucket, 
+        Key: key,
+        ResponseContentType: 'audio/mp4',
+        ResponseCacheControl: 'no-cache'
+      });
+
+      const url = await getSignedUrl(this.s3, command, { 
+        expiresIn: 3600,
+      });
+
+      // Mettre en cache (expiry = maintenant + 50 minutes)
+      this.urlCache.set(key, {
+        url,
+        expiry: Date.now() + 50 * 60 * 1000,
+      });
+
+      return url;
     } catch {
       return undefined;
     }
@@ -181,5 +203,27 @@ export class RecordingService {
       roomName: info.roomName,
       error: info.error,
     };
+  }
+
+  /**
+   * Génère une URL optimisée pour le streaming audio
+   */
+  async getStreamingUrl(key: string): Promise<string> {
+    try {
+      // URL avec headers optimisés pour streaming
+      const command = new GetObjectCommand({ 
+        Bucket: this.bucket, 
+        Key: key,
+        ResponseContentType: 'audio/mp4',
+        ResponseContentDisposition: 'inline'
+      });
+
+      return await getSignedUrl(this.s3, command, { 
+        expiresIn: 7200, // 2h pour streaming
+      });
+    } catch (error) {
+      this.logger.error(`Erreur génération URL streaming: ${error.message}`);
+      throw error;
+    }
   }
 }

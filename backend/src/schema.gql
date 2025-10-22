@@ -238,6 +238,7 @@ type Query {
   getActiveRooms: [ActiveRoom!]!
   getActiveSessions: [MonitoringSession!]!
   getCommercialConnection(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
+  getStreamingUrl(key: String!): String!
   immeuble(id: Int!): Immeuble!
   immeubles(userId: Int, userRole: String): [Immeuble!]!
   listRecordings(roomName: String!): [RecordingItem!]!

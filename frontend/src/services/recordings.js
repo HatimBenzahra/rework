@@ -30,6 +30,12 @@ const STOP_RECORDING = `
   }
 `
 
+const GET_STREAMING_URL = `
+  query GetStreamingUrl($key: String!) {
+    getStreamingUrl(key: $key)
+  }
+`
+
 // Service pour la gestion des enregistrements
 export class RecordingService {
   /**
@@ -57,11 +63,12 @@ export class RecordingService {
 
       console.log('🎬 Fichiers .mp4 filtrés:', recordings)
 
-      // Enrichir les données pour l'affichage
+      // Enrichir les données pour l'affichage (sans charger les URLs immédiatement)
       const enrichedRecordings = recordings.map(recording => ({
         id: recording.key,
         key: recording.key,
-        url: recording.url,
+        url: null, // On charge l'URL seulement quand on clique sur "Écouter"
+        rawUrl: recording.url, // Garde l'URL originale pour lazy loading
         size: recording.size,
         lastModified: recording.lastModified,
         // Extraire des infos du nom de fichier si possible
@@ -129,6 +136,19 @@ export class RecordingService {
     const i = Math.floor(Math.log(bytes) / Math.log(1024))
 
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`
+  }
+
+  /**
+   * Génère une URL optimisée pour le streaming
+   */
+  static async getStreamingUrl(key) {
+    try {
+      const data = await graphqlClient.request(GET_STREAMING_URL, { key })
+      return data.getStreamingUrl
+    } catch (error) {
+      console.error('Erreur génération URL streaming:', error)
+      throw error
+    }
   }
 
   /**

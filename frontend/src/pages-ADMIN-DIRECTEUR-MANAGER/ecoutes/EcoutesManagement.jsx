@@ -194,19 +194,46 @@ export default function EcoutesManagement() {
   }
 
   const handleDownloadRecording = recording => {
-    if (recording.url) {
-      RecordingService.downloadRecording(recording.url, recording.filename)
+    const url = recording.url || recording.rawUrl
+    if (url) {
+      RecordingService.downloadRecording(url, recording.filename)
       showSuccess(`Téléchargement de ${recording.filename} démarré`)
     } else {
       showError('URL de téléchargement non disponible')
     }
   }
 
-  const handlePlayRecording = recording => {
+  const handlePlayRecording = async recording => {
     if (playingRecording?.id === recording.id) {
       setPlayingRecording(null)
-    } else {
-      setPlayingRecording(recording)
+      return
+    }
+
+    try {
+      console.log("🔄 Génération URL streaming pour:", recording.filename)
+      
+      // Utiliser l'URL de streaming optimisée
+      const streamingUrl = await RecordingService.getStreamingUrl(recording.key)
+      
+      if (!streamingUrl) {
+        showError("Impossible de générer l'URL de streaming")
+        return
+      }
+
+      console.log("✅ URL streaming générée:", streamingUrl)
+      
+      // Créer un nouvel objet avec l'URL de streaming
+      const recordingWithStreamingUrl = {
+        ...recording,
+        url: streamingUrl
+      }
+      
+      setPlayingRecording(recordingWithStreamingUrl)
+      console.log('🎵 État playingRecording mis à jour:', recordingWithStreamingUrl)
+      
+    } catch (error) {
+      console.error('❌ Erreur génération URL streaming:', error)
+      showError('Erreur lors de la préparation de la lecture')
     }
   }
 
@@ -584,7 +611,7 @@ export default function EcoutesManagement() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handlePlayRecording(recording)}
-                                        disabled={!recording.url}
+                                        disabled={!recording.url && !recording.rawUrl}
                                       >
                                         <Play className="w-4 h-4 mr-1" />
                                         {playingRecording?.id === recording.id
@@ -595,21 +622,21 @@ export default function EcoutesManagement() {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => handleDownloadRecording(recording)}
-                                        disabled={!recording.url}
+                                        disabled={!recording.url && !recording.rawUrl}
                                       >
                                         <Download className="w-4 h-4" />
                                       </Button>
                                     </div>
                                   </TableCell>
                                 </TableRow>
-                                {playingRecording?.id === recording.id && recording.url && (
+                                {playingRecording?.id === recording.id && playingRecording?.url && (
                                   <TableRow className="bg-muted/30">
                                     <TableCell colSpan={4}>
                                       <div className="p-4">
                                         <AudioPlayer
-                                          src={recording.url}
-                                          title={`Enregistrement - ${recording.filename}`}
-                                          onDownload={() => handleDownloadRecording(recording)}
+                                          src={playingRecording.url}
+                                          title={`Enregistrement - ${playingRecording.filename}`}
+                                          onDownload={() => handleDownloadRecording(playingRecording)}
                                           className="border-0 shadow-none bg-transparent"
                                         />
                                       </div>

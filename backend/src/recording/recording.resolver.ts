@@ -38,4 +38,9 @@ export class RecordingResolver {
   async egressState(@Args('egressId') egressId: string): Promise<EgressState> {
     return this.svc.egressState(egressId);
   }
+
+  @Query(() => String)
+  async getStreamingUrl(@Args('key') key: string): Promise<string> {
+    return this.svc.getStreamingUrl(key);
+  }
 }
