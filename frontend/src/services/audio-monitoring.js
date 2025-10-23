@@ -148,26 +148,26 @@ export class LiveKitUtils {
 
       // Publier automatiquement l'audio
       console.log('🎤 Demande accès microphone...')
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
-        }
+          autoGainControl: true,
+        },
       })
-      
+
       const audioTrack = stream.getTracks()[0]
       console.log('🎤 Track audio obtenu:', audioTrack)
-      
+
       await room.localParticipant.publishTrack(audioTrack)
       console.log('📡 Track audio publié')
 
       console.log('✅ Commercial connecté:', room.localParticipant.identity)
       console.log('📊 Room state:', {
         participants: room.participants ? room.participants.size : 0,
-        localTracks: room.localParticipant.tracks ? room.localParticipant.tracks.size : 0
+        localTracks: room.localParticipant.tracks ? room.localParticipant.tracks.size : 0,
       })
-      
+
       return room
     } catch (error) {
       console.error('Erreur connexion commercial:', error)
@@ -187,35 +187,34 @@ export class LiveKitUtils {
       // Écouter les nouveaux tracks audio et les jouer automatiquement
       room.on('trackSubscribed', (track, publication, participant) => {
         console.log('🎧 Track reçu:', track.kind, 'de', participant.identity, track)
-        
+
         if (track.kind === 'audio') {
           // Créer et attacher l'élément audio
           const audioElement = track.attach()
-          
+
           // Configuration audio pour maximiser les chances de lecture
           audioElement.autoplay = true
-          audioElement.controls = true // Laisser les contrôles visibles pour debug
+          audioElement.controls = false // Pas de contrôles natifs visibles
           audioElement.volume = 1.0
           audioElement.muted = false
-          
-          // Style pour debug (visible)
-          audioElement.style.border = '2px solid red'
-          audioElement.style.margin = '10px'
-          
+
+          // Style pour cacher l'élément tout en gardant la fonctionnalité
+          audioElement.style.display = 'none'
+
           // Events pour debug
           audioElement.onplay = () => console.log('▶️ Audio démarré')
           audioElement.onpause = () => console.log('⏸️ Audio mis en pause')
-          audioElement.onerror = (e) => console.error('❌ Erreur audio:', e)
+          audioElement.onerror = e => console.error('❌ Erreur audio:', e)
           audioElement.onloadstart = () => console.log('🔄 Chargement audio...')
           audioElement.oncanplay = () => console.log('✅ Audio prêt à jouer')
-          
+
           // Ajouter au DOM
           if (audioContainer) {
             audioContainer.appendChild(audioElement)
           } else {
             document.body.appendChild(audioElement)
           }
-          
+
           // Forcer la lecture après un court délai
           setTimeout(() => {
             audioElement.play().catch(e => {
@@ -223,7 +222,7 @@ export class LiveKitUtils {
               console.log('👆 Cliquez sur play manuellement si nécessaire')
             })
           }, 100)
-          
+
           console.log('🔊 Audio attaché pour:', participant.identity, audioElement)
         }
       })
@@ -234,18 +233,21 @@ export class LiveKitUtils {
       })
 
       // Écouter les événements de connexion/déconnexion de participants
-      room.on('participantConnected', (participant) => {
+      room.on('participantConnected', participant => {
         console.log('👤 Participant connecté:', participant.identity)
       })
-      
-      room.on('participantDisconnected', (participant) => {
+
+      room.on('participantDisconnected', participant => {
         console.log('👤 Participant déconnecté:', participant.identity)
       })
 
       await room.connect(connectionDetails.serverUrl, connectionDetails.participantToken)
       console.log('✅ Superviseur connecté:', room.localParticipant.identity)
-      console.log('📊 Room participants:', room.participants ? Array.from(room.participants.keys()) : 'Aucun participant')
-      
+      console.log(
+        '📊 Room participants:',
+        room.participants ? Array.from(room.participants.keys()) : 'Aucun participant'
+      )
+
       return room
     } catch (error) {
       console.error('Erreur connexion superviseur:', error)
