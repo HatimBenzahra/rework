@@ -62,14 +62,14 @@ export class RecordingService {
       }
 
       // Générer nouvelle URL signée avec headers CORS pour streaming
-      const command = new GetObjectCommand({ 
-        Bucket: this.bucket, 
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
         Key: key,
         ResponseContentType: 'audio/mp4',
-        ResponseCacheControl: 'no-cache'
+        ResponseCacheControl: 'no-cache',
       });
 
-      const url = await getSignedUrl(this.s3, command, { 
+      const url = await getSignedUrl(this.s3, command, {
         expiresIn: 3600,
       });
 
@@ -190,7 +190,6 @@ export class RecordingService {
     return out;
   }
 
-
   async egressState(egressId: string): Promise<EgressState> {
     const list = await this.egress.listEgress({ egressId });
     const info: any = list[0];
@@ -211,14 +210,14 @@ export class RecordingService {
   async getStreamingUrl(key: string): Promise<string> {
     try {
       // URL avec headers optimisés pour streaming
-      const command = new GetObjectCommand({ 
-        Bucket: this.bucket, 
+      const command = new GetObjectCommand({
+        Bucket: this.bucket,
         Key: key,
         ResponseContentType: 'audio/mp4',
-        ResponseContentDisposition: 'inline'
+        ResponseContentDisposition: 'inline',
       });
 
-      return await getSignedUrl(this.s3, command, { 
+      return await getSignedUrl(this.s3, command, {
         expiresIn: 7200, // 2h pour streaming
       });
     } catch (error) {

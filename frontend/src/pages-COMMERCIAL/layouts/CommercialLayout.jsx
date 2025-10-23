@@ -18,6 +18,9 @@ export default function CommercialLayout() {
   const { currentUserId } = useRole()
   const { base, components } = useCommercialTheme()
 
+  // Ref pour le scroll container (utilisée par PortesGestion)
+  const scrollContainerRef = React.useRef(null)
+
   // Récupérer les données du commercial pour le header et bottom bar
   const {
     data: commercial,
@@ -107,6 +110,7 @@ export default function CommercialLayout() {
     if (path === '/') return 'Tableau de bord'
     if (path === '/immeubles') return 'Mes Immeubles'
     if (path === '/historique') return 'Historique'
+    if (path.startsWith('/portes/')) return 'Gestion des Portes'
     return null
   }
 
@@ -154,15 +158,23 @@ export default function CommercialLayout() {
 
       {/* Content avec padding bottom pour la bottom bar */}
       <div
-        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 commercial-scroll-container`}
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 ${
+          location.pathname.startsWith('/portes/')
+            ? 'portes-scroll-container'
+            : 'commercial-scroll-container'
+        }`}
       >
-        <Outlet context={{ 
-          commercial, 
-          myStats, 
-          commercialLoading, 
-          refetch,
-          audioStatus: { audioConnected, audioConnecting, audioError, roomName }
-        }} />
+        <Outlet
+          context={{
+            commercial,
+            myStats,
+            commercialLoading,
+            refetch,
+            audioStatus: { audioConnected, audioConnecting, audioError, roomName },
+            scrollContainerRef,
+          }}
+        />
       </div>
 
       {/* Bottom Navigation Bar */}

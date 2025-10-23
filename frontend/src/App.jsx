@@ -24,7 +24,6 @@ import EcoutesManagement from '@/pages-ADMIN-DIRECTEUR-MANAGER/ecoutes/EcoutesMa
 
 // Import Commercial Layouts & Pages
 import CommercialLayoutComponent from '@/pages-COMMERCIAL/layouts/CommercialLayout'
-import PortesLayoutComponent from '@/pages-COMMERCIAL/layouts/PortesLayout'
 import CommercialDashboard from '@/pages-COMMERCIAL/dashboard/CommercialDashboard'
 import ImmeublesList from '@/pages-COMMERCIAL/immeubles/ImmeublesList'
 import Historique from '@/pages-COMMERCIAL/historique/Historique'
@@ -75,15 +74,11 @@ function CommercialLayout() {
   return (
     <div className="light" data-theme="light">
       <Routes>
-        {/* Routes principales avec le layout commercial */}
+        {/* Toutes les routes sous CommercialLayout pour éviter les déconnexions LiveKit */}
         <Route element={<CommercialLayoutComponent />}>
           <Route path="/" element={<CommercialDashboard />} />
           <Route path="/immeubles" element={<ImmeublesList />} />
           <Route path="/historique" element={<Historique />} />
-        </Route>
-
-        {/* Route spéciale pour les portes avec son propre layout */}
-        <Route element={<PortesLayoutComponent />}>
           <Route path="/portes/:immeubleId" element={<PortesGestion />} />
           <Route path="/portes/lecture/:immeubleId" element={<PortesLecture />} />
         </Route>

@@ -20,6 +20,8 @@ import {
   useAddPorteToEtage,
 } from '@/hooks/use-api'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useRecording } from '@/hooks/useRecording'
+import { useRole } from '@/contexts/userole'
 import { STATUT_OPTIONS } from './Statut_options'
 import PortesTemplate from './components/PortesTemplate'
 import {
@@ -32,14 +34,22 @@ import {
 
 /**
  * Page de gestion des portes d'un immeuble
- * Utilise le contexte du layout parent (PortesLayout)
+ * Utilise le contexte du layout parent (CommercialLayout)
  */
 export default function PortesGestion() {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
+  const { currentUserId } = useRole()
 
   // Récupère la ref de scroll depuis le layout (fallback possible si non fourni)
-  const { scrollContainerRef } = useOutletContext() || {}
+  const { scrollContainerRef, audioStatus } = useOutletContext() || {}
+
+  // Hook d'enregistrement automatique (attend la connexion audio)
+  const {
+    isRecording,
+    isStarting,
+    error: recordingError,
+  } = useRecording(parseInt(currentUserId), true, audioStatus?.audioConnected)
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base, getButtonClasses } = useCommercialTheme()
@@ -236,8 +246,11 @@ export default function PortesGestion() {
     [updatePorte, refetch, withScrollRestore]
   )
 
-  // Navigation
+  // Navigation avec arrêt automatique de l'enregistrement
   const handleBackToImmeubles = useCallback(() => {
+    console.log("🔙 Retour vers immeubles - Arrêt automatique de l'enregistrement")
+    // L'enregistrement s'arrêtera automatiquement via le hook useRecording
+    // quand le composant se démonte (enabled devient false)
     navigate('/immeubles')
   }, [navigate])
 
@@ -286,7 +299,22 @@ export default function PortesGestion() {
         {/* Gestion de l'immeuble */}
         <div className="space-y-3 mb-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">Gestion de l'immeuble</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-gray-700">Gestion de l'immeuble</h3>
+              {/* Indicateur d'enregistrement */}
+              {isRecording && (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 rounded-full">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-red-700">REC</span>
+                </div>
+              )}
+              {isStarting && (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded-full">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-yellow-700">Démarrage...</span>
+                </div>
+              )}
+            </div>
             {immeuble && (
               <div className="text-xs text-gray-500">
                 {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
@@ -294,15 +322,32 @@ export default function PortesGestion() {
             )}
           </div>
 
-          <div className="text-xs md:text-sm text-gray-600 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200">
-            <div className="flex items-start gap-2">
-              <div className="text-blue-500 text-sm mt-0.5 flex-shrink-0">💡</div>
-              <div className="leading-relaxed">
-                <span className="font-medium">Astuce :</span> Utilisez les boutons + à la fin de
-                chaque étage pour ajouter des portes ou à la fin pour ajouter un étage complet.
+          {/* Message d'info ou d'erreur */}
+          {recordingError ? (
+            <div className="text-xs md:text-sm text-red-600 bg-red-50 p-3 md:p-4 rounded-lg border border-red-200">
+              <div className="flex items-start gap-2">
+                <div className="text-red-500 text-sm mt-0.5 flex-shrink-0">⚠️</div>
+                <div className="leading-relaxed">
+                  <span className="font-medium">Erreur d'enregistrement :</span> {recordingError}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-xs md:text-sm text-gray-600 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200">
+              <div className="flex items-start gap-2">
+                <div className="text-blue-500 text-sm mt-0.5 flex-shrink-0">💡</div>
+                <div className="leading-relaxed">
+                  <span className="font-medium">Astuce :</span> Utilisez les boutons + à la fin de
+                  chaque étage pour ajouter des portes ou à la fin pour ajouter un étage complet.
+                  {isRecording && (
+                    <span className="block mt-1 text-green-600 font-medium">
+                      📹 Votre session est enregistrée automatiquement.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Filtres par statut */}
@@ -378,6 +423,9 @@ export default function PortesGestion() {
       statusCounts.byStatus,
       statusCounts.totalSansContrat,
       toggleFilter,
+      isRecording,
+      isStarting,
+      recordingError,
     ]
   )
 

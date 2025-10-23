@@ -92,20 +92,29 @@ export class RecordingService {
    */
   static async startRecording(commercialId, audioOnly = true) {
     try {
-      const roomName = `commercial-${commercialId}`
-      const participantIdentity = `commercial-${commercialId}`
+      console.log('🔧 Service startRecording appelé avec:', { commercialId, audioOnly })
+      
+      const roomName = `room:commercial:${commercialId}`
+      
+      console.log('🎤 Démarrage enregistrement (room composite):', { 
+        roomName,
+        audioOnly,
+        mode: 'composite'
+      })
 
       const data = await graphqlClient.request(START_RECORDING, {
         input: {
           roomName,
           audioOnly,
-          participantIdentity,
+          // Room composite : fonctionne parfaitement
+          // participantIdentity non spécifié = room composite
         },
       })
 
+      console.log('✅ Réponse startRecording:', data.startRecording)
       return data.startRecording
     } catch (error) {
-      console.error('Erreur démarrage enregistrement:', error)
+      console.error('❌ Erreur démarrage enregistrement:', error)
       throw error
     }
   }
@@ -115,13 +124,16 @@ export class RecordingService {
    */
   static async stopRecording(egressId) {
     try {
+      console.log('🛑 Arrêt enregistrement, egressId:', egressId)
+
       const data = await graphqlClient.request(STOP_RECORDING, {
         input: { egressId },
       })
 
+      console.log('✅ Réponse stopRecording:', data.stopRecording)
       return data.stopRecording
     } catch (error) {
-      console.error('Erreur arrêt enregistrement:', error)
+      console.error('❌ Erreur arrêt enregistrement:', error)
       throw error
     }
   }
