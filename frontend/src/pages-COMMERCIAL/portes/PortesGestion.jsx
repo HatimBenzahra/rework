@@ -21,6 +21,7 @@ import {
 } from '@/hooks/use-api'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
 import { useRecording } from '@/hooks/useRecording'
+import { useErrorToast } from '@/hooks/use-error-toast'
 import { useRole } from '@/contexts/userole'
 import { STATUT_OPTIONS } from './Statut_options'
 import PortesTemplate from './components/PortesTemplate'
@@ -53,6 +54,9 @@ export default function PortesGestion() {
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base, getButtonClasses } = useCommercialTheme()
+
+  // Hook pour les toasts
+  const { showError, showSuccess } = useErrorToast()
 
   // Configuration des statuts avec les couleurs du thème (mémo pour éviter recréations)
   const statutOptions = useMemo(() => STATUT_OPTIONS(), [])
@@ -187,12 +191,23 @@ export default function PortesGestion() {
       })
       setShowEditModal(false)
       setSelectedPorte(null)
+      showSuccess('Porte mise à jour avec succès !')
     } catch (error) {
       console.error('Error updating porte:', error)
+      showError(error, 'Mise à jour porte')
     } finally {
       setIsSaving(false)
     }
-  }, [selectedPorte, isSaving, editForm, updatePorte, refetch, withScrollRestore])
+  }, [
+    selectedPorte,
+    isSaving,
+    editForm,
+    updatePorte,
+    refetch,
+    withScrollRestore,
+    showSuccess,
+    showError,
+  ])
 
   // Changement rapide de statut
   const handleQuickStatusChange = useCallback(
@@ -221,11 +236,13 @@ export default function PortesGestion() {
           await updatePorte(updateData)
           await refetch()
         })
+        showSuccess('Statut mis à jour avec succès !')
       } catch (error) {
         console.error('Error updating porte status:', error)
+        showError(error, 'Mise à jour statut')
       }
     },
-    [updatePorte, refetch, withScrollRestore]
+    [updatePorte, refetch, withScrollRestore, showSuccess, showError]
   )
 
   // Repassages +/-
@@ -241,14 +258,14 @@ export default function PortesGestion() {
         })
       } catch (error) {
         console.error('Error updating repassages:', error)
+        showError(error, 'Mise à jour repassages')
       }
     },
-    [updatePorte, refetch, withScrollRestore]
+    [updatePorte, refetch, withScrollRestore, showError]
   )
 
   // Navigation avec arrêt automatique de l'enregistrement
   const handleBackToImmeubles = useCallback(() => {
-    console.log("🔙 Retour vers immeubles - Arrêt automatique de l'enregistrement")
     // L'enregistrement s'arrêtera automatiquement via le hook useRecording
     // quand le composant se démonte (enabled devient false)
     navigate('/immeubles')
@@ -263,12 +280,14 @@ export default function PortesGestion() {
         await addEtage(parseInt(immeubleId, 10))
         await refetch()
       })
+      showSuccess('Étage ajouté avec succès !')
     } catch (error) {
       console.error('Error adding etage:', error)
+      showError(error, 'Ajout étage')
     } finally {
       setAddingEtage(false)
     }
-  }, [immeubleId, addingEtage, addEtage, refetch, withScrollRestore])
+  }, [immeubleId, addingEtage, addEtage, refetch, withScrollRestore, showSuccess, showError])
 
   // Ajout d'une porte sur un étage donné
   const handleAddPorteToEtage = useCallback(
@@ -280,13 +299,23 @@ export default function PortesGestion() {
           await addPorteToEtage({ immeubleId: parseInt(immeubleId, 10), etage })
           await refetch()
         })
+        showSuccess('Porte ajoutée avec succès !')
       } catch (error) {
         console.error('Error adding porte to etage:', error)
+        showError(error, 'Ajout porte')
       } finally {
         setAddingPorteToEtage(false)
       }
     },
-    [immeubleId, addingPorteToEtage, addPorteToEtage, refetch, withScrollRestore]
+    [
+      immeubleId,
+      addingPorteToEtage,
+      addPorteToEtage,
+      refetch,
+      withScrollRestore,
+      showSuccess,
+      showError,
+    ]
   )
 
   // Composant personnalisé pour les filtres supplémentaires

@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { RecordingService } from '@/services/recordings'
+import { logger } from '@/services/graphql-errors'
+import { AUDIO_TIMING } from '@/constants/timing'
+import { useTimeout } from './useTimeout'
+import { useCleanup } from './useCleanup'
 
 /**
  * Hook pour gérer l'enregistrement automatique des commerciaux
@@ -18,12 +22,17 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
   const isProcessingRef = useRef(false)
   const currentEgressIdRef = useRef(null)
 
+  // Utiliser useCleanup pour gérer l'arrêt automatique
+  const { addCleanup } = useCleanup({
+    namespace: 'Recording',
+  })
+
   /**
    * Démarre l'enregistrement automatiquement
    */
   const startRecording = useCallback(async () => {
     if (!commercialId || !enabled || !audioConnected || isProcessingRef.current || isRecording) {
-      console.log('🚫 Enregistrement non démarré:', {
+      logger.debug('Recording', '🚫 Enregistrement non démarré:', {
         commercialId,
         enabled,
         audioConnected,
@@ -38,8 +47,8 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
       setIsStarting(true)
       setError(null)
 
-      console.log('🎤 Démarrage enregistrement pour commercial:', commercialId)
-      console.log('📋 État avant startRecording:', {
+      logger.info('Recording', '🎤 Démarrage enregistrement pour commercial:', commercialId)
+      logger.debug('Recording', '📋 État avant startRecording:', {
         commercialId,
         enabled,
         isRecording,
@@ -47,29 +56,35 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
       })
 
       const result = await RecordingService.startRecording(commercialId, true)
-      console.log('🎯 Result from RecordingService:', result)
+      logger.debug('Recording', '🎯 Result from RecordingService:', result)
 
-      console.log('✅ Enregistrement démarré:', result)
+      logger.info('Recording', '✅ Enregistrement démarré:', result)
 
       setRecordingData(result)
       setIsRecording(true)
       currentEgressIdRef.current = result.egressId
+
+      // Ajouter le cleanup automatique
+      addCleanup(
+        () => RecordingService.stopRecording(result.egressId),
+        'current-recording'
+      )
     } catch (err) {
-      console.error('❌ Erreur démarrage enregistrement:', err)
+      logger.error('Recording', '❌ Erreur démarrage enregistrement:', err)
       setError(err.message || 'Erreur de démarrage')
       setIsRecording(false)
     } finally {
       setIsStarting(false)
       isProcessingRef.current = false
     }
-  }, [commercialId, enabled, audioConnected, isRecording])
+  }, [commercialId, enabled, audioConnected, isRecording, addCleanup])
 
   /**
    * Arrête l'enregistrement et upload vers S3
    */
   const stopRecording = useCallback(async () => {
     if (!currentEgressIdRef.current || !isRecording || isProcessingRef.current) {
-      console.log('🚫 Arrêt enregistrement ignoré:', {
+      logger.debug('Recording', '🚫 Arrêt enregistrement ignoré:', {
         egressId: currentEgressIdRef.current,
         isRecording,
         isProcessing: isProcessingRef.current,
@@ -82,20 +97,20 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
       setIsStopping(true)
       setError(null)
 
-      console.log('🛑 Arrêt enregistrement, egressId:', currentEgressIdRef.current)
+      logger.info('Recording', '🛑 Arrêt enregistrement, egressId:', currentEgressIdRef.current)
 
       const success = await RecordingService.stopRecording(currentEgressIdRef.current)
 
       if (success) {
-        console.log('✅ Enregistrement arrêté et envoyé vers S3')
+        logger.info('Recording', '✅ Enregistrement arrêté et envoyé vers S3')
         setIsRecording(false)
         setRecordingData(null)
         currentEgressIdRef.current = null
       } else {
-        console.warn('⚠️ Arrêt enregistrement: statut non confirmé')
+        logger.warn('Recording', '⚠️ Arrêt enregistrement: statut non confirmé')
       }
     } catch (err) {
-      console.error('❌ Erreur arrêt enregistrement:', err)
+      logger.error('Recording', '❌ Erreur arrêt enregistrement:', err)
       setError(err.message || "Erreur d'arrêt")
     } finally {
       setIsStopping(false)
@@ -110,9 +125,9 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
     if (currentEgressIdRef.current) {
       try {
         await RecordingService.stopRecording(currentEgressIdRef.current)
-        console.log("🔧 Arrêt forcé de l'enregistrement")
+        logger.info('Recording', "🔧 Arrêt forcé de l'enregistrement")
       } catch (err) {
-        console.error('❌ Erreur arrêt forcé:', err)
+        logger.error('Recording', '❌ Erreur arrêt forcé:', err)
       } finally {
         // Reset état local dans tous les cas
         setIsRecording(false)
@@ -123,19 +138,15 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
     }
   }, [])
 
-  /**
-   * Démarrage automatique quand enabled passe à true
-   */
-  useEffect(() => {
-    if (enabled && audioConnected && !isRecording && !isProcessingRef.current) {
-      // Délai pour laisser la connexion audio se stabiliser
-      const timer = setTimeout(() => {
-        startRecording()
-      }, 2000) // 2 secondes après connexion audio
-
-      return () => clearTimeout(timer)
+  // Utiliser useTimeout pour le démarrage automatique avec délai
+  useTimeout(
+    startRecording,
+    AUDIO_TIMING.RECORDING_START_DELAY,
+    {
+      autoStart: enabled && audioConnected && !isRecording && !isProcessingRef.current,
+      namespace: 'RecordingAutoStart',
     }
-  }, [enabled, audioConnected, startRecording, isRecording])
+  )
 
   /**
    * Arrêt automatique quand enabled passe à false
@@ -146,20 +157,7 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
     }
   }, [enabled, isRecording, stopRecording])
 
-  /**
-   * Nettoyage à la déconnexion du composant
-   */
-  useEffect(() => {
-    return () => {
-      console.log('🧹 Nettoyage hook useRecording, egressId:', currentEgressIdRef.current)
-      if (currentEgressIdRef.current) {
-        // Tentative d'arrêt propre avant démontage
-        RecordingService.stopRecording(currentEgressIdRef.current)
-          .then(() => console.log('✅ Enregistrement arrêté lors du nettoyage'))
-          .catch(err => console.error('❌ Erreur nettoyage enregistrement:', err))
-      }
-    }
-  }, [])
+  // Le cleanup est géré automatiquement par useCleanup
 
   return {
     // État

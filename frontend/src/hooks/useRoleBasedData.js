@@ -13,7 +13,7 @@ import {
   filterStatistics,
   hasPermission,
   getEntityDescription,
-} from '../utils/roleFilters'
+} from '../utils_role_decider/roleFilters'
 
 /**
  * Hook principal pour obtenir des données filtrées selon le rôle

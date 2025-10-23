@@ -19,6 +19,8 @@ import { immeubleApi } from '@/services/api-service'
 import AddImmeubleModal from '@/components/AddImmeubleModal'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useErrorToast } from '@/hooks/use-error-toast'
+import { UI_TIMING } from '@/constants/timing'
 
 const ITEMS_PER_PAGE = 8
 
@@ -32,6 +34,9 @@ export default function ImmeublesList() {
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { base, components, getButtonClasses, getInputClasses } = useCommercialTheme()
+
+  // Hook pour les toasts
+  const { showError, showSuccess } = useErrorToast()
 
   const context = useOutletContext()
   const commercial = context?.commercial
@@ -64,8 +69,8 @@ export default function ImmeublesList() {
   React.useEffect(() => {
     const handleScroll = e => {
       const scrollContainer = e.target
-      // Afficher le bouton si on a scrollé plus de 300px
-      setShowScrollToTop(scrollContainer.scrollTop > 300)
+      // Afficher le bouton si on a scrollé plus que le seuil défini
+      setShowScrollToTop(scrollContainer.scrollTop > UI_TIMING.SCROLL_TO_TOP_THRESHOLD)
     }
 
     // Attendre que le DOM soit complètement monté
@@ -74,7 +79,7 @@ export default function ImmeublesList() {
       if (scrollContainer) {
         scrollContainer.addEventListener('scroll', handleScroll)
       }
-    }, 200)
+    }, UI_TIMING.SCROLL_CONTAINER_SETUP_DELAY)
 
     return () => {
       clearTimeout(timer)
@@ -106,9 +111,12 @@ export default function ImmeublesList() {
 
       // Refetch data after successful creation
       await refetch()
+
+      // Toast de succès
+      showSuccess('Immeuble ajouté avec succès !')
     } catch (error) {
       console.error('Error creating immeuble:', error)
-      // You might want to show a toast notification here
+      showError(error, 'Ajout immeuble')
     }
   }
 

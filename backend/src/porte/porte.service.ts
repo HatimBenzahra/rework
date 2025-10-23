@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreatePorteInput, UpdatePorteInput, StatutPorte } from './porte.dto';
+import { StatisticSyncService } from '../statistic/statistic-sync.service';
 
 @Injectable()
 export class PorteService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private statisticSyncService: StatisticSyncService
+  ) {}
 
   async create(createPorteInput: CreatePorteInput) {
     return this.prisma.porte.create({
@@ -39,19 +43,26 @@ export class PorteService {
   async update(updatePorteInput: UpdatePorteInput) {
     const { id, ...data } = updatePorteInput;
 
-    // Si le statut change vers NECESSITE_REPASSAGE, incrémenter le nombre de repassages
+    // 1. Récupérer l'état actuel pour détecter les changements
+    const currentPorte = await this.prisma.porte.findUnique({
+      where: { id },
+      include: { immeuble: true }
+    });
+
+    if (!currentPorte) {
+      throw new Error(`Porte avec id ${id} non trouvée`);
+    }
+
+    const oldStatut = currentPorte.statut;
+
+    // 2. Si le statut change vers NECESSITE_REPASSAGE, incrémenter le nombre de repassages
     if (data.statut === StatutPorte.NECESSITE_REPASSAGE) {
-      const currentPorte = await this.prisma.porte.findUnique({
-        where: { id },
-      });
-      if (
-        currentPorte &&
-        currentPorte.statut !== StatutPorte.NECESSITE_REPASSAGE
-      ) {
+      if (currentPorte.statut !== StatutPorte.NECESSITE_REPASSAGE) {
         data.nbRepassages = (currentPorte.nbRepassages || 0) + 1;
       }
     }
 
+    // 3. Mettre à jour la porte
     const updatedPorte = await this.prisma.porte.update({
       where: { id },
       data,
@@ -60,11 +71,21 @@ export class PorteService {
       },
     });
 
-    // tri du plus récent au plus ancien
+    // 4. Mettre à jour le timestamp de l'immeuble (tri du plus récent au plus ancien)
     await this.prisma.immeuble.update({
       where: { id: updatedPorte.immeubleId },
       data: { updatedAt: new Date() },
     });
+
+    // 5. 🎯 NOUVELLE LOGIQUE : Synchroniser les statistiques si le statut a changé
+    if (data.statut && data.statut !== oldStatut) {
+      try {
+        await this.statisticSyncService.syncCommercialStats(updatedPorte.immeubleId);
+      } catch (error) {
+        // Log l'erreur mais ne fait pas échouer la mise à jour de la porte
+        console.error('Erreur sync statistiques:', error);
+      }
+    }
 
     return updatedPorte;
   }

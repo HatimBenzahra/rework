@@ -217,14 +217,65 @@ export function getErrorMessage(error: unknown): string {
   return 'Une erreur est survenue'
 }
 
+// =============================================================================
+// Logger Configuration
+// =============================================================================
+
+enum LogLevel {
+  ERROR = 0,
+  WARN = 1,
+  INFO = 2,
+  DEBUG = 3,
+}
+
+class Logger {
+  private level: LogLevel
+  
+  constructor() {
+    // En production : WARN, en développement : DEBUG
+    this.level = process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG
+  }
+
+  private formatMessage(level: string, namespace: string, args: any[]) {
+    const timestamp = new Date().toISOString().slice(11, 23) // HH:mm:ss.SSS
+    return [`[${timestamp}] ${namespace} ${level}:`, ...args]
+  }
+
+  error(namespace: string, ...args: any[]) {
+    if (this.level >= LogLevel.ERROR) {
+      console.error(...this.formatMessage('ERROR', namespace, args))
+    }
+  }
+
+  warn(namespace: string, ...args: any[]) {
+    if (this.level >= LogLevel.WARN) {
+      console.warn(...this.formatMessage('WARN', namespace, args))
+    }
+  }
+
+  info(namespace: string, ...args: any[]) {
+    if (this.level >= LogLevel.INFO) {
+      console.info(...this.formatMessage('INFO', namespace, args))
+    }
+  }
+
+  debug(namespace: string, ...args: any[]) {
+    if (this.level >= LogLevel.DEBUG) {
+      console.log(...this.formatMessage('DEBUG', namespace, args))
+    }
+  }
+}
+
+export const logger = new Logger()
+
 /**
  * Log error with detailed information (for debugging)
  */
 export function logError(error: unknown, context?: string): void {
-  const prefix = context ? `[${context}]` : '[GraphQL Client]'
+  const namespace = context || 'GraphQL Client'
 
   if (error instanceof GraphQLClientError) {
-    console.error(`${prefix} ${error.type}:`, {
+    logger.error(namespace, `${error.type}:`, {
       message: error.message,
       userMessage: error.getUserMessage(),
       statusCode: error.statusCode,
@@ -233,6 +284,6 @@ export function logError(error: unknown, context?: string): void {
       originalError: error.originalError,
     })
   } else {
-    console.error(`${prefix} Error:`, error)
+    logger.error(namespace, 'Error:', error)
   }
 }

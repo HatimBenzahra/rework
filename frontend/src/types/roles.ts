@@ -3,13 +3,13 @@
  * Provides strict typing for roles, permissions and entity relationships
  */
 
-import type { ROLES } from '../utils/roleFilters'
+import type { ROLES } from '../utils_role_decider/roleFilters'
 
-export type Role = typeof ROLES[keyof typeof ROLES]
+export type Role = (typeof ROLES)[keyof typeof ROLES]
 
-export type EntityType = 
+export type EntityType =
   | 'commerciaux'
-  | 'managers' 
+  | 'managers'
   | 'directeurs'
   | 'zones'
   | 'immeubles'
@@ -24,7 +24,7 @@ export interface EntityPermissions {
   delete: boolean
 }
 
-export interface RolePermissions {
+export type RolePermissions = {
   [K in EntityType]: EntityPermissions
 }
 

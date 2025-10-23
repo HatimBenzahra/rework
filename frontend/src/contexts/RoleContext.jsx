@@ -2,7 +2,7 @@
  * Contexte global pour la gestion des rôles et des données filtrées
  */
 import React, { useMemo } from 'react'
-import { ROLES } from '../utils/roleFilters'
+import { ROLES } from '../utils_role_decider/roleFilters'
 import { RoleContext } from './userole'
 
 // Fonctions utilitaires pour localStorage

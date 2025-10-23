@@ -1,5 +1,6 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { StatisticService } from './statistic.service';
+import { StatisticSyncService } from './statistic-sync.service';
 import {
   Statistic,
   CreateStatisticInput,
@@ -9,7 +10,10 @@ import {
 
 @Resolver(() => Statistic)
 export class StatisticResolver {
-  constructor(private readonly statisticService: StatisticService) {}
+  constructor(
+    private readonly statisticService: StatisticService,
+    private readonly statisticSyncService: StatisticSyncService
+  ) {}
 
   @Mutation(() => Statistic)
   createStatistic(
@@ -51,5 +55,31 @@ export class StatisticResolver {
     @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
   ) {
     return this.statisticService.getZoneStatistics(userId, userRole);
+  }
+
+  // 🔧 NOUVEAUX ENDPOINTS DE MAINTENANCE
+  
+  @Mutation(() => String, { name: 'recalculateAllStats' })
+  async recalculateAllStats() {
+    const result = await this.statisticSyncService.recalculateAllStats();
+    return `Recalcul terminé: ${result.updated} mis à jour, ${result.errors} erreurs`;
+  }
+
+  @Query(() => String, { name: 'validateStatsCoherence' })
+  async validateStatsCoherence() {
+    const result = await this.statisticSyncService.validateStatsCoherence();
+    if (result.invalid.length === 0) {
+      return `✅ Toutes les ${result.valid} statistiques sont cohérentes`;
+    } else {
+      return `⚠️ ${result.valid} cohérentes, ${result.invalid.length} incohérentes: ${JSON.stringify(result.invalid)}`;
+    }
+  }
+
+  @Mutation(() => String, { name: 'syncCommercialStats' })
+  async syncCommercialStats(
+    @Args('immeubleId', { type: () => Int }) immeubleId: number
+  ) {
+    await this.statisticSyncService.syncCommercialStats(immeubleId);
+    return `✅ Statistiques synchronisées pour l'immeuble ${immeubleId}`;
   }
 }

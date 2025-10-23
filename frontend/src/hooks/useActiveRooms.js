@@ -1,66 +1,61 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { AudioMonitoringService } from '@/services/audio-monitoring'
+import { useAsyncState } from './useAsyncState'
+import { usePolling } from './useInterval'
 
 /**
  * Hook pour récupérer et surveiller les rooms actives et les commerciaux en ligne
  */
 export function useActiveRooms(refreshInterval = 5000) {
-  const [activeRooms, setActiveRooms] = useState([])
-  const [activeSessions, setActiveSessions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  // Utiliser useAsyncState pour gérer l'état loading/error/data
+  const asyncState = useAsyncState({
+    namespace: 'ActiveRooms',
+    retryEnabled: true,
+    retryDelays: [1000, 2000, 4000],
+    showToasts: true,
+  })
 
   // Fonction pour récupérer les données
   const fetchData = useCallback(async () => {
-    try {
-      setError(null)
-      
-      // Récupérer les rooms actives et les sessions en parallèle
-      const [rooms, sessions] = await Promise.all([
-        AudioMonitoringService.getActiveRooms(),
-        AudioMonitoringService.getActiveSessions(),
-      ])
+    // Récupérer les rooms actives et les sessions en parallèle
+    const [rooms, sessions] = await Promise.all([
+      AudioMonitoringService.getActiveRooms(),
+      AudioMonitoringService.getActiveSessions(),
+    ])
 
-      setActiveRooms(rooms || [])
-      setActiveSessions(sessions || [])
-    } catch (err) {
-      console.error('Erreur récupération données audio:', err)
-      setError(err.message || 'Erreur de récupération des données')
-    } finally {
-      setLoading(false)
+    return {
+      activeRooms: rooms || [],
+      activeSessions: sessions || [],
     }
   }, [])
 
-  // Récupération initiale
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  // Utiliser usePolling pour le rafraîchissement automatique
+  usePolling(
+    () => asyncState.execute(fetchData),
+    refreshInterval,
+    {
+      enabled: !!refreshInterval,
+      immediate: true,
+      namespace: 'ActiveRoomsPolling',
+    }
+  )
 
-  // Rafraîchissement automatique
-  useEffect(() => {
-    if (!refreshInterval) return
+  // Fonctions utilitaires qui utilisent les données de asyncState
+  const isCommercialOnline = useCallback(
+    commercialId => {
+      const commercialKey = `commercial-${commercialId}`
+      const activeRooms = asyncState.data?.activeRooms || []
 
-    const interval = setInterval(() => {
-      fetchData()
-    }, refreshInterval)
+      // Vérifier si le commercial a une room active
+      return activeRooms.some(room => room.participantNames.includes(commercialKey))
+    },
+    [asyncState.data]
+  )
 
-    return () => clearInterval(interval)
-  }, [fetchData, refreshInterval])
-
-  // Fonction pour déterminer si un commercial est en ligne
-  const isCommercialOnline = useCallback((commercialId) => {
-    const commercialKey = `commercial-${commercialId}`
-    
-    // Vérifier si le commercial a une room active
-    return activeRooms.some(room => 
-      room.participantNames.includes(commercialKey)
-    )
-  }, [activeRooms])
-
-  // Fonction pour récupérer les commerciaux en ligne
   const getOnlineCommercials = useCallback(() => {
     const onlineCommercials = []
-    
+    const activeRooms = asyncState.data?.activeRooms || []
+
     activeRooms.forEach(room => {
       room.participantNames.forEach(participantName => {
         if (participantName.startsWith('commercial-')) {
@@ -77,33 +72,36 @@ export function useActiveRooms(refreshInterval = 5000) {
         }
       })
     })
-    
-    return onlineCommercials
-  }, [activeRooms])
 
-  // Fonction pour récupérer les sessions d'écoute actives pour un commercial
-  const getActiveSessionsForCommercial = useCallback((commercialId) => {
-    return activeSessions.filter(session => 
-      session.commercialId === commercialId && session.status === 'ACTIVE'
-    )
-  }, [activeSessions])
+    return onlineCommercials
+  }, [asyncState.data])
+
+  const getActiveSessionsForCommercial = useCallback(
+    commercialId => {
+      const activeSessions = asyncState.data?.activeSessions || []
+      return activeSessions.filter(
+        session => session.commercialId === commercialId && session.status === 'ACTIVE'
+      )
+    },
+    [asyncState.data]
+  )
 
   return {
-    // Données
-    activeRooms,
-    activeSessions,
-    
+    // Données (avec fallback pour compatibilité)
+    activeRooms: asyncState.data?.activeRooms || [],
+    activeSessions: asyncState.data?.activeSessions || [],
+
     // État
-    loading,
-    error,
-    
+    loading: asyncState.loading,
+    error: asyncState.error,
+
     // Fonctions utilitaires
     isCommercialOnline,
     getOnlineCommercials,
     getActiveSessionsForCommercial,
-    
+
     // Actions
-    refetch: fetchData,
+    refetch: () => asyncState.execute(fetchData),
   }
 }
 

@@ -189,6 +189,7 @@ type Mutation {
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
   generateCommercialToken(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
+  recalculateAllStats: String!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!
   removeEtageFromImmeuble(id: Int!): Immeuble!
@@ -202,6 +203,7 @@ type Mutation {
   startRecording(input: StartRecordingInput!): RecordingResult!
   stopMonitoring(input: StopMonitoringInput!): Boolean!
   stopRecording(input: StopRecordingInput!): Boolean!
+  syncCommercialStats(immeubleId: Int!): String!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
   updateCommercialHeartbeat(commercialId: Int!): Boolean!
@@ -249,6 +251,7 @@ type Query {
   portesByImmeuble(immeubleId: Int!): [Porte!]!
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int, userId: Int, userRole: String): [Statistic!]!
+  validateStatsCoherence: String!
   zone(id: Int!): Zone!
   zoneStatistics(userId: Int, userRole: String): [ZoneStatistic!]!
   zones(userId: Int, userRole: String): [Zone!]!

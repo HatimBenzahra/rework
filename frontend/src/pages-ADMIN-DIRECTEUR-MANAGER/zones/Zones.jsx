@@ -20,7 +20,7 @@ import {
 import { useErrorToast } from '@/hooks/use-error-toast'
 import { useState, useMemo } from 'react'
 import { apiCache } from '@/services/api-cache'
-import { ROLES } from '@/utils/roleFilters'
+import { ROLES } from '@/utils_role_decider/roleFilters'
 
 // Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
 const fetchLocationName = async (longitude, latitude) => {

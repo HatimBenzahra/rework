@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
+import { logger } from '@/services/graphql-errors'
+import { AUDIO_TIMING } from '@/constants/timing'
+import { useTimeout } from './useTimeout'
+import { useConnectionCleanup } from './useCleanup'
 
 /**
  * Hook pour gérer l'audio monitoring automatique des commerciaux
@@ -10,9 +14,14 @@ export function useCommercialAutoAudio(commercialId, enabled = true) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState(null)
   const [connectionDetails, setConnectionDetails] = useState(null)
-  
+
   const roomRef = useRef(null)
   const audioStreamRef = useRef(null)
+
+  // Utiliser useConnectionCleanup pour gérer les ressources
+  const { addConnection, cleanupAll } = useConnectionCleanup({
+    namespace: 'CommercialAudio',
+  })
 
   // Fonction pour démarrer la connexion audio
   const startAudioPublishing = useCallback(async () => {
@@ -25,57 +34,61 @@ export function useCommercialAutoAudio(commercialId, enabled = true) {
       setError(null)
 
       // 1. Générer le token commercial
-      console.log('🎤 Génération token commercial...', commercialId)
+      logger.debug('Audio', '🎤 Génération token commercial...', commercialId)
       const details = await AudioMonitoringService.generateCommercialToken(commercialId)
       setConnectionDetails(details)
 
       // 2. Se connecter à LiveKit comme publisher
-      console.log('🎤 Connexion LiveKit...', details.roomName)
+      logger.debug('Audio', '🎤 Connexion LiveKit...', details.roomName)
       const room = await LiveKitUtils.connectAsCommercial(details)
       roomRef.current = room
 
       // 3. Marquer comme connecté
       setIsConnected(true)
-      console.log('✅ Audio monitoring actif pour commercial', commercialId)
+      logger.info('Audio', '✅ Audio monitoring actif pour commercial', commercialId)
 
       // 4. Gérer les événements de déconnexion
       room.on('disconnected', () => {
-        console.log('🔌 Commercial déconnecté de LiveKit')
+        logger.info('Audio', '🔌 Commercial déconnecté de LiveKit')
         setIsConnected(false)
         setConnectionDetails(null)
         roomRef.current = null
       })
 
+      // 5. Enregistrer la connexion pour cleanup
+      addConnection(room, 'livekit-room', LiveKitUtils.disconnect)
+      if (audioStreamRef.current) {
+        addConnection(
+          audioStreamRef.current,
+          'audio-stream',
+          stream => stream.getTracks().forEach(track => track.stop())
+        )
+      }
+
     } catch (err) {
-      console.error('❌ Erreur connexion audio:', err)
+      logger.error('Audio', '❌ Erreur connexion audio:', err)
       setError(err.message || 'Erreur de connexion audio')
       setIsConnected(false)
     } finally {
       setIsConnecting(false)
     }
-  }, [commercialId, enabled, isConnecting, isConnected])
+  }, [commercialId, enabled, isConnecting, isConnected, addConnection])
 
   // Fonction pour arrêter la connexion audio
   const stopAudioPublishing = useCallback(async () => {
     try {
-      if (roomRef.current) {
-        await LiveKitUtils.disconnect(roomRef.current)
-        roomRef.current = null
-      }
-      
-      if (audioStreamRef.current) {
-        audioStreamRef.current.getTracks().forEach(track => track.stop())
-        audioStreamRef.current = null
-      }
+      await cleanupAll()
+      roomRef.current = null
+      audioStreamRef.current = null
 
       setIsConnected(false)
       setConnectionDetails(null)
       setError(null)
-      console.log('🔇 Audio monitoring arrêté')
+      logger.info('Audio', '🔇 Audio monitoring arrêté')
     } catch (err) {
-      console.error('Erreur arrêt audio:', err)
+      logger.error('Audio', 'Erreur arrêt audio:', err)
     }
-  }, [])
+  }, [cleanupAll])
 
   // Fonction pour redémarrer la connexion
   const restartAudioPublishing = useCallback(async () => {
@@ -83,29 +96,17 @@ export function useCommercialAutoAudio(commercialId, enabled = true) {
     await startAudioPublishing()
   }, [stopAudioPublishing, startAudioPublishing])
 
-  // Démarrage automatique quand le commercial se connecte
-  useEffect(() => {
-    if (commercialId && enabled && !isConnected && !isConnecting) {
-      // Délai pour laisser le temps au layout de se charger
-      const timer = setTimeout(() => {
-        startAudioPublishing()
-      }, 2000)
-
-      return () => clearTimeout(timer)
+  // Utiliser useTimeout pour le démarrage automatique avec délai
+  useTimeout(
+    startAudioPublishing,
+    AUDIO_TIMING.AUTO_CONNECT_DELAY,
+    {
+      autoStart: commercialId && enabled && !isConnected && !isConnecting,
+      namespace: 'CommercialAutoConnect',
     }
-  }, [commercialId, enabled, isConnected, isConnecting, startAudioPublishing])
+  )
 
-  // Nettoyage à la déconnexion du composant
-  useEffect(() => {
-    return () => {
-      if (roomRef.current) {
-        LiveKitUtils.disconnect(roomRef.current)
-      }
-      if (audioStreamRef.current) {
-        audioStreamRef.current.getTracks().forEach(track => track.stop())
-      }
-    }
-  }, [])
+  // Le cleanup est géré automatiquement par useConnectionCleanup
 
   return {
     // État
