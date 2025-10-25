@@ -2,7 +2,7 @@ import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Edit3, Minus, Plus, Calendar, User, MessageSquare } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 
 export default function PorteCard({
   porte,
@@ -30,34 +30,36 @@ export default function PorteCard({
     const now = new Date()
     const diffTime = Math.abs(now - d)
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    if (diffDays === 1) return 'Aujourd\'hui'
+
+    if (diffDays === 1) return "Aujourd'hui"
     if (diffDays === 2) return 'Hier'
     if (diffDays <= 7) return `Il y a ${diffDays - 1} jours`
-    
+
     return d.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: '2-digit'
+      year: '2-digit',
     })
   }
 
   // Formatage du RDV
   const formatRdv = () => {
     if (!porte.rdvDate) return null
-    
+
     const rdvDate = new Date(porte.rdvDate)
     const dateStr = rdvDate.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
-      year: '2-digit'
+      year: '2-digit',
     })
-    
+
     return porte.rdvTime ? `${dateStr} � ${porte.rdvTime}` : dateStr
   }
 
   return (
-    <Card className={`${base.bg.card} ${base.border.card} shadow-sm hover:shadow-md transition-all duration-200`}>
+    <Card
+      className={`${base.bg.card} ${base.border.card} shadow-sm hover:shadow-md transition-all duration-200`}
+    >
       <CardContent className="p-3 sm:p-4">
         {/* En-t�te de la porte */}
         <div className="flex items-start justify-between mb-3">
@@ -67,7 +69,9 @@ export default function PorteCard({
                 {porte.nomPersonnalise || `Porte ${porte.numero}`}
               </h3>
               {porte.nomPersonnalise && (
-                <span className={`text-xs ${base.text.muted} bg-gray-100 px-2 py-0.5 rounded flex-shrink-0`}>
+                <span
+                  className={`text-xs ${base.text.muted} bg-gray-100 px-2 py-0.5 rounded flex-shrink-0`}
+                >
                   {porte.numero}
                 </span>
               )}
@@ -94,7 +98,9 @@ export default function PorteCard({
 
         {/* Statut */}
         <div className="mb-3">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium ${statutInfo.color}`}>
+          <div
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-sm font-medium ${statutInfo.color}`}
+          >
             <IconComponent className="h-4 w-4" />
             <span>{statutInfo.label}</span>
           </div>
@@ -104,7 +110,9 @@ export default function PorteCard({
         <div className="space-y-2 mb-3">
           {/* RDV programm� */}
           {porte.statut === 'RENDEZ_VOUS_PRIS' && porte.rdvDate && (
-            <div className={`flex items-center gap-2 p-2 rounded-lg ${colors.primary.bgLight} border ${colors.primary.border}`}>
+            <div
+              className={`flex items-center gap-2 p-2 rounded-lg ${colors.primary.bgLight} border ${colors.primary.border}`}
+            >
               <Calendar className={`h-4 w-4 ${colors.primary.textLight}`} />
               <span className={`text-sm font-medium ${colors.primary.textLight}`}>
                 RDV: {formatRdv()}
@@ -114,7 +122,9 @@ export default function PorteCard({
 
           {/* Commentaire */}
           {porte.commentaire && (
-            <div className={`flex items-start gap-2 p-2 rounded-lg ${base.bg.muted} border ${base.border.default}`}>
+            <div
+              className={`flex items-start gap-2 p-2 rounded-lg ${base.bg.muted} border ${base.border.default}`}
+            >
               <MessageSquare className={`h-4 w-4 ${base.text.muted} mt-0.5 flex-shrink-0`} />
               <span className={`text-sm ${base.text.secondary} break-words`}>
                 {porte.commentaire}
@@ -124,7 +134,9 @@ export default function PorteCard({
 
           {/* Nom personnalis� affich� comme contact */}
           {porte.nomPersonnalise && (
-            <div className={`flex items-center gap-2 p-2 rounded-lg ${colors.info.bgLight} border ${colors.info.border}`}>
+            <div
+              className={`flex items-center gap-2 p-2 rounded-lg ${colors.info.bgLight} border ${colors.info.border}`}
+            >
               <User className={`h-4 w-4 ${colors.info.text}`} />
               <span className={`text-sm font-medium ${colors.info.text}`}>
                 {porte.nomPersonnalise}

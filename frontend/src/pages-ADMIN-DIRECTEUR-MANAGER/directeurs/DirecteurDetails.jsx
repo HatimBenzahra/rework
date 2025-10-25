@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
-import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import {
   useDirecteur,
@@ -11,7 +11,7 @@ import {
   useUpdateCommercial,
 } from '@/services'
 import { useRole } from '@/contexts/userole'
-import { useErrorToast } from '@/hooks/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo, useState } from 'react'
 import { calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'

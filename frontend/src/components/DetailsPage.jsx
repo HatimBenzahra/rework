@@ -44,7 +44,7 @@ import {
 } from '@/components/ui/pagination'
 import AssignedZoneCard from './AssignedZoneCard'
 import { AdvancedDataTable } from './tableau'
-import { useEntityPermissions } from '@/hooks/useRoleBasedData'
+import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
 import { useState, useMemo, useEffect } from 'react'
 import PortesProspectionChart from './charts/PortesProspectionChart'
 import PortesWeeklyChart from './charts/PortesWeeklyChart'

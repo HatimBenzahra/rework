@@ -9,9 +9,9 @@ import {
   useDirecteurs,
 } from '@/services'
 import { useMemo } from 'react'
-import { useEntityPermissions, useEntityDescription } from '@/hooks/useRoleBasedData'
+import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
-import { useErrorToast } from '@/hooks/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { calculateRank, RANKS } from '@/share/ranks'
 import { Card } from '@/components/ui/card'
 

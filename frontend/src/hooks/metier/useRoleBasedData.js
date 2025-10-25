@@ -3,7 +3,7 @@
  */
 
 import { useMemo } from 'react'
-import { useRole } from '../contexts/userole'
+import { useRole } from '../../contexts/userole'
 import {
   filterCommercials,
   filterManagers,
@@ -13,7 +13,7 @@ import {
   filterStatistics,
   hasPermission,
   getEntityDescription,
-} from '../utils_role_decider/roleFilters'
+} from './roleFilters'
 
 /**
  * Hook principal pour obtenir des données filtrées selon le rôle

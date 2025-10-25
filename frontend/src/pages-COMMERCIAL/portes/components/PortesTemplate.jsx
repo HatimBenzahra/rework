@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Building2, ArrowLeft, Eye, CheckCircle2, RotateCcw, MapPin, Plus } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
-import { useImmeuble } from '@/hooks/use-api'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
+import { useImmeuble } from '@/hooks/metier/use-api'
 import PorteCardOriginal from './PorteCardOriginal'
 import ScrollToTopButton from './ScrollToTopButton'
 import StatusFilters from './StatusFilters'
@@ -14,35 +14,35 @@ export default function PortesTemplate({
   // Données
   portes = [],
   loading = false,
-  
+
   // Mode d'affichage
   readOnly = false,
   showStatusFilters = false,
-  
+
   // Filtres
   selectedStatuts = [],
   onStatutToggle,
   onClearStatutFilters,
-  
+
   // Actions portes (mode édition seulement)
   onPorteEdit,
   onQuickStatusChange,
   onRepassageChange,
-  
+
   // Navigation
   onBack,
-  backButtonText = "Retour",
-  
+  backButtonText = 'Retour',
+
   // Scroll target pour le bouton "remonter"
   scrollTarget,
-  scrollTargetText = "Haut",
-  
+  scrollTargetText = 'Haut',
+
   // Filtres personnalisés additionnels
   customFilters,
-  
+
   // Actions additionnelles
   additionalActions,
-  
+
   // Nouvelles actions de gestion d'étages et portes
   onAddPorteToEtage,
   onAddEtage,
@@ -115,7 +115,7 @@ export default function PortesTemplate({
     const hasFilters = showStatusFilters && selectedStatuts.length > 0
     const totalFiltered = filteredPortes.length
     const totalOriginal = stats.total
-    
+
     return {
       ...stats,
       totalFiltered,
@@ -150,7 +150,9 @@ export default function PortesTemplate({
   return (
     <div className="space-y-3 mb-6">
       {/* Header sticky (always visible) */}
-      <div className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}>
+      <div
+        className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}
+      >
         <Button
           variant="ghost"
           size="sm"
@@ -219,7 +221,9 @@ export default function PortesTemplate({
                     </p>
                   </div>
                   <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                    <Eye className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`} />
+                    <Eye
+                      className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -293,13 +297,19 @@ export default function PortesTemplate({
             {/* Adresse principale */}
             <div className="flex items-start gap-2 sm:gap-2.5 mb-3">
               <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
-                <MapPin className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`} />
+                <MapPin
+                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`}
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 uppercase tracking-wide`}>
+                <p
+                  className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 uppercase tracking-wide`}
+                >
                   Adresse
                 </p>
-                <h1 className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}>
+                <h1
+                  className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}
+                >
                   {immeuble?.adresse || 'Chargement...'}
                 </h1>
               </div>
@@ -308,7 +318,8 @@ export default function PortesTemplate({
             {immeuble?.createdAt && (
               <div className="mt-2 pt-2 border-t border-gray-200">
                 <p className={`text-xs ${base.text.muted}`}>
-                  Créé le {new Date(immeuble.createdAt).toLocaleDateString('fr-FR', {
+                  Créé le{' '}
+                  {new Date(immeuble.createdAt).toLocaleDateString('fr-FR', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
@@ -333,7 +344,9 @@ export default function PortesTemplate({
               className="flex items-center space-x-2 sm:space-x-3 scroll-mt-32"
             >
               <div className={`h-px flex-1 ${base.border.default}`}></div>
-              <div className={`px-3 sm:px-4 py-2 sm:py-2.5 ${colors.primary.bgLight} ${colors.primary.textLight} rounded-full border ${colors.primary.border} font-bold text-sm sm:text-base shadow-md`}>
+              <div
+                className={`px-3 sm:px-4 py-2 sm:py-2.5 ${colors.primary.bgLight} ${colors.primary.textLight} rounded-full border ${colors.primary.border} font-bold text-sm sm:text-base shadow-md`}
+              >
                 <h3>
                   Étage {etage} ({portesEtage.length} porte{portesEtage.length > 1 ? 's' : ''})
                 </h3>
@@ -354,7 +367,7 @@ export default function PortesTemplate({
                   readOnly={readOnly}
                 />
               ))}
-              
+
               {/* Bouton pour ajouter une porte à cet étage (mode édition seulement) */}
               {!readOnly && onAddPorteToEtage && (
                 <div className="flex justify-center mt-2">
@@ -373,7 +386,7 @@ export default function PortesTemplate({
             </div>
           </div>
         ))}
-        
+
         {/* Bouton pour ajouter un étage complet (mode édition seulement) */}
         {!readOnly && onAddEtage && Object.keys(portesByEtage).length > 0 && (
           <div className="flex justify-center pt-6">
@@ -396,21 +409,17 @@ export default function PortesTemplate({
         <div className="text-center py-12">
           <Building2 className={`h-12 w-12 mx-auto ${base.icon.default} mb-4`} />
           <h3 className={`text-lg font-medium ${base.text.primary} mb-2`}>
-            {filteredStats.hasFilters ? 'Aucune porte ne correspond aux filtres' : 'Aucune porte trouvée'}
+            {filteredStats.hasFilters
+              ? 'Aucune porte ne correspond aux filtres'
+              : 'Aucune porte trouvée'}
           </h3>
           <p className={base.text.muted}>
-            {filteredStats.hasFilters 
-              ? 'Essayez de modifier vos critères de filtrage' 
-              : "Aucune porte n'est disponible pour cet immeuble"
-            }
+            {filteredStats.hasFilters
+              ? 'Essayez de modifier vos critères de filtrage'
+              : "Aucune porte n'est disponible pour cet immeuble"}
           </p>
           {filteredStats.hasFilters && onClearStatutFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearStatutFilters}
-              className="mt-3"
-            >
+            <Button variant="outline" size="sm" onClick={onClearStatutFilters} className="mt-3">
               Effacer les filtres
             </Button>
           )}
@@ -418,10 +427,7 @@ export default function PortesTemplate({
       )}
 
       {/* Bouton flottant "Remonter" */}
-      <ScrollToTopButton 
-        targetElementRef={scrollTarget}
-        buttonText={scrollTargetText}
-      />
+      <ScrollToTopButton targetElementRef={scrollTarget} buttonText={scrollTargetText} />
     </div>
   )
 }

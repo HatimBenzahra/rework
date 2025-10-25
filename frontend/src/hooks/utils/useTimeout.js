@@ -109,16 +109,16 @@ export function useTimeout(callback, delayMs, options = {}) {
  * @param {Array} deps - Dépendances pour redémarrer
  */
 export function useSimpleTimeout(callback, delayMs, deps = []) {
-  const { isCompleted } = useTimeout(
-    callback,
-    delayMs,
-    { autoStart: true, namespace: 'SimpleTimeout' }
-  )
+  const { isCompleted } = useTimeout(callback, delayMs, {
+    autoStart: true,
+    namespace: 'SimpleTimeout',
+  })
 
   // Redémarrer si les dépendances changent
   useEffect(() => {
     // Le timeout se redémarre automatiquement via useTimeout
-  }, deps)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps])
 
   return isCompleted
 }
@@ -135,7 +135,8 @@ export function useDebounce(callback, delayMs, deps = []) {
   // Redémarrer le timeout à chaque changement de dépendances
   useEffect(() => {
     timeoutControls.restart()
-  }, deps)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...deps])
 
   return {
     trigger: timeoutControls.restart,
@@ -152,11 +153,7 @@ export function useDebounce(callback, delayMs, deps = []) {
 export function useDelayedValue(value, delayMs) {
   const [delayedValue, setDelayedValue] = useState(value)
 
-  const { restart } = useTimeout(
-    () => setDelayedValue(value),
-    delayMs,
-    { autoStart: false }
-  )
+  const { restart } = useTimeout(() => setDelayedValue(value), delayMs, { autoStart: false })
 
   useEffect(() => {
     restart()

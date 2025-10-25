@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, CheckCircle2, Building2, Award, Trophy, Target, Clock } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { calculateRank, RANKS } from '@/share/ranks'
 
 export default function CommercialDashboard() {

@@ -3,7 +3,7 @@
  * Provides strict typing for roles, permissions and entity relationships
  */
 
-import type { ROLES } from '../utils_role_decider/roleFilters'
+import type { ROLES } from '../hooks/metier/roleFilters'
 
 export type Role = (typeof ROLES)[keyof typeof ROLES]
 

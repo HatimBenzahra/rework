@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router-dom'
 import { Building2, ChevronRight, ChevronLeft, Clock } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 
 const ITEMS_PER_PAGE = 8
 

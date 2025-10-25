@@ -45,15 +45,13 @@ export function useAsyncState(config = {}) {
 
   const retryCountRef = useRef(0)
   const abortControllerRef = useRef(null)
-  const mounted = useRef(true)
 
-  // Hook pour les toasts si activé
-  const { showError, showSuccess } = showToasts ? useErrorToast() : { showError: null, showSuccess: null }
+  // Hook pour les toasts - toujours appelé
+  const { showError, showSuccess } = useErrorToast()
 
   // Cleanup au démontage
   useEffect(() => {
     return () => {
-      mounted.current = false
       abortControllerRef.current?.abort()
     }
   }, [])
@@ -84,7 +82,8 @@ export function useAsyncState(config = {}) {
 
         const result = await asyncFn(...args, controller.signal)
 
-        if (!mounted.current || controller.signal.aborted) return
+        // Vérifier si annulé
+        if (controller.signal.aborted) return
 
         setState({
           data: result,
@@ -94,17 +93,18 @@ export function useAsyncState(config = {}) {
 
         retryCountRef.current = 0
         onSuccess?.(result)
-        
+
         // Toast de succès si activé
-        if (showSuccess && successMessage) {
+        if (showToasts && showSuccess && successMessage) {
           showSuccess(successMessage)
         }
-        
+
         logger.debug(namespace, 'Succès', { result })
 
         return result
       } catch (error) {
-        if (!mounted.current || controller.signal.aborted) return
+        // Vérifier si annulé
+        if (controller.signal.aborted) return
 
         const errorMessage = error?.message || 'Erreur inconnue'
         logger.error(namespace, 'Erreur:', error)
@@ -120,7 +120,7 @@ export function useAsyncState(config = {}) {
           )
 
           setTimeout(() => {
-            if (mounted.current) {
+            if (!controller.signal.aborted) {
               execute(asyncFn, ...args)
             }
           }, delay)
@@ -135,17 +135,28 @@ export function useAsyncState(config = {}) {
         })
 
         retryCountRef.current = 0
-        
+
         // Toast d'erreur si activé
-        if (showError) {
+        if (showToasts && showError) {
           showError(error, namespace)
         }
-        
+
         onError?.(error)
         throw error
       }
     },
-    [namespace, retryEnabled, retryDelays, onSuccess, onError, resetOnExecute, showError, showSuccess, successMessage]
+    [
+      namespace,
+      retryEnabled,
+      retryDelays,
+      onSuccess,
+      onError,
+      resetOnExecute,
+      showError,
+      showSuccess,
+      showToasts,
+      successMessage,
+    ]
   )
 
   /**

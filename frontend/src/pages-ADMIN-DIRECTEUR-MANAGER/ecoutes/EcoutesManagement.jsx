@@ -22,8 +22,8 @@ import {
 import { useRole } from '@/contexts/userole'
 import { useCommercials } from '@/services'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { useErrorToast } from '@/hooks/use-error-toast'
-import { useActiveRooms } from '@/hooks/useActiveRooms'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
+import { useActiveRooms } from '@/hooks/audio/useActiveRooms'
 import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
 import { RecordingService } from '@/services/recordings'
 import {
@@ -210,27 +210,26 @@ export default function EcoutesManagement() {
     }
 
     try {
-      console.log("🔄 Génération URL streaming pour:", recording.filename)
-      
+      console.log('🔄 Génération URL streaming pour:', recording.filename)
+
       // Utiliser l'URL de streaming optimisée
       const streamingUrl = await RecordingService.getStreamingUrl(recording.key)
-      
+
       if (!streamingUrl) {
         showError("Impossible de générer l'URL de streaming")
         return
       }
 
-      console.log("✅ URL streaming générée:", streamingUrl)
-      
+      console.log('✅ URL streaming générée:', streamingUrl)
+
       // Créer un nouvel objet avec l'URL de streaming
       const recordingWithStreamingUrl = {
         ...recording,
-        url: streamingUrl
+        url: streamingUrl,
       }
-      
+
       setPlayingRecording(recordingWithStreamingUrl)
       console.log('🎵 État playingRecording mis à jour:', recordingWithStreamingUrl)
-      
     } catch (error) {
       console.error('❌ Erreur génération URL streaming:', error)
       showError('Erreur lors de la préparation de la lecture')
@@ -636,7 +635,9 @@ export default function EcoutesManagement() {
                                         <AudioPlayer
                                           src={playingRecording.url}
                                           title={`Enregistrement - ${playingRecording.filename}`}
-                                          onDownload={() => handleDownloadRecording(playingRecording)}
+                                          onDownload={() =>
+                                            handleDownloadRecording(playingRecording)
+                                          }
                                           className="border-0 shadow-none bg-transparent"
                                         />
                                       </div>

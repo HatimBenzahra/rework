@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { useImmeuble, usePortesByImmeuble } from '@/hooks/use-api'
+import { useImmeuble, usePortesByImmeuble } from '@/hooks/metier/use-api'
 import PortesTemplate from './components/PortesTemplate'
 
 export default function PortesLecture() {

@@ -1,5 +1,5 @@
 import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import {
   useManagers,
@@ -8,9 +8,9 @@ import {
   useRemoveManager,
   useDirecteurs,
 } from '@/services'
-import { useEntityPage } from '@/hooks/useRoleBasedData'
+import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
-import { useErrorToast } from '@/hooks/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo } from 'react'
 
 const getManagersColumns = isAdmin => {

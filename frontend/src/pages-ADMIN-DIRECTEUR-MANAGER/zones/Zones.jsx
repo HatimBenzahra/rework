@@ -1,9 +1,9 @@
 import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
 import { ActionConfirmation } from '@/components/ActionConfirmation'
-import { useEntityPermissions, useEntityDescription } from '@/hooks/useRoleBasedData'
+import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import {
   useZones,
@@ -17,10 +17,10 @@ import {
   useAssignZoneToDirecteur,
   useAssignZoneToManager,
 } from '@/services'
-import { useErrorToast } from '@/hooks/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useState, useMemo } from 'react'
 import { apiCache } from '@/services/api-cache'
-import { ROLES } from '@/utils_role_decider/roleFilters'
+import { ROLES } from '@/hooks/metier/roleFilters'
 
 // Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
 const fetchLocationName = async (longitude, latitude) => {

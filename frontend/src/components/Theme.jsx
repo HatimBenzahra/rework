@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { useTheme } from '@/hooks/use-theme'
+import { useTheme } from '@/hooks/ui/use-theme'
 import { applyPreset, getSavedPreset } from '@/config/theme-presets'
 
 export default function ThemeSelector() {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useRole } from '@/contexts/userole'
 import { LogOut, X } from 'lucide-react'
 

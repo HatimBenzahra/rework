@@ -18,10 +18,10 @@ import {
   useImmeuble,
   useAddEtageToImmeuble,
   useAddPorteToEtage,
-} from '@/hooks/use-api'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
-import { useRecording } from '@/hooks/useRecording'
-import { useErrorToast } from '@/hooks/use-error-toast'
+} from '@/hooks/metier/use-api'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
+import { useRecording } from '@/hooks/audio/useRecording'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useRole } from '@/contexts/userole'
 import { STATUT_OPTIONS } from './Statut_options'
 import PortesTemplate from './components/PortesTemplate'

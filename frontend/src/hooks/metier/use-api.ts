@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { api } from '../services/api-service'
-import { apiCache, invalidateRelatedCaches } from '../services/api-cache'
+import { api } from '../../services/api-service'
+import { apiCache, invalidateRelatedCaches } from '../../services/api-cache'
 import type {
   Directeur,
   Manager,
@@ -29,7 +29,7 @@ import type {
   UpdateImmeubleInput,
   UpdateStatisticInput,
   UpdatePorteInput,
-} from '../types/api'
+} from '../../types/api'
 
 // =============================================================================
 // Base Hook Types
@@ -382,7 +382,6 @@ export function useRemoveImmeuble(): UseApiMutation<number, Immeuble> {
   return useApiMutation(api.immeubles.remove, 'immeubles')
 }
 
-
 export function useAddEtageToImmeuble(): UseApiMutation<number, Immeuble> {
   return useApiMutation(api.immeubles.addEtage, 'immeubles')
 }
@@ -391,12 +390,24 @@ export function useRemoveEtageFromImmeuble(): UseApiMutation<number, Immeuble> {
   return useApiMutation(api.immeubles.removeEtage, 'immeubles')
 }
 
-export function useAddPorteToEtage(): UseApiMutation<{ immeubleId: number; etage: number }, Immeuble> {
-  return useApiMutation(({ immeubleId, etage }) => api.immeubles.addPorteToEtage(immeubleId, etage), 'immeubles')
+export function useAddPorteToEtage(): UseApiMutation<
+  { immeubleId: number; etage: number },
+  Immeuble
+> {
+  return useApiMutation(
+    ({ immeubleId, etage }) => api.immeubles.addPorteToEtage(immeubleId, etage),
+    'immeubles'
+  )
 }
 
-export function useRemovePorteFromEtage(): UseApiMutation<{ immeubleId: number; etage: number }, Immeuble> {
-  return useApiMutation(({ immeubleId, etage }) => api.immeubles.removePorteFromEtage(immeubleId, etage), 'immeubles')
+export function useRemovePorteFromEtage(): UseApiMutation<
+  { immeubleId: number; etage: number },
+  Immeuble
+> {
+  return useApiMutation(
+    ({ immeubleId, etage }) => api.immeubles.removePorteFromEtage(immeubleId, etage),
+    'immeubles'
+  )
 }
 
 // =============================================================================

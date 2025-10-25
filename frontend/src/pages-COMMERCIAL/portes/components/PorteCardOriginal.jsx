@@ -11,7 +11,7 @@ import {
   Minus,
   RotateCcw,
 } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 
 export default function PorteCardOriginal({
   porte,

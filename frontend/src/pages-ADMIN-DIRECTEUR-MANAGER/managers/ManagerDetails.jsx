@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
-import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import {
   useManager,
@@ -10,7 +10,7 @@ import {
   useZones,
 } from '@/services'
 import { useRole } from '@/contexts/userole'
-import { useErrorToast } from '@/hooks/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo, useState } from 'react'
 import { RANKS, calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
@@ -53,51 +53,60 @@ export default function ManagerDetails() {
       const commercialStats = commercial.statistics || []
       return sum + commercialStats.reduce((statSum, stat) => statSum + stat.contratsSignes, 0)
     }, 0)
-    
+
     const totalImmeublesVisites = assignedCommercials.reduce((sum, commercial) => {
       const commercialStats = commercial.statistics || []
       return sum + commercialStats.reduce((statSum, stat) => statSum + stat.immeublesVisites, 0)
     }, 0)
-    
+
     const totalRendezVousPris = assignedCommercials.reduce((sum, commercial) => {
       const commercialStats = commercial.statistics || []
       return sum + commercialStats.reduce((statSum, stat) => statSum + stat.rendezVousPris, 0)
     }, 0)
-    
+
     const totalRefus = assignedCommercials.reduce((sum, commercial) => {
       const commercialStats = commercial.statistics || []
       return sum + commercialStats.reduce((statSum, stat) => statSum + stat.refus, 0)
     }, 0)
 
     // Taux de conversion
-    const tauxConversion = totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
+    const tauxConversion =
+      totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
 
     // Calculer le rang du manager basé sur ses stats agrégées
-    const { rank, points } = calculateRank(totalContratsSignes, totalRendezVousPris, totalImmeublesVisites)
+    const { rank, points } = calculateRank(
+      totalContratsSignes,
+      totalRendezVousPris,
+      totalImmeublesVisites
+    )
 
     // Trouver le meilleur commercial de l'équipe
     let meilleurCommercial = 'Aucun commercial'
     let meilleurBadge = 'Aucun'
-    
+
     if (assignedCommercials.length > 0) {
       const commercialAvecRangs = assignedCommercials.map(commercial => {
         const stats = commercial.statistics || []
         const contratsSignes = stats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
         const rendezVous = stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
         const immeubles = stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0)
-        const { rank: commercialRank, points: commercialPoints } = calculateRank(contratsSignes, rendezVous, immeubles)
-        
+        const { rank: commercialRank, points: commercialPoints } = calculateRank(
+          contratsSignes,
+          rendezVous,
+          immeubles
+        )
+
         return {
           ...commercial,
           totalPoints: commercialPoints,
-          rank: commercialRank
+          rank: commercialRank,
         }
       })
-      
-      const meilleur = commercialAvecRangs.reduce((prev, current) => 
+
+      const meilleur = commercialAvecRangs.reduce((prev, current) =>
         current.totalPoints > prev.totalPoints ? current : prev
       )
-      
+
       meilleurCommercial = `${meilleur.prenom} ${meilleur.nom}`
       meilleurBadge = meilleur.rank.name
     }

@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { AudioMonitoringService } from '@/services/audio-monitoring'
-import { useAsyncState } from './useAsyncState'
-import { usePolling } from './useInterval'
+import { useAsyncState } from '@/hooks/utils/useAsyncState'
+import { usePolling } from '../utils/useInterval'
 
 /**
  * Hook pour récupérer et surveiller les rooms actives et les commerciaux en ligne
@@ -30,15 +30,11 @@ export function useActiveRooms(refreshInterval = 5000) {
   }, [])
 
   // Utiliser usePolling pour le rafraîchissement automatique
-  usePolling(
-    () => asyncState.execute(fetchData),
-    refreshInterval,
-    {
-      enabled: !!refreshInterval,
-      immediate: true,
-      namespace: 'ActiveRoomsPolling',
-    }
-  )
+  usePolling(() => asyncState.execute(fetchData), refreshInterval, {
+    enabled: !!refreshInterval,
+    immediate: true,
+    namespace: 'ActiveRoomsPolling',
+  })
 
   // Fonctions utilitaires qui utilisent les données de asyncState
   const isCommercialOnline = useCallback(

@@ -125,12 +125,7 @@ export function useSimpleInterval(callback, delay, immediate = false) {
  * @param {Object} options - Options
  */
 export function usePolling(asyncFn, interval, options = {}) {
-  const {
-    enabled = true,
-    immediate = true,
-    onError,
-    namespace = 'Polling',
-  } = options
+  const { enabled = true, immediate = true, onError, namespace = 'Polling' } = options
 
   const pollingCallback = useCallback(async () => {
     try {
@@ -141,11 +136,7 @@ export function usePolling(asyncFn, interval, options = {}) {
     }
   }, [asyncFn, namespace, onError])
 
-  const controls = useInterval(
-    pollingCallback,
-    enabled ? interval : null,
-    { immediate, namespace }
-  )
+  const controls = useInterval(pollingCallback, enabled ? interval : null, { immediate, namespace })
 
   return {
     ...controls,

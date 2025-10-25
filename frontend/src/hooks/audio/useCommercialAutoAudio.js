@@ -2,8 +2,8 @@ import { useState, useRef, useCallback } from 'react'
 import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
 import { logger } from '@/services/graphql-errors'
 import { AUDIO_TIMING } from '@/constants/timing'
-import { useTimeout } from './useTimeout'
-import { useConnectionCleanup } from './useCleanup'
+import { useTimeout } from '../utils/useTimeout'
+import { useConnectionCleanup } from '../utils/useCleanup'
 
 /**
  * Hook pour gérer l'audio monitoring automatique des commerciaux
@@ -58,13 +58,10 @@ export function useCommercialAutoAudio(commercialId, enabled = true) {
       // 5. Enregistrer la connexion pour cleanup
       addConnection(room, 'livekit-room', LiveKitUtils.disconnect)
       if (audioStreamRef.current) {
-        addConnection(
-          audioStreamRef.current,
-          'audio-stream',
-          stream => stream.getTracks().forEach(track => track.stop())
+        addConnection(audioStreamRef.current, 'audio-stream', stream =>
+          stream.getTracks().forEach(track => track.stop())
         )
       }
-
     } catch (err) {
       logger.error('Audio', '❌ Erreur connexion audio:', err)
       setError(err.message || 'Erreur de connexion audio')
@@ -97,14 +94,10 @@ export function useCommercialAutoAudio(commercialId, enabled = true) {
   }, [stopAudioPublishing, startAudioPublishing])
 
   // Utiliser useTimeout pour le démarrage automatique avec délai
-  useTimeout(
-    startAudioPublishing,
-    AUDIO_TIMING.AUTO_CONNECT_DELAY,
-    {
-      autoStart: commercialId && enabled && !isConnected && !isConnecting,
-      namespace: 'CommercialAutoConnect',
-    }
-  )
+  useTimeout(startAudioPublishing, AUDIO_TIMING.AUTO_CONNECT_DELAY, {
+    autoStart: commercialId && enabled && !isConnected && !isConnecting,
+    namespace: 'CommercialAutoConnect',
+  })
 
   // Le cleanup est géré automatiquement par useConnectionCleanup
 
@@ -114,12 +107,12 @@ export function useCommercialAutoAudio(commercialId, enabled = true) {
     isConnecting,
     error,
     connectionDetails,
-    
+
     // Actions
     startAudioPublishing,
     stopAudioPublishing,
     restartAudioPublishing,
-    
+
     // Données
     roomName: connectionDetails?.roomName,
     participantName: connectionDetails?.participantName,

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
-import { hasPermission, ROLES } from '@/utils_role_decider/roleFilters'
+import { hasPermission, ROLES } from '@/hooks/metier/roleFilters'
 
 import {
   Sidebar,

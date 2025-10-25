@@ -2,7 +2,7 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Filter, X } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 
 export default function StatusFilters({
   statutOptions,
@@ -10,7 +10,7 @@ export default function StatusFilters({
   onStatutToggle,
   onClearAll,
   portesCount = {},
-  className = ""
+  className = '',
 }) {
   const { base, colors } = useCommercialTheme()
 
@@ -22,16 +22,14 @@ export default function StatusFilters({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Filter className={`h-4 w-4 ${base.text.primary}`} />
-          <span className={`text-sm font-medium ${base.text.primary}`}>
-            Filtrer par statut
-          </span>
+          <span className={`text-sm font-medium ${base.text.primary}`}>Filtrer par statut</span>
           {hasActiveFilters && (
             <Badge variant="secondary" className="text-xs">
               {selectedStatuts.length} actif{selectedStatuts.length > 1 ? 's' : ''}
             </Badge>
           )}
         </div>
-        
+
         {hasActiveFilters && (
           <Button
             variant="ghost"
@@ -68,8 +66,8 @@ export default function StatusFilters({
               <div className="flex items-center gap-1.5">
                 <IconComponent className="h-3.5 w-3.5" />
                 <span className="truncate">{option.label}</span>
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className={`ml-1 h-5 px-1.5 text-[10px] ${
                     isSelected ? 'bg-white/20 text-current' : ''
                   }`}
@@ -89,7 +87,7 @@ export default function StatusFilters({
           {selectedStatuts.map((statut, index) => {
             const option = statutOptions.find(opt => opt.value === statut)
             if (!option) return null
-            
+
             return (
               <React.Fragment key={statut}>
                 <span className="font-medium">{option.label}</span>

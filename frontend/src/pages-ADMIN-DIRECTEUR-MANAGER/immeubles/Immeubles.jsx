@@ -1,10 +1,10 @@
 import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/use-page-loading'
+import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials } from '@/services'
-import { useEntityPermissions, useEntityDescription } from '@/hooks/useRoleBasedData'
+import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
-import { useErrorToast } from '@/hooks/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo } from 'react'
 
 const immeublesColumns = [

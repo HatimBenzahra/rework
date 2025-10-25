@@ -1,5 +1,5 @@
 import { Eye, CheckCircle2, XCircle, Calendar, MessageSquare, RotateCcw } from 'lucide-react'
-import { useCommercialTheme } from '@/hooks/use-commercial-theme'
+import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 
 // Configuration des statuts avec les couleurs du thème
 export function STATUT_OPTIONS() {

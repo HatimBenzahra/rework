@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { RecordingService } from '@/services/recordings'
 import { logger } from '@/services/graphql-errors'
 import { AUDIO_TIMING } from '@/constants/timing'
-import { useTimeout } from './useTimeout'
-import { useCleanup } from './useCleanup'
+import { useTimeout } from '@/hooks/utils/useTimeout'
+import { useCleanup } from '@/hooks/utils/useCleanup'
 
 /**
  * Hook pour gérer l'enregistrement automatique des commerciaux
@@ -65,10 +65,7 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
       currentEgressIdRef.current = result.egressId
 
       // Ajouter le cleanup automatique
-      addCleanup(
-        () => RecordingService.stopRecording(result.egressId),
-        'current-recording'
-      )
+      addCleanup(() => RecordingService.stopRecording(result.egressId), 'current-recording')
     } catch (err) {
       logger.error('Recording', '❌ Erreur démarrage enregistrement:', err)
       setError(err.message || 'Erreur de démarrage')
@@ -139,14 +136,10 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
   }, [])
 
   // Utiliser useTimeout pour le démarrage automatique avec délai
-  useTimeout(
-    startRecording,
-    AUDIO_TIMING.RECORDING_START_DELAY,
-    {
-      autoStart: enabled && audioConnected && !isRecording && !isProcessingRef.current,
-      namespace: 'RecordingAutoStart',
-    }
-  )
+  useTimeout(startRecording, AUDIO_TIMING.RECORDING_START_DELAY, {
+    autoStart: enabled && audioConnected && !isRecording && !isProcessingRef.current,
+    namespace: 'RecordingAutoStart',
+  })
 
   /**
    * Arrêt automatique quand enabled passe à false
