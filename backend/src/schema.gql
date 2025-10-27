@@ -151,14 +151,19 @@ type LiveKitConnectionDetails {
 }
 
 type Manager {
+  commercials: [Commercial!]
   createdAt: DateTime!
+  directeur: Directeur
   directeurId: Int
   email: String
   id: Int!
+  immeubles: [Immeuble!]
   nom: String!
   numTelephone: String
   prenom: String!
+  statistics: [Statistic!]
   updatedAt: DateTime!
+  zones: [Zone!]
 }
 
 type MonitoringSession {
@@ -249,6 +254,7 @@ type Query {
   immeubles(userId: Int, userRole: String): [Immeuble!]!
   listRecordings(roomName: String!): [RecordingItem!]!
   manager(id: Int!): Manager!
+  managerFull(id: Int!): Manager
   managers(userId: Int, userRole: String): [Manager!]!
   porte(id: Int!): Porte!
   portes: [Porte!]!

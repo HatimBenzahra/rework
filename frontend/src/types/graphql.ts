@@ -48,6 +48,10 @@ export interface QueryManagerResponse {
   manager: Manager
 }
 
+export interface QueryManagerFullResponse {
+  managerFull: Manager | null
+}
+
 export interface QueryCommercialsResponse {
   commercials: Commercial[]
 }

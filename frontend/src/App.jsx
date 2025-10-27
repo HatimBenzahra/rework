@@ -29,6 +29,7 @@ import ImmeublesList from '@/pages-COMMERCIAL/immeubles/ImmeublesList'
 import Historique from '@/pages-COMMERCIAL/historique/Historique'
 import PortesGestion from '@/pages-COMMERCIAL/portes/PortesGestion'
 import PortesLecture from '@/pages-COMMERCIAL/portes/PortesLecture'
+import TeamManagement from '@/pages-COMMERCIAL/team/TeamManagement'
 // Layout pour Admin/Directeur/Manager (avec sidebar)
 function AdminLayout() {
   return (
@@ -79,6 +80,7 @@ function CommercialLayout() {
           <Route path="/" element={<CommercialDashboard />} />
           <Route path="/immeubles" element={<ImmeublesList />} />
           <Route path="/historique" element={<Historique />} />
+          <Route path="/equipe" element={<TeamManagement />} />
           <Route path="/portes/:immeubleId" element={<PortesGestion />} />
           <Route path="/portes/lecture/:immeubleId" element={<PortesLecture />} />
         </Route>
@@ -92,10 +94,10 @@ function CommercialLayout() {
 
 // Composant principal qui route selon le rôle
 function AppRouter() {
-  const { isCommercial } = useRole()
+  const { isCommercial, isManager } = useRole()
 
   // Si l'utilisateur est commercial, afficher l'interface dédiée
-  if (isCommercial) {
+  if (isCommercial || isManager) {
     return <CommercialLayout />
   }
 

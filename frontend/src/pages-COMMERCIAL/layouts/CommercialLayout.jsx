@@ -1,8 +1,8 @@
 import React from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { BarChart3, Building2, History } from 'lucide-react'
+import { BarChart3, Building2, History, Users } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
-import { useCommercialFull } from '@/hooks/metier/use-api'
+import { useWorkspaceProfile } from '@/hooks/metier/use-api'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useCommercialAutoAudio } from '@/hooks/audio/useCommercialAutoAudio'
 import CommercialHeader from '@/components/CommercialHeader'
@@ -15,30 +15,34 @@ import CommercialBottomBar from '@/components/CommercialBottomBar'
 export default function CommercialLayout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { currentUserId } = useRole()
+  const { currentUserId, isManager } = useRole()
   const { base, components } = useCommercialTheme()
 
   // Ref pour le scroll container (utilisée par PortesGestion)
   const scrollContainerRef = React.useRef(null)
 
-  // Récupérer les données du commercial pour le header et bottom bar
-  const {
-    data: commercial,
-    loading: commercialLoading,
-    refetch,
-  } = useCommercialFull(parseInt(currentUserId))
+  const userId = React.useMemo(() => parseInt(currentUserId, 10), [currentUserId])
+  const workspaceRole = isManager ? 'manager' : 'commercial'
 
-  // Activer l'audio monitoring automatique
+  // Récupérer le profil (commercial ou manager) pour alimenter l'espace
+  const {
+    data: workspaceProfile,
+    loading: profileLoading,
+    error: profileError,
+    refetch,
+  } = useWorkspaceProfile(userId, workspaceRole)
+
+  // Activer l'audio monitoring automatique uniquement pour les commerciaux
   const {
     isConnected: audioConnected,
     isConnecting: audioConnecting,
     error: audioError,
     roomName,
-  } = useCommercialAutoAudio(parseInt(currentUserId), true)
+  } = useCommercialAutoAudio(isManager ? null : userId, !isManager)
 
-  // Statistiques du commercial - Somme de toutes les zones
-  const myStats = React.useMemo(() => {
-    if (!commercial?.statistics || commercial.statistics.length === 0) {
+  // Statistiques agrégées pour le header et les badges
+  const workspaceStats = React.useMemo(() => {
+    if (!workspaceProfile?.statistics || workspaceProfile.statistics.length === 0) {
       return {
         contratsSignes: 0,
         immeublesVisites: 0,
@@ -47,13 +51,12 @@ export default function CommercialLayout() {
       }
     }
 
-    // Calculer la somme des statistiques de toutes les zones
-    return commercial.statistics.reduce(
+    return workspaceProfile.statistics.reduce(
       (acc, stat) => ({
-        contratsSignes: acc.contratsSignes + stat.contratsSignes,
-        immeublesVisites: acc.immeublesVisites + stat.immeublesVisites,
-        rendezVousPris: acc.rendezVousPris + stat.rendezVousPris,
-        refus: acc.refus + stat.refus,
+        contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
+        immeublesVisites: acc.immeublesVisites + (stat.immeublesVisites || 0),
+        rendezVousPris: acc.rendezVousPris + (stat.rendezVousPris || 0),
+        refus: acc.refus + (stat.refus || 0),
       }),
       {
         contratsSignes: 0,
@@ -62,46 +65,63 @@ export default function CommercialLayout() {
         refus: 0,
       }
     )
-  }, [commercial?.statistics])
+  }, [workspaceProfile?.statistics])
 
   // Configuration des onglets de navigation
-  const navigationItems = [
-    {
-      id: 'stats',
-      label: 'Tableau de bord',
-      icon: BarChart3,
-      badge: myStats.contratsSignes,
-      path: '/',
-    },
-    {
-      id: 'immeubles',
-      label: 'Immeubles',
-      icon: Building2,
-      badge: commercial?.immeubles?.length || 0,
-      path: '/immeubles',
-    },
-    {
-      id: 'historique',
-      label: 'Historique',
-      icon: History,
-      badge: 0,
-      path: '/historique',
-    },
-  ]
+  const navigationItems = React.useMemo(() => {
+    const items = [
+      {
+        id: 'stats',
+        label: 'Tableau de bord',
+        icon: BarChart3,
+        badge: workspaceStats.contratsSignes,
+        path: '/',
+      },
+      {
+        id: 'immeubles',
+        label: 'Immeubles',
+        icon: Building2,
+        badge: workspaceProfile?.immeubles?.length || 0,
+        path: '/immeubles',
+      },
+      {
+        id: 'historique',
+        label: 'Historique',
+        icon: History,
+        badge: 0,
+        path: '/historique',
+      },
+    ]
+
+    if (isManager) {
+      items.push({
+        id: 'team',
+        label: 'Équipe',
+        icon: Users,
+        badge: workspaceProfile?.commercials?.length || 0,
+        path: '/equipe',
+      })
+    }
+
+    return items
+  }, [
+    isManager,
+    workspaceProfile?.commercials?.length,
+    workspaceProfile?.immeubles?.length,
+    workspaceStats.contratsSignes,
+  ])
 
   // Déterminer l'onglet actif basé sur le chemin
   const getActiveTab = () => {
     const path = location.pathname
 
-    // Cas spécial pour la page des portes
     if (path.startsWith('/portes/')) {
       return 'immeubles'
     }
-
-    // Mapping des paths vers les tabs
     if (path === '/immeubles') return 'immeubles'
     if (path === '/historique') return 'historique'
-    return 'stats' // Par défaut
+    if (path === '/equipe') return 'team'
+    return 'stats'
   }
 
   // Déterminer le titre de la page
@@ -111,6 +131,7 @@ export default function CommercialLayout() {
     if (path === '/immeubles') return 'Mes Immeubles'
     if (path === '/historique') return 'Historique'
     if (path.startsWith('/portes/')) return 'Gestion des Portes'
+    if (path === '/equipe') return 'Mon Équipe'
     return null
   }
 
@@ -122,13 +143,13 @@ export default function CommercialLayout() {
     }
   }
 
-  if (commercialLoading) {
+  if (profileLoading) {
     return (
       <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
         <CommercialHeader
           commercial={null}
           showGreeting={true}
-          stats={myStats}
+          stats={workspaceStats}
           pageTitle={getPageTitle()}
         />
         <div className={components.loading.container}>
@@ -146,17 +167,25 @@ export default function CommercialLayout() {
     )
   }
 
+  if (profileError || !workspaceProfile) {
+    return (
+      <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
+        <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
+          {profileError || "Impossible de charger l'espace utilisateur."}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
-      {/* Header Commercial - visible sur toutes les pages sauf portes */}
       <CommercialHeader
-        commercial={commercial}
+        commercial={workspaceProfile}
         showGreeting={true}
-        stats={myStats}
+        stats={workspaceStats}
         pageTitle={getPageTitle()}
       />
 
-      {/* Content avec padding bottom pour la bottom bar */}
       <div
         ref={scrollContainerRef}
         className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 ${
@@ -167,17 +196,18 @@ export default function CommercialLayout() {
       >
         <Outlet
           context={{
-            commercial,
-            myStats,
-            commercialLoading,
+            commercial: workspaceProfile,
+            myStats: workspaceStats,
+            commercialLoading: profileLoading,
             refetch,
             audioStatus: { audioConnected, audioConnecting, audioError, roomName },
             scrollContainerRef,
+            workspaceRole,
+            isManager,
           }}
         />
       </div>
 
-      {/* Bottom Navigation Bar */}
       <CommercialBottomBar
         navigationItems={navigationItems}
         activeTab={getActiveTab()}

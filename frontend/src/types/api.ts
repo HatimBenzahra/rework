@@ -32,6 +32,11 @@ export interface Manager extends BaseEntity {
   email?: string | null
   numTelephone?: string | null
   directeurId?: number | null
+  directeur?: Directeur | null
+  commercials?: Commercial[]
+  zones?: Zone[]
+  immeubles?: Immeuble[]
+  statistics?: Statistic[]
 }
 
 export interface Commercial extends BaseEntity {
@@ -52,6 +57,10 @@ export interface Zone extends BaseEntity {
   xOrigin: number
   yOrigin: number
   rayon: number
+  directeurId?: number | null
+  managerId?: number | null
+  commercials?: ZoneCommercialRelation[]
+  immeubles?: Immeuble[]
 }
 
 export interface Immeuble extends BaseEntity {
@@ -59,6 +68,9 @@ export interface Immeuble extends BaseEntity {
   nbEtages: number
   nbPortesParEtage: number
   commercialId: number
+  zoneId?: number | null
+  ascenseurPresent?: boolean
+  digitalCode?: string | null
   portes?: Porte[]
 }
 
@@ -72,6 +84,11 @@ export interface Statistic extends BaseEntity {
   refus: number
   nbImmeublesProspectes: number
   nbPortesProspectes: number
+}
+
+export interface ZoneCommercialRelation extends BaseEntity {
+  commercialId: number
+  zoneId: number
 }
 
 export interface ZoneStatistic {

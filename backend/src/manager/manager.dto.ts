@@ -1,5 +1,10 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
 import { IsNotEmpty, IsString, IsOptional, IsInt } from 'class-validator';
+import { Directeur } from '../directeur/directeur.dto';
+import { Commercial } from '../commercial/commercial.dto';
+import { Zone } from '../zone/zone.dto';
+import { Immeuble } from '../immeuble/immeuble.dto';
+import { Statistic } from '../statistic/statistic.dto';
 
 @ObjectType()
 export class Manager {
@@ -26,6 +31,21 @@ export class Manager {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => Directeur, { nullable: true })
+  directeur?: Directeur | null;
+
+  @Field(() => [Commercial], { nullable: true })
+  commercials?: Commercial[];
+
+  @Field(() => [Zone], { nullable: true })
+  zones?: Zone[];
+
+  @Field(() => [Immeuble], { nullable: true })
+  immeubles?: Immeuble[];
+
+  @Field(() => [Statistic], { nullable: true })
+  statistics?: Statistic[];
 }
 
 @InputType()

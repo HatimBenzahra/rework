@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../../services/api-service'
+import { ROLES } from './roleFilters'
 import { apiCache, invalidateRelatedCaches } from '../../services/api-cache'
 import type {
   Directeur,
@@ -238,6 +239,29 @@ export function useManagers(
 
 export function useManager(id: number): UseApiState<Manager> & UseApiActions {
   return useApiCall(() => api.managers.getById(id), [id], 'managers')
+}
+
+export function useManagerFull(id: number): UseApiState<Manager> & UseApiActions {
+  return useApiCall(() => api.managers.getFullById(id), [id], 'managers-full')
+}
+
+type WorkspaceProfile = Commercial | Manager
+
+export function useWorkspaceProfile(
+  id: number,
+  role: string
+): UseApiState<WorkspaceProfile> & UseApiActions {
+  const fetchProfile = useCallback(() => {
+    if (Number.isNaN(id)) {
+      return Promise.reject(new Error('Identifiant utilisateur invalide'))
+    }
+    if (role === ROLES.MANAGER) {
+      return api.managers.getFullById(id)
+    }
+    return api.commercials.getFullById(id)
+  }, [id, role])
+
+  return useApiCall(fetchProfile, [id, role], `workspace-${role}`)
 }
 
 export function useCreateManager(): UseApiMutation<CreateManagerInput, Manager> {

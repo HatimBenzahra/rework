@@ -69,8 +69,87 @@ export class ManagerService {
       include: {
         directeur: true,
         commercials: true,
+        zones: true,
       },
     });
+  }
+
+  async findFull(id: number) {
+    const manager = await this.prisma.manager.findUnique({
+      where: { id },
+      include: {
+        directeur: true,
+        zones: {
+          include: {
+            commercials: {
+              include: {
+                commercial: {
+                  include: {
+                    statistics: true,
+                    immeubles: {
+                      include: {
+                        portes: true,
+                      },
+                    },
+                    zones: {
+                      include: {
+                        zone: {
+                          include: {
+                            commercials: true,
+                            immeubles: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            immeubles: {
+              include: {
+                portes: true,
+              },
+            },
+            statistics: true,
+          },
+        },
+        commercials: {
+          include: {
+            statistics: true,
+            immeubles: {
+              include: {
+                portes: true,
+              },
+            },
+            zones: {
+              include: {
+                zone: {
+                  include: {
+                    commercials: true,
+                    immeubles: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!manager) {
+      return null;
+    }
+
+    const aggregatedImmeubles =
+      manager.commercials?.flatMap(commercial => commercial.immeubles || []) || [];
+    const aggregatedStatistics =
+      manager.commercials?.flatMap(commercial => commercial.statistics || []) || [];
+
+    return {
+      ...manager,
+      immeubles: aggregatedImmeubles,
+      statistics: aggregatedStatistics,
+    };
   }
 
   async update(data: UpdateManagerInput) {

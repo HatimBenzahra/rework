@@ -9,6 +9,7 @@ import {
   GET_DIRECTEUR,
   GET_MANAGERS,
   GET_MANAGER,
+  GET_MANAGER_FULL,
   GET_COMMERCIALS,
   GET_COMMERCIAL,
   GET_COMMERCIAL_FULL,
@@ -63,6 +64,7 @@ import type {
   QueryManagersResponse,
   QueryManagersVariables,
   QueryManagerResponse,
+  QueryManagerFullResponse,
   QueryCommercialsResponse,
   QueryCommercialResponse,
   QueryZonesResponse,
@@ -181,6 +183,16 @@ export const managerApi = {
   async getById(id: number): Promise<Manager> {
     const response = await gql<QueryManagerResponse, GetEntityByIdVariables>(GET_MANAGER, { id })
     return response.manager
+  },
+
+  async getFullById(id: number): Promise<Manager> {
+    const response = await gql<QueryManagerFullResponse, GetEntityByIdVariables>(GET_MANAGER_FULL, {
+      id,
+    })
+    if (!response.managerFull) {
+      throw new Error('Manager introuvable')
+    }
+    return response.managerFull
   },
 
   async create(input: CreateManagerVariables['createManagerInput']): Promise<Manager> {

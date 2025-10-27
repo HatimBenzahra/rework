@@ -33,12 +33,12 @@ export const PERMISSIONS = {
     ecoutes: { view: true, add: true, edit: true, delete: true },
   },
   [ROLES.MANAGER]: {
-    commerciaux: { view: true, add: true, edit: true, delete: false },
+    commerciaux: { view: false, add: false, edit: false, delete: false },
     managers: { view: false, add: false, edit: false, delete: false },
     directeurs: { view: false, add: false, edit: false, delete: false },
-    zones: { view: true, add: true, edit: true, delete: false },
-    immeubles: { view: true, add: true, edit: true, delete: false },
-    statistics: { view: true, add: true, edit: true, delete: false },
+    zones: { view: false, add: false, edit: false, delete: false },
+    immeubles: { view: false, add: false, edit: false, delete: false },
+    statistics: { view: false, add: false, edit: false, delete: false },
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
     ecoutes: { view: false, add: false, edit: false, delete: false },
   },
@@ -238,40 +238,33 @@ export const getEntityDescription = (entity, userRole) => {
     commerciaux: {
       [ROLES.ADMIN]: "Tous les commerciaux de l'entreprise avec leurs informations et performances",
       [ROLES.DIRECTEUR]: 'Commerciaux de votre division avec leurs informations et performances',
-      [ROLES.MANAGER]: 'Vos commerciaux avec leurs informations et performances',
     },
     managers: {
       [ROLES.ADMIN]: "Tous les managers de l'entreprise avec leurs équipes",
       [ROLES.DIRECTEUR]: 'Managers de votre division avec leurs équipes',
-      [ROLES.MANAGER]: 'Informations sur les managers',
     },
     directeurs: {
       [ROLES.ADMIN]: "Tous les directeurs de l'entreprise avec leurs divisions",
       [ROLES.DIRECTEUR]: 'Vos informations en tant que directeur',
-      [ROLES.MANAGER]: 'Informations sur les directeurs',
     },
     zones: {
       [ROLES.ADMIN]: "Toutes les zones géographiques de l'entreprise",
       [ROLES.DIRECTEUR]: 'Zones géographiques de votre division',
-      [ROLES.MANAGER]: 'Zones géographiques de vos commerciaux',
       [ROLES.COMMERCIAL]: 'Vos zones géographiques assignées',
     },
     immeubles: {
       [ROLES.ADMIN]: "Tous les immeubles gérés par l'entreprise",
       [ROLES.DIRECTEUR]: 'Immeubles gérés par votre division',
-      [ROLES.MANAGER]: 'Immeubles gérés par vos commerciaux',
       [ROLES.COMMERCIAL]: 'Vos immeubles assignés',
     },
     statistics: {
       [ROLES.ADMIN]: "Statistiques de tous les commerciaux de l'entreprise",
       [ROLES.DIRECTEUR]: 'Statistiques des commerciaux de votre division',
-      [ROLES.MANAGER]: 'Statistiques de vos commerciaux',
       [ROLES.COMMERCIAL]: 'Vos statistiques personnelles',
     },
     ecoutes: {
       [ROLES.ADMIN]: "Écoutes et enregistrements de tous les commerciaux de l'entreprise",
       [ROLES.DIRECTEUR]: 'Écoutes et enregistrements des commerciaux de votre division',
-      [ROLES.MANAGER]: "Pas d'accès aux écoutes",
       [ROLES.COMMERCIAL]: "Pas d'accès aux écoutes",
     },
   }

@@ -108,7 +108,7 @@ export function AppSidebar() {
     localStorage.setItem('userRole', role)
     localStorage.setItem('userId', userId)
     // Rediriger vers la page d'accueil appropriée selon le rôle
-    if (role === ROLES.COMMERCIAL) {
+    if (role === ROLES.COMMERCIAL || role === ROLES.MANAGER) {
       window.location.href = '/' // Dashboard commercial
     } else {
       window.location.reload() // Recharger pour les autres rôles

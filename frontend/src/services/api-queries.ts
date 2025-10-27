@@ -71,6 +71,142 @@ export const GET_MANAGER = `
   }
 `
 
+export const GET_MANAGER_FULL = `
+  query GetManagerFull($id: Int!) {
+    managerFull(id: $id) {
+      id
+      nom
+      prenom
+      email
+      numTelephone
+      directeurId
+      createdAt
+      updatedAt
+      directeur {
+        id
+        nom
+        prenom
+        email
+        numTelephone
+      }
+      commercials {
+        id
+        nom
+        prenom
+        email
+        numTel
+        age
+        managerId
+        directeurId
+        createdAt
+        updatedAt
+        statistics {
+          id
+          commercialId
+          immeubleId
+          zoneId
+          contratsSignes
+          immeublesVisites
+          rendezVousPris
+          refus
+          nbImmeublesProspectes
+          nbPortesProspectes
+          createdAt
+          updatedAt
+        }
+        immeubles {
+          id
+          adresse
+          nbEtages
+          nbPortesParEtage
+          ascenseurPresent
+          digitalCode
+          commercialId
+          zoneId
+          createdAt
+          updatedAt
+        }
+        zones {
+          id
+          nom
+          xOrigin
+          yOrigin
+          rayon
+          directeurId
+          managerId
+          createdAt
+          updatedAt
+          commercials {
+            id
+            commercialId
+            zoneId
+            createdAt
+          }
+          immeubles {
+            id
+            adresse
+            nbEtages
+            nbPortesParEtage
+            createdAt
+            updatedAt
+          }
+        }
+      }
+      zones {
+        id
+        nom
+        xOrigin
+        yOrigin
+        rayon
+        directeurId
+        managerId
+        createdAt
+        updatedAt
+        commercials {
+          id
+          commercialId
+          zoneId
+          createdAt
+        }
+        immeubles {
+          id
+          adresse
+          nbEtages
+          nbPortesParEtage
+          createdAt
+          updatedAt
+        }
+      }
+      immeubles {
+        id
+        adresse
+        nbEtages
+        nbPortesParEtage
+        ascenseurPresent
+        digitalCode
+        commercialId
+        zoneId
+        createdAt
+        updatedAt
+      }
+      statistics {
+        id
+        commercialId
+        immeubleId
+        zoneId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`
+
 // =============================================================================
 // Commercial Queries
 // =============================================================================
