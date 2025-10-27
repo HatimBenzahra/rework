@@ -174,7 +174,7 @@ export default function CommercialRankingTable({
           <CardDescription>{description}</CardDescription>
 
           {/* Sélecteur de type d'utilisateur */}
-          <div className="flex gap-2 mt-4">
+          <div className="flex flex-wrap gap-2 mt-4">
             {userTypes.map(type => {
               const Icon = type.icon
               const isActive = validSelectedType === type.key
@@ -222,7 +222,7 @@ export default function CommercialRankingTable({
         <CardDescription>{description}</CardDescription>
 
         {/* Sélecteur de type d'utilisateur */}
-        <div className="flex gap-2 mt-4">
+        <div className="flex flex-wrap gap-2 mt-4">
           {userTypes.map(type => {
             const Icon = type.icon
             const isActive = validSelectedType === type.key
