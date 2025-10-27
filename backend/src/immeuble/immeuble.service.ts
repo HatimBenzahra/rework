@@ -69,9 +69,20 @@ export class ImmeubleService {
     }
 
     // Filtrage selon le rôle
+    const immeubleInclude = {
+      include: {
+        portes: {
+          select: {
+            id: true,
+            statut: true,
+          },
+        },
+      },
+    };
+
     switch (userRole) {
       case 'admin':
-        return this.prisma.immeuble.findMany();
+        return this.prisma.immeuble.findMany(immeubleInclude);
 
       case 'directeur':
         // Immeubles des commerciaux du directeur
@@ -81,6 +92,7 @@ export class ImmeubleService {
               directeurId: userId,
             },
           },
+          ...immeubleInclude,
         });
 
       case 'manager':
@@ -91,6 +103,7 @@ export class ImmeubleService {
               managerId: userId,
             },
           },
+          ...immeubleInclude,
         });
 
       case 'commercial':
@@ -99,6 +112,7 @@ export class ImmeubleService {
           where: {
             commercialId: userId,
           },
+          ...immeubleInclude,
         });
 
       default:
@@ -109,6 +123,22 @@ export class ImmeubleService {
   async findOne(id: number) {
     return this.prisma.immeuble.findUnique({
       where: { id },
+      include: {
+        portes: {
+          select: {
+            id: true,
+            statut: true,
+            etage: true,
+            numero: true,
+            nbRepassages: true,
+            rdvDate: true,
+            rdvTime: true,
+            commentaire: true,
+            derniereVisite: true,
+            updatedAt: true,
+          },
+        },
+      },
     });
   }
 

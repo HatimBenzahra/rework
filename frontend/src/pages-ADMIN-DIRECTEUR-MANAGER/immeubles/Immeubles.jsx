@@ -119,14 +119,15 @@ export default function Immeubles() {
   // Préparation des données pour le tableau avec mapping API → UI
   const tableData = useMemo(() => {
     if (!filteredImmeubles) return []
-    return filteredImmeubles.map(immeuble => {
+    const sortedImmeubles = [...filteredImmeubles].sort((a, b) => {
+      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    })
+    return sortedImmeubles.map(immeuble => {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
+      const portesImmeuble = immeuble.portes || []
       const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
-
-      // TODO: Récupérer les vraies données de couverture depuis les statistiques
-      // Pour l'instant, valeur simulée basée sur l'ID
-      const portesProspectees = Math.floor(totalDoors * (0.3 + (immeuble.id % 7) * 0.1))
-      const couverture = Math.round((portesProspectees / totalDoors) * 100)
+      const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
+      const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
 
       return {
         ...immeuble,

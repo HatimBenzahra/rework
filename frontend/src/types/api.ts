@@ -59,6 +59,7 @@ export interface Immeuble extends BaseEntity {
   nbEtages: number
   nbPortesParEtage: number
   commercialId: number
+  portes?: Porte[]
 }
 
 export interface Statistic extends BaseEntity {

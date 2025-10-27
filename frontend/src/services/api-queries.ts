@@ -307,6 +307,10 @@ export const GET_IMMEUBLES = `
       ascenseurPresent
       digitalCode
       commercialId
+      portes {
+        id
+        statut
+      }
       createdAt
       updatedAt
     }
