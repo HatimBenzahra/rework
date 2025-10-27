@@ -27,7 +27,7 @@ const formatNumber = (num, decimals = 0) => {
 // Fonction pour filtrer les statistiques par période
 const filterStatisticsByPeriod = (statistics, period) => {
   if (!statistics?.length) return []
-  
+
   const now = new Date()
   let startDate
 
@@ -117,8 +117,10 @@ export default function Statistiques() {
   } = useManagers(parseInt(currentUserId, 10), currentRole)
 
   // États de chargement et d'erreur combinés
-  const loading = statisticsLoading || commercialsLoading || zonesLoading || directeursLoading || managersLoading
-  const error = statisticsError || commercialsError || zonesError || directeursError || managersError
+  const loading =
+    statisticsLoading || commercialsLoading || zonesLoading || directeursLoading || managersLoading
+  const error =
+    statisticsError || commercialsError || zonesError || directeursError || managersError
 
   // Calculs des statistiques filtrées avec le hook unifié
   const filteredStatistics = useRoleBasedData('statistics', rawStatistics, {
@@ -132,7 +134,7 @@ export default function Statistiques() {
   })
 
   const filteredDirecteurs = useRoleBasedData('directeurs', rawDirecteurs)
-  
+
   const filteredManagers = useRoleBasedData('managers', rawManagers)
 
   // Appliquer le filtre temporel aux statistiques
@@ -162,7 +164,10 @@ export default function Statistiques() {
       0
     )
     const refus = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.refus || 0), 0)
-    const nbRepassages = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.nbRepassages || 0), 0)
+    const nbRepassages = timeFilteredStatistics.reduce(
+      (sum, stat) => sum + (stat.nbRepassages || 0),
+      0
+    )
     const nbImmeubles = timeFilteredStatistics.reduce(
       (sum, stat) => sum + (stat.immeublesVisites || 0),
       0
@@ -218,7 +223,7 @@ export default function Statistiques() {
             <h1 className="text-3xl font-bold tracking-tight">Statistiques</h1>
             <p className="text-muted-foreground">Tableau de bord des performances commerciales</p>
           </div>
-          
+
           {/* Sélecteur de période */}
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -298,7 +303,9 @@ export default function Statistiques() {
           statistics={timeFilteredStatistics}
           title="Évolution des contrats signés"
           description={`Tendance sur ${TIME_FILTERS.find(f => f.value === timePeriod)?.label?.toLowerCase()}`}
-          daysToShow={timePeriod === '7d' ? 7 : timePeriod === '30d' ? 30 : timePeriod === '90d' ? 90 : 365}
+          daysToShow={
+            timePeriod === '7d' ? 7 : timePeriod === '30d' ? 30 : timePeriod === '90d' ? 90 : 365
+          }
         />
 
         {/* Tableau de classement multi-rôles */}

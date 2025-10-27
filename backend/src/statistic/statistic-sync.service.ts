@@ -115,25 +115,34 @@ export class StatisticSyncService {
    * Met à jour ou crée une statistique pour un commercial
    */
   private async upsertStatistic(commercialId: number, stats: any) {
+    // Récupérer la zone assignée au commercial
+    const commercialZone = await this.prisma.commercialZone.findFirst({
+      where: { commercialId }
+    });
+
+    const zoneId = commercialZone?.zoneId || null;
+
     // Chercher d'abord s'il existe une stat pour ce commercial
     const existingStat = await this.prisma.statistic.findFirst({
       where: { commercialId: commercialId }
     });
 
     if (existingStat) {
-      // Mettre à jour
+      // Mettre à jour (incluant zoneId)
       return this.prisma.statistic.update({
         where: { id: existingStat.id },
         data: {
           ...stats,
+          zoneId, // Synchroniser avec la zone du commercial
           updatedAt: new Date()
         }
       });
     } else {
-      // Créer
+      // Créer (incluant zoneId)
       return this.prisma.statistic.create({
         data: {
           commercialId: commercialId,
+          zoneId, // Assigner automatiquement la zone du commercial
           ...stats
         }
       });

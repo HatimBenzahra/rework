@@ -93,8 +93,8 @@ export class StatisticService {
   }
 
   async getZoneStatistics(userId?: number, userRole?: string): Promise<ZoneStatistic[]> {
-    // Construire les conditions de filtrage selon le rôle
-    let whereConditions: any = {};
+    // Construire les conditions de filtrage selon le rôle pour les zones
+    let zoneWhereConditions: any = {};
 
     if (userId && userRole) {
       switch (userRole) {
@@ -103,19 +103,50 @@ export class StatisticService {
           break;
 
         case 'directeur':
-          whereConditions.commercial = {
-            directeurId: userId,
+          // Zones assignées directement au directeur ou à ses commerciaux
+          zoneWhereConditions = {
+            OR: [
+              { directeurId: userId },
+              {
+                commercials: {
+                  some: {
+                    commercial: {
+                      directeurId: userId,
+                    },
+                  },
+                },
+              },
+            ],
           };
           break;
 
         case 'manager':
-          whereConditions.commercial = {
-            managerId: userId,
+          // Zones assignées directement au manager ou à ses commerciaux
+          zoneWhereConditions = {
+            OR: [
+              { managerId: userId },
+              {
+                commercials: {
+                  some: {
+                    commercial: {
+                      managerId: userId,
+                    },
+                  },
+                },
+              },
+            ],
           };
           break;
 
         case 'commercial':
-          whereConditions.commercialId = userId;
+          // Zones assignées au commercial
+          zoneWhereConditions = {
+            commercials: {
+              some: {
+                commercialId: userId,
+              },
+            },
+          };
           break;
 
         default:
@@ -123,64 +154,45 @@ export class StatisticService {
       }
     }
 
-    // Récupérer toutes les statistiques avec les informations de zone
-    const statistics = await this.prisma.statistic.findMany({
-      where: whereConditions,
-      include: {
-        commercial: true,
-      },
-    });
-
-    // Récupérer les informations des zones
+    // Récupérer les zones avec leurs commerciaux et statistiques
     const zones = await this.prisma.zone.findMany({
+      where: zoneWhereConditions,
       include: {
         commercials: {
           include: {
-            commercial: true,
+            commercial: {
+              include: {
+                statistics: true, // Récupérer toutes les statistiques des commerciaux
+              },
+            },
           },
         },
       },
     });
 
-    // Grouper les statistiques par zone
-    const zoneStatsMap = new Map<number, {
-      zoneId: number;
-      zoneName: string;
-      stats: typeof statistics;
-      commerciaux: Set<number>;
-    }>();
-
-    // Initialiser avec toutes les zones
-    zones.forEach(zone => {
-      zoneStatsMap.set(zone.id, {
-        zoneId: zone.id,
-        zoneName: zone.nom,
-        stats: [],
-        commerciaux: new Set(),
-      });
-    });
-
-    // Ajouter les statistiques à leurs zones respectives
-    statistics.forEach(stat => {
-      if (stat.zoneId) {
-        const zoneData = zoneStatsMap.get(stat.zoneId);
-        if (zoneData) {
-          zoneData.stats.push(stat);
-          if (stat.commercialId) {
-            zoneData.commerciaux.add(stat.commercialId);
-          }
-        }
-      }
-    });
-
     // Calculer les statistiques agrégées pour chaque zone
-    const zoneStatistics: ZoneStatistic[] = Array.from(zoneStatsMap.values()).map(zoneData => {
-      const totalContratsSignes = zoneData.stats.reduce((sum, stat) => sum + stat.contratsSignes, 0);
-      const totalImmeublesVisites = zoneData.stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0);
-      const totalRendezVousPris = zoneData.stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0);
-      const totalRefus = zoneData.stats.reduce((sum, stat) => sum + stat.refus, 0);
-      const totalImmeublesProspectes = zoneData.stats.reduce((sum, stat) => sum + stat.nbImmeublesProspectes, 0);
-      const totalPortesProspectes = zoneData.stats.reduce((sum, stat) => sum + stat.nbPortesProspectes, 0);
+    const zoneStatistics: ZoneStatistic[] = zones.map(zone => {
+      // Collecter toutes les statistiques des commerciaux de cette zone
+      const allStats: any[] = [];
+      const commerciauxIds = new Set<number>();
+
+      zone.commercials.forEach(cz => {
+        if (cz.commercial) {
+          commerciauxIds.add(cz.commercial.id);
+          // Ajouter toutes les statistiques de ce commercial
+          cz.commercial.statistics.forEach(stat => {
+            allStats.push(stat);
+          });
+        }
+      });
+
+      // Calculer les totaux
+      const totalContratsSignes = allStats.reduce((sum, stat) => sum + (stat.contratsSignes || 0), 0);
+      const totalImmeublesVisites = allStats.reduce((sum, stat) => sum + (stat.immeublesVisites || 0), 0);
+      const totalRendezVousPris = allStats.reduce((sum, stat) => sum + (stat.rendezVousPris || 0), 0);
+      const totalRefus = allStats.reduce((sum, stat) => sum + (stat.refus || 0), 0);
+      const totalImmeublesProspectes = allStats.reduce((sum, stat) => sum + (stat.nbImmeublesProspectes || 0), 0);
+      const totalPortesProspectes = allStats.reduce((sum, stat) => sum + (stat.nbPortesProspectes || 0), 0);
 
       // Calculs des taux
       const tauxConversion = totalPortesProspectes > 0 
@@ -193,11 +205,11 @@ export class StatisticService {
 
       // Performance globale (score composite)
       const performanceGlobale = (tauxConversion * 0.4) + (tauxSuccesRdv * 0.3) + 
-        ((totalContratsSignes / Math.max(1, zoneData.commerciaux.size)) * 0.3);
+        ((totalContratsSignes / Math.max(1, commerciauxIds.size)) * 0.3);
 
       return {
-        zoneId: zoneData.zoneId,
-        zoneName: zoneData.zoneName,
+        zoneId: zone.id,
+        zoneName: zone.nom,
         totalContratsSignes,
         totalImmeublesVisites,
         totalRendezVousPris,
@@ -206,7 +218,7 @@ export class StatisticService {
         totalPortesProspectes,
         tauxConversion: Math.round(tauxConversion * 100) / 100,
         tauxSuccesRdv: Math.round(tauxSuccesRdv * 100) / 100,
-        nombreCommerciaux: zoneData.commerciaux.size,
+        nombreCommerciaux: commerciauxIds.size,
         performanceGlobale: Math.round(performanceGlobale * 100) / 100,
       };
     });

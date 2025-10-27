@@ -7,9 +7,28 @@ export class ImmeubleService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateImmeubleInput) {
-    // Créer l'immeuble
+    // Si un commercialId est fourni, récupérer sa zone assignée
+    let zoneId = data.zoneId; // Utiliser la zone fournie explicitement
+    
+    if (!zoneId && data.commercialId) {
+      // Chercher la zone assignée au commercial
+      const commercialZone = await this.prisma.commercialZone.findFirst({
+        where: {
+          commercialId: data.commercialId,
+        },
+      });
+      
+      if (commercialZone) {
+        zoneId = commercialZone.zoneId;
+      }
+    }
+
+    // Créer l'immeuble avec la zone automatiquement assignée
     const immeuble = await this.prisma.immeuble.create({
-      data,
+      data: {
+        ...data,
+        zoneId, // Assigner automatiquement la zone du commercial
+      },
     });
 
     // Créer automatiquement toutes les portes pour cet immeuble
