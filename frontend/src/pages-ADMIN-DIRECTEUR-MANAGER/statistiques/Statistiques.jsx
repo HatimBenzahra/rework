@@ -1,8 +1,15 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, Users, Building, RefreshCw, CheckCircle, FileText } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Calendar, Users, Building, RefreshCw, CheckCircle, FileText, Clock } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
-import { useStatistics, useCommercials, useZones } from '@/services'
+import { useStatistics, useCommercials, useZones, useDirecteurs, useManagers } from '@/services'
 import { useRoleBasedData } from '@/hooks/metier/useRoleBasedData'
 import ContratsEvolutionChart from '@/components/charts/ContratsEvolutionChart'
 import CommercialRankingTable from '@/components/CommercialRankingTable'
@@ -17,7 +24,47 @@ const formatNumber = (num, decimals = 0) => {
   }).format(num)
 }
 
-const MetricCard = ({ title, value, description, icon: Icon, color = 'blue' }) => {
+// Fonction pour filtrer les statistiques par période
+const filterStatisticsByPeriod = (statistics, period) => {
+  if (!statistics?.length) return []
+  
+  const now = new Date()
+  let startDate
+
+  switch (period) {
+    case '7d':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      break
+    case '30d':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+      break
+    case '90d':
+      startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+      break
+    case '1y':
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+      break
+    case 'all':
+    default:
+      return statistics
+  }
+
+  return statistics.filter(stat => {
+    const statDate = new Date(stat.createdAt || stat.date)
+    return statDate >= startDate
+  })
+}
+
+// Options de filtres temporels
+const TIME_FILTERS = [
+  { value: '7d', label: '7 derniers jours', icon: Clock },
+  { value: '30d', label: '30 derniers jours', icon: Calendar },
+  { value: '90d', label: '3 derniers mois', icon: Calendar },
+  { value: '1y', label: 'Cette année', icon: Calendar },
+  { value: 'all', label: 'Toute la période', icon: Calendar },
+]
+
+const MetricCard = ({ title, value, description, icon: Icon }) => {
   return (
     <Card className={`bg-card border-border text-foreground border-2`}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -36,6 +83,7 @@ const MetricCard = ({ title, value, description, icon: Icon, color = 'blue' }) =
 
 export default function Statistiques() {
   const { currentRole, currentUserId } = useRole()
+  const [timePeriod, setTimePeriod] = useState('30d')
 
   // Chargement des données depuis les APIs
   const {
@@ -56,9 +104,21 @@ export default function Statistiques() {
     error: zonesError,
   } = useZones(parseInt(currentUserId, 10), currentRole)
 
+  const {
+    data: rawDirecteurs,
+    loading: directeursLoading,
+    error: directeursError,
+  } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+
+  const {
+    data: rawManagers,
+    loading: managersLoading,
+    error: managersError,
+  } = useManagers(parseInt(currentUserId, 10), currentRole)
+
   // États de chargement et d'erreur combinés
-  const loading = statisticsLoading || commercialsLoading || zonesLoading
-  const error = statisticsError || commercialsError || zonesError
+  const loading = statisticsLoading || commercialsLoading || zonesLoading || directeursLoading || managersLoading
+  const error = statisticsError || commercialsError || zonesError || directeursError || managersError
 
   // Calculs des statistiques filtrées avec le hook unifié
   const filteredStatistics = useRoleBasedData('statistics', rawStatistics, {
@@ -71,9 +131,18 @@ export default function Statistiques() {
     commercials: rawCommercials,
   })
 
+  const filteredDirecteurs = useRoleBasedData('directeurs', rawDirecteurs)
+  
+  const filteredManagers = useRoleBasedData('managers', rawManagers)
+
+  // Appliquer le filtre temporel aux statistiques
+  const timeFilteredStatistics = useMemo(() => {
+    return filterStatisticsByPeriod(filteredStatistics, timePeriod)
+  }, [filteredStatistics, timePeriod])
+
   // Calculs des métriques
   const metrics = useMemo(() => {
-    if (!filteredStatistics?.length) {
+    if (!timeFilteredStatistics?.length) {
       return {
         contratsSignes: 0,
         rendezVousPris: 0,
@@ -84,17 +153,17 @@ export default function Statistiques() {
       }
     }
 
-    const contratsSignes = filteredStatistics.reduce(
+    const contratsSignes = timeFilteredStatistics.reduce(
       (sum, stat) => sum + (stat.contratsSignes || 0),
       0
     )
-    const rendezVousPris = filteredStatistics.reduce(
+    const rendezVousPris = timeFilteredStatistics.reduce(
       (sum, stat) => sum + (stat.rendezVousPris || 0),
       0
     )
-    const refus = filteredStatistics.reduce((sum, stat) => sum + (stat.refus || 0), 0)
-    const nbRepassages = filteredStatistics.reduce((sum, stat) => sum + (stat.nbRepassages || 0), 0)
-    const nbImmeubles = filteredStatistics.reduce(
+    const refus = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.refus || 0), 0)
+    const nbRepassages = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.nbRepassages || 0), 0)
+    const nbImmeubles = timeFilteredStatistics.reduce(
       (sum, stat) => sum + (stat.immeublesVisites || 0),
       0
     )
@@ -109,7 +178,7 @@ export default function Statistiques() {
       nbCommerciaux,
       repassagesConvertis: Math.min(nbRepassages, contratsSignes),
     }
-  }, [filteredStatistics, filteredCommercials])
+  }, [timeFilteredStatistics, filteredCommercials])
 
   if (loading) {
     return (
@@ -142,10 +211,34 @@ export default function Statistiques() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      {/* En-tête */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Statistiques</h1>
-        <p className="text-muted-foreground">Tableau de bord des performances commerciales</p>
+      {/* En-tête avec filtre temporel */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Statistiques</h1>
+            <p className="text-muted-foreground">Tableau de bord des performances commerciales</p>
+          </div>
+          
+          {/* Sélecteur de période */}
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Select value={timePeriod} onValueChange={setTimePeriod}>
+              <SelectTrigger className="w-56">
+                <SelectValue placeholder="Sélectionner une période" />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_FILTERS.map(filter => (
+                  <SelectItem key={filter.value} value={filter.value}>
+                    <div className="flex items-center gap-2">
+                      <filter.icon className="h-4 w-4" />
+                      {filter.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {/* Métriques principales demandées */}
@@ -202,18 +295,21 @@ export default function Statistiques() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart d'évolution des contrats */}
         <ContratsEvolutionChart
-          statistics={filteredStatistics}
+          statistics={timeFilteredStatistics}
           title="Évolution des contrats signés"
-          description="Tendance sur les 30 derniers jours"
-          daysToShow={30}
+          description={`Tendance sur ${TIME_FILTERS.find(f => f.value === timePeriod)?.label?.toLowerCase()}`}
+          daysToShow={timePeriod === '7d' ? 7 : timePeriod === '30d' ? 30 : timePeriod === '90d' ? 90 : 365}
         />
 
-        {/* Tableau de classement des commerciaux */}
+        {/* Tableau de classement multi-rôles */}
         <CommercialRankingTable
           commercials={filteredCommercials}
-          statistics={filteredStatistics}
-          title="Classement des commerciaux"
-          description="Top 10 des meilleurs performeurs"
+          directeurs={filteredDirecteurs}
+          managers={filteredManagers}
+          statistics={timeFilteredStatistics}
+          currentUserRole={currentRole}
+          title="Classement des performances"
+          description={`Classement par rôle et performance - ${TIME_FILTERS.find(f => f.value === timePeriod)?.label}`}
           limit={10}
         />
 
@@ -221,9 +317,9 @@ export default function Statistiques() {
         <div className="lg:col-span-2">
           <ZoneComparisonChart
             zones={filteredZones}
-            statistics={filteredStatistics}
+            statistics={timeFilteredStatistics}
             title="Analyse des zones"
-            description="Comparaison par critères et classement"
+            description={`Comparaison par critères et classement - ${TIME_FILTERS.find(f => f.value === timePeriod)?.label}`}
             maxZones={5}
           />
         </div>

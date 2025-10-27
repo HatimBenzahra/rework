@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -9,13 +9,15 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Medal, Award, Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Trophy, Medal, Award, Star, Users, Crown, Shield } from 'lucide-react'
 import { calculateRank } from '@/share/ranks'
 
 const formatNumber = num => {
   if (typeof num !== 'number') return '0'
   return new Intl.NumberFormat('fr-FR').format(num)
 }
+
 
 const getRankIcon = position => {
   switch (position) {
@@ -31,31 +33,93 @@ const getRankIcon = position => {
 }
 
 /**
- * Tableau de classement des commerciaux par rang et performances
+ * Tableau de classement multi-rôles (commerciaux, directeurs, managers)
  * @param {Object} props
  * @param {Array} props.commercials - Liste des commerciaux
+ * @param {Array} props.directeurs - Liste des directeurs
+ * @param {Array} props.managers - Liste des managers
  * @param {Array} props.statistics - Statistiques pour calculer les performances
  * @param {string} props.title - Titre du tableau
  * @param {string} props.description - Description du tableau
- * @param {number} props.limit - Nombre max de commerciaux à afficher
+ * @param {number} props.limit - Nombre max d'utilisateurs à afficher
  */
 export default function CommercialRankingTable({
   commercials = [],
+  directeurs = [],
+  managers = [],
   statistics = [],
-  title = 'Classement des commerciaux',
-  description = 'Classement basé sur les performances',
+  currentUserRole = 'admin',
+  title = 'Classement des performances',
+  description = 'Classement basé sur les performances par rôle',
   limit = 10,
 }) {
-  const rankedCommercials = useMemo(() => {
-    if (!commercials?.length || !statistics?.length) return []
+  const [selectedType, setSelectedType] = useState('commercials')
 
-    // Calculer les performances de chaque commercial
-    const commercialStats = commercials.map(commercial => {
-      // Filtrer les stats de ce commercial
-      const commercialStatistics = statistics.filter(stat => stat.commercialId === commercial.id)
+  // Filtrer les types d'utilisateurs selon le rôle connecté
+  const availableUserTypes = [
+    {
+      key: 'commercials',
+      label: 'Commerciaux',
+      icon: Users,
+      data: commercials,
+      color: 'blue',
+      allowedRoles: ['admin', 'directeur', 'manager'] // Tous peuvent voir les commerciaux
+    },
+    {
+      key: 'directeurs',
+      label: 'Directeurs',
+      icon: Crown,
+      data: directeurs,
+      color: 'purple',
+      allowedRoles: ['admin'] // Seul l'admin peut voir les directeurs
+    },
+    {
+      key: 'managers',
+      label: 'Managers',
+      icon: Shield,
+      data: managers,
+      color: 'green',
+      allowedRoles: ['admin', 'directeur'] // Admin et directeurs peuvent voir les managers
+    }
+  ]
+
+  const userTypes = availableUserTypes.filter(type => 
+    type.allowedRoles.includes(currentUserRole)
+  )
+
+  // S'assurer que le type sélectionné est valide pour le rôle actuel
+  const validSelectedType = userTypes.find(type => type.key === selectedType) 
+    ? selectedType 
+    : userTypes[0]?.key || 'commercials'
+
+  const currentUserType = userTypes.find(type => type.key === validSelectedType)
+  const currentData = currentUserType?.data || []
+  const rankedUsers = useMemo(() => {
+    if (!currentData?.length || !statistics?.length) return []
+
+    // Calculer les performances selon le type d'utilisateur
+    const userStats = currentData.map(user => {
+      let userStatistics = []
+      
+      // Filtrer les statistiques selon le type d'utilisateur
+      if (validSelectedType === 'commercials') {
+        userStatistics = statistics.filter(stat => stat.commercialId === user.id)
+      } else if (validSelectedType === 'directeurs') {
+        // Pour les directeurs : agréger les stats de tous leurs commerciaux
+        userStatistics = statistics.filter(stat => {
+          const commercial = commercials.find(c => c.id === stat.commercialId)
+          return commercial && commercial.directeurId === user.id
+        })
+      } else if (validSelectedType === 'managers') {
+        // Pour les managers : agréger les stats de tous leurs commerciaux
+        userStatistics = statistics.filter(stat => {
+          const commercial = commercials.find(c => c.id === stat.commercialId)
+          return commercial && commercial.managerId === user.id
+        })
+      }
 
       // Calculer les totaux
-      const totals = commercialStatistics.reduce(
+      const totals = userStatistics.reduce(
         (acc, stat) => ({
           contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
           rendezVousPris: acc.rendezVousPris + (stat.rendezVousPris || 0),
@@ -78,39 +142,73 @@ export default function CommercialRankingTable({
         totalActivites > 0 ? Math.round((totals.contratsSignes / totalActivites) * 100) : 0
 
       return {
-        ...commercial,
+        ...user,
         ...totals,
         rank,
         points,
         tauxConversion,
-        name: `${commercial.prenom} ${commercial.nom}`,
-        initials: `${commercial.prenom?.[0] || ''}${commercial.nom?.[0] || ''}`.toUpperCase(),
+        name: `${user.prenom} ${user.nom}`,
+        initials: `${user.prenom?.[0] || ''}${user.nom?.[0] || ''}`.toUpperCase(),
+        userType: validSelectedType,
       }
     })
 
     // Trier par points (décroissant) puis par contrats signés
-    return commercialStats
+    return userStats
       .sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points
         return b.contratsSignes - a.contratsSignes
       })
       .slice(0, limit)
-      .map((commercial, index) => ({
-        ...commercial,
+      .map((user, index) => ({
+        ...user,
         position: index + 1,
       }))
-  }, [commercials, statistics, limit])
+  }, [currentData, statistics, limit, validSelectedType, commercials])
 
-  if (!rankedCommercials.length) {
+  if (!rankedUsers.length) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            {title}
+          </CardTitle>
           <CardDescription>{description}</CardDescription>
+          
+          {/* Sélecteur de type d'utilisateur */}
+          <div className="flex gap-2 mt-4">
+            {userTypes.map(type => {
+              const Icon = type.icon
+              const isActive = validSelectedType === type.key
+              const hasData = type.data && type.data.length > 0
+              
+              return (
+                <Button
+                  key={type.key}
+                  variant={isActive ? 'default' : 'outline'}
+                  size="sm"
+                  disabled={!hasData}
+                  onClick={() => setSelectedType(type.key)}
+                  className={`flex items-center gap-2 ${!hasData ? 'opacity-50' : ''}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {type.label}
+                  {hasData && (
+                    <Badge variant="secondary" className="ml-1">
+                      {type.data.length}
+                    </Badge>
+                  )}
+                </Button>
+              )
+            })}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <p className="text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-muted-foreground">
+              Aucune donnée disponible pour {currentUserType?.label?.toLowerCase()}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -125,13 +223,41 @@ export default function CommercialRankingTable({
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
+        
+        {/* Sélecteur de type d'utilisateur */}
+        <div className="flex gap-2 mt-4">
+          {userTypes.map(type => {
+            const Icon = type.icon
+            const isActive = validSelectedType === type.key
+            const hasData = type.data && type.data.length > 0
+            
+            return (
+              <Button
+                key={type.key}
+                variant={isActive ? 'default' : 'outline'}
+                size="sm"
+                disabled={!hasData}
+                onClick={() => setSelectedType(type.key)}
+                className={`flex items-center gap-2 ${!hasData ? 'opacity-50' : ''}`}
+              >
+                <Icon className="h-4 w-4" />
+                {type.label}
+                {hasData && (
+                  <Badge variant="secondary" className="ml-1">
+                    {type.data.length}
+                  </Badge>
+                )}
+              </Button>
+            )
+          })}
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-16">Pos.</TableHead>
-              <TableHead>Commercial</TableHead>
+              <TableHead>{currentUserType?.label?.slice(0, -1) || 'Utilisateur'}</TableHead>
               <TableHead>Rang</TableHead>
               <TableHead className="text-center">Points</TableHead>
               <TableHead className="text-center">Contrats</TableHead>
@@ -140,69 +266,76 @@ export default function CommercialRankingTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rankedCommercials.map(commercial => (
-              <TableRow
-                key={commercial.id}
-                className={commercial.position <= 3 ? 'bg-muted/50' : ''}
-              >
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {getRankIcon(commercial.position)}
-                    {commercial.position}
-                  </div>
-                </TableCell>
-
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-semibold">
-                      {commercial.initials}
+            {rankedUsers.map(user => {
+              const userTypeConfig = userTypes.find(t => t.key === user.userType)
+              const userColor = userTypeConfig?.color || 'blue'
+              
+              return (
+                <TableRow
+                  key={user.id}
+                  className={user.position <= 3 ? 'bg-muted/50' : ''}
+                >
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {getRankIcon(user.position)}
+                      {user.position}
                     </div>
-                    <div className="grid gap-1">
-                      <div className="font-medium leading-none">{commercial.name}</div>
-                      <div className="text-xs text-muted-foreground">ID: {commercial.id}</div>
+                  </TableCell>
+
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-full bg-${userColor}-100 text-${userColor}-700 flex items-center justify-center text-xs font-semibold`}>
+                        {user.initials}
+                      </div>
+                      <div className="grid gap-1">
+                        <div className="font-medium leading-none">{user.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {currentUserType?.label?.slice(0, -1)} • ID: {user.id}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </TableCell>
+                  </TableCell>
 
-                <TableCell>
-                  <Badge
-                    className={`${commercial.rank.bgColor} ${commercial.rank.textColor} ${commercial.rank.borderColor} border font-semibold`}
-                  >
-                    {commercial.rank.name}
-                  </Badge>
-                </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={`${user.rank.bgColor} ${user.rank.textColor} ${user.rank.borderColor} border font-semibold`}
+                    >
+                      {user.rank.name}
+                    </Badge>
+                  </TableCell>
 
-                <TableCell className="text-center font-mono">
-                  {formatNumber(commercial.points)}
-                </TableCell>
+                  <TableCell className="text-center font-mono">
+                    {formatNumber(user.points)}
+                  </TableCell>
 
-                <TableCell className="text-center">
-                  <Badge className="bg-green-100 text-green-800">
-                    {formatNumber(commercial.contratsSignes)}
-                  </Badge>
-                </TableCell>
+                  <TableCell className="text-center">
+                    <Badge className="bg-green-100 text-green-800">
+                      {formatNumber(user.contratsSignes)}
+                    </Badge>
+                  </TableCell>
 
-                <TableCell className="text-center">
-                  <Badge className="bg-blue-100 text-blue-800">
-                    {formatNumber(commercial.rendezVousPris)}
-                  </Badge>
-                </TableCell>
+                  <TableCell className="text-center">
+                    <Badge className="bg-blue-100 text-blue-800">
+                      {formatNumber(user.rendezVousPris)}
+                    </Badge>
+                  </TableCell>
 
-                <TableCell className="text-center">
-                  <span
-                    className={`font-medium ${
-                      commercial.tauxConversion >= 20
-                        ? 'text-green-600'
-                        : commercial.tauxConversion >= 10
-                          ? 'text-yellow-600'
-                          : 'text-red-600'
-                    }`}
-                  >
-                    {commercial.tauxConversion}%
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
+                  <TableCell className="text-center">
+                    <span
+                      className={`font-medium ${
+                        user.tauxConversion >= 20
+                          ? 'text-green-600'
+                          : user.tauxConversion >= 10
+                            ? 'text-yellow-600'
+                            : 'text-red-600'
+                      }`}
+                    >
+                      {user.tauxConversion}%
+                    </span>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </CardContent>
