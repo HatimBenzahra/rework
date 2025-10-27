@@ -271,8 +271,8 @@ export const getEntityDescription = (entity, userRole) => {
     ecoutes: {
       [ROLES.ADMIN]: "Écoutes et enregistrements de tous les commerciaux de l'entreprise",
       [ROLES.DIRECTEUR]: 'Écoutes et enregistrements des commerciaux de votre division',
-      [ROLES.MANAGER]: 'Pas d\'accès aux écoutes',
-      [ROLES.COMMERCIAL]: 'Pas d\'accès aux écoutes',
+      [ROLES.MANAGER]: "Pas d'accès aux écoutes",
+      [ROLES.COMMERCIAL]: "Pas d'accès aux écoutes",
     },
   }
 

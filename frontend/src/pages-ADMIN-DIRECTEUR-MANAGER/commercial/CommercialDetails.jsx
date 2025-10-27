@@ -4,11 +4,8 @@ import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercialFull, useManagers } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
-import { RANKS, calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
-import PortesProspectionChart from '@/components/charts/PortesProspectionChart'
-import PortesWeeklyChart from '@/components/charts/PortesWeeklyChart'
-import PortesStatusChart from '@/components/charts/PortesStatusChart'
 
 export default function CommercialDetails() {
   const { id } = useParams()

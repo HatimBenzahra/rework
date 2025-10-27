@@ -10,6 +10,7 @@ import {
   MapPin,
   Navigation2,
   Headphones,
+  BarChart3,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
@@ -84,6 +85,12 @@ const items = [
     url: '/ecoutes',
     icon: Headphones,
     entity: 'ecoutes',
+  },
+  {
+    title: 'Statistiques',
+    url: '/statistiques',
+    icon: BarChart3,
+    entity: 'statistics',
   },
   {
     title: 'Paramètres',

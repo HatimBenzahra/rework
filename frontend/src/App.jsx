@@ -21,7 +21,7 @@ import ImmeubleDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/immeubles/ImmeubleD
 import ZoneDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/ZoneDetails'
 import GPSTracking from '@/pages-ADMIN-DIRECTEUR-MANAGER/gps-tracking/GPSTracking'
 import EcoutesManagement from '@/pages-ADMIN-DIRECTEUR-MANAGER/ecoutes/EcoutesManagement'
-
+import Statistiques from '@/pages-ADMIN-DIRECTEUR-MANAGER/statistiques/Statistiques'
 // Import Commercial Layouts & Pages
 import CommercialLayoutComponent from '@/pages-COMMERCIAL/layouts/CommercialLayout'
 import CommercialDashboard from '@/pages-COMMERCIAL/dashboard/CommercialDashboard'
@@ -29,7 +29,6 @@ import ImmeublesList from '@/pages-COMMERCIAL/immeubles/ImmeublesList'
 import Historique from '@/pages-COMMERCIAL/historique/Historique'
 import PortesGestion from '@/pages-COMMERCIAL/portes/PortesGestion'
 import PortesLecture from '@/pages-COMMERCIAL/portes/PortesLecture'
-
 // Layout pour Admin/Directeur/Manager (avec sidebar)
 function AdminLayout() {
   return (
@@ -62,6 +61,7 @@ function AdminLayout() {
             <Route path="/zones/:id" element={<ZoneDetails />} />
             <Route path="/gps-tracking" element={<GPSTracking />} />
             <Route path="/ecoutes" element={<EcoutesManagement />} />
+            <Route path="/statistiques" element={<Statistiques />} />
           </Routes>
         </div>
       </SidebarInset>
