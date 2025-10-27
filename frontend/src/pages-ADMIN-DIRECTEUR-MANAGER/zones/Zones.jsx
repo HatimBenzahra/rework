@@ -252,20 +252,6 @@ export default function Zones() {
         ]
       }
 
-      case ROLES.MANAGER: {
-        const scopedManager = managers?.find(m => m.id === safeUserId)
-        const managerOption = scopedManager
-          ? [
-              {
-                id: scopedManager.id,
-                name: `${scopedManager.prenom} ${scopedManager.nom}`,
-                role: 'manager',
-              },
-            ]
-          : []
-        const scopedCommercials = (commercials || []).filter(c => c.managerId === safeUserId)
-        return [...managerOption, ...formatUsers(scopedCommercials, 'commercial')]
-      }
 
       case ROLES.COMMERCIAL: {
         const scopedCommercial = commercials?.find(c => c.id === safeUserId)
