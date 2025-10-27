@@ -225,6 +225,8 @@ export const CREATE_IMMEUBLE = `
     createImmeuble(createImmeubleInput: $createImmeubleInput) {
       id
       adresse
+      latitude
+      longitude
       nbEtages
       nbPortesParEtage
       ascenseurPresent

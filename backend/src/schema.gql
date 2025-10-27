@@ -55,6 +55,8 @@ input CreateImmeubleInput {
   ascenseurPresent: Boolean!
   commercialId: Int!
   digitalCode: String
+  latitude: Float
+  longitude: Float
   nbEtages: Int!
   nbPortesParEtage: Int!
   zoneId: Int
@@ -132,6 +134,8 @@ type Immeuble {
   createdAt: DateTime!
   digitalCode: String
   id: Int!
+  latitude: Float
+  longitude: Float
   nbEtages: Int!
   nbPortesParEtage: Int!
   portes: [Porte!]
@@ -343,6 +347,8 @@ input UpdateImmeubleInput {
   commercialId: Int
   digitalCode: String
   id: Int!
+  latitude: Float
+  longitude: Float
   nbEtages: Int
   nbPortesParEtage: Int
   zoneId: Int

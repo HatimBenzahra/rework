@@ -220,6 +220,10 @@ export const GET_ZONES = `
       immeubles {
         id
         adresse
+        latitude
+        longitude
+        nbEtages
+        nbPortesParEtage
         commercialId
         zoneId
       }
@@ -274,6 +278,10 @@ export const GET_ZONE = `
       immeubles {
         id
         adresse
+        latitude
+        longitude
+        nbEtages
+        nbPortesParEtage
         commercialId
         zoneId
       }
@@ -292,6 +300,8 @@ export const GET_IMMEUBLES = `
     immeubles(userId: $userId, userRole: $userRole) {
       id
       adresse
+      latitude
+      longitude
       nbEtages
       nbPortesParEtage
       ascenseurPresent
@@ -308,6 +318,8 @@ export const GET_IMMEUBLE = `
     immeuble(id: $id) {
       id
       adresse
+      latitude
+      longitude
       nbEtages
       nbPortesParEtage
       ascenseurPresent

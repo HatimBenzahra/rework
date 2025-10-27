@@ -83,6 +83,8 @@ model Zone {
 model Immeuble {
   id                Int      @id @default(autoincrement())
   adresse           String
+  latitude          Float?   // Coordonnée latitude pour la carte
+  longitude         Float?   // Coordonnée longitude pour la carte
   nbEtages          Int
   nbPortesParEtage  Int
   ascenseurPresent  Boolean  @default(false)

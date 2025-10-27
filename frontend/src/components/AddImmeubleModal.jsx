@@ -57,6 +57,8 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
     nbPortesParEtage: '',
     ascenseurPresent: false,
     digitalCode: '',
+    latitude: null,
+    longitude: null,
   })
   const [errors, setErrors] = useState({})
 
@@ -74,6 +76,8 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
         nbPortesParEtage: '',
         ascenseurPresent: false,
         digitalCode: '',
+        latitude: null,
+        longitude: null,
       })
       setErrors({})
       setAddressSuggestions([])
@@ -158,11 +162,20 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
     // Marquer que l'adresse a été sélectionnée pour éviter une nouvelle recherche
     setIsAddressSelected(true)
     setAddressSuggestions([])
+
+    // Extraire les coordonnées de Mapbox (format: [longitude, latitude])
+    const coordinates = address.geometry?.coordinates
+    const longitude = coordinates?.[0] || null
+    const latitude = coordinates?.[1] || null
+
     // Modifier directement formData sans passer par handleInputChange
     setFormData(prev => ({
       ...prev,
       adresse: address.place_name,
+      latitude,
+      longitude,
     }))
+
     // Effacer l'erreur si elle existe
     if (errors.adresse) {
       setErrors(prev => ({
@@ -226,6 +239,8 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
       const immeubleData = {
         adresse: adresseComplete,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
         nbEtages: parseInt(formData.nbEtages),
         nbPortesParEtage: parseInt(formData.nbPortesParEtage),
         ascenseurPresent: formData.ascenseurPresent,

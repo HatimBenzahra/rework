@@ -18,7 +18,6 @@ const formatNumber = num => {
   return new Intl.NumberFormat('fr-FR').format(num)
 }
 
-
 const getRankIcon = position => {
   switch (position) {
     case 1:
@@ -63,7 +62,7 @@ export default function CommercialRankingTable({
       icon: Users,
       data: commercials,
       color: 'blue',
-      allowedRoles: ['admin', 'directeur', 'manager'] // Tous peuvent voir les commerciaux
+      allowedRoles: ['admin', 'directeur', 'manager'], // Tous peuvent voir les commerciaux
     },
     {
       key: 'directeurs',
@@ -71,7 +70,7 @@ export default function CommercialRankingTable({
       icon: Crown,
       data: directeurs,
       color: 'purple',
-      allowedRoles: ['admin'] // Seul l'admin peut voir les directeurs
+      allowedRoles: ['admin'], // Seul l'admin peut voir les directeurs
     },
     {
       key: 'managers',
@@ -79,28 +78,26 @@ export default function CommercialRankingTable({
       icon: Shield,
       data: managers,
       color: 'green',
-      allowedRoles: ['admin', 'directeur'] // Admin et directeurs peuvent voir les managers
-    }
+      allowedRoles: ['admin', 'directeur'], // Admin et directeurs peuvent voir les managers
+    },
   ]
 
-  const userTypes = availableUserTypes.filter(type => 
-    type.allowedRoles.includes(currentUserRole)
-  )
+  const userTypes = availableUserTypes.filter(type => type.allowedRoles.includes(currentUserRole))
 
   // S'assurer que le type sélectionné est valide pour le rôle actuel
-  const validSelectedType = userTypes.find(type => type.key === selectedType) 
-    ? selectedType 
+  const validSelectedType = userTypes.find(type => type.key === selectedType)
+    ? selectedType
     : userTypes[0]?.key || 'commercials'
 
   const currentUserType = userTypes.find(type => type.key === validSelectedType)
-  const currentData = currentUserType?.data || []
   const rankedUsers = useMemo(() => {
+    const currentData = currentUserType?.data || []
     if (!currentData?.length || !statistics?.length) return []
 
     // Calculer les performances selon le type d'utilisateur
     const userStats = currentData.map(user => {
       let userStatistics = []
-      
+
       // Filtrer les statistiques selon le type d'utilisateur
       if (validSelectedType === 'commercials') {
         userStatistics = statistics.filter(stat => stat.commercialId === user.id)
@@ -164,7 +161,7 @@ export default function CommercialRankingTable({
         ...user,
         position: index + 1,
       }))
-  }, [currentData, statistics, limit, validSelectedType, commercials])
+  }, [currentUserType, statistics, limit, validSelectedType, commercials])
 
   if (!rankedUsers.length) {
     return (
@@ -175,14 +172,14 @@ export default function CommercialRankingTable({
             {title}
           </CardTitle>
           <CardDescription>{description}</CardDescription>
-          
+
           {/* Sélecteur de type d'utilisateur */}
           <div className="flex gap-2 mt-4">
             {userTypes.map(type => {
               const Icon = type.icon
               const isActive = validSelectedType === type.key
               const hasData = type.data && type.data.length > 0
-              
+
               return (
                 <Button
                   key={type.key}
@@ -223,14 +220,14 @@ export default function CommercialRankingTable({
           {title}
         </CardTitle>
         <CardDescription>{description}</CardDescription>
-        
+
         {/* Sélecteur de type d'utilisateur */}
         <div className="flex gap-2 mt-4">
           {userTypes.map(type => {
             const Icon = type.icon
             const isActive = validSelectedType === type.key
             const hasData = type.data && type.data.length > 0
-            
+
             return (
               <Button
                 key={type.key}
@@ -269,12 +266,9 @@ export default function CommercialRankingTable({
             {rankedUsers.map(user => {
               const userTypeConfig = userTypes.find(t => t.key === user.userType)
               const userColor = userTypeConfig?.color || 'blue'
-              
+
               return (
-                <TableRow
-                  key={user.id}
-                  className={user.position <= 3 ? 'bg-muted/50' : ''}
-                >
+                <TableRow key={user.id} className={user.position <= 3 ? 'bg-muted/50' : ''}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {getRankIcon(user.position)}
@@ -284,7 +278,9 @@ export default function CommercialRankingTable({
 
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full bg-${userColor}-100 text-${userColor}-700 flex items-center justify-center text-xs font-semibold`}>
+                      <div
+                        className={`h-8 w-8 rounded-full bg-${userColor}-100 text-${userColor}-700 flex items-center justify-center text-xs font-semibold`}
+                      >
                         {user.initials}
                       </div>
                       <div className="grid gap-1">

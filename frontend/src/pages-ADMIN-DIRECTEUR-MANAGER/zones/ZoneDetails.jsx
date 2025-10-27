@@ -217,7 +217,6 @@ export default function ZoneDetails() {
         <AssignedZoneCard
           zone={zone}
           assignmentDate={zone?.createdAt}
-          immeublesCount={zoneData?.immeubles_count || 0}
           className="w-full"
           fullWidth={true}
         />

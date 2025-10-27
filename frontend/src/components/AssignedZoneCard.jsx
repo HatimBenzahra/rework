@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import mapboxgl from 'mapbox-gl'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MapPin, Calendar, Maximize2, X, Lock, Unlock } from 'lucide-react'
+import { MapPin, Calendar, Maximize2, X, Lock, Unlock, Building2 } from 'lucide-react'
 import { MapSkeleton } from '@/components/LoadingSkeletons'
 import { apiCache } from '@/services/api-cache'
 import { logError } from '@/services/graphql-errors'
@@ -92,7 +93,7 @@ const fetchLocationName = async (longitude, latitude) => {
 /**
  * Composant pour afficher la zone assignée à un commercial/manager/directeur
  * @param {Object} props
- * @param {Object} props.zone - Objet zone avec xOrigin, yOrigin, rayon, nom, id
+ * @param {Object} props.zone - Objet zone avec xOrigin, yOrigin, rayon, nom, id, immeubles
  * @param {string} props.assignmentDate - Date d'assignation au format ISO
  * @param {number} props.immeublesCount - Nombre d'immeubles dans la zone
  * @param {string} props.className - Classes CSS supplémentaires
@@ -100,11 +101,11 @@ const fetchLocationName = async (longitude, latitude) => {
 export default function AssignedZoneCard({
   zone,
   assignmentDate,
-  immeublesCount = 0,
   className = '',
   fullWidth = false,
 }) {
   const mapRef = useRef(null)
+  const navigate = useNavigate()
   const [mapLoading, setMapLoading] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMapLocked, setIsMapLocked] = useState(true) // Map verrouillée par défaut
@@ -136,6 +137,23 @@ export default function AssignedZoneCard({
     if (!zone?.xOrigin || !zone?.yOrigin || !zone?.rayon) return null
     return createGeoJSONCircle([zone.xOrigin, zone.yOrigin], zone.rayon)
   }, [zone])
+
+  // Filtrer les immeubles qui ont des coordonnées valides
+  const immeublesWithCoordinates = useMemo(() => {
+    if (!zone?.immeubles) return []
+    return zone.immeubles.filter(
+      immeuble =>
+        immeuble.latitude != null &&
+        immeuble.longitude != null &&
+        !isNaN(immeuble.latitude) &&
+        !isNaN(immeuble.longitude)
+    )
+  }, [zone?.immeubles])
+
+  // Fonction pour gérer le clic sur un immeuble
+  const handleImmeubleClick = immeubleId => {
+    navigate(`/immeubles/${immeubleId}`)
+  }
 
   if (!zone) {
     return (
@@ -200,6 +218,45 @@ export default function AssignedZoneCard({
 
         {/* Centre de la zone */}
         <Marker longitude={zone.xOrigin} latitude={zone.yOrigin} />
+
+        {/* Immeubles sur la carte */}
+        {immeublesWithCoordinates.map(immeuble => (
+          <Marker
+            key={`immeuble-${immeuble.id}`}
+            longitude={immeuble.longitude}
+            latitude={immeuble.latitude}
+          >
+            <div
+              className="relative cursor-pointer group"
+              title={`${immeuble.adresse}\n${immeuble.nbEtages} étages, ${immeuble.nbPortesParEtage} portes/étage\nCliquez pour voir les détails`}
+              onClick={e => {
+                e.stopPropagation()
+                handleImmeubleClick(immeuble.id)
+              }}
+            >
+              {/* Icône bâtiment */}
+              <div className="bg-blue-600 text-white p-2 rounded-lg shadow-lg border-2 border-white hover:bg-blue-700 hover:scale-110 transition-all duration-200 active:scale-95">
+                <Building2 className="h-4 w-4" />
+              </div>
+
+              {/* Tooltip au survol */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                <div className="font-medium">{immeuble.adresse}</div>
+                <div className="text-gray-300">
+                  {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
+                </div>
+                <div className="text-gray-300">
+                  Total: {immeuble.nbEtages * immeuble.nbPortesParEtage} portes
+                </div>
+                <div className="text-blue-300 mt-1 text-center">
+                  👆 Cliquez pour voir les détails
+                </div>
+                {/* Flèche du tooltip */}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+          </Marker>
+        ))}
 
         {/* Cercle de la zone */}
         {circleGeoJSON && (
@@ -389,9 +446,9 @@ export default function AssignedZoneCard({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                        Nombre d'immeubles
+                        Immeubles géolocalisés
                       </p>
-                      <p className="font-semibold text-lg">{immeublesCount}</p>
+                      <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
                     </div>
                   </div>
                 </div>
@@ -471,9 +528,9 @@ export default function AssignedZoneCard({
             </div>
             <div>
               <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                Immeubles
+                Immeubles géolocalisés
               </p>
-              <p className="font-semibold text-lg">{immeublesCount}</p>
+              <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
             </div>
             <div>
               <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">

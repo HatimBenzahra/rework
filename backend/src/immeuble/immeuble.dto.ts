@@ -1,4 +1,4 @@
-import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
+import { ObjectType, Field, Int, InputType, Float } from '@nestjs/graphql';
 import {
   IsNotEmpty,
   IsString,
@@ -6,6 +6,7 @@ import {
   IsInt,
   Min,
   IsBoolean,
+  IsNumber,
 } from 'class-validator';
 import { Porte } from '../porte/porte.dto';
 
@@ -16,6 +17,12 @@ export class Immeuble {
 
   @Field()
   adresse: string;
+
+  @Field(() => Float, { nullable: true })
+  latitude?: number;
+
+  @Field(() => Float, { nullable: true })
+  longitude?: number;
 
   @Field(() => Int)
   nbEtages: number;
@@ -51,6 +58,16 @@ export class CreateImmeubleInput {
   @IsNotEmpty()
   @IsString()
   adresse: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
   @Field(() => Int)
   @IsInt()
@@ -90,6 +107,16 @@ export class UpdateImmeubleInput {
   @IsOptional()
   @IsString()
   adresse?: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()

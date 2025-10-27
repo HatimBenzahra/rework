@@ -26,7 +26,14 @@ export class ImmeubleService {
     // Créer l'immeuble avec la zone automatiquement assignée
     const immeuble = await this.prisma.immeuble.create({
       data: {
-        ...data,
+        adresse: data.adresse,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        nbEtages: data.nbEtages,
+        nbPortesParEtage: data.nbPortesParEtage,
+        ascenseurPresent: data.ascenseurPresent,
+        digitalCode: data.digitalCode,
+        commercialId: data.commercialId,
         zoneId, // Assigner automatiquement la zone du commercial
       },
     });
