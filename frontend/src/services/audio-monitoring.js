@@ -12,6 +12,17 @@ const GENERATE_COMMERCIAL_TOKEN = `
   }
 `
 
+const GENERATE_MANAGER_TOKEN = `
+  mutation GenerateManagerToken($managerId: Int!, $roomName: String) {
+    generateManagerToken(managerId: $managerId, roomName: $roomName) {
+      serverUrl
+      participantToken
+      roomName
+      participantName
+    }
+  }
+`
+
 const START_MONITORING = `
   mutation StartMonitoring($input: StartMonitoringInput!) {
     startMonitoring(input: $input) {
@@ -68,6 +79,33 @@ export class AudioMonitoringService {
     } catch (error) {
       console.error('Erreur génération token commercial:', error)
       throw error
+    }
+  }
+
+  /**
+   * Génère un token manager pour publisher
+   */
+  static async generateManagerToken(managerId, roomName = null) {
+    try {
+      const data = await graphqlClient.request(GENERATE_MANAGER_TOKEN, {
+        managerId,
+        roomName,
+      })
+      return data.generateManagerToken
+    } catch (error) {
+      console.error('Erreur génération token manager:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Génère un token universel (commercial ou manager)
+   */
+  static async generateUserToken(userId, userType, roomName = null) {
+    if (userType === 'manager') {
+      return this.generateManagerToken(userId, roomName)
+    } else {
+      return this.generateCommercialToken(userId, roomName)
     }
   }
 

@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useRole } from '@/contexts/userole'
-import { useCommercials } from '@/services'
+import { useCommercials, useManagers } from '@/services'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useActiveRooms } from '@/hooks/audio/useActiveRooms'
@@ -43,10 +43,17 @@ export default function EcoutesManagement() {
   const { currentRole, currentUserId } = useRole()
   const {
     data: commercials,
-    loading,
-    error,
-    refetch,
+    loading: commercialsLoading,
+    error: commercialsError,
+    refetch: refetchCommercials,
   } = useCommercials(parseInt(currentUserId, 10), currentRole)
+
+  const {
+    data: managers,
+    loading: managersLoading,
+    error: managersError,
+    refetch: refetchManagers,
+  } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { showSuccess, showError } = useErrorToast()
 
   // Hook pour surveiller les rooms actives et les commerciaux en ligne
@@ -87,17 +94,27 @@ export default function EcoutesManagement() {
     }
   }
 
-  // Filtrer les commerciaux selon le rôle (directeur ne voit que ses commerciaux)
-  const filteredCommercials = useMemo(() => {
-    if (!commercials) return []
-    return commercials.filter(commercial => {
+  // Combiner commerciaux et managers avec type
+  const allUsers = useMemo(() => {
+    const commercialUsers = (commercials || []).map(user => ({ ...user, userType: 'commercial' }))
+    const managerUsers = (managers || []).map(user => ({ ...user, userType: 'manager' }))
+    return [...commercialUsers, ...managerUsers]
+  }, [commercials, managers])
+
+  // Filtrer les utilisateurs selon le rôle et la recherche
+  const filteredUsers = useMemo(() => {
+    if (!allUsers) return []
+    return allUsers.filter(user => {
       const searchMatch =
-        commercial.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        commercial.prenom?.toLowerCase().includes(searchTerm.toLowerCase())
+        user.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.prenom?.toLowerCase().includes(searchTerm.toLowerCase())
 
       return searchMatch
     })
-  }, [commercials, searchTerm])
+  }, [allUsers, searchTerm])
+
+  // Garder l'ancienne variable pour compatibilité
+  const filteredCommercials = filteredUsers
 
   const handleStartListening = async commercial => {
     try {
@@ -236,7 +253,7 @@ export default function EcoutesManagement() {
     }
   }
 
-  if (loading) {
+  if (commercialsLoading || managersLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
@@ -250,7 +267,7 @@ export default function EcoutesManagement() {
     )
   }
 
-  if (error) {
+  if (commercialsError || managersError) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
@@ -260,8 +277,17 @@ export default function EcoutesManagement() {
           </p>
         </div>
         <div className="p-6 border border-red-200 rounded-lg bg-red-50">
-          <p className="text-red-800">Erreur lors du chargement des données : {error}</p>
-          <Button onClick={() => refetch()} className="mt-2" variant="outline">
+          <p className="text-red-800">
+            Erreur lors du chargement des données : {commercialsError || managersError}
+          </p>
+          <Button
+            onClick={() => {
+              refetchCommercials()
+              refetchManagers()
+            }}
+            className="mt-2"
+            variant="outline"
+          >
             Réessayer
           </Button>
         </div>
@@ -293,14 +319,14 @@ export default function EcoutesManagement() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Commerciaux Disponibles</CardTitle>
+            <CardTitle className="text-sm font-medium">Utilisateurs Disponibles</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredCommercials.filter(c => isCommercialOnline(c.id)).length}
+              {filteredUsers.filter(u => isCommercialOnline(u.id)).length}
             </div>
-            <p className="text-xs text-muted-foreground">En ligne maintenant</p>
+            <p className="text-xs text-muted-foreground">Commerciaux & Managers en ligne</p>
           </CardContent>
         </Card>
 
@@ -353,15 +379,15 @@ export default function EcoutesManagement() {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Commerciaux Disponibles</CardTitle>
+                <CardTitle>Utilisateurs Disponibles</CardTitle>
                 <CardDescription>
-                  Sélectionnez un commercial pour démarrer l'écoute en live
+                  Sélectionnez un commercial ou manager pour démarrer l'écoute en live
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="mb-4">
                   <Input
-                    placeholder="Rechercher un commercial..."
+                    placeholder="Rechercher un utilisateur..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="max-w-sm"
@@ -372,19 +398,20 @@ export default function EcoutesManagement() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Commercial</TableHead>
+                        <TableHead>Utilisateur</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right p-0.5">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCommercials.map(commercial => {
-                        const isOnline = isCommercialOnline(commercial.id)
-                        const isCurrentlyListening = activeListeningRooms.has(commercial.id)
-                        const listeningData = activeListeningRooms.get(commercial.id)
+                      {filteredCommercials.map(user => {
+                        const isOnline = isCommercialOnline(user.id)
+                        const isCurrentlyListening = activeListeningRooms.has(user.id)
+                        const listeningData = activeListeningRooms.get(user.id)
 
                         return (
-                          <React.Fragment key={`commercial-${commercial.id}`}>
+                          <React.Fragment key={`user-${user.userType}-${user.id}`}>
                             <TableRow>
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2">
@@ -393,8 +420,15 @@ export default function EcoutesManagement() {
                                       isOnline ? 'bg-green-500' : 'bg-gray-400'
                                     }`}
                                   />
-                                  {commercial.prenom} {commercial.nom}
+                                  {user.prenom} {user.nom}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={user.userType === 'manager' ? 'secondary' : 'outline'}
+                                >
+                                  {user.userType === 'manager' ? 'Manager' : 'Commercial'}
+                                </Badge>
                               </TableCell>
                               <TableCell>
                                 {isCurrentlyListening ? (
@@ -419,7 +453,7 @@ export default function EcoutesManagement() {
                                   <Button
                                     variant="destructive"
                                     size="sm"
-                                    onClick={() => handleStopListening(commercial.id)}
+                                    onClick={() => handleStopListening(user.id)}
                                   >
                                     <Square className="w-4 h-4 mr-2" />
                                     Arrêter
@@ -429,7 +463,7 @@ export default function EcoutesManagement() {
                                     variant="outline"
                                     size="sm"
                                     disabled={!isOnline}
-                                    onClick={() => handleStartListening(commercial)}
+                                    onClick={() => handleStartListening(user)}
                                   >
                                     <Play className="w-4 h-4 mr-2" />
                                     Écouter
@@ -445,7 +479,7 @@ export default function EcoutesManagement() {
                                       <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                                         <span className="font-medium">
-                                          {commercial.prenom} {commercial.nom}
+                                          {user.prenom} {user.nom}
                                         </span>
                                       </div>
                                       <Badge variant="outline">
@@ -477,7 +511,7 @@ export default function EcoutesManagement() {
                                       <Button
                                         variant="destructive"
                                         size="sm"
-                                        onClick={() => handleStopListening(commercial.id)}
+                                        onClick={() => handleStopListening(user.id)}
                                       >
                                         <Square className="w-4 h-4" />
                                       </Button>
@@ -527,15 +561,16 @@ export default function EcoutesManagement() {
                       >
                         Aucun commercial
                       </DropdownMenuItem>
-                      {filteredCommercials.map(commercial => (
+                      {filteredUsers.map(user => (
                         <DropdownMenuItem
-                          key={commercial.id}
+                          key={user.id}
                           onClick={() => {
-                            setSelectedCommercialForRecordings(commercial)
-                            loadRecordingsForCommercial(commercial)
+                            setSelectedCommercialForRecordings(user)
+                            loadRecordingsForCommercial(user)
                           }}
                         >
-                          {commercial.prenom} {commercial.nom}
+                          {user.prenom} {user.nom} (
+                          {user.userType === 'manager' ? 'Manager' : 'Commercial'})
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>

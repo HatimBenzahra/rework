@@ -32,13 +32,13 @@ export default function CommercialLayout() {
     refetch,
   } = useWorkspaceProfile(userId, workspaceRole)
 
-  // Activer l'audio monitoring automatique uniquement pour les commerciaux
+  // Activer l'audio monitoring automatique pour commerciaux ET managers
   const {
     isConnected: audioConnected,
     isConnecting: audioConnecting,
     error: audioError,
     roomName,
-  } = useCommercialAutoAudio(isManager ? null : userId, !isManager)
+  } = useCommercialAutoAudio(userId, true)
 
   // Statistiques agrégées pour le header et les badges
   const workspaceStats = React.useMemo(() => {
