@@ -1,9 +1,23 @@
 import React, { useMemo } from 'react'
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts'
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { MapPin, TrendingUp, Award, Calendar, X } from 'lucide-react'
 
 const chartConfig = {
@@ -12,7 +26,7 @@ const chartConfig = {
     color: 'hsl(var(--chart-1))',
   },
   zone2: {
-    label: 'Zone 2', 
+    label: 'Zone 2',
     color: 'hsl(var(--chart-2))',
   },
   zone3: {
@@ -25,7 +39,7 @@ const chartConfig = {
   },
 }
 
-const formatNumber = (num) => {
+const formatNumber = num => {
   if (typeof num !== 'number') return '0'
   return new Intl.NumberFormat('fr-FR').format(num)
 }
@@ -49,9 +63,7 @@ export default function ZoneComparisonChart({
     const zonesWithMetrics = zones
       .map(zone => {
         const zoneCommercialIds = zone.commercials?.map(rel => rel.commercialId) || []
-        const zoneStats = statistics.filter(stat => 
-          zoneCommercialIds.includes(stat.commercialId)
-        )
+        const zoneStats = statistics.filter(stat => zoneCommercialIds.includes(stat.commercialId))
 
         const totals = zoneStats.reduce(
           (acc, stat) => ({
@@ -63,11 +75,11 @@ export default function ZoneComparisonChart({
           { contratsSignes: 0, rendezVousPris: 0, refus: 0, nbRepassages: 0 }
         )
 
-        const performanceScore = 
-          totals.contratsSignes * 50 + 
-          totals.rendezVousPris * 10 + 
+        const performanceScore =
+          totals.contratsSignes * 50 +
+          totals.rendezVousPris * 10 +
           Math.min(totals.nbRepassages, totals.contratsSignes) * 20
-        
+
         return {
           ...zone,
           ...totals,
@@ -94,7 +106,7 @@ export default function ZoneComparisonChart({
       zone: zone.nom,
       value: Math.round((zone.contratsSignes / maxValues.contratsSignes) * 100),
       actualValue: zone.contratsSignes,
-      color: `var(--chart-${index + 1})`
+      color: `var(--chart-${index + 1})`,
     }))
 
     // Données pour le radar des RDV pris
@@ -102,7 +114,7 @@ export default function ZoneComparisonChart({
       zone: zone.nom,
       value: Math.round((zone.rendezVousPris / maxValues.rendezVousPris) * 100),
       actualValue: zone.rendezVousPris,
-      color: `var(--chart-${index + 1})`
+      color: `var(--chart-${index + 1})`,
     }))
 
     // Données pour le radar des refus
@@ -110,7 +122,7 @@ export default function ZoneComparisonChart({
       zone: zone.nom,
       value: Math.round((zone.refus / maxValues.refus) * 100),
       actualValue: zone.refus,
-      color: `var(--chart-${index + 1})`
+      color: `var(--chart-${index + 1})`,
     }))
 
     return { contratsData, rdvData, refusData, zoneMetrics: zonesWithMetrics }
@@ -124,7 +136,7 @@ export default function ZoneComparisonChart({
       value: Math.max(item.value, 5), // Minimum pour la visibilité
       actualValue: item.actualValue,
       fill: `var(--chart-${index + 1})`,
-      stroke: `var(--chart-${index + 1})`
+      stroke: `var(--chart-${index + 1})`,
     }))
 
     return (
@@ -140,14 +152,14 @@ export default function ZoneComparisonChart({
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                 <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis 
-                  dataKey="zone" 
+                <PolarAngleAxis
+                  dataKey="zone"
                   tick={{ fontSize: 11, fill: '#64748b' }}
                   className="fill-muted-foreground"
                 />
-                <PolarRadiusAxis 
-                  angle={90} 
-                  domain={[0, 100]} 
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 100]}
                   tick={{ fontSize: 9, fill: '#94a3b8' }}
                   tickCount={5}
                   className="fill-muted-foreground"
@@ -188,7 +200,7 @@ export default function ZoneComparisonChart({
             {data.map((item, index) => (
               <div key={index} className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: `var(--chart-${index + 1})` }}
                   />
@@ -237,24 +249,9 @@ export default function ZoneComparisonChart({
 
       {/* 3 Graphiques Radar séparés */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <RadarChart3D 
-          data={contratsData}
-          title="Contrats signés"
-          icon={Award}
-          color="green"
-        />
-        <RadarChart3D 
-          data={rdvData}
-          title="Rendez-vous pris"
-          icon={Calendar}
-          color="blue"
-        />
-        <RadarChart3D 
-          data={refusData}
-          title="Refus"
-          icon={X}
-          color="red"
-        />
+        <RadarChart3D data={contratsData} title="Contrats signés" icon={Award} color="green" />
+        <RadarChart3D data={rdvData} title="Rendez-vous pris" icon={Calendar} color="blue" />
+        <RadarChart3D data={refusData} title="Refus" icon={X} color="red" />
       </div>
 
       {/* Tableau de classement des zones */}
@@ -264,9 +261,7 @@ export default function ZoneComparisonChart({
             <TrendingUp className="h-5 w-5 text-blue-500" />
             Classement des zones
           </CardTitle>
-          <CardDescription>
-            Zones classées par performance globale
-          </CardDescription>
+          <CardDescription>Zones classées par performance globale</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -292,13 +287,16 @@ export default function ZoneComparisonChart({
                 return (
                   <TableRow key={zone.id}>
                     <TableCell>
-                      <Badge variant={rankBadgeVariant} className="w-8 h-8 rounded-full flex items-center justify-center">
+                      <Badge
+                        variant={rankBadgeVariant}
+                        className="w-8 h-8 rounded-full flex items-center justify-center"
+                      >
                         {rank}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: `var(--chart-${index + 1})` }}
                         />
@@ -326,9 +324,7 @@ export default function ZoneComparisonChart({
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="font-bold text-red-600">
-                        {formatNumber(zone.refus)}
-                      </div>
+                      <div className="font-bold text-red-600">{formatNumber(zone.refus)}</div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="font-mono">

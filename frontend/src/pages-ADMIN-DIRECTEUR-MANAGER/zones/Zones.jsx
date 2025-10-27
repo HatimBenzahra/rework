@@ -252,7 +252,6 @@ export default function Zones() {
         ]
       }
 
-
       case ROLES.COMMERCIAL: {
         const scopedCommercial = commercials?.find(c => c.id === safeUserId)
         return scopedCommercial

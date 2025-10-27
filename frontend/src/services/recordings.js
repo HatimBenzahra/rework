@@ -93,13 +93,13 @@ export class RecordingService {
   static async startRecording(commercialId, audioOnly = true) {
     try {
       console.log('🔧 Service startRecording appelé avec:', { commercialId, audioOnly })
-      
+
       const roomName = `room:commercial:${commercialId}`
-      
-      console.log('🎤 Démarrage enregistrement (room composite):', { 
+
+      console.log('🎤 Démarrage enregistrement (room composite):', {
         roomName,
         audioOnly,
-        mode: 'composite'
+        mode: 'composite',
       })
 
       const data = await graphqlClient.request(START_RECORDING, {

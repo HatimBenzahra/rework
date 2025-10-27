@@ -78,7 +78,7 @@ export class ManagerService {
     const manager = await this.prisma.manager.findUnique({
       where: { id },
       include: {
-        directeur: true,
+        directeur: false,
         zones: {
           include: {
             commercials: {
@@ -141,9 +141,13 @@ export class ManagerService {
     }
 
     const aggregatedImmeubles =
-      manager.commercials?.flatMap(commercial => commercial.immeubles || []) || [];
+      manager.commercials?.flatMap(
+        (commercial) => commercial.immeubles || [],
+      ) || [];
     const aggregatedStatistics =
-      manager.commercials?.flatMap(commercial => commercial.statistics || []) || [];
+      manager.commercials?.flatMap(
+        (commercial) => commercial.statistics || [],
+      ) || [];
 
     return {
       ...manager,

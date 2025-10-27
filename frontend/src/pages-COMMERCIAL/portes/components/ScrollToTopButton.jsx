@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { ArrowUp } from 'lucide-react'
 
-export default function ScrollToTopButton({ 
+export default function ScrollToTopButton({
   scrollContainerClass = '.portes-scroll-container',
   targetElementRef = null,
   buttonText = 'Étages',
-  showThreshold = 300 
+  showThreshold = 300,
 }) {
   const [showScrollToTop, setShowScrollToTop] = useState(false)
 
