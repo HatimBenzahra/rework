@@ -1,7 +1,5 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
-import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeuble, useCommercials, usePortesByImmeuble } from '@/services'
 import { useRole } from '@/contexts/userole'
@@ -10,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 
 export default function ImmeubleDetails() {
   const { id } = useParams()
-  const loading = useSimpleLoading(1000)
   const { currentRole, currentUserId } = useRole()
 
   // API hooks
@@ -91,7 +88,7 @@ export default function ImmeubleDetails() {
     return allDoors
   }, [immeubleData?.floorDetails])
 
-  if (loading || immeubleLoading || portesLoading) return <DetailsPageSkeleton />
+  if (immeubleLoading || portesLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!immeubleData) return <div>Immeuble non trouvé</div>
 

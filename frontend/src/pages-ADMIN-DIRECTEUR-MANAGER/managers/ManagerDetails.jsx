@@ -1,6 +1,5 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
-import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import {
   useManager,
@@ -26,7 +25,6 @@ import {
 
 export default function ManagerDetails() {
   const { id } = useParams()
-  const loading = useSimpleLoading(1000)
   const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
@@ -290,7 +288,7 @@ export default function ManagerDetails() {
     )
   }
 
-  if (loading || managerLoading) return <DetailsPageSkeleton />
+  if (managerLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!managerData) return <div>Manager non trouvé</div>
 

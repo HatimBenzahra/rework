@@ -1,5 +1,4 @@
 import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import {
   useDirecteurs,
@@ -75,7 +74,6 @@ const directeursEditFields = [
 ]
 
 export default function Directeurs() {
-  const loading = useSimpleLoading(1000)
   const { currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
@@ -164,7 +162,7 @@ export default function Directeurs() {
     }
   }
 
-  if (loading || directeursLoading) {
+  if (directeursLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">

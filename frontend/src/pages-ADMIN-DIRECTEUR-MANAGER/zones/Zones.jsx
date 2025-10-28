@@ -1,6 +1,4 @@
 import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
-import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { ZoneCreatorModal } from '@/components/ZoneCreatorModal'
 import { ActionConfirmation } from '@/components/ActionConfirmation'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
@@ -55,7 +53,6 @@ const fetchLocationName = async (longitude, latitude) => {
 }
 
 export default function Zones() {
-  const loading = useSimpleLoading(1000)
   const { showError, showSuccess } = useErrorToast()
   const [showZoneModal, setShowZoneModal] = useState(false)
   const [editingZone, setEditingZone] = useState(null)
@@ -428,20 +425,6 @@ export default function Zones() {
   const handleCloseModal = () => {
     setShowZoneModal(false)
     setEditingZone(null)
-  }
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Zones</h1>
-          <p className="text-muted-foreground text-base">
-            Gestion des zones géographiques et suivi des performances territoriales
-          </p>
-        </div>
-        <TableSkeleton />
-      </div>
-    )
   }
 
   return (

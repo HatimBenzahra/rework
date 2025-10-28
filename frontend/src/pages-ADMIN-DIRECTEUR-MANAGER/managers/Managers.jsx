@@ -1,5 +1,4 @@
 import { AdvancedDataTable } from '@/components/tableau'
-import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import {
   useManagers,
@@ -52,7 +51,6 @@ const getManagersColumns = isAdmin => {
 }
 
 export default function Managers() {
-  const loading = useSimpleLoading(1000)
   const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
@@ -242,7 +240,7 @@ export default function Managers() {
     }
   }
 
-  if (loading || managersLoading) {
+  if (managersLoading) {
     return (
       <div className="space-y-6">
         <div className="flex flex-col gap-2">

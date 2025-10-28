@@ -1,6 +1,5 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
-import { useSimpleLoading } from '@/hooks/utils/use-page-loading'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useZone, useStatisticsByZone, useCommercials, useZoneStatistics } from '@/services'
 import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
@@ -10,7 +9,6 @@ import AssignedZoneCard from '@/components/AssignedZoneCard'
 
 export default function ZoneDetails() {
   const { id } = useParams()
-  const loading = useSimpleLoading(1000)
   const { currentRole, currentUserId } = useRole()
 
   // API hooks
@@ -130,7 +128,7 @@ export default function ZoneDetails() {
     }
   }, [zoneStats, statistics])
 
-  if (loading || zoneLoading || statsLoading || zoneStatsLoading) return <DetailsPageSkeleton />
+  if (zoneLoading || statsLoading || zoneStatsLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!zoneData) return <div>Zone non trouvée</div>
 
