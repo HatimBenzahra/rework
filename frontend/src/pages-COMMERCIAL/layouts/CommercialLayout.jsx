@@ -24,13 +24,17 @@ export default function CommercialLayout() {
   const userId = React.useMemo(() => parseInt(currentUserId, 10), [currentUserId])
   const workspaceRole = isManager ? 'manager' : 'commercial'
 
+  // Détecter si on est sur la page équipe pour charger les données complètes avec les commerciaux
+  const isTeamPage = location.pathname === '/equipe'
+  const includeTeam = isManager && isTeamPage
+
   // Récupérer le profil (commercial ou manager) pour alimenter l'espace
   const {
     data: workspaceProfile,
     loading: profileLoading,
     error: profileError,
     refetch,
-  } = useWorkspaceProfile(userId, workspaceRole)
+  } = useWorkspaceProfile(userId, workspaceRole, includeTeam)
 
   // Activer l'audio monitoring automatique pour commerciaux ET managers
   const {

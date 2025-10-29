@@ -74,8 +74,59 @@ export class ManagerService {
     });
   }
 
-  async findFull(id: number) {
+  /**
+   * Récupère les données personnelles du manager (pour son espace commercial personnel)
+   * Retourne UNIQUEMENT ses propres immeubles et statistiques
+   */
+  async findPersonal(id: number) {
     const manager = await this.prisma.manager.findUnique({
+      where: { id },
+      include: {
+        directeur: true,
+      },
+    });
+
+    if (!manager) {
+      return null;
+    }
+
+    // Récupérer UNIQUEMENT les propres immeubles du manager
+    const immeubles = await this.prisma.immeuble.findMany({
+      where: { managerId: id },
+      include: {
+        portes: true,
+      },
+    });
+
+    // Récupérer UNIQUEMENT les propres statistiques du manager
+    const statistics = await this.prisma.statistic.findMany({
+      where: { managerId: id },
+    });
+
+    // Récupérer les zones assignées au manager
+    const zones = await this.prisma.zone.findMany({
+      where: { managerId: id },
+      include: {
+        commercials: true,
+        immeubles: true,
+      },
+    });
+
+    return {
+      ...manager,
+      immeubles,
+      statistics,
+      zones,
+    };
+  }
+
+  /**
+   * Récupère toutes les données du manager pour la page équipe
+   * Retourne ses commerciaux avec leurs immeubles et statistiques
+   */
+  async findFull(id: number) {
+    // Récupérer le manager avec ses relations
+    const managerData = await this.prisma.manager.findUnique({
       where: { id },
       include: {
         directeur: false,
@@ -136,21 +187,44 @@ export class ManagerService {
       },
     });
 
-    if (!manager) {
+    if (!managerData) {
       return null;
     }
 
-    const aggregatedImmeubles =
-      manager.commercials?.flatMap(
-        (commercial) => commercial.immeubles || [],
+    // Récupérer les propres immeubles et statistiques du manager séparément
+    const managerImmeubles = await this.prisma.immeuble.findMany({
+      where: { managerId: id },
+      include: {
+        portes: true,
+      },
+    });
+
+    const managerStatistics = await this.prisma.statistic.findMany({
+      where: { managerId: id },
+    });
+
+    // Agréger les immeubles des commerciaux + les propres immeubles du manager
+    const commercialImmeubles =
+      managerData.commercials?.flatMap(
+        (commercial: any) => commercial.immeubles || [],
       ) || [];
-    const aggregatedStatistics =
-      manager.commercials?.flatMap(
-        (commercial) => commercial.statistics || [],
+    const aggregatedImmeubles = [
+      ...managerImmeubles,
+      ...commercialImmeubles,
+    ];
+
+    // Agréger les statistiques des commerciaux + les propres statistiques du manager
+    const commercialStatistics =
+      managerData.commercials?.flatMap(
+        (commercial: any) => commercial.statistics || [],
       ) || [];
+    const aggregatedStatistics = [
+      ...managerStatistics,
+      ...commercialStatistics,
+    ];
 
     return {
-      ...manager,
+      ...managerData,
       immeubles: aggregatedImmeubles,
       statistics: aggregatedStatistics,
     };

@@ -67,17 +67,21 @@ export interface Immeuble extends BaseEntity {
   adresse: string
   nbEtages: number
   nbPortesParEtage: number
-  commercialId: number
+  commercialId?: number | null
+  managerId?: number | null
   zoneId?: number | null
   ascenseurPresent?: boolean
   digitalCode?: string | null
+  latitude?: number | null
+  longitude?: number | null
   portes?: Porte[]
 }
 
 export interface Statistic extends BaseEntity {
-  commercialId?: number
-  immeubleId?: number
-  zoneId?: number
+  commercialId?: number | null
+  managerId?: number | null
+  immeubleId?: number | null
+  zoneId?: number | null
   contratsSignes: number
   immeublesVisites: number
   rendezVousPris: number
@@ -169,15 +173,26 @@ export interface CreateImmeubleInput {
   adresse: string
   nbEtages: number
   nbPortesParEtage: number
-  commercialId: number
+  commercialId?: number
+  managerId?: number
+  zoneId?: number
+  ascenseurPresent?: boolean
+  digitalCode?: string
+  latitude?: number
+  longitude?: number
 }
 
 export interface CreateStatisticInput {
-  commercialId: number
+  commercialId?: number
+  managerId?: number
+  immeubleId?: number
+  zoneId?: number
   contratsSignes: number
   immeublesVisites: number
   rendezVousPris: number
   refus: number
+  nbImmeublesProspectes: number
+  nbPortesProspectes: number
 }
 
 export interface CreatePorteInput {
@@ -239,15 +254,26 @@ export interface UpdateImmeubleInput {
   nbEtages?: number
   nbPortesParEtage?: number
   commercialId?: number
+  managerId?: number
+  zoneId?: number
+  ascenseurPresent?: boolean
+  digitalCode?: string
+  latitude?: number
+  longitude?: number
 }
 
 export interface UpdateStatisticInput {
   id: number
   commercialId?: number
+  managerId?: number
+  immeubleId?: number
+  zoneId?: number
   contratsSignes?: number
   immeublesVisites?: number
   rendezVousPris?: number
   refus?: number
+  nbImmeublesProspectes?: number
+  nbPortesProspectes?: number
 }
 
 export interface UpdatePorteInput {

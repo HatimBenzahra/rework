@@ -26,6 +26,11 @@ export class ManagerResolver {
     return this.managerService.findOne(id);
   }
 
+  @Query(() => Manager, { name: 'managerPersonal', nullable: true })
+  findPersonal(@Args('id', { type: () => Int }) id: number) {
+    return this.managerService.findPersonal(id);
+  }
+
   @Query(() => Manager, { name: 'managerFull', nullable: true })
   findFull(@Args('id', { type: () => Int }) id: number) {
     return this.managerService.findFull(id);

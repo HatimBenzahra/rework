@@ -259,6 +259,7 @@ type Query {
   listRecordings(roomName: String!): [RecordingItem!]!
   manager(id: Int!): Manager!
   managerFull(id: Int!): Manager
+  managerPersonal(id: Int!): Manager
   managers(userId: Int, userRole: String): [Manager!]!
   porte(id: Int!): Porte!
   portes: [Porte!]!

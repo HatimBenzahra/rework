@@ -100,14 +100,16 @@ export default function ImmeublesList() {
 
   const handleAddImmeuble = async immeubleData => {
     try {
-      // Add the current commercial ID to the data
-      const dataWithCommercial = {
+      const { isManager } = context || {}
+
+      // Add the current user ID as commercialId or managerId based on role
+      const dataWithUser = {
         ...immeubleData,
-        commercialId: parseInt(currentUserId),
+        ...(isManager ? { managerId: parseInt(currentUserId) } : { commercialId: parseInt(currentUserId) }),
       }
 
       // Call the GraphQL mutation to create the immeuble
-      await immeubleApi.create(dataWithCommercial)
+      await immeubleApi.create(dataWithUser)
 
       // Refetch data after successful creation
       await refetch()

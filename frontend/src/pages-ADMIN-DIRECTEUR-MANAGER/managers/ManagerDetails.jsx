@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import {
-  useManager,
+  useManagerPersonal,
   useDirecteurs,
   useCommercials,
   useUpdateCommercial,
@@ -30,7 +30,12 @@ export default function ManagerDetails() {
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
   // API hooks
-  const { data: manager, loading: managerLoading, error, refetch } = useManager(parseInt(id))
+  const {
+    data: manager,
+    loading: managerLoading,
+    error,
+    refetch,
+  } = useManagerPersonal(parseInt(id))
   const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
   const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
     parseInt(currentUserId, 10),
@@ -47,28 +52,25 @@ export default function ManagerDetails() {
     const assignedCommercials = allCommercials?.filter(c => c.managerId === manager.id) || []
 
     // Calculer les statistiques agrégées du manager depuis son équipe
-    const totalContratsSignes = assignedCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.contratsSignes, 0)
-    }, 0)
+    const totalContratsSignes =
+      manager.statistics?.reduce((sum, stat) => sum + stat.contratsSignes, 0) || 0
 
-    const totalImmeublesVisites = assignedCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.immeublesVisites, 0)
-    }, 0)
+    const totalImmeublesVisites =
+      manager.statistics?.reduce((sum, stat) => sum + stat.immeublesVisites, 0) || 0
 
-    const totalRendezVousPris = assignedCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.rendezVousPris, 0)
-    }, 0)
+    const totalRendezVousPris =
+      manager.statistics?.reduce((sum, stat) => sum + stat.rendezVousPris, 0) || 0
 
-    const totalRefus = assignedCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.refus, 0)
-    }, 0)
-
+    const totalRefus = manager.statistics?.reduce((sum, stat) => sum + stat.refus, 0) || 0
+    const totalPortesProspectes =
+      manager.statistics?.reduce((sum, stat) => sum + stat.nbPortesProspectes, 0) || 0
     // Taux de conversion
-    const tauxConversion =
+    const tauxConversion_portes_prospectes =
+      totalPortesProspectes > 0
+        ? ((totalContratsSignes / totalPortesProspectes) * 100).toFixed(1)
+        : '0'
+
+    const tauxConversion_rdv_pris =
       totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
 
     // Calculer le rang du manager basé sur ses stats agrégées
@@ -123,7 +125,8 @@ export default function ManagerDetails() {
       totalImmeublesVisites,
       totalRendezVousPris,
       totalRefus,
-      tauxConversion: `${tauxConversion}%`,
+      tauxConversion_portes_prospectes: `${tauxConversion_portes_prospectes}%`,
+      tauxConversion_rdv_pris: `${tauxConversion_rdv_pris}%`,
       rank,
       points,
       // Indicateurs de l'équipe
@@ -132,7 +135,7 @@ export default function ManagerDetails() {
     }
   }, [manager, directeurs, allCommercials])
 
-  // Récupérer les zones assignées à ce manager
+  // Récupérer la zone actuellement assignée à ce manager
   const managerZones = useMemo(() => {
     if (!allZones || !manager) return []
     const filtered = allZones.filter(zone => zone.managerId === manager.id)
@@ -294,25 +297,25 @@ export default function ManagerDetails() {
 
   const personalInfo = [
     {
-      label: 'Email',
+      label: 'Email :',
       value: managerData.email,
       icon: 'mail',
     },
     {
-      label: 'Téléphone',
+      label: 'Téléphone :',
       value: managerData.phone,
       icon: 'phone',
     },
     {
-      label: 'Directeur',
+      label: 'Directeur :',
       value: managerData.directeur,
       icon: 'users',
     },
     {
-      label: 'Rang',
+      label: 'Rang :',
       value: (
         <span
-          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${managerData.rank.bgColor} ${managerData.rank.textColor} ${managerData.rank.borderColor} border font-semibold`}
+          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full ${managerData.rank.bgColor} ${managerData.rank.textColor} ${managerData.rank.borderColor} border-text-primary font-semibold`}
         >
           <span className="text-lg">🏆</span>
           {managerData.rank.name}
@@ -322,7 +325,7 @@ export default function ManagerDetails() {
       icon: 'award',
     },
     {
-      label: 'Date de création',
+      label: 'Date de création :',
       value: managerData.date_promotion,
       icon: 'calendar',
     },
@@ -332,30 +335,36 @@ export default function ManagerDetails() {
     {
       title: 'Contrats signés',
       value: managerData.totalContratsSignes,
-      description: 'Total de l’équipe (50 pts/contrat)',
+      description: "Total de l'équipe (50 pts/contrat)",
       icon: 'fileText',
     },
     {
       title: 'Immeubles visités',
       value: managerData.totalImmeublesVisites,
-      description: 'Total de l’équipe (5 pts/immeuble)',
+      description: "Total de l'équipe (5 pts/immeuble)",
       icon: 'building',
     },
     {
       title: 'Rendez-vous pris',
       value: managerData.totalRendezVousPris,
-      description: 'Total de l’équipe (10 pts/RDV)',
+      description: "Total de l'équipe (10 pts/RDV)",
       icon: 'calendar',
     },
     {
       title: 'Refus',
       value: managerData.totalRefus,
-      description: 'Total de l’équipe',
+      description: "Total de l'équipe",
       icon: 'x',
     },
     {
-      title: 'Taux de conversion',
-      value: managerData.tauxConversion,
+      title: 'Taux de conversion par portes prospectées',
+      value: managerData.tauxConversion_portes_prospectes,
+      description: 'Contrats / RDV pris',
+      icon: 'trendingUp',
+    },
+    {
+      title: 'Taux de conversion par rendez-vous pris',
+      value: managerData.tauxConversion_rdv_pris,
       description: 'Contrats / RDV pris',
       icon: 'trendingUp',
     },
@@ -366,15 +375,10 @@ export default function ManagerDetails() {
       icon: 'award',
     },
     {
-      title: 'Taille de l’équipe',
+      title: "Taille de l'équipe",
       value: managerData.equipe_taille,
       description: 'Commerciaux assignés',
       icon: 'users',
-    },
-    {
-      title: 'Zones actuellement assignées',
-      value: managerZones.map(zone => zone.nom).join(', ') || 'Aucune zone assignée',
-      icon: 'mapPin',
     },
   ]
 

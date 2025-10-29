@@ -241,29 +241,46 @@ export function useManager(id: number): UseApiState<Manager> & UseApiActions {
   return useApiCall(() => api.managers.getById(id), [id], 'managers')
 }
 
+export function useManagerPersonal(id: number): UseApiState<Manager> & UseApiActions {
+  return useApiCall(() => api.managers.getPersonalById(id), [id], 'managers-personal')
+}
+
 export function useManagerFull(id: number): UseApiState<Manager> & UseApiActions {
   return useApiCall(() => api.managers.getFullById(id), [id], 'managers-full')
 }
 
 type WorkspaceProfile = Commercial | Manager
 
+//la fonction qu'on utilise pour charger les donnees des deux espaces (commercial et manager)
 export function useWorkspaceProfile(
   id: number,
-  role: string
-): UseApiState<WorkspaceProfile> & UseApiActions {
+  role: string,
+  includeTeam: boolean = false
+):
+//====================================================
+UseApiState<WorkspaceProfile> & UseApiActions {
   const fetchProfile = useCallback(() => {
     if (Number.isNaN(id)) {
       return Promise.reject(new Error('Identifiant utilisateur invalide'))
     }
     if (role === ROLES.MANAGER) {
-      return api.managers.getFullById(id)
+      // Si on est sur la page équipe, charger les données complètes avec les commerciaux
+      if (includeTeam) {
+        return api.managers.getFullById(id)
+      }
+      // Sinon, charger uniquement les données personnelles
+      return api.managers.getPersonalById(id)
     }
     return api.commercials.getFullById(id)
-  }, [id, role])
+  }, [id, role, includeTeam])
 
-  return useApiCall(fetchProfile, [id, role], `workspace-${role}`)
+  return useApiCall(
+    fetchProfile,
+    [id, role, includeTeam],
+    `workspace-${role}-${includeTeam ? 'full' : 'personal'}`
+  )
 }
-
+//====================================================
 export function useCreateManager(): UseApiMutation<CreateManagerInput, Manager> {
   return useApiMutation(api.managers.create, 'managers')
 }

@@ -84,10 +84,11 @@ const getImmeublesEditFields = (commercials = []) => [
     type: 'select',
     required: true,
     section: 'Gestion',
-    options: commercials.map(c => ({
-      value: `${c.prenom} ${c.nom}`,
-      label: `${c.prenom} ${c.nom}`,
-    })),
+    options:
+      commercials.map(c => ({
+        value: `${c.prenom} ${c.nom}`,
+        label: `${c.prenom} ${c.nom}`,
+      })) || [],
   },
 ]
 

@@ -307,7 +307,7 @@ export default function DetailsPage({
     return <Badge variant={variants[status] || 'default'}>{labels[status] || status}</Badge>
   }
 
-  const getIcon = iconName => {
+  const getIcon = (iconName, iconColor = 'text-primary', className = '') => {
     const icons = {
       mail: Mail,
       phone: Phone,
@@ -318,7 +318,7 @@ export default function DetailsPage({
       building: Building2,
     }
     const Icon = icons[iconName] || Mail
-    return <Icon className="h-4 w-4" />
+    return <Icon className={`h-4 w-4 ${iconColor} ${className}`} />
   }
 
   return (
@@ -340,7 +340,8 @@ export default function DetailsPage({
       {personalInfo.length > 0 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1">Informations personnelles</h2>
+            <h2 className="text-xl font-bold mb-1 text-primary">Informations personnelles</h2>
+            <Separator className="border-t-2 border-primary mb-2" />
             <p className="text-sm text-muted-foreground">Détails et coordonnées</p>
           </div>
           <Separator className="mb-6" />
@@ -349,11 +350,11 @@ export default function DetailsPage({
               <div className="grid gap-6 md:grid-cols-2">
                 {personalInfo.map((info, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    {info.icon && (
-                      <div className="mt-1 text-muted-foreground">{getIcon(info.icon)}</div>
-                    )}
+                    {info.icon && <div className="mt-1">{getIcon(info.icon, info.iconColor)}</div>}
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                      <p
+                        className={`text-sm font-medium ${info.iconColor || 'text-primary'} uppercase tracking-wide`}
+                      >
                         {info.label}
                       </p>
                       <p className="text-base font-semibold mt-1.5">{info.value}</p>
@@ -370,7 +371,8 @@ export default function DetailsPage({
       {statsCards.length > 0 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1">Statistiques</h2>
+            <h2 className="text-xl font-bold mb-1 text-primary">Statistiques</h2>
+            <Separator className="border-t-2 border-primary mb-2" />
             <p className="text-sm text-muted-foreground">Indicateurs de performance clés</p>
           </div>
           <Separator className="mb-6" />
@@ -382,13 +384,19 @@ export default function DetailsPage({
                     {stat.title}
                   </CardTitle>
                   {stat.icon && (
-                    <div className="h-4 w-4 text-muted-foreground">{getIcon(stat.icon)}</div>
+                    <div className="h-4 w-4">
+                      {getIcon(stat.icon, stat.iconColor, stat.iconClassName || '')}
+                    </div>
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+                  <div className="text-2xl font-bold tracking-tight ">{stat.value}</div>
+
                   {stat.description && (
-                    <p className="text-xs text-muted-foreground mt-2">{stat.description}</p>
+                    <div className="mt-2 inline-block">
+                      <p className="text-xs text-muted-foreground">{stat.description}</p>
+                      <div className="border-t-2 border-primary mt-2"></div>
+                    </div>
                   )}
                   {stat.trend && (
                     <div className="mt-3 pt-3 border-t">
@@ -413,7 +421,8 @@ export default function DetailsPage({
       {assignedZones && zonePermissions.canView && (
         <div>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1">Zones assignées</h2>
+            <h2 className="text-xl font-semibold mb-1 text-primary">Zones assignées</h2>
+            <Separator className="border-t-2 border-primary mb-2" />
             <p className="text-sm text-muted-foreground">Territoires géographiques attribués</p>
           </div>
           <Separator className="mb-6" />
@@ -442,7 +451,8 @@ export default function DetailsPage({
       {additionalSections.map((section, index) => (
         <div key={index}>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1">{section.title}</h2>
+            <h2 className="text-xl font-semibold mb-1 text-primary">{section.title}</h2>
+            <Separator className="border-t-2 border-primary mb-2" />
             {section.description && (
               <p className="text-sm text-muted-foreground">{section.description}</p>
             )}
@@ -452,6 +462,7 @@ export default function DetailsPage({
             <CardContent className="pt-6">
               {section.type === 'grid' && (
                 <div className="grid gap-6 md:grid-cols-2">
+                  ^
                   {section.items.map((item, itemIndex) => (
                     <div key={itemIndex}>
                       <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">

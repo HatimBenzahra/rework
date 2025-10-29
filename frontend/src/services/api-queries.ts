@@ -71,6 +71,67 @@ export const GET_MANAGER = `
   }
 `
 
+export const GET_MANAGER_PERSONAL = `
+  query GetManagerPersonal($id: Int!) {
+    managerPersonal(id: $id) {
+      id
+      nom
+      prenom
+      email
+      numTelephone
+      directeurId
+      createdAt
+      updatedAt
+      directeur {
+        id
+        nom
+        prenom
+        email
+        numTelephone
+      }
+      immeubles {
+        id
+        adresse
+        nbEtages
+        nbPortesParEtage
+        ascenseurPresent
+        digitalCode
+        commercialId
+        managerId
+        zoneId
+        createdAt
+        updatedAt
+      }
+      statistics {
+        id
+        commercialId
+        managerId
+        immeubleId
+        zoneId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
+      zones {
+        id
+        nom
+        xOrigin
+        yOrigin
+        rayon
+        directeurId
+        managerId
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`
+
 export const GET_MANAGER_FULL = `
   query GetManagerFull($id: Int!) {
     managerFull(id: $id) {

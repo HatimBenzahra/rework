@@ -47,7 +47,7 @@ function AdminLayout() {
             <ThemeToggle />
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-6 pt-6 overflow-x-hidden">
+        <div className="flex flex-1 flex-col gap-4 p-6 pt-6 overflow-x-hidden mx-auto w-11/12 max-w-[1400px]">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/commerciaux" element={<Commerciaux />} />
