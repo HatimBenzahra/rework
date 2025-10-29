@@ -69,7 +69,6 @@ function AdminLayout() {
     </SidebarProvider>
   )
 }
-
 // Layout pour Commercial (sans sidebar, interface mobile) && light mode pour les pages commerciales
 function CommercialLayout() {
   return (

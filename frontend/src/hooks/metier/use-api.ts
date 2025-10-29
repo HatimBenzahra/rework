@@ -274,7 +274,7 @@ UseApiState<WorkspaceProfile> & UseApiActions {
   }, [id, role, includeTeam])
 
   return useApiCall(
-    () => fetchProfile(),
+    () => fetchProfile() as Promise<WorkspaceProfile>,
     [id, role, includeTeam],
     `workspace-${role}-${includeTeam ? 'full' : 'personal'}`
   )

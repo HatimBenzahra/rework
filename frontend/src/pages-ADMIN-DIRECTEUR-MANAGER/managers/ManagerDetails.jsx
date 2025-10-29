@@ -23,13 +23,20 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Award, TrendingUp, FileText, Building2, Calendar, X, Users } from 'lucide-react'
+import DateRangeFilter from '@/components/DateRangeFilter'
+import { Award, TrendingUp, FileText, Building2, Calendar, X, Users, BookX } from 'lucide-react'
 
 export default function ManagerDetails() {
   const { id } = useParams()
   const { isAdmin, currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
+
+  // États pour les filtres de date
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [appliedStartDate, setAppliedStartDate] = useState('')
+  const [appliedEndDate, setAppliedEndDate] = useState('')
 
   // API hooks
   const {
@@ -39,6 +46,8 @@ export default function ManagerDetails() {
     refetch,
   } = useManagerPersonal(parseInt(id))
   const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  // useCommercials récupère TOUS les commerciaux avec leurs statistiques incluses
+  // via la requête GET_COMMERCIALS qui inclut le champ 'statistics' pour chaque commercial
   const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
     parseInt(currentUserId, 10),
     currentRole
@@ -46,26 +55,94 @@ export default function ManagerDetails() {
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
   const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
 
-  // Transformation des données API vers format UI
+  // Fonction pour filtrer les statistiques par période
+  const filterStatisticsByDate = (statistics, start, end) => {
+    if (!statistics || !statistics.length) return []
+    if (!start && !end) return statistics
+
+    return statistics.filter(stat => {
+      const statDate = new Date(stat.createdAt)
+      if (start) {
+        const startDateTime = new Date(start)
+        startDateTime.setHours(0, 0, 0, 0)
+        if (statDate < startDateTime) return false
+      }
+      if (end) {
+        const endDateTime = new Date(end)
+        endDateTime.setHours(23, 59, 59, 999) // Inclure toute la journée de fin
+        if (statDate > endDateTime) return false
+      }
+      return true
+    })
+  }
+
+  // Filtrer les statistiques du manager par date
+  const filteredManagerStats = useMemo(() => {
+    if (!manager?.statistics) return []
+    return filterStatisticsByDate(manager.statistics, appliedStartDate, appliedEndDate)
+  }, [manager?.statistics, appliedStartDate, appliedEndDate])
+
+  // Filtrer les statistiques des commerciaux par date
+  const filteredCommercialsStats = useMemo(() => {
+    if (!allCommercials) return {}
+
+    const filtered = {}
+    allCommercials.forEach(commercial => {
+      if (commercial.statistics) {
+        filtered[commercial.id] = filterStatisticsByDate(
+          commercial.statistics,
+          appliedStartDate,
+          appliedEndDate
+        )
+      }
+    })
+    return filtered
+  }, [allCommercials, appliedStartDate, appliedEndDate])
+
+  // Calculer le rang du manager basé sur TOUTES ses stats (non filtrées)
+  const memoizedManagerRank = useMemo(() => {
+    if (!manager?.statistics) return null
+
+    const totalContratsSignes = manager.statistics.reduce(
+      (sum, stat) => sum + stat.contratsSignes,
+      0
+    )
+    const totalRendezVousPris = manager.statistics.reduce(
+      (sum, stat) => sum + stat.rendezVousPris,
+      0
+    )
+    const totalImmeublesVisites = manager.statistics.reduce(
+      (sum, stat) => sum + stat.immeublesVisites,
+      0
+    )
+
+    return calculateRank(totalContratsSignes, totalRendezVousPris, totalImmeublesVisites)
+  }, [manager?.statistics])
+
+  // Transformation des données API vers format UI (avec filtrage)
   const managerData = useMemo(() => {
     if (!manager) return null
 
     const directeur = directeurs?.find(d => d.id === manager.directeurId)
     const assignedCommercials = allCommercials?.filter(c => c.managerId === manager.id) || []
 
-    // Calculer les statistiques agrégées du manager depuis son équipe
+    // Utiliser les stats filtrées au lieu de manager.statistics
     const totalContratsSignes =
-      manager.statistics?.reduce((sum, stat) => sum + stat.contratsSignes, 0) || 0
+      filteredManagerStats?.reduce((sum, stat) => sum + stat.contratsSignes, 0) || 0
 
     const totalImmeublesVisites =
-      manager.statistics?.reduce((sum, stat) => sum + stat.immeublesVisites, 0) || 0
+      filteredManagerStats?.reduce((sum, stat) => sum + stat.immeublesVisites, 0) || 0
 
     const totalRendezVousPris =
-      manager.statistics?.reduce((sum, stat) => sum + stat.rendezVousPris, 0) || 0
+      filteredManagerStats?.reduce((sum, stat) => sum + stat.rendezVousPris, 0) || 0
 
-    const totalRefus = manager.statistics?.reduce((sum, stat) => sum + stat.refus, 0) || 0
+    const totalRefus = filteredManagerStats?.reduce((sum, stat) => sum + stat.refus, 0) || 0
+
     const totalPortesProspectes =
-      manager.statistics?.reduce((sum, stat) => sum + stat.nbPortesProspectes, 0) || 0
+      filteredManagerStats?.reduce((sum, stat) => sum + (stat.nbPortesProspectes || 0), 0) || 0
+    const totalImmeublesProspectes =
+      filteredManagerStats?.reduce((sum, stat) => sum + (stat.nbImmeublesProspectes || 0), 0) || 0
+
     // Taux de conversion
     const tauxConversion_portes_prospectes =
       totalPortesProspectes > 0
@@ -75,20 +152,14 @@ export default function ManagerDetails() {
     const tauxConversion_rdv_pris =
       totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
 
-    // Calculer le rang du manager basé sur ses stats agrégées
-    const { rank, points } = calculateRank(
-      totalContratsSignes,
-      totalRendezVousPris,
-      totalImmeublesVisites
-    )
-
-    // Trouver le meilleur commercial de l'équipe
+    // Trouver le meilleur commercial de l'équipe (avec stats filtrées)
     let meilleurCommercial = 'Aucun commercial'
     let meilleurBadge = 'Aucun'
 
     if (assignedCommercials.length > 0) {
       const commercialAvecRangs = assignedCommercials.map(commercial => {
-        const stats = commercial.statistics || []
+        // Utiliser les stats filtrées du commercial
+        const stats = filteredCommercialsStats[commercial.id] || []
         const contratsSignes = stats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
         const rendezVous = stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
         const immeubles = stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0)
@@ -123,19 +194,31 @@ export default function ManagerDetails() {
       status: 'actif',
       date_promotion: new Date(manager.createdAt).toLocaleDateString('fr-FR'),
       // Stats commerciales du manager
+      portesProspectees: totalPortesProspectes,
+      immeublesProspectes: totalImmeublesProspectes,
       totalContratsSignes,
       totalImmeublesVisites,
       totalRendezVousPris,
       totalRefus,
       tauxConversion_portes_prospectes: `${tauxConversion_portes_prospectes}%`,
       tauxConversion_rdv_pris: `${tauxConversion_rdv_pris}%`,
-      rank,
-      points,
+      // Utiliser le rang permanent (basé sur toutes les stats)
+      rank: memoizedManagerRank?.rank,
+      points: memoizedManagerRank?.points,
+      totalPortesProspectes,
+      totalImmeublesProspectes,
       // Indicateurs de l'équipe
       meilleurCommercial,
       meilleurBadge,
     }
-  }, [manager, directeurs, allCommercials])
+  }, [
+    manager,
+    directeurs,
+    allCommercials,
+    filteredManagerStats,
+    filteredCommercialsStats,
+    memoizedManagerRank,
+  ])
 
   // Récupérer la zone actuellement assignée à ce manager
   const managerZones = useMemo(() => {
@@ -294,6 +377,9 @@ export default function ManagerDetails() {
   }
 
   // Calculer les stats par commercial de l'équipe (AVANT les early returns)
+  // NOTE: Les stats des commerciaux proviennent de useCommercials (ligne 42-45)
+  // La requête GET_COMMERCIALS inclut déjà le champ 'statistics' pour chaque commercial
+  // via le GraphQL query (api-queries.ts ligne 312-321) et le backend Prisma include (ligne 58, 80, 103, 126)
   const commercialStats = useMemo(() => {
     if (!allCommercials || !manager) return []
 
@@ -301,7 +387,8 @@ export default function ManagerDetails() {
 
     return assignedCommercials
       .map(commercial => {
-        const stats = commercial.statistics || []
+        // Utiliser les stats filtrées du commercial
+        const stats = filteredCommercialsStats[commercial.id] || []
         const contratsSignes = stats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
         const rendezVous = stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
         const immeubles = stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0)
@@ -324,7 +411,7 @@ export default function ManagerDetails() {
         }
       })
       .sort((a, b) => b.points - a.points) // Trier par points décroissants
-  }, [allCommercials, manager])
+  }, [allCommercials, manager, filteredCommercialsStats])
 
   // Calculer les totaux de l'équipe depuis les commerciaux (AVANT les early returns)
   const teamTotals = useMemo(() => {
@@ -340,6 +427,20 @@ export default function ManagerDetails() {
       totalRefus,
     }
   }, [commercialStats])
+
+  // Fonction pour valider les filtres
+  const handleApplyFilters = () => {
+    setAppliedStartDate(startDate)
+    setAppliedEndDate(endDate)
+  }
+
+  // Fonction pour réinitialiser les filtres
+  const handleResetFilters = () => {
+    setStartDate('')
+    setEndDate('')
+    setAppliedStartDate('')
+    setAppliedEndDate('')
+  }
 
   // Early returns APRÈS tous les hooks
   if (managerLoading) return <DetailsPageSkeleton />
@@ -400,10 +501,40 @@ export default function ManagerDetails() {
   // Stats personnelles du manager (basées sur ses propres stats)
   const personalStatsCards = [
     {
-      title: 'Rang personnel',
-      value: managerData.rank.name,
-      description: `${managerData.points} points`,
-      icon: 'award',
+      title: 'Contrats signés',
+      value: managerData.totalContratsSignes,
+      description: 'Total des contrats signés',
+      icon: 'fileText',
+    },
+    {
+      title: 'Rendez-vous pris',
+      value: managerData.totalRendezVousPris,
+      description: 'Total des rendez-vous',
+      icon: 'calendar',
+    },
+    {
+      title: 'Immeubles visités',
+      value: managerData.totalImmeublesVisites,
+      description: 'Total des immeubles visités',
+      icon: 'building',
+    },
+    {
+      title: 'Refus',
+      value: managerData.totalRefus,
+      description: 'Total des refus',
+      icon: 'BookX',
+    },
+    {
+      title: 'Portes prospectées',
+      value: managerData.totalPortesProspectes,
+      description: 'Total des portes prospectées',
+      icon: 'fileText',
+    },
+    {
+      title: 'Immeubles prospectés',
+      value: managerData.totalImmeublesProspectes,
+      description: 'Total des immeubles prospectés',
+      icon: 'building',
     },
     {
       title: 'Points totaux',
@@ -473,6 +604,18 @@ export default function ManagerDetails() {
       type: 'custom',
       render: () => (
         <div className="space-y-6">
+          <DateRangeFilter
+            startDate={startDate}
+            endDate={endDate}
+            appliedStartDate={appliedStartDate}
+            appliedEndDate={appliedEndDate}
+            onChangeStart={setStartDate}
+            onChangeEnd={setEndDate}
+            onApply={handleApplyFilters}
+            onReset={handleResetFilters}
+            title="Filtres de période - Statistiques de l'équipe"
+          />
+
           {/* Cartes de stats équipe */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {teamStatsCards.map((stat, index) => (
@@ -577,10 +720,23 @@ export default function ManagerDetails() {
     <DetailsPage
       title={managerData.name}
       subtitle={`Manager - ID: ${managerData.id}`}
-      status={managerData.status}
+      status={'MANAGER'}
       data={managerData}
       personalInfo={personalInfo}
       statsCards={personalStatsCards}
+      statsFilter={
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          appliedStartDate={appliedStartDate}
+          appliedEndDate={appliedEndDate}
+          onChangeStart={setStartDate}
+          onChangeEnd={setEndDate}
+          onApply={handleApplyFilters}
+          onReset={handleResetFilters}
+          title="Filtres de période - Statistiques personnelles"
+        />
+      }
       assignedZones={managerData.equipe_taille > 0 ? managerZones : null}
       additionalSections={additionalSections}
       backUrl="/managers"

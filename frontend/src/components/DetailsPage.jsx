@@ -264,6 +264,7 @@ function DoorsTableContent({
  * @param {Array} props.assignedZones - Zones assignées à afficher (optionnel)
  * @param {string} props.backUrl - URL de retour
  * @param {string} props.status - Status de l'entité (actif, inactif, etc.)
+ * @param {ReactNode} props.statsFilter - Composant de filtre à afficher au-dessus des statistiques (optionnel)
  */
 export default function DetailsPage({
   title,
@@ -275,6 +276,7 @@ export default function DetailsPage({
   assignedZones = null,
   backUrl = '/',
   status,
+  statsFilter = null,
 }) {
   const navigate = useNavigate()
   const zonePermissions = useEntityPermissions('zones')
@@ -376,6 +378,7 @@ export default function DetailsPage({
             <p className="text-sm text-muted-foreground">Indicateurs de performance clés</p>
           </div>
           <Separator className="mb-6" />
+          {statsFilter && <div className="mb-6">{statsFilter}</div>}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {statsCards.map((stat, index) => (
               <Card key={index} className="border-2">
