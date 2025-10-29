@@ -51,6 +51,7 @@ export interface QueryManagerResponse {
 export interface QueryManagerFullResponse {
   managerFull: Manager | null
 }
+
 export interface QueryManagerPersonalResponse {
   managerPersonal: Manager | null
 }

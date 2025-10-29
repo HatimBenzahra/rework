@@ -119,9 +119,19 @@ import type {
   GetPortesByImmeubleVariables,
   AssignZoneVariables,
   UnassignZoneVariables,
+  QueryManagerPersonalResponse,
 } from '../types/graphql'
 
-import type { Directeur, Manager, Commercial, Zone, Immeuble, Statistic, ZoneStatistic, Porte } from '../types/api'
+import type {
+  Directeur,
+  Manager,
+  Commercial,
+  Zone,
+  Immeuble,
+  Statistic,
+  ZoneStatistic,
+  Porte,
+} from '../types/api'
 
 // =============================================================================
 // Directeur API Service
@@ -187,9 +197,12 @@ export const managerApi = {
   },
 
   async getPersonalById(id: number): Promise<Manager> {
-    const response = await gql<QueryManagerPersonalResponse, GetEntityByIdVariables>(GET_MANAGER_PERSONAL, {
-      id,
-    })
+    const response = await gql<QueryManagerPersonalResponse, GetEntityByIdVariables>(
+      GET_MANAGER_PERSONAL,
+      {
+        id,
+      }
+    )
     if (!response.managerPersonal) {
       throw new Error('Manager introuvable')
     }
@@ -402,7 +415,6 @@ export const immeubleApi = {
     return response.removeImmeuble
   },
 
-
   async addEtage(id: number): Promise<Immeuble> {
     const response = await gql<{ addEtageToImmeuble: Immeuble }, GetEntityByIdVariables>(
       ADD_ETAGE_TO_IMMEUBLE,
@@ -420,18 +432,18 @@ export const immeubleApi = {
   },
 
   async addPorteToEtage(immeubleId: number, etage: number): Promise<Immeuble> {
-    const response = await gql<{ addPorteToEtage: Immeuble }, { immeubleId: number; etage: number }>(
-      ADD_PORTE_TO_ETAGE,
-      { immeubleId, etage }
-    )
+    const response = await gql<
+      { addPorteToEtage: Immeuble },
+      { immeubleId: number; etage: number }
+    >(ADD_PORTE_TO_ETAGE, { immeubleId, etage })
     return response.addPorteToEtage
   },
 
   async removePorteFromEtage(immeubleId: number, etage: number): Promise<Immeuble> {
-    const response = await gql<{ removePorteFromEtage: Immeuble }, { immeubleId: number; etage: number }>(
-      REMOVE_PORTE_FROM_ETAGE,
-      { immeubleId, etage }
-    )
+    const response = await gql<
+      { removePorteFromEtage: Immeuble },
+      { immeubleId: number; etage: number }
+    >(REMOVE_PORTE_FROM_ETAGE, { immeubleId, etage })
     return response.removePorteFromEtage
   },
 }
@@ -481,10 +493,10 @@ export const statisticApi = {
   },
 
   async getZoneStatistics(userId?: number, userRole?: string): Promise<ZoneStatistic[]> {
-    const response = await gql<
-      QueryZoneStatisticsResponse,
-      { userId?: number; userRole?: string }
-    >(GET_ZONE_STATISTICS, { userId, userRole })
+    const response = await gql<QueryZoneStatisticsResponse, { userId?: number; userRole?: string }>(
+      GET_ZONE_STATISTICS,
+      { userId, userRole }
+    )
     return response.zoneStatistics
   },
 }
