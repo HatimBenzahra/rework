@@ -52,7 +52,23 @@ export const GET_MANAGERS = `
       directeurId
       createdAt
       updatedAt
+      statistics {
+        id
+        commercialId
+        managerId
+        immeubleId
+        zoneId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
     }
+
   }
 `
 
@@ -267,7 +283,6 @@ export const GET_MANAGER_FULL = `
         createdAt
         updatedAt
       }
-    }
   }
 `
 

@@ -58,6 +58,7 @@ export function AdvancedDataTable({
   onDelete,
   lazyLoaders = [], // Configuration pour le lazy loading
   customStatusFilter = null, // Filtres personnalisés pour le statut
+  showStatusColumn = true,
 }) {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
@@ -85,10 +86,27 @@ export function AdvancedDataTable({
 
     if (sortConfig.key) {
       filtered.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
+        const aVal = a[sortConfig.key]
+        const bVal = b[sortConfig.key]
+
+        // Gérer les nombres pour un tri numérique correct (améliore aussi les autres colonnes numériques)
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal
+        }
+
+        // Gérer les valeurs null/undefined (améliore la robustesse)
+        if (aVal == null && bVal == null) return 0
+        if (aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
+        if (bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
+
+        // Tri standard pour les chaînes
+        const aStr = String(aVal).toLowerCase()
+        const bStr = String(bVal).toLowerCase()
+
+        if (aStr < bStr) {
           return sortConfig.direction === 'asc' ? -1 : 1
         }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
+        if (aStr > bStr) {
           return sortConfig.direction === 'asc' ? 1 : -1
         }
         return 0
@@ -119,9 +137,13 @@ export function AdvancedDataTable({
   }, [paginatedData, lazyLoaders, loadVisibleData])
 
   const handleSort = key => {
+    const column = columns.find(col => col.accessor === key)
+    const sortKey = column?.sortKey || key // Si pas de sortKey, utilise accessor (rétrocompatible)
+
     setSortConfig(prevConfig => ({
-      key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+      key: sortKey, // Utilisé pour le tri
+      originalKey: key, // Utilisé pour l'affichage et la comparaison
+      direction: prevConfig.originalKey === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
     }))
   }
 
@@ -190,47 +212,49 @@ export function AdvancedDataTable({
             />
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                Status
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Filtrer par status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {customStatusFilter ? (
-                // Utiliser les filtres personnalisés si fournis
-                customStatusFilter.map(filter => (
-                  <DropdownMenuItem
-                    key={filter.value}
-                    onClick={() => setStatusFilter(filter.value)}
-                  >
-                    {filter.label}
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                // Filtres par défaut
-                <>
-                  <DropdownMenuItem onClick={() => setStatusFilter('all')}>Tous</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('actif')}>
-                    Actif
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('inactif')}>
-                    Inactif
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('suspendu')}>
-                    Suspendu
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('en_conge')}>
-                    En congé
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {showStatusColumn && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Status
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filtrer par status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {customStatusFilter ? (
+                  // Utiliser les filtres personnalisés si fournis
+                  customStatusFilter.map(filter => (
+                    <DropdownMenuItem
+                      key={filter.value}
+                      onClick={() => setStatusFilter(filter.value)}
+                    >
+                      {filter.label}
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  // Filtres par défaut
+                  <>
+                    <DropdownMenuItem onClick={() => setStatusFilter('all')}>Tous</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('actif')}>
+                      Actif
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('inactif')}>
+                      Inactif
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('suspendu')}>
+                      Suspendu
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setStatusFilter('en_conge')}>
+                      En congé
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Tableau */}
@@ -247,7 +271,7 @@ export function AdvancedDataTable({
                     >
                       <div className="flex items-center">
                         {column.header}
-                        {column.sortable && sortConfig.key === column.accessor && (
+                        {column.sortable && sortConfig.originalKey === column.accessor && (
                           <span className="ml-1">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </div>

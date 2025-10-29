@@ -33,6 +33,7 @@ export class ManagerService {
           include: {
             directeur: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -44,6 +45,7 @@ export class ManagerService {
           include: {
             directeur: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -208,10 +210,7 @@ export class ManagerService {
       managerData.commercials?.flatMap(
         (commercial: any) => commercial.immeubles || [],
       ) || [];
-    const aggregatedImmeubles = [
-      ...managerImmeubles,
-      ...commercialImmeubles,
-    ];
+    const aggregatedImmeubles = [...managerImmeubles, ...commercialImmeubles];
 
     // Agréger les statistiques des commerciaux + les propres statistiques du manager
     const commercialStatistics =

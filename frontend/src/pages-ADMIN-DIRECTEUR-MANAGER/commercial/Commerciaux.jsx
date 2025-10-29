@@ -109,9 +109,6 @@ export default function Commerciaux() {
       const directeur = directeurs?.find(d => d.id === commercial.directeurId)
       const directeurName = directeur ? `${directeur.prenom} ${directeur.nom}` : 'N/A'
 
-      // Calculer le statut basé sur l'assignation au manager
-      const status = commercial.managerId ? 'actif' : 'inactif'
-
       // Calculer les statistiques totales
       const totalStatistics = commercial.statistics || []
       const totalContratsSignes = totalStatistics.reduce(
@@ -151,7 +148,6 @@ export default function Commerciaux() {
         rankBadge,
         managerName,
         directeurName,
-        status,
         createdAt: new Date(commercial.createdAt).toLocaleDateString('fr-FR'),
       }
     })
