@@ -1,5 +1,11 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
-import { IsNotEmpty, IsString, IsOptional, IsInt } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsInt,
+  IsPhoneNumber,
+} from 'class-validator';
 import { Directeur } from '../directeur/directeur.dto';
 import { Commercial } from '../commercial/commercial.dto';
 import { Zone } from '../zone/zone.dto';
@@ -98,7 +104,7 @@ export class UpdateManagerInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsString()
+  @IsPhoneNumber('TN')
   numTelephone?: string;
 
   @Field(() => Int, { nullable: true })

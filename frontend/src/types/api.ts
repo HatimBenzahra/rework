@@ -225,7 +225,7 @@ export interface UpdateManagerInput {
   nom?: string
   prenom?: string
   email?: string
-  numTelephone?: string
+  numTelephone?: number
   directeurId?: number
 }
 

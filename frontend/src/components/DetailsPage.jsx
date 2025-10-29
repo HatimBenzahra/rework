@@ -340,7 +340,7 @@ export default function DetailsPage({
       {personalInfo.length > 0 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-xl font-bold mb-1 text-primary">Informations personnelles</h2>
+            <h2 className="text-xl font-bold mb-1">Informations personnelles</h2>
             <Separator className="border-t-2 border-primary mb-2" />
             <p className="text-sm text-muted-foreground">Détails et coordonnées</p>
           </div>
@@ -371,7 +371,7 @@ export default function DetailsPage({
       {statsCards.length > 0 && (
         <div>
           <div className="mb-6">
-            <h2 className="text-xl font-bold mb-1 text-primary">Statistiques</h2>
+            <h2 className="text-xl font-bold mb-1 ">Statistiques</h2>
             <Separator className="border-t-2 border-primary mb-2" />
             <p className="text-sm text-muted-foreground">Indicateurs de performance clés</p>
           </div>
@@ -380,9 +380,7 @@ export default function DetailsPage({
             {statsCards.map((stat, index) => (
               <Card key={index} className="border-2">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </CardTitle>
+                  <CardTitle className="text-sm font-medium ">{stat.title}</CardTitle>
                   {stat.icon && (
                     <div className="h-4 w-4">
                       {getIcon(stat.icon, stat.iconColor, stat.iconClassName || '')}
@@ -421,7 +419,7 @@ export default function DetailsPage({
       {assignedZones && zonePermissions.canView && (
         <div>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1 text-primary">Zones assignées</h2>
+            <h2 className="text-xl font-semibold mb-1">Zones assignées</h2>
             <Separator className="border-t-2 border-primary mb-2" />
             <p className="text-sm text-muted-foreground">Territoires géographiques attribués</p>
           </div>
@@ -451,7 +449,7 @@ export default function DetailsPage({
       {additionalSections.map((section, index) => (
         <div key={index}>
           <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-1 text-primary">{section.title}</h2>
+            <h2 className="text-xl font-semibold mb-1">{section.title}</h2>
             <Separator className="border-t-2 border-primary mb-2" />
             {section.description && (
               <p className="text-sm text-muted-foreground">{section.description}</p>

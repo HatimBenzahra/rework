@@ -126,22 +126,9 @@ export default function Managers() {
         type: 'tel',
         required: true,
         section: 'Informations personnelles',
-        placeholder: '+216 XX XXX XXX',
+        placeholder: '+33 XX XXX XXX',
       },
-      {
-        key: 'region',
-        label: 'Région',
-        type: 'select',
-        required: true,
-        section: 'Affectation',
-        options: [
-          { value: 'Nord', label: 'Nord' },
-          { value: 'Centre', label: 'Centre' },
-          { value: 'Sud', label: 'Sud' },
-          { value: 'Est', label: 'Est' },
-          { value: 'Ouest', label: 'Ouest' },
-        ],
-      },
+
       {
         key: 'directeur',
         label: 'Directeur',
@@ -149,32 +136,6 @@ export default function Managers() {
         required: true,
         section: 'Affectation',
         options: directeurOptions,
-      },
-      {
-        key: 'status',
-        label: 'Statut',
-        type: 'select',
-        required: true,
-        section: 'Affectation',
-        options: [
-          { value: 'actif', label: 'Actif' },
-          { value: 'inactif', label: 'Inactif' },
-          { value: 'en_conge', label: 'En congé' },
-          { value: 'suspendu', label: 'Suspendu' },
-        ],
-      },
-      {
-        key: 'objectif_equipe',
-        label: 'Objectif équipe (TND)',
-        type: 'text',
-        section: 'Performance',
-        placeholder: '400 000 TND',
-      },
-      {
-        key: 'date_promotion',
-        label: 'Date de promotion',
-        type: 'date',
-        section: 'Informations personnelles',
       },
     ],
     [directeurOptions]
@@ -189,6 +150,8 @@ export default function Managers() {
       const managerInput = {
         nom: nom || formData.nom || '',
         prenom: prenom || formData.prenom || '',
+        email: formData.email || null,
+        numTelephone: formData.phone || null,
         directeurId:
           formData.directeur && formData.directeur !== 'Aucun directeur'
             ? directeurs?.find(d => `${d.prenom} ${d.nom}` === formData.directeur)?.id
@@ -214,6 +177,8 @@ export default function Managers() {
         id: editedData.id,
         nom: nom || editedData.nom,
         prenom: prenom || editedData.prenom,
+        email: editedData.email,
+        numTelephone: editedData.phone,
         directeurId:
           editedData.directeur && editedData.directeur !== 'Aucun directeur'
             ? directeurs?.find(d => `${d.prenom} ${d.nom}` === editedData.directeur)?.id
@@ -229,8 +194,9 @@ export default function Managers() {
     }
   }
 
-  const handleDeleteManager = async id => {
+  const handleDeleteManager = async idOrRow => {
     try {
+      const id = typeof idOrRow === 'object' ? idOrRow.id : idOrRow
       await removeManager(id)
       await refetch()
       showSuccess('Manager supprimé avec succès')
