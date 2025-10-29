@@ -41,6 +41,8 @@ model Manager {
   directeur   Directeur?  @relation(fields: [directeurId], references: [id])
   commercials Commercial[]
   zones       Zone[]
+  immeubles   Immeuble[]
+  statistics  Statistic[]
 }
 
 model Commercial {
@@ -90,11 +92,13 @@ model Immeuble {
   ascenseurPresent  Boolean  @default(false)
   digitalCode       String?
   commercialId      Int?
+  managerId         Int?
   zoneId            Int?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
   commercial        Commercial? @relation(fields: [commercialId], references: [id])
+  manager           Manager?    @relation(fields: [managerId], references: [id])
   zone              Zone?       @relation(fields: [zoneId], references: [id])
   statistics        Statistic[]
   portes            Porte[]
@@ -103,6 +107,7 @@ model Immeuble {
 model Statistic {
   id                    Int      @id @default(autoincrement())
   commercialId          Int?
+  managerId             Int?
   immeubleId            Int?
   zoneId                Int?
   contratsSignes        Int      // Nombre de contrats signés
@@ -115,6 +120,7 @@ model Statistic {
   updatedAt             DateTime @updatedAt
 
   commercial            Commercial? @relation(fields: [commercialId], references: [id])
+  manager               Manager?    @relation(fields: [managerId], references: [id])
   immeuble              Immeuble?   @relation(fields: [immeubleId], references: [id])
   zone                  Zone?       @relation(fields: [zoneId], references: [id])
 }

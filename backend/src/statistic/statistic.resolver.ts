@@ -82,4 +82,12 @@ export class StatisticResolver {
     await this.statisticSyncService.syncCommercialStats(immeubleId);
     return `✅ Statistiques synchronisées pour l'immeuble ${immeubleId}`;
   }
+
+  @Mutation(() => String, { name: 'syncManagerStats' })
+  async syncManagerStats(
+    @Args('managerId', { type: () => Int }) managerId: number
+  ) {
+    await this.statisticSyncService.syncManagerStats(managerId);
+    return `✅ Statistiques synchronisées pour le manager ${managerId}`;
+  }
 }

@@ -17,29 +17,59 @@ export class StatisticSyncService {
    */
   async syncCommercialStats(immeubleId: number): Promise<void> {
     try {
-      // 1. Récupérer l'immeuble et son commercial
+      // 1. Récupérer l'immeuble et son commercial/manager
       const immeuble = await this.prisma.immeuble.findUnique({
         where: { id: immeubleId },
-        include: { commercial: true }
+        include: {
+          commercial: true,
+          manager: true
+        }
       });
 
-      if (!immeuble?.commercial) {
-        this.logger.warn(`Immeuble ${immeubleId} n'a pas de commercial associé`);
+      if (!immeuble?.commercial && !immeuble?.manager) {
+        this.logger.warn(`Immeuble ${immeubleId} n'a ni commercial ni manager associé`);
         return;
       }
 
-      const commercialId = immeuble.commercial.id;
+      // 2. Synchroniser les stats du commercial si présent
+      if (immeuble.commercial) {
+        const commercialId = immeuble.commercial.id;
+        const realStats = await this.calculateRealStats(commercialId);
+        await this.upsertStatistic(commercialId, realStats);
+        this.logger.debug(`Stats mises à jour pour commercial ${commercialId}:`, realStats);
 
-      // 2. Calculer les nouvelles statistiques basées sur toutes les portes du commercial
-      const realStats = await this.calculateRealStats(commercialId);
+        // 3. Si le commercial a un manager, synchroniser aussi les stats du manager
+        if (immeuble.commercial.managerId) {
+          await this.syncManagerStats(immeuble.commercial.managerId);
+        }
+      }
 
-      // 3. Mettre à jour ou créer la statistique
-      await this.upsertStatistic(commercialId, realStats);
-
-      this.logger.debug(`Stats mises à jour pour commercial ${commercialId}:`, realStats);
+      // 4. Synchroniser les stats du manager si l'immeuble lui appartient directement
+      if (immeuble.managerId) {
+        await this.syncManagerStats(immeuble.managerId);
+      }
 
     } catch (error) {
       this.logger.error(`Erreur sync stats pour immeuble ${immeubleId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Met à jour les statistiques d'un manager après modification
+   */
+  async syncManagerStats(managerId: number): Promise<void> {
+    try {
+      // Calculer les nouvelles statistiques basées sur toutes les portes du manager
+      const realStats = await this.calculateManagerRealStats(managerId);
+
+      // Mettre à jour ou créer la statistique
+      await this.upsertManagerStatistic(managerId, realStats);
+
+      this.logger.debug(`Stats mises à jour pour manager ${managerId}:`, realStats);
+
+    } catch (error) {
+      this.logger.error(`Erreur sync stats pour manager ${managerId}:`, error);
       throw error;
     }
   }
@@ -112,6 +142,73 @@ export class StatisticSyncService {
   }
 
   /**
+   * Calcule les statistiques réelles d'un manager basées sur ses portes
+   */
+  private async calculateManagerRealStats(managerId: number) {
+    // Récupérer toutes les portes des immeubles du manager
+    const result = await this.prisma.porte.groupBy({
+      by: ['statut'],
+      where: {
+        immeuble: {
+          managerId: managerId
+        }
+      },
+      _count: {
+        statut: true
+      }
+    });
+
+    // Calculer aussi le nombre d'immeubles visités (au moins une porte non NON_VISITE)
+    const immeublesVisites = await this.prisma.immeuble.count({
+      where: {
+        managerId: managerId,
+        portes: {
+          some: {
+            statut: {
+              not: StatutPorte.NON_VISITE
+            }
+          }
+        }
+      }
+    });
+
+    // Transformer en stats
+    const stats = {
+      contratsSignes: 0,
+      rendezVousPris: 0,
+      refus: 0,
+      immeublesVisites: immeublesVisites,
+      nbImmeublesProspectes: immeublesVisites, // Pour l'instant identique
+      nbPortesProspectes: 0
+    };
+
+    result.forEach(group => {
+      const count = group._count.statut;
+
+      switch (group.statut) {
+        case StatutPorte.CONTRAT_SIGNE:
+          stats.contratsSignes += count;
+          stats.nbPortesProspectes += count;
+          break;
+        case StatutPorte.RENDEZ_VOUS_PRIS:
+          stats.rendezVousPris += count;
+          stats.nbPortesProspectes += count;
+          break;
+        case StatutPorte.REFUS:
+          stats.refus += count;
+          stats.nbPortesProspectes += count;
+          break;
+        case StatutPorte.CURIEUX:
+        case StatutPorte.NECESSITE_REPASSAGE:
+          stats.nbPortesProspectes += count;
+          break;
+      }
+    });
+
+    return stats;
+  }
+
+  /**
    * Met à jour ou crée une statistique pour un commercial
    */
   private async upsertStatistic(commercialId: number, stats: any) {
@@ -150,6 +247,44 @@ export class StatisticSyncService {
   }
 
   /**
+   * Met à jour ou crée une statistique pour un manager
+   */
+  private async upsertManagerStatistic(managerId: number, stats: any) {
+    // Récupérer la zone assignée au manager
+    const managerZone = await this.prisma.zone.findFirst({
+      where: { managerId }
+    });
+
+    const zoneId = managerZone?.id || null;
+
+    // Chercher d'abord s'il existe une stat pour ce manager
+    const existingStat = await this.prisma.statistic.findFirst({
+      where: { managerId: managerId }
+    });
+
+    if (existingStat) {
+      // Mettre à jour (incluant zoneId)
+      return this.prisma.statistic.update({
+        where: { id: existingStat.id },
+        data: {
+          ...stats,
+          zoneId, // Synchroniser avec la zone du manager
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // Créer (incluant zoneId)
+      return this.prisma.statistic.create({
+        data: {
+          managerId: managerId,
+          zoneId, // Assigner automatiquement la zone du manager
+          ...stats
+        }
+      });
+    }
+  }
+
+  /**
    * Recalcule toutes les statistiques (job de maintenance)
    */
   async recalculateAllStats(): Promise<{ updated: number; errors: number }> {
@@ -169,6 +304,22 @@ export class StatisticSyncService {
           updated++;
         } catch (error) {
           this.logger.error(`Erreur recalcul stats commercial ${commercial.id}:`, error);
+          errors++;
+        }
+      }
+
+      // Récupérer tous les managers
+      const managers = await this.prisma.manager.findMany({
+        select: { id: true }
+      });
+
+      for (const manager of managers) {
+        try {
+          const stats = await this.calculateManagerRealStats(manager.id);
+          await this.upsertManagerStatistic(manager.id, stats);
+          updated++;
+        } catch (error) {
+          this.logger.error(`Erreur recalcul stats manager ${manager.id}:`, error);
           errors++;
         }
       }

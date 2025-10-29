@@ -40,6 +40,9 @@ export class Immeuble {
   commercialId?: number;
 
   @Field(() => Int, { nullable: true })
+  managerId?: number;
+
+  @Field(() => Int, { nullable: true })
   zoneId?: number;
 
   @Field(() => [Porte], { nullable: true })
@@ -88,9 +91,15 @@ export class CreateImmeubleInput {
   @IsString()
   digitalCode?: string;
 
-  @Field(() => Int)
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
   @IsInt()
-  commercialId: number;
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  managerId?: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()
@@ -144,6 +153,11 @@ export class UpdateImmeubleInput {
   @IsOptional()
   @IsInt()
   commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  managerId?: number;
 
   @Field(() => Int, { nullable: true })
   @IsOptional()

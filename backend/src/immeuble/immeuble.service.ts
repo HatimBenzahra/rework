@@ -7,9 +7,9 @@ export class ImmeubleService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: CreateImmeubleInput) {
-    // Si un commercialId est fourni, récupérer sa zone assignée
+    // Si un commercialId ou managerId est fourni, récupérer sa zone assignée
     let zoneId = data.zoneId; // Utiliser la zone fournie explicitement
-    
+
     if (!zoneId && data.commercialId) {
       // Chercher la zone assignée au commercial
       const commercialZone = await this.prisma.commercialZone.findFirst({
@@ -17,9 +17,22 @@ export class ImmeubleService {
           commercialId: data.commercialId,
         },
       });
-      
+
       if (commercialZone) {
         zoneId = commercialZone.zoneId;
+      }
+    }
+
+    if (!zoneId && data.managerId) {
+      // Chercher la zone assignée au manager
+      const managerZone = await this.prisma.zone.findFirst({
+        where: {
+          managerId: data.managerId,
+        },
+      });
+
+      if (managerZone) {
+        zoneId = managerZone.id;
       }
     }
 
@@ -34,7 +47,8 @@ export class ImmeubleService {
         ascenseurPresent: data.ascenseurPresent,
         digitalCode: data.digitalCode,
         commercialId: data.commercialId,
-        zoneId, // Assigner automatiquement la zone du commercial
+        managerId: data.managerId,
+        zoneId, // Assigner automatiquement la zone du commercial ou manager
       },
     });
 
@@ -96,12 +110,19 @@ export class ImmeubleService {
         });
 
       case 'manager':
-        // Immeubles des commerciaux du manager
+        // Immeubles des commerciaux du manager ET ses propres immeubles
         return this.prisma.immeuble.findMany({
           where: {
-            commercial: {
-              managerId: userId,
-            },
+            OR: [
+              {
+                commercial: {
+                  managerId: userId,
+                },
+              },
+              {
+                managerId: userId,
+              },
+            ],
           },
           ...immeubleInclude,
         });

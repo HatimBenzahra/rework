@@ -103,6 +103,7 @@ export const GET_MANAGER_FULL = `
         statistics {
           id
           commercialId
+          managerId
           immeubleId
           zoneId
           contratsSignes
@@ -185,6 +186,7 @@ export const GET_MANAGER_FULL = `
         ascenseurPresent
         digitalCode
         commercialId
+        managerId
         zoneId
         createdAt
         updatedAt
@@ -192,6 +194,7 @@ export const GET_MANAGER_FULL = `
       statistics {
         id
         commercialId
+        managerId
         immeubleId
         zoneId
         contratsSignes
@@ -480,6 +483,7 @@ export const GET_STATISTICS = `
     statistics(commercialId: $commercialId, userId: $userId, userRole: $userRole) {
       id
       commercialId
+      managerId
       immeubleId
       zoneId
       contratsSignes

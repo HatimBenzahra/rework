@@ -53,10 +53,11 @@ input CreateDirecteurInput {
 input CreateImmeubleInput {
   adresse: String!
   ascenseurPresent: Boolean!
-  commercialId: Int!
+  commercialId: Int
   digitalCode: String
   latitude: Float
   longitude: Float
+  managerId: Int
   nbEtages: Int!
   nbPortesParEtage: Int!
   zoneId: Int
@@ -88,6 +89,7 @@ input CreateStatisticInput {
   contratsSignes: Int!
   immeubleId: Int
   immeublesVisites: Int!
+  managerId: Int
   nbImmeublesProspectes: Int!
   nbPortesProspectes: Int!
   refus: Int!
@@ -136,6 +138,7 @@ type Immeuble {
   id: Int!
   latitude: Float
   longitude: Float
+  managerId: Int
   nbEtages: Int!
   nbPortesParEtage: Int!
   portes: [Porte!]
@@ -213,6 +216,7 @@ type Mutation {
   stopMonitoring(input: StopMonitoringInput!): Boolean!
   stopRecording(input: StopRecordingInput!): Boolean!
   syncCommercialStats(immeubleId: Int!): String!
+  syncManagerStats(managerId: Int!): String!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
   updateCommercialHeartbeat(commercialId: Int!): Boolean!
@@ -301,6 +305,7 @@ type Statistic {
   id: Int!
   immeubleId: Int
   immeublesVisites: Int!
+  managerId: Int
   nbImmeublesProspectes: Int!
   nbPortesProspectes: Int!
   refus: Int!
@@ -355,6 +360,7 @@ input UpdateImmeubleInput {
   id: Int!
   latitude: Float
   longitude: Float
+  managerId: Int
   nbEtages: Int
   nbPortesParEtage: Int
   zoneId: Int
@@ -388,6 +394,7 @@ input UpdateStatisticInput {
   id: Int!
   immeubleId: Int
   immeublesVisites: Int
+  managerId: Int
   nbImmeublesProspectes: Int
   nbPortesProspectes: Int
   refus: Int

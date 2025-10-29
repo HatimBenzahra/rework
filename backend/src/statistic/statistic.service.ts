@@ -11,6 +11,7 @@ export class StatisticService {
       data,
       include: {
         commercial: true,
+        manager: true,
       },
     });
   }
@@ -39,10 +40,17 @@ export class StatisticService {
           break;
 
         case 'manager':
-          // Statistiques des commerciaux du manager
-          whereConditions.commercial = {
-            managerId: userId,
-          };
+          // Statistiques des commerciaux du manager ET ses propres statistiques
+          whereConditions.OR = [
+            {
+              commercial: {
+                managerId: userId,
+              },
+            },
+            {
+              managerId: userId,
+            },
+          ];
           break;
 
         case 'commercial':
@@ -59,6 +67,7 @@ export class StatisticService {
       where: whereConditions,
       include: {
         commercial: true,
+        manager: true,
       },
     });
   }
@@ -68,6 +77,7 @@ export class StatisticService {
       where: { id },
       include: {
         commercial: true,
+        manager: true,
       },
     });
   }
@@ -79,6 +89,7 @@ export class StatisticService {
       data: updateData,
       include: {
         commercial: true,
+        manager: true,
       },
     });
   }
@@ -88,6 +99,7 @@ export class StatisticService {
       where: { id },
       include: {
         commercial: true,
+        manager: true,
       },
     });
   }
