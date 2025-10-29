@@ -182,6 +182,7 @@ export default function Directeurs() {
       </div>
 
       <AdvancedDataTable
+        showStatusColumn={false}
         title="Liste des Directeurs"
         description={description}
         data={tableData}

@@ -62,15 +62,6 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
     })
   }
 
-  // Colonne Statut: visible pour Admin seulement
-  if (isAdmin) {
-    baseColumns.push({
-      header: 'Statut',
-      accessor: 'status',
-      sortable: true,
-    })
-  }
-
   return baseColumns
 }
 
@@ -351,6 +342,7 @@ export default function Commerciaux() {
       </Card>
 
       <AdvancedDataTable
+        showStatusColumn={false}
         title="Liste des Commerciaux"
         description={description}
         data={tableData}

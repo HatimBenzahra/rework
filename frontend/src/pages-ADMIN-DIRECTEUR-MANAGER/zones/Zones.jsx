@@ -435,6 +435,7 @@ export default function Zones() {
       </div>
 
       <AdvancedDataTable
+        showStatusColumn={false}
         title="Liste des Zones"
         description={description}
         data={enrichedZones}

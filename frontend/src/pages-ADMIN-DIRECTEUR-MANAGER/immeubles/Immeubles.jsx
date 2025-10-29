@@ -42,11 +42,6 @@ const immeublesColumns = [
     sortable: true,
     className: 'hidden xl:table-cell',
   },
-  {
-    header: 'Status',
-    accessor: 'status',
-    sortable: true,
-  },
 ]
 
 // Configuration des champs du modal d'édition
@@ -135,8 +130,7 @@ export default function Immeubles() {
         doors_per_floor: immeuble.nbPortesParEtage,
         total_doors: totalDoors,
         couverture: couverture,
-        commercial_name: commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné',
-        status: 'actif', // Valeur par défaut
+        commercial_name: commercial ? `${commercial.prenom} ${commercial.nom}` : 'N/A',
       }
     })
   }, [filteredImmeubles, commercials])
