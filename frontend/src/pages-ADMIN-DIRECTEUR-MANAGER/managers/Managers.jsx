@@ -15,7 +15,7 @@ import { RANKS } from '@/share/ranks'
 import { Card } from '@/components/ui/card'
 import { calculateRank } from '@/share/ranks'
 
-const getManagersColumns = isAdmin => {
+const getManagersColumns = () => {
   const baseColumns = [
     {
       header: 'Nom Prénom',
