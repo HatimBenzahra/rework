@@ -256,8 +256,7 @@ export function useWorkspaceProfile(
   id: number,
   role: string,
   includeTeam: boolean = false
-):
-//====================================================
+): //====================================================
 UseApiState<WorkspaceProfile> & UseApiActions {
   const fetchProfile = useCallback(() => {
     if (Number.isNaN(id)) {
@@ -275,7 +274,7 @@ UseApiState<WorkspaceProfile> & UseApiActions {
   }, [id, role, includeTeam])
 
   return useApiCall(
-    fetchProfile,
+    () => fetchProfile(),
     [id, role, includeTeam],
     `workspace-${role}-${includeTeam ? 'full' : 'personal'}`
   )

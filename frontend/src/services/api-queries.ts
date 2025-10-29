@@ -283,6 +283,7 @@ export const GET_MANAGER_FULL = `
         createdAt
         updatedAt
       }
+    }
   }
 `
 

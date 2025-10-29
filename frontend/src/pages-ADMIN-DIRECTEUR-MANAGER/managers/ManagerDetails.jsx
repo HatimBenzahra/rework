@@ -22,6 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Award, TrendingUp, FileText, Building2, Calendar, X, Users } from 'lucide-react'
 
 export default function ManagerDetails() {
   const { id } = useParams()
@@ -291,6 +293,55 @@ export default function ManagerDetails() {
     )
   }
 
+  // Calculer les stats par commercial de l'équipe (AVANT les early returns)
+  const commercialStats = useMemo(() => {
+    if (!allCommercials || !manager) return []
+
+    const assignedCommercials = allCommercials.filter(c => c.managerId === manager.id)
+
+    return assignedCommercials
+      .map(commercial => {
+        const stats = commercial.statistics || []
+        const contratsSignes = stats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
+        const rendezVous = stats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
+        const immeubles = stats.reduce((sum, stat) => sum + stat.immeublesVisites, 0)
+        const refus = stats.reduce((sum, stat) => sum + stat.refus, 0)
+        const { rank: commercialRank, points: commercialPoints } = calculateRank(
+          contratsSignes,
+          rendezVous,
+          immeubles
+        )
+
+        return {
+          id: commercial.id,
+          nom: `${commercial.prenom} ${commercial.nom}`,
+          contratsSignes,
+          rendezVous,
+          immeubles,
+          refus,
+          rank: commercialRank,
+          points: commercialPoints,
+        }
+      })
+      .sort((a, b) => b.points - a.points) // Trier par points décroissants
+  }, [allCommercials, manager])
+
+  // Calculer les totaux de l'équipe depuis les commerciaux (AVANT les early returns)
+  const teamTotals = useMemo(() => {
+    const totalContrats = commercialStats.reduce((sum, c) => sum + c.contratsSignes, 0)
+    const totalRDV = commercialStats.reduce((sum, c) => sum + c.rendezVous, 0)
+    const totalImmeubles = commercialStats.reduce((sum, c) => sum + c.immeubles, 0)
+    const totalRefus = commercialStats.reduce((sum, c) => sum + c.refus, 0)
+
+    return {
+      totalContrats,
+      totalRDV,
+      totalImmeubles,
+      totalRefus,
+    }
+  }, [commercialStats])
+
+  // Early returns APRÈS tous les hooks
   if (managerLoading) return <DetailsPageSkeleton />
   if (error) return <div className="text-red-500">Erreur: {error}</div>
   if (!managerData) return <div>Manager non trouvé</div>
@@ -331,35 +382,39 @@ export default function ManagerDetails() {
     },
   ]
 
-  const statsCards = [
+  // Fonction helper pour obtenir les icônes
+  const getIcon = iconName => {
+    const icons = {
+      award: Award,
+      trendingUp: TrendingUp,
+      fileText: FileText,
+      building: Building2,
+      calendar: Calendar,
+      x: X,
+      users: Users,
+    }
+    const Icon = icons[iconName] || FileText
+    return <Icon className="h-4 w-4 text-primary" />
+  }
+
+  // Stats personnelles du manager (basées sur ses propres stats)
+  const personalStatsCards = [
     {
-      title: 'Contrats signés',
-      value: managerData.totalContratsSignes,
-      description: "Total de l'équipe (50 pts/contrat)",
-      icon: 'fileText',
+      title: 'Rang personnel',
+      value: managerData.rank.name,
+      description: `${managerData.points} points`,
+      icon: 'award',
     },
     {
-      title: 'Immeubles visités',
-      value: managerData.totalImmeublesVisites,
-      description: "Total de l'équipe (5 pts/immeuble)",
-      icon: 'building',
-    },
-    {
-      title: 'Rendez-vous pris',
-      value: managerData.totalRendezVousPris,
-      description: "Total de l'équipe (10 pts/RDV)",
-      icon: 'calendar',
-    },
-    {
-      title: 'Refus',
-      value: managerData.totalRefus,
-      description: "Total de l'équipe",
-      icon: 'x',
+      title: 'Points totaux',
+      value: managerData.points,
+      description: 'Score personnel',
+      icon: 'trendingUp',
     },
     {
       title: 'Taux de conversion par portes prospectées',
       value: managerData.tauxConversion_portes_prospectes,
-      description: 'Contrats / RDV pris',
+      description: 'Contrats / Portes prospectées',
       icon: 'trendingUp',
     },
     {
@@ -368,6 +423,10 @@ export default function ManagerDetails() {
       description: 'Contrats / RDV pris',
       icon: 'trendingUp',
     },
+  ]
+
+  // Stats en rapport avec l'équipe
+  const teamStatsCards = [
     {
       title: 'Meilleur commercial',
       value: managerData.meilleurCommercial,
@@ -380,9 +439,129 @@ export default function ManagerDetails() {
       description: 'Commerciaux assignés',
       icon: 'users',
     },
+    {
+      title: "Contrats signés par l'équipe",
+      value: teamTotals.totalContrats,
+      description: `Total de ${commercialStats.length} commercial${commercialStats.length > 1 ? 'aux' : ''}`,
+      icon: 'fileText',
+    },
+    {
+      title: "Rendez-vous pris par l'équipe",
+      value: teamTotals.totalRDV,
+      description: `Total de ${commercialStats.length} commercial${commercialStats.length > 1 ? 'aux' : ''}`,
+      icon: 'calendar',
+    },
+    {
+      title: "Immeubles visités par l'équipe",
+      value: teamTotals.totalImmeubles,
+      description: `Total de ${commercialStats.length} commercial${commercialStats.length > 1 ? 'aux' : ''}`,
+      icon: 'building',
+    },
+    {
+      title: "Refus par l'équipe",
+      value: teamTotals.totalRefus,
+      description: `Total de ${commercialStats.length} commercial${commercialStats.length > 1 ? 'aux' : ''}`,
+      icon: 'x',
+    },
   ]
 
-  const additionalSections = []
+  const additionalSections = [
+    // Section des stats de l'équipe (cartes + tableau)
+    {
+      title: "Statistiques de l'équipe",
+      description: "Performances globales de l'équipe et classement des commerciaux",
+      type: 'custom',
+      render: () => (
+        <div className="space-y-6">
+          {/* Cartes de stats équipe */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {teamStatsCards.map((stat, index) => (
+              <Card key={index} className="border-2">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                  {stat.icon && <div className="h-4 w-4">{getIcon(stat.icon)}</div>}
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
+                  {stat.description && (
+                    <div className="mt-2 inline-block">
+                      <p className="text-xs text-muted-foreground">{stat.description}</p>
+                      <div className="border-t-2 border-primary mt-2"></div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Tableau de classement des commerciaux */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Classement des commerciaux</h3>
+            {commercialStats.length === 0 ? (
+              <Card className="border-2">
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground text-center py-8">
+                    Aucun commercial assigné dans cette équipe
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="rounded-md border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Commercial</TableHead>
+                      <TableHead className="text-center">Contrats signés</TableHead>
+                      <TableHead className="text-center">RDV pris</TableHead>
+                      <TableHead className="text-center">Immeubles visités</TableHead>
+                      <TableHead className="text-center">Refus</TableHead>
+                      <TableHead className="text-center">Rang</TableHead>
+                      <TableHead className="text-center">Points</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {commercialStats.map(commercial => (
+                      <TableRow key={commercial.id}>
+                        <TableCell className="font-medium">{commercial.nom}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="bg-green-100 text-green-800">
+                            {commercial.contratsSignes}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {commercial.rendezVous}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="bg-purple-100 text-purple-800">
+                            {commercial.immeubles}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge className="bg-red-100 text-red-800">{commercial.refus}</Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge
+                            className={`${commercial.rank.bgColor} ${commercial.rank.textColor} ${commercial.rank.borderColor} border`}
+                          >
+                            {commercial.rank.name}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">
+                          {commercial.points} pts
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+  ]
 
   // Ajouter la section d'assignation des commerciaux pour les admins
   if (isAdmin) {
@@ -401,8 +580,8 @@ export default function ManagerDetails() {
       status={managerData.status}
       data={managerData}
       personalInfo={personalInfo}
-      statsCards={statsCards}
-      assignedZones={managerZones}
+      statsCards={personalStatsCards}
+      assignedZones={managerData.equipe_taille > 0 ? managerZones : null}
       additionalSections={additionalSections}
       backUrl="/managers"
     />
