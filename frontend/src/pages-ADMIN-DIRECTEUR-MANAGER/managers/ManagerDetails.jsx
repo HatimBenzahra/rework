@@ -14,16 +14,9 @@ import { useMemo, useState } from 'react'
 import { RANKS, calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import DateRangeFilter from '@/components/DateRangeFilter'
+import { AdvancedDataTable } from '@/components/tableau'
 import { Award, TrendingUp, FileText, Building2, Calendar, X, Users, BookX } from 'lucide-react'
 
 export default function ManagerDetails() {
@@ -71,6 +64,28 @@ export default function ManagerDetails() {
         const endDateTime = new Date(end)
         endDateTime.setHours(23, 59, 59, 999) // Inclure toute la journée de fin
         if (statDate > endDateTime) return false
+      }
+      return true
+    })
+  }
+
+  // Fonction pour filtrer les portes par date de dernière visite
+  const filterPortesByDate = (portes, start, end) => {
+    if (!portes || !portes.length) return []
+    if (!start && !end) return portes
+
+    return portes.filter(porte => {
+      if (!porte.derniereVisite) return false
+      const porteDate = new Date(porte.derniereVisite)
+      if (start) {
+        const startDateTime = new Date(start)
+        startDateTime.setHours(0, 0, 0, 0)
+        if (porteDate < startDateTime) return false
+      }
+      if (end) {
+        const endDateTime = new Date(end)
+        endDateTime.setHours(23, 59, 59, 999)
+        if (porteDate > endDateTime) return false
       }
       return true
     })
@@ -276,101 +291,95 @@ export default function ManagerDetails() {
   const renderCommercialsTable = () => {
     if (!isAdmin || !allCommercials) return null
 
-    const assignedCommercials = allCommercials.filter(c => c.managerId === manager.id)
-    const unassignedCommercials = allCommercials.filter(c => !c.managerId)
+    const assignedCommercials = allCommercials
+      .filter(c => c.managerId === manager.id)
+      .map(c => ({
+        id: c.id,
+        name: `${c.prenom} ${c.nom}`,
+        email: c.email || 'Non renseigné',
+        numTel: c.numTel || 'Non renseigné',
+        age: `${c.age} ans`,
+      }))
+
+    const unassignedCommercials = allCommercials
+      .filter(c => !c.managerId)
+      .map(c => ({
+        id: c.id,
+        name: `${c.prenom} ${c.nom}`,
+        email: c.email || 'Non renseigné',
+        numTel: c.numTel || 'Non renseigné',
+        age: `${c.age} ans`,
+        status: 'Non assigné',
+      }))
+
+    const commonColumns = [
+      { header: 'Nom', accessor: 'name', sortable: true, className: 'font-medium' },
+      { header: 'Email', accessor: 'email', sortable: true },
+      { header: 'Téléphone', accessor: 'numTel' },
+      { header: 'Age', accessor: 'age' },
+    ]
+
+    const assignedColumns = [
+      ...commonColumns,
+      {
+        header: 'Action',
+        accessor: 'action',
+        sortable: false,
+        className: 'text-center',
+        cell: row => (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleUnassignCommercial(row.id)}
+            disabled={assigningCommercial === row.id || updatingCommercial}
+          >
+            {assigningCommercial === row.id ? 'Retrait...' : 'Retirer'}
+          </Button>
+        ),
+      },
+    ]
+
+    const unassignedColumns = [
+      ...commonColumns,
+      { header: 'Statut', accessor: 'status', className: 'hidden md:table-cell' },
+      {
+        header: 'Action',
+        accessor: 'action',
+        sortable: false,
+        className: 'text-center',
+        cell: row => (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => handleAssignCommercial(row.id)}
+            disabled={assigningCommercial === row.id || updatingCommercial}
+          >
+            {assigningCommercial === row.id ? 'Assignation...' : 'Assigner'}
+          </Button>
+        ),
+      },
+    ]
 
     return (
       <div className="space-y-6">
-        {/* Commerciaux assignés */}
-        <div>
-          <h4 className="text-lg font-semibold mb-3">
-            Commerciaux assignés ({assignedCommercials.length})
-          </h4>
-          {assignedCommercials.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {assignedCommercials.map(commercial => (
-                  <TableRow key={commercial.id}>
-                    <TableCell className="font-medium">
-                      {commercial.prenom} {commercial.nom}
-                    </TableCell>
-                    <TableCell>{commercial.email || 'Non renseigné'}</TableCell>
-                    <TableCell>{commercial.numTel || 'Non renseigné'}</TableCell>
-                    <TableCell>{commercial.age} ans</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUnassignCommercial(commercial.id)}
-                        disabled={assigningCommercial === commercial.id || updatingCommercial}
-                      >
-                        {assigningCommercial === commercial.id ? 'Retrait...' : 'Retirer'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">
-              Aucun commercial assigné à ce manager
-            </p>
-          )}
-        </div>
+        <AdvancedDataTable
+          showStatusColumn={true}
+          title={`Commerciaux assignés (${assignedCommercials.length})`}
+          data={assignedCommercials}
+          columns={assignedColumns}
+          searchKey="name"
+          detailsPath="/commerciaux"
+        />
 
-        {/* Commerciaux disponibles */}
         {unassignedCommercials.length > 0 && (
-          <div>
-            <h4 className="text-lg font-semibold mb-3">
-              Commerciaux disponibles ({unassignedCommercials.length})
-            </h4>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Age</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {unassignedCommercials.map(commercial => (
-                  <TableRow key={commercial.id}>
-                    <TableCell className="font-medium">
-                      {commercial.prenom} {commercial.nom}
-                    </TableCell>
-                    <TableCell>{commercial.email || 'Non renseigné'}</TableCell>
-                    <TableCell>{commercial.numTel || 'Non renseigné'}</TableCell>
-                    <TableCell>{commercial.age} ans</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">Non assigné</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleAssignCommercial(commercial.id)}
-                        disabled={assigningCommercial === commercial.id || updatingCommercial}
-                      >
-                        {assigningCommercial === commercial.id ? 'Assignation...' : 'Assigner'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <AdvancedDataTable
+            showStatusColumn={false}
+            title={`Commerciaux disponibles (${unassignedCommercials.length})`}
+            data={unassignedCommercials}
+            columns={unassignedColumns}
+            searchKey="name"
+            detailsPath="/commerciaux"
+          />
         )}
       </div>
     )
@@ -427,6 +436,69 @@ export default function ManagerDetails() {
       totalRefus,
     }
   }, [commercialStats])
+
+  // Préparer les données des immeubles avec statistiques calculées à partir des portes
+  const immeublesTableData = useMemo(() => {
+    if (!manager?.immeubles) return []
+
+    // Trier les immeubles du plus récent au plus ancien
+    const sortedImmeubles = [...manager.immeubles].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+    return sortedImmeubles.map(immeuble => {
+      // Utiliser les portes de l'immeuble directement (chargées avec l'immeuble)
+      const portesImmeubleUnfiltered = immeuble.portes || []
+      // Filtrer les portes par date
+      const portesImmeuble = filterPortesByDate(
+        portesImmeubleUnfiltered,
+        appliedStartDate,
+        appliedEndDate
+      )
+      const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
+
+      // Calculer les statistiques à partir des portes
+      const contratsSignes = portesImmeuble.filter(p => p.statut === 'CONTRAT_SIGNE').length
+      const rdvPris = portesImmeuble.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
+      const refus = portesImmeuble.filter(p => p.statut === 'REFUS').length
+      const curieux = portesImmeuble.filter(p => p.statut === 'CURIEUX').length
+      const repassages = portesImmeuble.reduce((sum, p) => sum + (p.nbRepassages || 0), 0)
+      const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
+      const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
+
+      return {
+        id: immeuble.id,
+        address: immeuble.adresse,
+        floors: immeuble.nbEtages,
+        doors_per_floor: immeuble.nbPortesParEtage,
+        total_doors: totalDoors,
+        couverture: couverture,
+        contrats_signes: contratsSignes,
+        rdv_pris: rdvPris,
+        refus: refus,
+        curieux: curieux,
+        repassages: repassages,
+        portes_prospectees: portesProspectees,
+        createdAt: immeuble.createdAt,
+      }
+    })
+  }, [manager?.immeubles, appliedStartDate, appliedEndDate])
+
+  // Préparer toutes les portes du manager pour les graphiques (filtrées par date)
+  const allPortes = useMemo(() => {
+    if (!manager?.immeubles) return []
+
+    // Collecter toutes les portes de tous les immeubles du manager
+    const allPortesUnfiltered = manager.immeubles.reduce((acc, immeuble) => {
+      if (immeuble.portes) {
+        return [...acc, ...immeuble.portes]
+      }
+      return acc
+    }, [])
+
+    // Filtrer par date si nécessaire
+    return filterPortesByDate(allPortesUnfiltered, appliedStartDate, appliedEndDate)
+  }, [manager?.immeubles, appliedStartDate, appliedEndDate])
 
   // Fonction pour valider les filtres
   const handleApplyFilters = () => {
@@ -596,7 +668,193 @@ export default function ManagerDetails() {
     },
   ]
 
+  // Définir les colonnes du tableau de classement des commerciaux
+  const commercialStatsColumns = [
+    {
+      header: 'Commercial',
+      accessor: 'nom',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Contrats signés',
+      accessor: 'contratsSignes',
+      sortable: true,
+      className: 'text-center',
+      cell: row => <Badge className="bg-green-100 text-green-800">{row.contratsSignes || 0}</Badge>,
+    },
+    {
+      header: 'RDV pris',
+      accessor: 'rendezVous',
+      sortable: true,
+      className: 'text-center',
+      cell: row => <Badge className="bg-blue-100 text-blue-800">{row.rendezVous || 0}</Badge>,
+    },
+    {
+      header: 'Immeubles visités',
+      accessor: 'immeubles',
+      sortable: true,
+      className: 'text-center',
+      cell: row => <Badge className="bg-purple-100 text-purple-800">{row.immeubles || 0}</Badge>,
+    },
+    {
+      header: 'Refus',
+      accessor: 'refus',
+      sortable: true,
+      className: 'text-center',
+      cell: row => <Badge className="bg-red-100 text-red-800">{row.refus || 0}</Badge>,
+    },
+    {
+      header: 'Rang',
+      accessor: 'rank',
+      sortable: false,
+      className: 'text-center',
+      cell: row => (
+        <Badge
+          className={`${row.rank.bgColor} ${row.rank.textColor} ${row.rank.borderColor} border`}
+        >
+          {row.rank.name}
+        </Badge>
+      ),
+    },
+    {
+      header: 'Points',
+      accessor: 'points',
+      sortable: true,
+      className: 'text-center font-semibold',
+      cell: row => `${row.points} pts`,
+    },
+  ]
+
+  // Définir les colonnes du tableau des immeubles
+  const immeublesColumns = [
+    {
+      header: 'Adresse',
+      accessor: 'address',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Étages',
+      accessor: 'floors',
+      className: 'hidden md:table-cell text-center',
+      cell: row => `${row.floors} étages`,
+    },
+    {
+      header: 'Total Portes',
+      accessor: 'total_doors',
+      className: 'hidden lg:table-cell text-center',
+    },
+    {
+      header: 'Couverture',
+      accessor: 'couverture',
+      sortable: true,
+      className: 'hidden lg:table-cell text-center',
+      cell: row => {
+        const couverture = row.couverture || 0
+        const colorClass =
+          couverture >= 80
+            ? 'bg-green-100 text-green-800'
+            : couverture >= 50
+              ? 'bg-yellow-100 text-yellow-800'
+              : 'bg-red-100 text-red-800'
+        return <Badge className={colorClass}>{couverture}%</Badge>
+      },
+    },
+    {
+      header: 'Contrats signés',
+      accessor: 'contrats_signes',
+      sortable: true,
+      className: 'text-center',
+      cell: row => (
+        <Badge className="bg-green-100 text-green-800">{row.contrats_signes || 0}</Badge>
+      ),
+    },
+    {
+      header: 'RDV pris',
+      accessor: 'rdv_pris',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => <Badge className="bg-blue-100 text-blue-800">{row.rdv_pris || 0}</Badge>,
+    },
+    {
+      header: 'Refus',
+      accessor: 'refus',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => <Badge className="bg-red-100 text-red-800">{row.refus || 0}</Badge>,
+    },
+    {
+      header: 'Repassages',
+      accessor: 'repassages',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => {
+        const count = row.repassages || 0
+        return count > 0 ? (
+          <Badge className="bg-orange-100 text-orange-800">{count}</Badge>
+        ) : (
+          <span className="text-muted-foreground">0</span>
+        )
+      },
+    },
+  ]
+
   const additionalSections = [
+    // Section des graphiques de prospection
+    {
+      title: 'Statistiques de prospection',
+      description: "Analyse de l'activité de prospection",
+      type: 'custom',
+      component: 'ChartsSection',
+      data: {
+        charts: [
+          {
+            type: 'PortesStatusChart',
+            props: {
+              portes: allPortes,
+              title: 'Répartition des statuts',
+              description: 'État actuel de toutes les portes',
+              showNonVisited: true,
+            },
+          },
+          {
+            type: 'PortesProspectionChart',
+            props: {
+              portes: allPortes,
+              title: 'Portes prospectées par jour',
+              description: 'Activité quotidienne des 7 derniers jours',
+              daysToShow: 7,
+            },
+          },
+          {
+            type: 'PortesWeeklyChart',
+            props: {
+              portes: allPortes,
+              title: 'Évolution hebdomadaire',
+              description: 'Tendance sur les 4 dernières semaines',
+              weeksToShow: 4,
+            },
+          },
+        ],
+      },
+    },
+    // Section des immeubles prospectés
+    {
+      title: 'Immeubles prospectés',
+      description: 'Liste des immeubles assignés à ce manager avec leurs statistiques',
+      type: 'custom',
+      render: () => (
+        <AdvancedDataTable
+          showStatusColumn={false}
+          title="Immeubles prospectés"
+          data={immeublesTableData}
+          columns={immeublesColumns}
+          searchKey="address"
+          detailsPath="/immeubles"
+        />
+      ),
+    },
     // Section des stats de l'équipe (cartes + tableau)
     {
       title: "Statistiques de l'équipe",
@@ -604,18 +862,6 @@ export default function ManagerDetails() {
       type: 'custom',
       render: () => (
         <div className="space-y-6">
-          <DateRangeFilter
-            startDate={startDate}
-            endDate={endDate}
-            appliedStartDate={appliedStartDate}
-            appliedEndDate={appliedEndDate}
-            onChangeStart={setStartDate}
-            onChangeEnd={setEndDate}
-            onApply={handleApplyFilters}
-            onReset={handleResetFilters}
-            title="Filtres de période - Statistiques de l'équipe"
-          />
-
           {/* Cartes de stats équipe */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {teamStatsCards.map((stat, index) => (
@@ -649,56 +895,15 @@ export default function ManagerDetails() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="rounded-md border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Commercial</TableHead>
-                      <TableHead className="text-center">Contrats signés</TableHead>
-                      <TableHead className="text-center">RDV pris</TableHead>
-                      <TableHead className="text-center">Immeubles visités</TableHead>
-                      <TableHead className="text-center">Refus</TableHead>
-                      <TableHead className="text-center">Rang</TableHead>
-                      <TableHead className="text-center">Points</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {commercialStats.map(commercial => (
-                      <TableRow key={commercial.id}>
-                        <TableCell className="font-medium">{commercial.nom}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-green-100 text-green-800">
-                            {commercial.contratsSignes}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-blue-100 text-blue-800">
-                            {commercial.rendezVous}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-purple-100 text-purple-800">
-                            {commercial.immeubles}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge className="bg-red-100 text-red-800">{commercial.refus}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            className={`${commercial.rank.bgColor} ${commercial.rank.textColor} ${commercial.rank.borderColor} border`}
-                          >
-                            {commercial.rank.name}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {commercial.points} pts
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <AdvancedDataTable
+                statusFilter={false}
+                showStatusColumn={false}
+                data={commercialStats}
+                columns={commercialStatsColumns}
+                detailsPath="/commerciaux"
+                searchKey="nom"
+                itemsPerPage={10}
+              />
             )}
           </div>
         </div>
@@ -726,6 +931,7 @@ export default function ManagerDetails() {
       statsCards={personalStatsCards}
       statsFilter={
         <DateRangeFilter
+          className="h-fit"
           startDate={startDate}
           endDate={endDate}
           appliedStartDate={appliedStartDate}
@@ -734,12 +940,11 @@ export default function ManagerDetails() {
           onChangeEnd={setEndDate}
           onApply={handleApplyFilters}
           onReset={handleResetFilters}
-          title="Filtres de période - Statistiques personnelles"
+          title="Filtres de période"
         />
       }
       assignedZones={managerData.equipe_taille > 0 ? managerZones : null}
       additionalSections={additionalSections}
-      backUrl="/managers"
     />
   )
 }

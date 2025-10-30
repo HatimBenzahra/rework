@@ -646,7 +646,6 @@ export default function DirecteurDetails() {
       statsCards={statsCards}
       assignedZones={directeurZones}
       additionalSections={additionalSections}
-      backUrl="/directeurs"
     />
   )
 }

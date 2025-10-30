@@ -262,7 +262,6 @@ function DoorsTableContent({
  * @param {Array} props.statsCards - Cartes de statistiques
  * @param {Array} props.additionalSections - Sections supplémentaires personnalisées
  * @param {Array} props.assignedZones - Zones assignées à afficher (optionnel)
- * @param {string} props.backUrl - URL de retour
  * @param {string} props.status - Status de l'entité (actif, inactif, etc.)
  * @param {ReactNode} props.statsFilter - Composant de filtre à afficher au-dessus des statistiques (optionnel)
  */
@@ -274,7 +273,6 @@ export default function DetailsPage({
   statsCards = [],
   additionalSections = [],
   assignedZones = null,
-  backUrl = '/',
   status,
   statsFilter = null,
 }) {
@@ -327,7 +325,7 @@ export default function DetailsPage({
     <div className="space-y-8">
       {/* Header avec bouton retour */}
       <div className="flex items-center gap-4 pb-6 border-b">
-        <Button variant="outline" size="icon" onClick={() => navigate(backUrl)}>
+        <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 flex flex-col gap-2">

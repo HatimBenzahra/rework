@@ -232,7 +232,6 @@ export default function ZoneDetails() {
       personalInfo={personalInfo}
       statsCards={customStatsCards}
       additionalSections={customSections}
-      backUrl="/zones"
     />
   )
 }

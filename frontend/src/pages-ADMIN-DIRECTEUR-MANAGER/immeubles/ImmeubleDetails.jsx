@@ -294,7 +294,6 @@ export default function ImmeubleDetails() {
       personalInfo={personalInfo}
       statsCards={statsCards}
       additionalSections={additionalSections}
-      backUrl="/immeubles"
     />
   )
 }

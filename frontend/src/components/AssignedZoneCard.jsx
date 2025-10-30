@@ -392,7 +392,7 @@ export default function AssignedZoneCard({
                 <div>
                   <div className="flex items-center gap-3 mb-4">
                     <h3 className="text-xl font-semibold">{zone.nom}</h3>
-                    <Badge variant="secondary">Zone assignée</Badge>
+                    <Badge>Zone assignée</Badge>
                   </div>
 
                   <div className="space-y-3">

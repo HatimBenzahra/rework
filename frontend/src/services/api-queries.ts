@@ -117,6 +117,16 @@ export const GET_MANAGER_PERSONAL = `
         zoneId
         createdAt
         updatedAt
+        portes {
+          id
+          numero
+          etage
+          statut
+          nbRepassages
+          rdvDate
+          rdvTime
+          derniereVisite
+        }
       }
       statistics {
         id
