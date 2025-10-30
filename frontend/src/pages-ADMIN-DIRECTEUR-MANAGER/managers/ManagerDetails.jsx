@@ -6,7 +6,7 @@ import {
   useDirecteurs,
   useCommercials,
   useUpdateCommercial,
-  useZones,
+  useCurrentZoneAssignment,
 } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
@@ -58,7 +58,7 @@ export default function ManagerDetails() {
     currentRole
   )
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
-  const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
+  const { data: currentManagerZone } = useCurrentZoneAssignment(parseInt(id), 'MANAGER')
 
   // Utiliser le hook pour calculer les stats personnelles du manager
   const { personalStats } = usePersonalStats(manager, appliedStartDate, appliedEndDate)
@@ -175,22 +175,21 @@ export default function ManagerDetails() {
     memoizedManagerRank,
   ])
 
-  // Récupérer la zone actuellement assignée à ce manager
+  // Récupérer la zone actuellement assignée à ce manager depuis ZoneEnCours
   const managerZones = useMemo(() => {
-    if (!allZones || !manager) return []
-    const filtered = allZones.filter(zone => zone.managerId === manager.id)
+    if (!currentManagerZone) return []
 
-    // Calculer le nombre d'immeubles par zone
-    return filtered.map(zone => {
-      // Compter directement les immeubles de la zone
-      const immeublesCount = zone.immeubles?.length || 0
+    // Compter les immeubles de cette zone
+    const immeublesCount = currentManagerZone.zone?.immeubles?.length || 0
 
-      return {
-        ...zone,
+    return [
+      {
+        ...currentManagerZone.zone,
         immeublesCount,
-      }
-    })
-  }, [allZones, manager])
+        assignmentDate: currentManagerZone.assignedAt,
+      },
+    ]
+  }, [currentManagerZone])
 
   // Gestion de l'assignation/désassignation
   const handleAssignCommercial = async commercialId => {

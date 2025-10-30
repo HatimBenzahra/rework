@@ -5,9 +5,9 @@ import {
   useDirecteur,
   useManagers,
   useUpdateManager,
-  useZones,
   useCommercials,
   useUpdateCommercial,
+  useCurrentZoneAssignment,
 } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
@@ -50,7 +50,7 @@ export default function DirecteurDetails() {
   )
   const { mutate: updateManager, loading: updatingManager } = useUpdateManager()
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
-  const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
+  const { data: currentDirecteurZone } = useCurrentZoneAssignment(parseInt(id), 'DIRECTEUR')
 
   // Transformation des données API vers format UI
   const directeurData = useMemo(() => {
@@ -186,22 +186,21 @@ export default function DirecteurDetails() {
     }
   }, [directeur, allManagers, allCommercials])
 
-  // Récupérer les zones assignées à ce directeur
+  // Récupérer la zone actuellement assignée à ce directeur depuis ZoneEnCours
   const directeurZones = useMemo(() => {
-    if (!allZones || !directeur) return []
+    if (!currentDirecteurZone) return []
 
-    // DEBUG: Vérifier les zones
-    console.log('🔍 DirecteurDetails - Toutes les zones:', allZones)
-    console.log('👤 Directeur ID:', directeur.id)
-    const filtered = allZones.filter(zone => zone.directeurId === directeur.id)
-    console.log('🗺️ Zones filtrées pour ce directeur:', filtered)
+    // Compter les immeubles de cette zone
+    const immeublesCount = currentDirecteurZone.zone?.immeubles?.length || 0
 
-    // Calculer le nombre d'immeubles par zone
-    return filtered.map(zone => ({
-      ...zone,
-      immeublesCount: zone.immeubles?.length || 0,
-    }))
-  }, [allZones, directeur])
+    return [
+      {
+        ...currentDirecteurZone.zone,
+        immeublesCount,
+        assignmentDate: currentDirecteurZone.assignedAt,
+      },
+    ]
+  }, [currentDirecteurZone])
 
   // Gestion de l'assignation/désassignation
   const handleAssignManager = async managerId => {

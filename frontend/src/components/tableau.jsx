@@ -277,7 +277,7 @@ export function AdvancedDataTable({
                       </div>
                     </TableHead>
                   ))}
-                  <TableHead className="w-[50px]">Actions</TableHead>
+                  <TableHead className="w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

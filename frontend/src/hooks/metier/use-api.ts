@@ -395,6 +395,17 @@ export function useAssignZoneToManager(): UseApiMutation<
   )
 }
 
+export function useCurrentZoneAssignment(
+  userId: number,
+  userType: string
+): UseApiState<any> & UseApiActions {
+  return useApiCall(
+    () => api.zones.getCurrentUserAssignment(userId, userType),
+    [userId, userType],
+    'currentZoneAssignment'
+  )
+}
+
 // =============================================================================
 // Immeuble Hooks
 // =============================================================================

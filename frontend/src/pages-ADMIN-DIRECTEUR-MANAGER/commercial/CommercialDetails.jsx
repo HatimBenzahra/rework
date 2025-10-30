@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useCommercialFull, useManagers } from '@/services'
+import { useCommercialFull, useManagers, useCurrentZoneAssignment } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { calculateRank } from '@/share/ranks'
@@ -19,6 +19,7 @@ export default function CommercialDetails() {
   const { currentRole, currentUserId } = useRole()
   const { data: commercial, loading, error } = useCommercialFull(parseInt(id))
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: currentZone } = useCurrentZoneAssignment(parseInt(id), 'COMMERCIAL')
 
   // Hook pour gérer les filtres de date
   const {
@@ -76,29 +77,28 @@ export default function CommercialDetails() {
       totalImmeublesProspectes: personalStats.totalImmeublesProspectes,
       tauxConversion_rdv_pris: personalStats.tauxConversion_rdv_pris,
       tauxConversion_portes_prospectes: personalStats.tauxConversion_portes_prospectes,
-      zonesCount: commercial.zones?.length || 0,
+      zonesCount: currentZone ? 1 : 0,
       immeublesCount: commercial.immeubles?.length || 0,
       // Utiliser le rang permanent (basé sur toutes les stats)
       rank: memoizedCommercialRank?.rank,
       points: memoizedCommercialRank?.points,
     }
-  }, [commercial, managers, personalStats, memoizedCommercialRank])
+  }, [commercial, managers, personalStats, memoizedCommercialRank, currentZone])
 
   // Préparer les zones avec dates d'assignation et nombre d'immeubles
   const assignedZones = useMemo(() => {
-    if (!commercialData?.zones) return []
-    return commercialData.zones.map(zone => {
-      const assignment = zone.commercials?.find(c => c.commercialId === commercialData.id)
-      // Compter les immeubles de cette zone assignés au commercial
-      const immeublesCount =
-        zone.immeubles?.filter(immeuble => immeuble.commercialId === commercialData.id).length || 0
-      return {
-        ...zone,
-        assignmentDate: assignment?.createdAt || zone.createdAt,
-        immeublesCount,
-      }
-    })
-  }, [commercialData])
+    if (!currentZone) return []
+
+    // Compter les immeubles de cette zone assignés au commercial
+    const immeublesCount =
+      commercial?.immeubles?.filter(immeuble => immeuble.zoneId === currentZone.zoneId).length || 0
+
+    return [{
+      ...currentZone.zone,
+      assignmentDate: currentZone.assignedAt,
+      immeublesCount,
+    }]
+  }, [currentZone, commercial])
 
   // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date)
   const immeublesTableData = useImmeublesTableData(

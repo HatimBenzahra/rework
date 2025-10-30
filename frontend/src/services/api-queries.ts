@@ -619,6 +619,27 @@ export const GET_ZONE_STATISTICS = `
   }
 `
 
+export const GET_CURRENT_USER_ASSIGNMENT = `
+  query GetCurrentUserAssignment($userId: Int!, $userType: UserType!) {
+    currentUserAssignment(userId: $userId, userType: $userType) {
+      id
+      zoneId
+      userId
+      userType
+      assignedAt
+      zone {
+        id
+        nom
+        xOrigin
+        yOrigin
+        rayon
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`
+
 // =============================================================================
 // Porte Queries
 // =============================================================================

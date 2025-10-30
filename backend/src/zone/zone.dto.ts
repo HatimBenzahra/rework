@@ -151,6 +151,9 @@ export class ZoneEnCours {
 
   @Field()
   assignedAt: Date;
+
+  @Field(() => Zone, { nullable: true })
+  zone?: Zone;
 }
 
 @ObjectType()

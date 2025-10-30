@@ -21,6 +21,7 @@ import {
   GET_STATISTICS,
   GET_STATISTIC,
   GET_ZONE_STATISTICS,
+  GET_CURRENT_USER_ASSIGNMENT,
   GET_PORTES,
   GET_PORTE,
   GET_PORTES_BY_IMMEUBLE,
@@ -371,6 +372,14 @@ export const zoneApi = {
     >(ASSIGN_ZONE_TO_MANAGER, { managerId, zoneId })
     return response.assignZoneToManager
   },
+
+  async getCurrentUserAssignment(userId: number, userType: string): Promise<any> {
+    const response = await gql<any, { userId: number; userType: string }>(
+      GET_CURRENT_USER_ASSIGNMENT,
+      { userId, userType }
+    )
+    return response.currentUserAssignment
+  },
 }
 
 // =============================================================================
@@ -498,6 +507,14 @@ export const statisticApi = {
       { userId, userRole }
     )
     return response.zoneStatistics
+  },
+
+  async getCurrentUserAssignment(userId: number, userType: string): Promise<any> {
+    const response = await gql<any, { userId: number; userType: string }>(
+      GET_CURRENT_USER_ASSIGNMENT,
+      { userId, userType }
+    )
+    return response.currentUserAssignment
   },
 }
 

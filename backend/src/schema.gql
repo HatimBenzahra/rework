@@ -466,6 +466,7 @@ type ZoneEnCours {
   id: Int!
   userId: Int!
   userType: UserType!
+  zone: Zone
   zoneId: Int!
 }
 
