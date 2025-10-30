@@ -1,10 +1,156 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { CreateZoneInput, UpdateZoneInput } from './zone.dto';
+import { CreateZoneInput, UpdateZoneInput, UserType } from './zone.dto';
 
 @Injectable()
 export class ZoneService {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Calcule les statistiques d'un utilisateur pour une zone pendant une période donnée
+   */
+  private async calculateUserStatsForZone(
+    userId: number,
+    userType: UserType,
+    zoneId: number,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    // Construire la condition selon le type d'utilisateur
+    const whereCondition: any = {
+      zoneId,
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    };
+
+    switch (userType) {
+      case UserType.COMMERCIAL:
+        whereCondition.commercialId = userId;
+        break;
+
+      case UserType.MANAGER:
+        whereCondition.OR = [
+          { managerId: userId }, // ses propres stats
+          {
+            commercial: {
+              managerId: userId
+            }
+          }, // stats de ses commerciaux
+        ];
+        break;
+
+      case UserType.DIRECTEUR:
+        whereCondition.OR = [
+          {
+            commercial: {
+              directeurId: userId
+            }
+          }, // commerciaux du directeur
+          {
+            manager: {
+              directeurId: userId
+            }
+          }, // managers du directeur
+        ];
+        break;
+    }
+
+    const stats = await this.prisma.statistic.findMany({
+      where: whereCondition,
+      include: {
+        commercial: true,
+        manager: true,
+      },
+    });
+
+    // Calculer les totaux
+    return {
+      totalContratsSignes: stats.reduce((sum, s) => sum + s.contratsSignes, 0),
+      totalImmeublesVisites: stats.reduce(
+        (sum, s) => sum + s.immeublesVisites,
+        0,
+      ),
+      totalRendezVousPris: stats.reduce((sum, s) => sum + s.rendezVousPris, 0),
+      totalRefus: stats.reduce((sum, s) => sum + s.refus, 0),
+      totalImmeublesProspectes: stats.reduce(
+        (sum, s) => sum + s.nbImmeublesProspectes,
+        0,
+      ),
+      totalPortesProspectes: stats.reduce(
+        (sum, s) => sum + s.nbPortesProspectes,
+        0,
+      ),
+    };
+  }
+
+  /**
+   * Fonction unifiée pour assigner une zone à un utilisateur (commercial, manager ou directeur)
+   * Gère automatiquement l'historique des assignations
+   */
+  async assignZoneToUser(zoneId: number, userId: number, userType: UserType) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Vérifier que la zone existe
+      const zone = await tx.zone.findUnique({ where: { id: zoneId } });
+      if (!zone) {
+        throw new ForbiddenException('Zone not found');
+      }
+
+      // 2. Récupérer l'assignation en cours de cet utilisateur (s'il en a une)
+      const currentAssignment = await tx.zoneEnCours.findUnique({
+        where: {
+          userId_userType: {
+            userId,
+            userType,
+          },
+        },
+      });
+
+      // 3. Si une assignation existe, la déplacer vers l'historique
+      if (currentAssignment) {
+        // Calculer les stats pour la période d'assignation
+        const stats = await this.calculateUserStatsForZone(
+          userId,
+          userType,
+          currentAssignment.zoneId,
+          currentAssignment.assignedAt,
+          new Date(),
+        );
+
+        // Créer l'entrée historique
+        await tx.historiqueZone.create({
+          data: {
+            zoneId: currentAssignment.zoneId,
+            userId,
+            userType,
+            assignedAt: currentAssignment.assignedAt,
+            unassignedAt: new Date(),
+            ...stats,
+          },
+        });
+
+        // Supprimer l'assignation en cours
+        await tx.zoneEnCours.delete({
+          where: { id: currentAssignment.id },
+        });
+      }
+
+      // 4. Créer la nouvelle assignation en cours
+      const newAssignment = await tx.zoneEnCours.create({
+        data: {
+          zoneId,
+          userId,
+          userType,
+        },
+        include: {
+          zone: true,
+        },
+      });
+
+      return newAssignment;
+    });
+  }
 
   async create(data: CreateZoneInput) {
     return this.prisma.zone.create({
@@ -126,96 +272,139 @@ export class ZoneService {
   }
 
   async assignToCommercial(zoneId: number, commercialId: number) {
-    // Utiliser une transaction pour garantir l'atomicité
-    return this.prisma.$transaction(async (prisma) => {
-      // D'abord, supprimer toutes les assignations existantes de ce commercial
-      await prisma.commercialZone.deleteMany({
-        where: {
-          commercialId,
-        },
-      });
-
-      // Ensuite, créer la nouvelle assignation
-      return prisma.commercialZone.create({
-        data: {
-          zoneId,
-          commercialId,
-        },
-        include: {
-          zone: true,
-          commercial: true,
-        },
-      });
-    });
+    // Utiliser la nouvelle fonction unifiée
+    return this.assignZoneToUser(zoneId, commercialId, UserType.COMMERCIAL);
   }
 
   async assignToDirecteur(zoneId: number, directeurId: number) {
-    // Utiliser une transaction pour garantir l'atomicité
-    return this.prisma.$transaction(async (prisma) => {
-      // D'abord, retirer ce directeur de toutes les autres zones
-      await prisma.zone.updateMany({
-        where: {
-          directeurId,
-        },
-        data: {
-          directeurId: null,
-        },
-      });
-
-      // Ensuite, l'assigner à cette zone
-      return prisma.zone.update({
-        where: { id: zoneId },
-        data: { directeurId },
-        include: {
-          directeur: true,
-          commercials: {
-            include: {
-              commercial: true,
-            },
-          },
-          immeubles: true,
-        },
-      });
-    });
+    // Utiliser la nouvelle fonction unifiée
+    return this.assignZoneToUser(zoneId, directeurId, UserType.DIRECTEUR);
   }
 
   async assignToManager(zoneId: number, managerId: number) {
-    // Utiliser une transaction pour garantir l'atomicité
-    return this.prisma.$transaction(async (prisma) => {
-      // D'abord, retirer ce manager de toutes les autres zones
-      await prisma.zone.updateMany({
+    // Utiliser la nouvelle fonction unifiée
+    return this.assignZoneToUser(zoneId, managerId, UserType.MANAGER);
+  }
+
+  /**
+   * Désassigne un utilisateur de sa zone actuelle
+   * Met l'assignation dans l'historique avec les stats calculées
+   */
+  async unassignUser(userId: number, userType: UserType) {
+    return this.prisma.$transaction(async (tx) => {
+      // Récupérer l'assignation en cours
+      const currentAssignment = await tx.zoneEnCours.findUnique({
         where: {
-          managerId,
-        },
-        data: {
-          managerId: null,
+          userId_userType: {
+            userId,
+            userType,
+          },
         },
       });
 
-      // Ensuite, l'assigner à cette zone
-      return prisma.zone.update({
-        where: { id: zoneId },
-        data: { managerId },
-        include: {
-          manager: true,
-          commercials: {
-            include: {
-              commercial: true,
-            },
-          },
-          immeubles: true,
+      if (!currentAssignment) {
+        throw new ForbiddenException(
+          'No active zone assignment found for this user',
+        );
+      }
+
+      // Calculer les stats pour la période d'assignation
+      const stats = await this.calculateUserStatsForZone(
+        userId,
+        userType,
+        currentAssignment.zoneId,
+        currentAssignment.assignedAt,
+        new Date(),
+      );
+
+      // Créer l'entrée historique
+      await tx.historiqueZone.create({
+        data: {
+          zoneId: currentAssignment.zoneId,
+          userId,
+          userType,
+          assignedAt: currentAssignment.assignedAt,
+          unassignedAt: new Date(),
+          ...stats,
         },
       });
+
+      // Supprimer l'assignation en cours
+      await tx.zoneEnCours.delete({
+        where: { id: currentAssignment.id },
+      });
+
+      return {
+        success: true,
+        message: 'User unassigned from zone successfully',
+      };
     });
   }
 
   async unassignFromCommercial(zoneId: number, commercialId: number) {
-    return this.prisma.commercialZone.delete({
+    // Utiliser la nouvelle fonction de désassignation
+    return this.unassignUser(commercialId, UserType.COMMERCIAL);
+  }
+
+  /**
+   * Récupère l'assignation en cours d'un utilisateur
+   */
+  async getCurrentAssignment(userId: number, userType: UserType) {
+    return this.prisma.zoneEnCours.findUnique({
       where: {
-        commercialId_zoneId: {
-          commercialId,
-          zoneId,
+        userId_userType: {
+          userId,
+          userType,
         },
+      },
+      include: {
+        zone: true,
+      },
+    });
+  }
+
+  /**
+   * Récupère l'historique des assignations d'un utilisateur
+   */
+  async getUserZoneHistory(userId: number, userType: UserType) {
+    return this.prisma.historiqueZone.findMany({
+      where: {
+        userId,
+        userType,
+      },
+      include: {
+        zone: true,
+      },
+      orderBy: {
+        unassignedAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Récupère l'historique des assignations d'une zone
+   */
+  async getZoneHistory(zoneId: number) {
+    return this.prisma.historiqueZone.findMany({
+      where: {
+        zoneId,
+      },
+      orderBy: {
+        unassignedAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Récupère tous les utilisateurs actuellement assignés à une zone
+   */
+  async getZoneCurrentAssignments(zoneId: number) {
+    return this.prisma.zoneEnCours.findMany({
+      where: {
+        zoneId,
+      },
+      include: {
+        zone: true,
       },
     });
   }
@@ -227,7 +416,6 @@ export class ZoneService {
       data: updateData,
     });
   }
-
 
   async remove(id: number) {
     // Use a transaction to ensure all deletions succeed or fail together

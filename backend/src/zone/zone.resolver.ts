@@ -1,6 +1,6 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { ZoneService } from './zone.service';
-import { Zone, CreateZoneInput, UpdateZoneInput } from './zone.dto';
+import { Zone, CreateZoneInput, UpdateZoneInput, ZoneEnCours, HistoriqueZone, AssignZoneInput, UserType } from './zone.dto';
 
 @Resolver(() => Zone)
 export class ZoneResolver {
@@ -69,5 +69,48 @@ export class ZoneResolver {
     return this.zoneService
       .unassignFromCommercial(zoneId, commercialId)
       .then(() => true);
+  }
+
+  // =====================================================
+  //assignZoneToUser and unassignUser
+  // =====================================================
+
+  @Mutation(() => ZoneEnCours, { name: 'assignZoneToUser' })
+  assignZoneToUser(@Args('input') input: AssignZoneInput) {
+    return this.zoneService.assignZoneToUser(input.zoneId, input.userId, input.userType);
+  }
+
+  @Mutation(() => Boolean, { name: 'unassignUser' })
+  unassignUser(
+    @Args('userId', { type: () => Int }) userId: number,
+    @Args('userType', { type: () => UserType }) userType: UserType,
+  ) {
+    return this.zoneService.unassignUser(userId, userType).then(() => true);
+  }
+
+  @Query(() => ZoneEnCours, { name: 'currentUserAssignment', nullable: true })
+  getCurrentAssignment(
+    @Args('userId', { type: () => Int }) userId: number,
+    @Args('userType', { type: () => UserType }) userType: UserType,
+  ) {
+    return this.zoneService.getCurrentAssignment(userId, userType);
+  }
+
+  @Query(() => [HistoriqueZone], { name: 'userZoneHistory' })
+  getUserZoneHistory(
+    @Args('userId', { type: () => Int }) userId: number,
+    @Args('userType', { type: () => UserType }) userType: UserType,
+  ) {
+    return this.zoneService.getUserZoneHistory(userId, userType);
+  }
+
+  @Query(() => [HistoriqueZone], { name: 'zoneHistory' })
+  getZoneHistory(@Args('zoneId', { type: () => Int }) zoneId: number) {
+    return this.zoneService.getZoneHistory(zoneId);
+  }
+
+  @Query(() => [ZoneEnCours], { name: 'zoneCurrentAssignments' })
+  getZoneCurrentAssignments(@Args('zoneId', { type: () => Int }) zoneId: number) {
+    return this.zoneService.getZoneCurrentAssignments(zoneId);
   }
 }

@@ -23,9 +23,9 @@ model Directeur {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  managers    Manager[]
-  commercials Commercial[]
-  zones       Zone[]
+  managers        Manager[]
+  commercials     Commercial[]
+  zones           Zone[]
 }
 
 model Manager {
@@ -38,11 +38,11 @@ model Manager {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  directeur   Directeur?  @relation(fields: [directeurId], references: [id])
-  commercials Commercial[]
-  zones       Zone[]
-  immeubles   Immeuble[]
-  statistics  Statistic[]
+  directeur       Directeur?  @relation(fields: [directeurId], references: [id])
+  commercials     Commercial[]
+  zones           Zone[]
+  immeubles       Immeuble[]
+  statistics      Statistic[]
 }
 
 model Commercial {
@@ -57,11 +57,11 @@ model Commercial {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  manager     Manager?     @relation(fields: [managerId], references: [id])
-  directeur   Directeur?   @relation(fields: [directeurId], references: [id])
-  immeubles   Immeuble[]
-  zones       CommercialZone[]
-  statistics  Statistic[]
+  manager         Manager?     @relation(fields: [managerId], references: [id])
+  directeur       Directeur?   @relation(fields: [directeurId], references: [id])
+  immeubles       Immeuble[]
+  zones           CommercialZone[]
+  statistics      Statistic[]
 }
 
 model Zone {
@@ -75,11 +75,13 @@ model Zone {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  directeur   Directeur? @relation(fields: [directeurId], references: [id])
-  manager     Manager?   @relation(fields: [managerId], references: [id])
-  commercials CommercialZone[]
-  immeubles   Immeuble[]
-  statistics  Statistic[]
+  directeur       Directeur? @relation(fields: [directeurId], references: [id])
+  manager         Manager?   @relation(fields: [managerId], references: [id])
+  commercials     CommercialZone[]
+  immeubles       Immeuble[]
+  statistics      Statistic[]
+  zoneEnCours     ZoneEnCours[]
+  historiqueZones HistoriqueZone[]
 }
 
 model Immeuble {
@@ -164,4 +166,49 @@ enum StatutPorte {
   RENDEZ_VOUS_PRIS
   CURIEUX
   NECESSITE_REPASSAGE
+}
+
+enum UserType {
+  COMMERCIAL
+  MANAGER
+  DIRECTEUR
+}
+
+model ZoneEnCours {
+  id         Int      @id @default(autoincrement())
+  zoneId     Int
+  zone       Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  userId     Int
+  userType   UserType
+
+  assignedAt DateTime @default(now())
+
+  @@unique([userId, userType])
+  @@index([zoneId])
+  @@index([userId, userType])
+}
+
+model HistoriqueZone {
+  id           Int      @id @default(autoincrement())
+  zoneId       Int
+  zone         Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  userId       Int
+  userType     UserType
+
+  assignedAt   DateTime
+  unassignedAt DateTime
+
+  // Snapshot des statistiques pour cette période
+  totalContratsSignes       Int @default(0)
+  totalImmeublesVisites     Int @default(0)
+  totalRendezVousPris       Int @default(0)
+  totalRefus                Int @default(0)
+  totalImmeublesProspectes  Int @default(0)
+  totalPortesProspectes     Int @default(0)
+
+  @@index([zoneId])
+  @@index([userId, userType])
+  @@index([assignedAt, unassignedAt])
 }

@@ -1,12 +1,24 @@
-import { ObjectType, Field, Int, InputType, Float } from '@nestjs/graphql';
+import { ObjectType, Field, Int, InputType, Float, registerEnumType } from '@nestjs/graphql';
 import {
   IsNotEmpty,
   IsString,
   IsOptional,
   IsNumber,
   Min,
+  IsEnum,
 } from 'class-validator';
 import { Immeuble } from '../immeuble/immeuble.dto';
+
+export enum UserType {
+  COMMERCIAL = 'COMMERCIAL',
+  MANAGER = 'MANAGER',
+  DIRECTEUR = 'DIRECTEUR',
+}
+
+registerEnumType(UserType, {
+  name: 'UserType',
+  description: 'Type d\'utilisateur pouvant être assigné à une zone',
+});
 
 @ObjectType()
 export class CommercialZoneRelation {
@@ -121,4 +133,76 @@ export class UpdateZoneInput {
   @Field(() => Int, { nullable: true })
   @IsOptional()
   managerId?: number;
+}
+
+@ObjectType()
+export class ZoneEnCours {
+  @Field(() => Int)
+  id: number;
+
+  @Field(() => Int)
+  zoneId: number;
+
+  @Field(() => Int)
+  userId: number;
+
+  @Field(() => UserType)
+  userType: UserType;
+
+  @Field()
+  assignedAt: Date;
+}
+
+@ObjectType()
+export class HistoriqueZone {
+  @Field(() => Int)
+  id: number;
+
+  @Field(() => Int)
+  zoneId: number;
+
+  @Field(() => Int)
+  userId: number;
+
+  @Field(() => UserType)
+  userType: UserType;
+
+  @Field()
+  assignedAt: Date;
+
+  @Field()
+  unassignedAt: Date;
+
+  @Field(() => Int)
+  totalContratsSignes: number;
+
+  @Field(() => Int)
+  totalImmeublesVisites: number;
+
+  @Field(() => Int)
+  totalRendezVousPris: number;
+
+  @Field(() => Int)
+  totalRefus: number;
+
+  @Field(() => Int)
+  totalImmeublesProspectes: number;
+
+  @Field(() => Int)
+  totalPortesProspectes: number;
+}
+
+@InputType()
+export class AssignZoneInput {
+  @Field(() => Int)
+  @IsNumber()
+  zoneId: number;
+
+  @Field(() => Int)
+  @IsNumber()
+  userId: number;
+
+  @Field(() => UserType)
+  @IsEnum(UserType)
+  userType: UserType;
 }

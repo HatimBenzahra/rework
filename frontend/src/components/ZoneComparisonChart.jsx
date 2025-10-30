@@ -23,19 +23,19 @@ import { MapPin, TrendingUp, Award, Calendar, X } from 'lucide-react'
 const chartConfig = {
   zone1: {
     label: 'Zone 1',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
   zone2: {
     label: 'Zone 2',
-    color: 'hsl(var(--chart-2))',
+    color: 'var(--chart-2)',
   },
   zone3: {
     label: 'Zone 3',
-    color: 'hsl(var(--chart-3))',
+    color: 'var(--chart-3)',
   },
   zone4: {
     label: 'Zone 4',
-    color: 'hsl(var(--chart-4))',
+    color: 'var(--chart-4)',
   },
 }
 
@@ -129,7 +129,8 @@ export default function ZoneComparisonChart({
   }, [zones, statistics, maxZones])
 
   // Composant pour créer un radar chart
-  const RadarChart3D = ({ data, title, icon: Icon, color }) => {
+  const RadarChart3D = ({ data, title, icon, color }) => {
+    const IconComponent = icon
     // Préparer les données pour le radar avec tous les points nécessaires
     const radarData = data.map((item, index) => ({
       zone: item.zone,
@@ -143,7 +144,7 @@ export default function ZoneComparisonChart({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Icon className={`h-5 w-5 text-${color}-500`} />
+            <IconComponent className={`h-5 w-5 text-${color}-500`} />
             {title}
           </CardTitle>
         </CardHeader>
@@ -165,7 +166,7 @@ export default function ZoneComparisonChart({
                   className="fill-muted-foreground"
                 />
                 <ChartTooltip
-                  content={({ active, payload, label }) => {
+                  content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0].payload
                       return (
@@ -187,11 +188,11 @@ export default function ZoneComparisonChart({
                 <Radar
                   name="performance"
                   dataKey="value"
-                  stroke={`hsl(var(--chart-1))`}
-                  fill={`hsl(var(--chart-1))`}
+                  stroke={`var(--chart-1)`}
+                  fill={`var(--chart-1)`}
                   fillOpacity={0.3}
                   strokeWidth={2}
-                  dot={{ fill: `hsl(var(--chart-1))`, strokeWidth: 2, r: 4 }}
+                  dot={{ fill: `var(--chart-1)`, strokeWidth: 2, r: 4 }}
                 />
               </RadarChart>
             </ResponsiveContainer>

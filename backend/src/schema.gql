@@ -9,6 +9,12 @@ type ActiveRoom {
   roomName: String!
 }
 
+input AssignZoneInput {
+  userId: Int!
+  userType: UserType!
+  zoneId: Int!
+}
+
 type Commercial {
   age: Int!
   createdAt: DateTime!
@@ -129,6 +135,21 @@ type EgressState {
   status: String!
 }
 
+type HistoriqueZone {
+  assignedAt: DateTime!
+  id: Int!
+  totalContratsSignes: Int!
+  totalImmeublesProspectes: Int!
+  totalImmeublesVisites: Int!
+  totalPortesProspectes: Int!
+  totalRefus: Int!
+  totalRendezVousPris: Int!
+  unassignedAt: DateTime!
+  userId: Int!
+  userType: UserType!
+  zoneId: Int!
+}
+
 type Immeuble {
   adresse: String!
   ascenseurPresent: Boolean!
@@ -192,6 +213,7 @@ type Mutation {
   assignZoneToCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   assignZoneToDirecteur(directeurId: Int!, zoneId: Int!): Boolean!
   assignZoneToManager(managerId: Int!, zoneId: Int!): Boolean!
+  assignZoneToUser(input: AssignZoneInput!): ZoneEnCours!
   createCommercial(createCommercialInput: CreateCommercialInput!): Commercial!
   createDirecteur(createDirecteurInput: CreateDirecteurInput!): Directeur!
   createImmeuble(createImmeubleInput: CreateImmeubleInput!): Immeuble!
@@ -217,6 +239,7 @@ type Mutation {
   stopRecording(input: StopRecordingInput!): Boolean!
   syncCommercialStats(immeubleId: Int!): String!
   syncManagerStats(managerId: Int!): String!
+  unassignUser(userId: Int!, userType: UserType!): Boolean!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
   updateCommercialHeartbeat(commercialId: Int!): Boolean!
@@ -247,6 +270,7 @@ type Porte {
 type Query {
   commercial(id: Int!): Commercial!
   commercials(userId: Int, userRole: String): [Commercial!]!
+  currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours
   directeur(id: Int!): Directeur!
   directeurs(userId: Int, userRole: String): [Directeur!]!
   egressState(egressId: String!): EgressState!
@@ -266,8 +290,11 @@ type Query {
   portesByImmeuble(immeubleId: Int!): [Porte!]!
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int, userId: Int, userRole: String): [Statistic!]!
+  userZoneHistory(userId: Int!, userType: UserType!): [HistoriqueZone!]!
   validateStatsCoherence: String!
   zone(id: Int!): Zone!
+  zoneCurrentAssignments(zoneId: Int!): [ZoneEnCours!]!
+  zoneHistory(zoneId: Int!): [HistoriqueZone!]!
   zoneStatistics(userId: Int, userRole: String): [ZoneStatistic!]!
   zones(userId: Int, userRole: String): [Zone!]!
 }
@@ -413,6 +440,13 @@ input UpdateZoneInput {
   yOrigin: Float
 }
 
+"""Type d'utilisateur pouvant être assigné à une zone"""
+enum UserType {
+  COMMERCIAL
+  DIRECTEUR
+  MANAGER
+}
+
 type Zone {
   commercials: [CommercialZoneRelation!]
   createdAt: DateTime!
@@ -425,6 +459,14 @@ type Zone {
   updatedAt: DateTime!
   xOrigin: Float!
   yOrigin: Float!
+}
+
+type ZoneEnCours {
+  assignedAt: DateTime!
+  id: Int!
+  userId: Int!
+  userType: UserType!
+  zoneId: Int!
 }
 
 type ZoneStatistic {

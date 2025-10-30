@@ -12,7 +12,7 @@ import {
 export class StatisticResolver {
   constructor(
     private readonly statisticService: StatisticService,
-    private readonly statisticSyncService: StatisticSyncService
+    private readonly statisticSyncService: StatisticSyncService,
   ) {}
 
   @Mutation(() => Statistic)
@@ -57,8 +57,6 @@ export class StatisticResolver {
     return this.statisticService.getZoneStatistics(userId, userRole);
   }
 
-  // 🔧 NOUVEAUX ENDPOINTS DE MAINTENANCE
-  
   @Mutation(() => String, { name: 'recalculateAllStats' })
   async recalculateAllStats() {
     const result = await this.statisticSyncService.recalculateAllStats();
@@ -77,7 +75,7 @@ export class StatisticResolver {
 
   @Mutation(() => String, { name: 'syncCommercialStats' })
   async syncCommercialStats(
-    @Args('immeubleId', { type: () => Int }) immeubleId: number
+    @Args('immeubleId', { type: () => Int }) immeubleId: number,
   ) {
     await this.statisticSyncService.syncCommercialStats(immeubleId);
     return `✅ Statistiques synchronisées pour l'immeuble ${immeubleId}`;
@@ -85,7 +83,7 @@ export class StatisticResolver {
 
   @Mutation(() => String, { name: 'syncManagerStats' })
   async syncManagerStats(
-    @Args('managerId', { type: () => Int }) managerId: number
+    @Args('managerId', { type: () => Int }) managerId: number,
   ) {
     await this.statisticSyncService.syncManagerStats(managerId);
     return `✅ Statistiques synchronisées pour le manager ${managerId}`;
