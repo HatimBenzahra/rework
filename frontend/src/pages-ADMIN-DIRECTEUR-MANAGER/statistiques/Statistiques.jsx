@@ -9,7 +9,13 @@ import {
 } from '@/components/ui/select'
 import { Calendar, Users, Building, RefreshCw, CheckCircle, FileText, Clock } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
-import { useStatistics, useCommercials, useZones, useDirecteurs, useManagers } from '@/services'
+import {
+  useStatistics,
+  useCommercials,
+  useDirecteurs,
+  useManagers,
+  useZoneStatistics,
+} from '@/services'
 import { useRoleBasedData } from '@/hooks/metier/useRoleBasedData'
 import ContratsEvolutionChart from '@/components/charts/ContratsEvolutionChart'
 import CommercialRankingTable from '@/components/CommercialRankingTable'
@@ -99,12 +105,6 @@ export default function Statistiques() {
   } = useCommercials(parseInt(currentUserId, 10), currentRole)
 
   const {
-    data: rawZones,
-    loading: zonesLoading,
-    error: zonesError,
-  } = useZones(parseInt(currentUserId, 10), currentRole)
-
-  const {
     data: rawDirecteurs,
     loading: directeursLoading,
     error: directeursError,
@@ -116,11 +116,21 @@ export default function Statistiques() {
     error: managersError,
   } = useManagers(parseInt(currentUserId, 10), currentRole)
 
+  const {
+    data: zoneStatisticsData,
+    loading: zoneStatsLoading,
+    error: zoneStatsError,
+  } = useZoneStatistics(parseInt(currentUserId, 10), currentRole)
+
   // États de chargement et d'erreur combinés
   const loading =
-    statisticsLoading || commercialsLoading || zonesLoading || directeursLoading || managersLoading
+    statisticsLoading ||
+    commercialsLoading ||
+    directeursLoading ||
+    managersLoading ||
+    zoneStatsLoading
   const error =
-    statisticsError || commercialsError || zonesError || directeursError || managersError
+    statisticsError || commercialsError || directeursError || managersError || zoneStatsError
 
   // Calculs des statistiques filtrées avec le hook unifié
   const filteredStatistics = useRoleBasedData('statistics', rawStatistics, {
@@ -128,10 +138,6 @@ export default function Statistiques() {
   })
 
   const filteredCommercials = useRoleBasedData('commerciaux', rawCommercials)
-
-  const filteredZones = useRoleBasedData('zones', rawZones, {
-    commercials: rawCommercials,
-  })
 
   const filteredDirecteurs = useRoleBasedData('directeurs', rawDirecteurs)
 
@@ -323,8 +329,7 @@ export default function Statistiques() {
         {/* Comparaison des zones */}
         <div className="lg:col-span-2">
           <ZoneComparisonChart
-            zones={filteredZones}
-            statistics={timeFilteredStatistics}
+            zoneStatistics={zoneStatisticsData}
             title="Analyse des zones"
             description={`Comparaison par critères et classement - ${TIME_FILTERS.find(f => f.value === timePeriod)?.label}`}
             maxZones={5}

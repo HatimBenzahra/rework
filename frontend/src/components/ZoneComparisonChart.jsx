@@ -46,48 +46,37 @@ const formatNumber = num => {
 
 /**
  * Composant de comparaison des zones avec 3 graphiques radar séparés et tableau de classement
+ * Utilise maintenant les statistiques précalculées depuis ZoneEnCours + HistoriqueZone
  */
 export default function ZoneComparisonChart({
-  zones = [],
-  statistics = [],
+  zoneStatistics = [], // Nouveau: stats précalculées depuis le backend
   title = 'Comparaison des zones',
   description = 'Analyse par critères et classement',
   maxZones = 4,
 }) {
   const { contratsData, rdvData, refusData, zoneMetrics } = useMemo(() => {
-    if (!zones?.length || !statistics?.length) {
+    if (!zoneStatistics?.length) {
       return { contratsData: [], rdvData: [], refusData: [], zoneMetrics: [] }
     }
 
-    // Calculer les métriques pour chaque zone
-    const zonesWithMetrics = zones
-      .map(zone => {
-        const zoneCommercialIds = zone.commercials?.map(rel => rel.commercialId) || []
-        const zoneStats = statistics.filter(stat => zoneCommercialIds.includes(stat.commercialId))
-
-        const totals = zoneStats.reduce(
-          (acc, stat) => ({
-            contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
-            rendezVousPris: acc.rendezVousPris + (stat.rendezVousPris || 0),
-            refus: acc.refus + (stat.refus || 0),
-            nbRepassages: acc.nbRepassages + (stat.nbRepassages || 0),
-          }),
-          { contratsSignes: 0, rendezVousPris: 0, refus: 0, nbRepassages: 0 }
-        )
-
-        const performanceScore =
-          totals.contratsSignes * 50 +
-          totals.rendezVousPris * 10 +
-          Math.min(totals.nbRepassages, totals.contratsSignes) * 20
-
-        return {
-          ...zone,
-          ...totals,
-          performanceScore,
-          nbCommerciaux: zoneCommercialIds.length,
-          repassagesConvertis: Math.min(totals.nbRepassages, totals.contratsSignes),
-        }
-      })
+    // Les statistiques sont déjà calculées côté backend (historique + actuelles)
+    // On les utilise directement !
+    const zonesWithMetrics = zoneStatistics
+      .map(zoneStat => ({
+        id: zoneStat.zoneId,
+        nom: zoneStat.zoneName,
+        contratsSignes: zoneStat.totalContratsSignes || 0,
+        rendezVousPris: zoneStat.totalRendezVousPris || 0,
+        refus: zoneStat.totalRefus || 0,
+        immeublesProspectes: zoneStat.totalImmeublesProspectes || 0,
+        portesProspectes: zoneStat.totalPortesProspectes || 0,
+        tauxConversion: zoneStat.tauxConversion || 0,
+        tauxSuccesRdv: zoneStat.tauxSuccesRdv || 0,
+        performanceScore: zoneStat.performanceGlobale || 0,
+        nbCommerciaux: zoneStat.nombreCommerciaux || 0,
+        // Calcul simplifié pour repassages (on ne l'a plus dans les stats)
+        repassagesConvertis: Math.floor(zoneStat.totalContratsSignes * 0.3), // Estimation
+      }))
       .sort((a, b) => b.performanceScore - a.performanceScore)
       .slice(0, maxZones)
 
@@ -126,7 +115,7 @@ export default function ZoneComparisonChart({
     }))
 
     return { contratsData, rdvData, refusData, zoneMetrics: zonesWithMetrics }
-  }, [zones, statistics, maxZones])
+  }, [zoneStatistics, maxZones])
 
   // Composant pour créer un radar chart
   const RadarChart3D = ({ data, title, icon, color }) => {
