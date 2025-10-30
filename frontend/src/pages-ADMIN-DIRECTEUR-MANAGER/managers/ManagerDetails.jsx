@@ -10,6 +10,12 @@ import {
 } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
+import { useDateFilter, filterStatisticsByDate } from '@/hooks/utils/useDateFilter'
+import {
+  usePersonalStats,
+  useImmeublesTableData,
+  useFilteredPortes,
+} from '@/hooks/utils/useStatisticsFilter'
 import { useMemo, useState } from 'react'
 import { RANKS, calculateRank } from '@/share/ranks'
 import { Button } from '@/components/ui/button'
@@ -25,11 +31,17 @@ export default function ManagerDetails() {
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
-  // États pour les filtres de date
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [appliedStartDate, setAppliedStartDate] = useState('')
-  const [appliedEndDate, setAppliedEndDate] = useState('')
+  // Hook pour gérer les filtres de date
+  const {
+    startDate,
+    endDate,
+    appliedStartDate,
+    appliedEndDate,
+    setStartDate,
+    setEndDate,
+    handleApplyFilters,
+    handleResetFilters,
+  } = useDateFilter()
 
   // API hooks
   const {
@@ -48,54 +60,8 @@ export default function ManagerDetails() {
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
   const { data: allZones } = useZones(parseInt(currentUserId, 10), currentRole)
 
-  // Fonction pour filtrer les statistiques par période
-  const filterStatisticsByDate = (statistics, start, end) => {
-    if (!statistics || !statistics.length) return []
-    if (!start && !end) return statistics
-
-    return statistics.filter(stat => {
-      const statDate = new Date(stat.createdAt)
-      if (start) {
-        const startDateTime = new Date(start)
-        startDateTime.setHours(0, 0, 0, 0)
-        if (statDate < startDateTime) return false
-      }
-      if (end) {
-        const endDateTime = new Date(end)
-        endDateTime.setHours(23, 59, 59, 999) // Inclure toute la journée de fin
-        if (statDate > endDateTime) return false
-      }
-      return true
-    })
-  }
-
-  // Fonction pour filtrer les portes par date de dernière visite
-  const filterPortesByDate = (portes, start, end) => {
-    if (!portes || !portes.length) return []
-    if (!start && !end) return portes
-
-    return portes.filter(porte => {
-      if (!porte.derniereVisite) return false
-      const porteDate = new Date(porte.derniereVisite)
-      if (start) {
-        const startDateTime = new Date(start)
-        startDateTime.setHours(0, 0, 0, 0)
-        if (porteDate < startDateTime) return false
-      }
-      if (end) {
-        const endDateTime = new Date(end)
-        endDateTime.setHours(23, 59, 59, 999)
-        if (porteDate > endDateTime) return false
-      }
-      return true
-    })
-  }
-
-  // Filtrer les statistiques du manager par date
-  const filteredManagerStats = useMemo(() => {
-    if (!manager?.statistics) return []
-    return filterStatisticsByDate(manager.statistics, appliedStartDate, appliedEndDate)
-  }, [manager?.statistics, appliedStartDate, appliedEndDate])
+  // Utiliser le hook pour calculer les stats personnelles du manager
+  const { personalStats } = usePersonalStats(manager, appliedStartDate, appliedEndDate)
 
   // Filtrer les statistiques des commerciaux par date
   const filteredCommercialsStats = useMemo(() => {
@@ -141,32 +107,6 @@ export default function ManagerDetails() {
     const directeur = directeurs?.find(d => d.id === manager.directeurId)
     const assignedCommercials = allCommercials?.filter(c => c.managerId === manager.id) || []
 
-    // Utiliser les stats filtrées au lieu de manager.statistics
-    const totalContratsSignes =
-      filteredManagerStats?.reduce((sum, stat) => sum + stat.contratsSignes, 0) || 0
-
-    const totalImmeublesVisites =
-      filteredManagerStats?.reduce((sum, stat) => sum + stat.immeublesVisites, 0) || 0
-
-    const totalRendezVousPris =
-      filteredManagerStats?.reduce((sum, stat) => sum + stat.rendezVousPris, 0) || 0
-
-    const totalRefus = filteredManagerStats?.reduce((sum, stat) => sum + stat.refus, 0) || 0
-
-    const totalPortesProspectes =
-      filteredManagerStats?.reduce((sum, stat) => sum + (stat.nbPortesProspectes || 0), 0) || 0
-    const totalImmeublesProspectes =
-      filteredManagerStats?.reduce((sum, stat) => sum + (stat.nbImmeublesProspectes || 0), 0) || 0
-
-    // Taux de conversion
-    const tauxConversion_portes_prospectes =
-      totalPortesProspectes > 0
-        ? ((totalContratsSignes / totalPortesProspectes) * 100).toFixed(1)
-        : '0'
-
-    const tauxConversion_rdv_pris =
-      totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
-
     // Trouver le meilleur commercial de l'équipe (avec stats filtrées)
     let meilleurCommercial = 'Aucun commercial'
     let meilleurBadge = 'Aucun'
@@ -208,20 +148,20 @@ export default function ManagerDetails() {
       equipe_taille: assignedCommercials.length,
       status: 'actif',
       date_promotion: new Date(manager.createdAt).toLocaleDateString('fr-FR'),
-      // Stats commerciales du manager
-      portesProspectees: totalPortesProspectes,
-      immeublesProspectes: totalImmeublesProspectes,
-      totalContratsSignes,
-      totalImmeublesVisites,
-      totalRendezVousPris,
-      totalRefus,
-      tauxConversion_portes_prospectes: `${tauxConversion_portes_prospectes}%`,
-      tauxConversion_rdv_pris: `${tauxConversion_rdv_pris}%`,
+      // Stats commerciales du manager (depuis personalStats)
+      portesProspectees: personalStats.totalPortesProspectes,
+      immeublesProspectes: personalStats.totalImmeublesProspectes,
+      totalContratsSignes: personalStats.totalContratsSignes,
+      totalImmeublesVisites: personalStats.totalImmeublesVisites,
+      totalRendezVousPris: personalStats.totalRendezVousPris,
+      totalRefus: personalStats.totalRefus,
+      tauxConversion_portes_prospectes: personalStats.tauxConversion_portes_prospectes,
+      tauxConversion_rdv_pris: personalStats.tauxConversion_rdv_pris,
       // Utiliser le rang permanent (basé sur toutes les stats)
       rank: memoizedManagerRank?.rank,
       points: memoizedManagerRank?.points,
-      totalPortesProspectes,
-      totalImmeublesProspectes,
+      totalPortesProspectes: personalStats.totalPortesProspectes,
+      totalImmeublesProspectes: personalStats.totalImmeublesProspectes,
       // Indicateurs de l'équipe
       meilleurCommercial,
       meilleurBadge,
@@ -230,7 +170,7 @@ export default function ManagerDetails() {
     manager,
     directeurs,
     allCommercials,
-    filteredManagerStats,
+    personalStats,
     filteredCommercialsStats,
     memoizedManagerRank,
   ])
@@ -437,82 +377,15 @@ export default function ManagerDetails() {
     }
   }, [commercialStats])
 
-  // Préparer les données des immeubles avec statistiques calculées à partir des portes
-  const immeublesTableData = useMemo(() => {
-    if (!manager?.immeubles) return []
+  // Utiliser le hook pour préparer les données des immeubles
+  const immeublesTableData = useImmeublesTableData(
+    manager?.immeubles,
+    appliedStartDate,
+    appliedEndDate
+  )
 
-    // Trier les immeubles du plus récent au plus ancien
-    const sortedImmeubles = [...manager.immeubles].sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
-
-    return sortedImmeubles.map(immeuble => {
-      // Utiliser les portes de l'immeuble directement (chargées avec l'immeuble)
-      const portesImmeubleUnfiltered = immeuble.portes || []
-      // Filtrer les portes par date
-      const portesImmeuble = filterPortesByDate(
-        portesImmeubleUnfiltered,
-        appliedStartDate,
-        appliedEndDate
-      )
-      const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
-
-      // Calculer les statistiques à partir des portes
-      const contratsSignes = portesImmeuble.filter(p => p.statut === 'CONTRAT_SIGNE').length
-      const rdvPris = portesImmeuble.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
-      const refus = portesImmeuble.filter(p => p.statut === 'REFUS').length
-      const curieux = portesImmeuble.filter(p => p.statut === 'CURIEUX').length
-      const repassages = portesImmeuble.reduce((sum, p) => sum + (p.nbRepassages || 0), 0)
-      const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
-      const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
-
-      return {
-        id: immeuble.id,
-        address: immeuble.adresse,
-        floors: immeuble.nbEtages,
-        doors_per_floor: immeuble.nbPortesParEtage,
-        total_doors: totalDoors,
-        couverture: couverture,
-        contrats_signes: contratsSignes,
-        rdv_pris: rdvPris,
-        refus: refus,
-        curieux: curieux,
-        repassages: repassages,
-        portes_prospectees: portesProspectees,
-        createdAt: immeuble.createdAt,
-      }
-    })
-  }, [manager?.immeubles, appliedStartDate, appliedEndDate])
-
-  // Préparer toutes les portes du manager pour les graphiques (filtrées par date)
-  const allPortes = useMemo(() => {
-    if (!manager?.immeubles) return []
-
-    // Collecter toutes les portes de tous les immeubles du manager
-    const allPortesUnfiltered = manager.immeubles.reduce((acc, immeuble) => {
-      if (immeuble.portes) {
-        return [...acc, ...immeuble.portes]
-      }
-      return acc
-    }, [])
-
-    // Filtrer par date si nécessaire
-    return filterPortesByDate(allPortesUnfiltered, appliedStartDate, appliedEndDate)
-  }, [manager?.immeubles, appliedStartDate, appliedEndDate])
-
-  // Fonction pour valider les filtres
-  const handleApplyFilters = () => {
-    setAppliedStartDate(startDate)
-    setAppliedEndDate(endDate)
-  }
-
-  // Fonction pour réinitialiser les filtres
-  const handleResetFilters = () => {
-    setStartDate('')
-    setEndDate('')
-    setAppliedStartDate('')
-    setAppliedEndDate('')
-  }
+  // Utiliser le hook pour collecter toutes les portes filtrées
+  const allPortes = useFilteredPortes(manager?.immeubles, appliedStartDate, appliedEndDate)
 
   // Early returns APRÈS tous les hooks
   if (managerLoading) return <DetailsPageSkeleton />
