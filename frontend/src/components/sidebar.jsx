@@ -12,7 +12,7 @@ import {
   Headphones,
   BarChart3,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
 import { hasPermission, ROLES } from '@/hooks/metier/roleFilters'
 
@@ -102,6 +102,23 @@ const items = [
 
 export function AppSidebar() {
   const { currentRole, currentUserId } = useRole()
+  const location = useLocation()
+
+  const normalizePath = value => {
+    if (!value) return ''
+    return value.replace(/\/+$/, '') || '/'
+  }
+
+  const isActiveRoute = path => {
+    const currentPath = normalizePath(location.pathname)
+    const targetPath = normalizePath(path)
+
+    if (!targetPath) return false
+    if (targetPath === '/') {
+      return currentPath === '/'
+    }
+    return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
+  }
 
   // Fonction helper pour changer rôle + userId
   const switchRole = (role, userId) => {
@@ -150,7 +167,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {visibleItems.map(item => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
                     <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
