@@ -25,6 +25,7 @@ import ZoneDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/ZoneDetails'
 import GPSTracking from '@/pages-ADMIN-DIRECTEUR-MANAGER/gps-tracking/GPSTracking'
 import EcoutesManagement from '@/pages-ADMIN-DIRECTEUR-MANAGER/ecoutes/EcoutesManagement'
 import Statistiques from '@/pages-ADMIN-DIRECTEUR-MANAGER/statistiques/Statistiques'
+import Gestion from '@/pages-ADMIN-DIRECTEUR-MANAGER/gestion/Gestion'
 // Import Commercial Layouts & Pages
 import CommercialLayoutComponent from '@/pages-COMMERCIAL/layouts/CommercialLayout'
 import CommercialDashboard from '@/pages-COMMERCIAL/dashboard/CommercialDashboard'
@@ -66,6 +67,7 @@ function AdminLayout() {
               <Route path="/zones/historique" element={<HistoriqueZones />} />
               <Route path="/zones/assignations" element={<AssignationsEnCours />} />
               <Route path="/zones/:id" element={<ZoneDetails />} />
+              <Route path="/gestion" element={<Gestion />} />
               <Route path="/gps-tracking" element={<GPSTracking />} />
               <Route path="/ecoutes" element={<EcoutesManagement />} />
               <Route path="/statistiques" element={<Statistiques />} />

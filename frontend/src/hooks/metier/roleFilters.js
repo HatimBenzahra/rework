@@ -21,6 +21,7 @@ export const PERMISSIONS = {
     statistics: { view: true, add: true, edit: true, delete: true },
     'gps-tracking': { view: true, add: false, edit: false, delete: false },
     ecoutes: { view: true, add: true, edit: true, delete: true },
+    gestion: { view: true, add: true, edit: true, delete: true },
   },
   [ROLES.DIRECTEUR]: {
     commerciaux: { view: true, add: true, edit: true, delete: true },
@@ -31,6 +32,7 @@ export const PERMISSIONS = {
     statistics: { view: true, add: false, edit: false, delete: false },
     'gps-tracking': { view: true, add: false, edit: false, delete: false },
     ecoutes: { view: true, add: true, edit: true, delete: true },
+    gestion: { view: true, add: false, edit: true, delete: false },
   },
   [ROLES.MANAGER]: {
     commerciaux: { view: false, add: false, edit: false, delete: false },
@@ -41,6 +43,7 @@ export const PERMISSIONS = {
     statistics: { view: false, add: false, edit: false, delete: false },
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
     ecoutes: { view: false, add: false, edit: false, delete: false },
+    gestion: { view: false, add: false, edit: false, delete: false },
   },
   [ROLES.COMMERCIAL]: {
     commerciaux: { view: false, add: false, edit: false, delete: false },
@@ -51,6 +54,7 @@ export const PERMISSIONS = {
     statistics: { view: true, add: true, edit: true, delete: false },
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
     ecoutes: { view: false, add: false, edit: false, delete: false },
+    gestion: { view: false, add: false, edit: false, delete: false },
   },
 }
 

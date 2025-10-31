@@ -12,6 +12,7 @@ import {
   Navigation2,
   Headphones,
   BarChart3,
+  Users,
 } from 'lucide-react'
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -68,7 +69,12 @@ const items = [
     icon: Inbox,
     entity: 'commerciaux',
   },
-
+  {
+    title: 'Gestion',
+    url: '/gestion',
+    icon: Users,
+    entity: 'gestion',
+  },
   {
     title: 'Immeubles',
     url: '/immeubles',
