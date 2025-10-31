@@ -97,11 +97,17 @@ export default function OrganizationTree({ data, onAddUser, isAdmin, isDirecteur
     return (
       <div className="space-y-6">
         <div className="text-sm text-muted-foreground">
-          {visibleDirecteurs.length} directeur{visibleDirecteurs.length > 1 ? 's' : ''} dans l'organisation
+          {visibleDirecteurs.length} directeur{visibleDirecteurs.length > 1 ? 's' : ''} dans
+          l'organisation
         </div>
         <div className="space-y-6">
           {visibleDirecteurs.map(directeur => (
-            <DirecteurTree key={directeur.id} directeur={directeur} onAddUser={onAddUser} isAdmin={isAdmin} />
+            <DirecteurTree
+              key={directeur.id}
+              directeur={directeur}
+              onAddUser={onAddUser}
+              isAdmin={isAdmin}
+            />
           ))}
         </div>
       </div>

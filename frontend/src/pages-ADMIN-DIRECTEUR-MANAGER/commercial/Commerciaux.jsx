@@ -301,13 +301,11 @@ export default function Commerciaux() {
       </div>
 
       {/* Section d'information sur le système de rangs */}
-      <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+      <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              🏆 Système de Rangs
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <h3 className="text-lg font-semibold">🏆 Système de Rangs</h3>
+            <p className="text-sm text-muted-foreground mt-1">
               Progression et paliers de performance basés sur les statistiques
             </p>
           </div>
@@ -316,14 +314,14 @@ export default function Commerciaux() {
             {RANKS.map(rank => (
               <div
                 key={rank.name}
-                className="bg-white dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow"
+                className="bg-card rounded-lg p-4 border border-border hover:shadow-md transition-shadow"
               >
                 <span
                   className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full ${rank.bgColor} ${rank.textColor} ${rank.borderColor} border font-semibold text-sm`}
                 >
                   {rank.name}
                 </span>
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   {rank.maxPoints === Infinity
                     ? `${rank.minPoints}+ points`
                     : `${rank.minPoints} - ${rank.maxPoints} points`}
@@ -332,8 +330,8 @@ export default function Commerciaux() {
             ))}
           </div>
 
-          <div className="pt-3 border-t border-blue-200 dark:border-blue-800">
-            <p className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="pt-3 border-t border-border">
+            <p className="text-xs text-muted-foreground">
               <span className="font-semibold">Calcul des points:</span> Contrat signé (+50 pts) •
               Rendez-vous pris (+10 pts) • Immeuble visité (+5 pts)
             </p>
