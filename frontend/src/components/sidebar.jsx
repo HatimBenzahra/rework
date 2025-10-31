@@ -18,6 +18,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
 import { hasPermission, ROLES } from '@/hooks/metier/roleFilters'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible'
+import { useDetailsSections } from '@/contexts/DetailsSectionsContext'
 
 import {
   Sidebar,
@@ -124,6 +125,8 @@ export function AppSidebar() {
   const { currentRole, currentUserId } = useRole()
   const location = useLocation()
   const [openMenus, setOpenMenus] = React.useState({})
+  const { sections } = useDetailsSections()
+  const [activeSection, setActiveSection] = React.useState(null)
 
   const normalizePath = value => {
     if (!value) return ''
@@ -142,9 +145,10 @@ export function AppSidebar() {
     // Si cet item a des sous-items, vérifier s'il y a une correspondance plus spécifique
     // Pour éviter que le parent soit actif quand un enfant est actif
     if (subitems.length > 0) {
-      const hasMoreSpecificMatch = subitems.some(sub =>
-        currentPath === normalizePath(sub.url) ||
-        currentPath.startsWith(`${normalizePath(sub.url)}/`)
+      const hasMoreSpecificMatch = subitems.some(
+        sub =>
+          currentPath === normalizePath(sub.url) ||
+          currentPath.startsWith(`${normalizePath(sub.url)}/`)
       )
 
       // Si un sous-item correspond mieux, utiliser une correspondance exacte pour le parent
@@ -155,6 +159,86 @@ export function AppSidebar() {
 
     return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
   }
+
+  // Fonction pour gérer le scroll vers une section
+  const handleScrollToSection = sectionId => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  // Enrichir les items du menu avec les sections dynamiques pour les pages de détails
+  const enrichedItems = React.useMemo(() => {
+    return items.map(item => {
+      // Si on est sur une page de détails et qu'il y a des sections disponibles
+      if (sections.length > 0 && location.pathname.includes(item.url) && item.url !== '/') {
+        // Créer des sous-items à partir des sections
+        const dynamicSubitems = sections.map(section => ({
+          title: section.title,
+          id: section.id,
+          isSection: true, // Marquer comme section pour gérer différemment
+        }))
+
+        return {
+          ...item,
+          subitems: dynamicSubitems,
+        }
+      }
+      return item
+    })
+  }, [sections, location.pathname])
+
+  // Ouvrir automatiquement le menu qui contient des sections dynamiques
+  React.useEffect(() => {
+    enrichedItems.forEach(item => {
+      if (item.subitems && item.subitems.some(sub => sub.isSection)) {
+        setOpenMenus(prev => ({ ...prev, [item.title]: true }))
+      }
+    })
+  }, [enrichedItems])
+
+  // Détecter la section active en fonction du scroll
+  React.useEffect(() => {
+    if (sections.length === 0) return
+
+    const handleScroll = () => {
+      // Récupérer toutes les sections
+      const sectionElements = sections.map(section => ({
+        id: section.id,
+        element: document.getElementById(section.id),
+      }))
+
+      // Trouver quelle section est actuellement visible
+      // On considère qu'une section est active si elle est dans le tiers supérieur de l'écran
+      const scrollPosition = window.scrollY + 200
+
+      let currentActiveSection = null
+
+      for (let i = sectionElements.length - 1; i >= 0; i--) {
+        const section = sectionElements[i]
+        if (section.element) {
+          const offsetTop = section.element.offsetTop
+          if (scrollPosition >= offsetTop) {
+            currentActiveSection = section.id
+            break
+          }
+        }
+      }
+      if (!currentActiveSection && sections.length > 0) {
+        currentActiveSection = sections[0].id
+      }
+
+      setActiveSection(currentActiveSection)
+    }
+
+    // Écouter les événements de scroll
+    window.addEventListener('scroll', handleScroll)
+    // Appeler une première fois pour initialiser
+    handleScroll()
+
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [sections])
 
   // Fonction helper pour changer rôle + userId
   const switchRole = (role, userId) => {
@@ -168,8 +252,8 @@ export function AppSidebar() {
     }
   }
 
-  // Filtrer les éléments du menu selon les permissions
-  const visibleItems = items.filter(item => {
+  // Filtrer les éléments enrichis selon les permissions
+  const visibleItems = enrichedItems.filter(item => {
     // Si pas d'entité spécifiée, toujours visible (Dashboard, Paramètres)
     if (!item.entity) return true
 
@@ -227,14 +311,25 @@ export function AppSidebar() {
                           <SidebarMenuSub>
                             {item.subitems.map(subitem => (
                               <SidebarMenuSubItem key={subitem.title}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={isActiveRoute(subitem.url, item.subitems)}
-                                >
-                                  <Link to={subitem.url}>
+                                {subitem.isSection ? (
+                                  // Pour les sections, utiliser un bouton avec scroll et état actif basé sur le scroll
+                                  <SidebarMenuSubButton
+                                    onClick={() => handleScrollToSection(subitem.id)}
+                                    isActive={activeSection === subitem.id}
+                                  >
                                     <span>{subitem.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
+                                  </SidebarMenuSubButton>
+                                ) : (
+                                  // Pour les vraies sous-pages, utiliser un lien
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={isActiveRoute(subitem.url, item.subitems)}
+                                  >
+                                    <Link to={subitem.url}>
+                                      <span>{subitem.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                )}
                               </SidebarMenuSubItem>
                             ))}
                           </SidebarMenuSub>

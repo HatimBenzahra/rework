@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import { ToastProvider } from '@/components/ui/toast'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { useRole } from '@/contexts/userole'
+import { DetailsSectionsProvider } from '@/contexts/DetailsSectionsContext'
 // Import Admin/Directeur/Manager Layout & Pages
 import { AppSidebar } from '@/components/sidebar'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
@@ -35,42 +36,44 @@ import TeamManagement from '@/pages-COMMERCIAL/team/TeamManagement'
 // Layout pour Admin/Directeur/Manager (avec sidebar)
 function AdminLayout() {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="overflow-x-hidden">
-        <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <h1 className="font-semibold truncate">Tableau de bord</h1>
+    <DetailsSectionsProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="overflow-x-hidden">
+          <header className="flex h-16 shrink-0 items-center justify-between gap-2 border-b transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <div className="flex items-center gap-2 px-4">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4" />
+              <h1 className="font-semibold truncate">Tableau de bord</h1>
+            </div>
+            <div className="flex items-center gap-2 px-4">
+              <ThemeSelector />
+              <ThemeToggle />
+            </div>
+          </header>
+          <div className="flex flex-1 flex-col gap-4 p-6 pt-6 overflow-x-hidden mx-auto w-11/12 max-w-[1400px]">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/commerciaux" element={<Commerciaux />} />
+              <Route path="/commerciaux/:id" element={<CommercialDetails />} />
+              <Route path="/managers" element={<Managers />} />
+              <Route path="/managers/:id" element={<ManagerDetails />} />
+              <Route path="/directeurs" element={<Directeurs />} />
+              <Route path="/directeurs/:id" element={<DirecteurDetails />} />
+              <Route path="/immeubles" element={<Immeubles />} />
+              <Route path="/immeubles/:id" element={<ImmeubleDetails />} />
+              <Route path="/zones" element={<Zones />} />
+              <Route path="/zones/historique" element={<HistoriqueZones />} />
+              <Route path="/zones/assignations" element={<AssignationsEnCours />} />
+              <Route path="/zones/:id" element={<ZoneDetails />} />
+              <Route path="/gps-tracking" element={<GPSTracking />} />
+              <Route path="/ecoutes" element={<EcoutesManagement />} />
+              <Route path="/statistiques" element={<Statistiques />} />
+            </Routes>
           </div>
-          <div className="flex items-center gap-2 px-4">
-            <ThemeSelector />
-            <ThemeToggle />
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-6 pt-6 overflow-x-hidden mx-auto w-11/12 max-w-[1400px]">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/commerciaux" element={<Commerciaux />} />
-            <Route path="/commerciaux/:id" element={<CommercialDetails />} />
-            <Route path="/managers" element={<Managers />} />
-            <Route path="/managers/:id" element={<ManagerDetails />} />
-            <Route path="/directeurs" element={<Directeurs />} />
-            <Route path="/directeurs/:id" element={<DirecteurDetails />} />
-            <Route path="/immeubles" element={<Immeubles />} />
-            <Route path="/immeubles/:id" element={<ImmeubleDetails />} />
-            <Route path="/zones" element={<Zones />} />
-            <Route path="/zones/historique" element={<HistoriqueZones />} />
-            <Route path="/zones/assignations" element={<AssignationsEnCours />} />
-            <Route path="/zones/:id" element={<ZoneDetails />} />
-            <Route path="/gps-tracking" element={<GPSTracking />} />
-            <Route path="/ecoutes" element={<EcoutesManagement />} />
-            <Route path="/statistiques" element={<Statistiques />} />
-          </Routes>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+        </SidebarInset>
+      </SidebarProvider>
+    </DetailsSectionsProvider>
   )
 }
 // Layout pour Commercial (sans sidebar, interface mobile) && light mode pour les pages commerciales

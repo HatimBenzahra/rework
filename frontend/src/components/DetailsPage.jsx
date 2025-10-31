@@ -16,6 +16,7 @@ import {
   Filter,
   ChevronDown,
 } from 'lucide-react'
+import { useDetailsSections } from '@/contexts/DetailsSectionsContext'
 import {
   Table,
   TableBody,
@@ -278,6 +279,66 @@ export default function DetailsPage({
 }) {
   const navigate = useNavigate()
   const zonePermissions = useEntityPermissions('zones')
+  const { setSections } = useDetailsSections()
+
+  // Créer un ID unique pour chaque section basé sur son titre
+  const createSectionId = title => {
+    return title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
+      .replace(/[^a-z0-9]+/g, '-') // Remplacer les caractères spéciaux par des tirets
+      .replace(/^-+|-+$/g, '') // Enlever les tirets au début et à la fin
+  }
+
+  // Enregistrer les sections dans le contexte quand le composant est monté
+  useEffect(() => {
+    const sections = []
+
+    // Ajouter la section des informations personnelles
+    if (personalInfo.length > 0) {
+      sections.push({
+        id: 'informations-personnelles',
+        title: 'Informations personnelles',
+      })
+    }
+
+    // Ajouter la section des statistiques
+    if (statsCards.length > 0) {
+      sections.push({
+        id: 'statistiques',
+        title: 'Statistiques',
+      })
+    }
+
+    // Ajouter la section des zones assignées
+    if (assignedZones && zonePermissions.canView) {
+      sections.push({
+        id: 'zones-assignees',
+        title: 'Zones assignées',
+      })
+    }
+
+    // Ajouter les sections additionnelles
+    additionalSections.forEach(section => {
+      sections.push({
+        id: createSectionId(section.title),
+        title: section.title,
+      })
+    })
+
+    setSections(sections)
+
+    // Nettoyer les sections quand on quitte la page
+    return () => setSections([])
+  }, [
+    personalInfo,
+    statsCards,
+    assignedZones,
+    additionalSections,
+    zonePermissions.canView,
+    setSections,
+  ])
 
   const getStatusBadge = status => {
     const variants = {
@@ -338,7 +399,7 @@ export default function DetailsPage({
       </div>
       {/* Informations personnelles */}
       {personalInfo.length > 0 && (
-        <div>
+        <div id="informations-personnelles">
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-1">Informations personnelles</h2>
             <Separator className="border-t-2 border-primary mb-2" />
@@ -369,7 +430,7 @@ export default function DetailsPage({
 
       {/* Statistiques */}
       {statsCards.length > 0 && (
-        <div>
+        <div id="statistiques">
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-1 ">Statistiques</h2>
             <Separator className="border-t-2 border-primary mb-2" />
@@ -418,7 +479,7 @@ export default function DetailsPage({
 
       {/* Section des zones assignées (si applicable et autorisée) */}
       {assignedZones && zonePermissions.canView && (
-        <div>
+        <div id="zones-assignees">
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-1">Zones assignées</h2>
             <Separator className="border-t-2 border-primary mb-2" />
@@ -448,7 +509,7 @@ export default function DetailsPage({
 
       {/* Sections additionnelles personnalisées */}
       {additionalSections.map((section, index) => (
-        <div key={index}>
+        <div key={index} id={createSectionId(section.title)}>
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-1">{section.title}</h2>
             <Separator className="border-t-2 border-primary mb-2" />
