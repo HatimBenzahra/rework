@@ -14,7 +14,7 @@ export default function UnassignedPanel({ managers, commercials, onAddUser, isAd
   }
 
   return (
-    <Card className="w-80 flex-shrink-0 p-4 space-y-4 h-fit sticky top-6">
+    <Card className="w-full md:w-80 flex-shrink-0 p-4 space-y-4 h-fit md:sticky md:top-6">
       <div className="flex items-center gap-2 pb-2 border-b">
         <UserX className="h-5 w-5 text-muted-foreground" />
         <h3 className="font-semibold">Non assignés</h3>

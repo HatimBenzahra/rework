@@ -371,7 +371,7 @@ export default function Gestion() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-6 select-none">
+        <div className="flex flex-col md:flex-row gap-6 select-none">
           {/* Panneau latéral des non-assignés */}
           <UnassignedPanel
             managers={organizationData.unassigned.managers}
