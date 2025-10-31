@@ -113,4 +113,14 @@ export class ZoneResolver {
   getZoneCurrentAssignments(@Args('zoneId', { type: () => Int }) zoneId: number) {
     return this.zoneService.getZoneCurrentAssignments(zoneId);
   }
+
+  @Query(() => [HistoriqueZone], { name: 'allZoneHistory' })
+  getAllZoneHistory() {
+    return this.zoneService.getAllZoneHistory();
+  }
+
+  @Query(() => [ZoneEnCours], { name: 'allCurrentAssignments' })
+  getAllCurrentAssignments() {
+    return this.zoneService.getAllCurrentAssignments();
+  }
 }

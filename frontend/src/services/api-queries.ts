@@ -640,6 +640,48 @@ export const GET_CURRENT_USER_ASSIGNMENT = `
   }
 `
 
+export const GET_ALL_ZONE_HISTORY = `
+  query GetAllZoneHistory {
+    allZoneHistory {
+      id
+      zoneId
+      userId
+      userType
+      assignedAt
+      unassignedAt
+      totalContratsSignes
+      totalImmeublesVisites
+      totalRendezVousPris
+      totalRefus
+      totalImmeublesProspectes
+      totalPortesProspectes
+      zone {
+        id
+        nom
+      }
+    }
+  }
+`
+
+export const GET_ALL_CURRENT_ASSIGNMENTS = `
+  query GetAllCurrentAssignments {
+    allCurrentAssignments {
+      id
+      zoneId
+      userId
+      userType
+      assignedAt
+      zone {
+        id
+        nom
+        xOrigin
+        yOrigin
+        rayon
+      }
+    }
+  }
+`
+
 // =============================================================================
 // Porte Queries
 // =============================================================================

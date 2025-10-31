@@ -5,6 +5,7 @@ import {
   Search,
   Settings,
   ChevronUp,
+  ChevronDown,
   User2,
   Building2,
   MapPin,
@@ -12,9 +13,11 @@ import {
   Headphones,
   BarChart3,
 } from 'lucide-react'
+import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
 import { hasPermission, ROLES } from '@/hooks/metier/roleFilters'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible'
 
 import {
   Sidebar,
@@ -27,6 +30,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
 import {
   DropdownMenu,
@@ -73,6 +79,20 @@ const items = [
     url: '/zones',
     icon: MapPin,
     entity: 'zones',
+    subitems: [
+      {
+        title: "Vue d'ensemble",
+        url: '/zones',
+      },
+      {
+        title: 'Assignations en cours',
+        url: '/zones/assignations',
+      },
+      {
+        title: 'Historique',
+        url: '/zones/historique',
+      },
+    ],
   },
   {
     title: 'Suivi GPS',
@@ -103,13 +123,14 @@ const items = [
 export function AppSidebar() {
   const { currentRole, currentUserId } = useRole()
   const location = useLocation()
+  const [openMenus, setOpenMenus] = React.useState({})
 
   const normalizePath = value => {
     if (!value) return ''
     return value.replace(/\/+$/, '') || '/'
   }
 
-  const isActiveRoute = path => {
+  const isActiveRoute = (path, subitems = []) => {
     const currentPath = normalizePath(location.pathname)
     const targetPath = normalizePath(path)
 
@@ -117,6 +138,21 @@ export function AppSidebar() {
     if (targetPath === '/') {
       return currentPath === '/'
     }
+
+    // Si cet item a des sous-items, vérifier s'il y a une correspondance plus spécifique
+    // Pour éviter que le parent soit actif quand un enfant est actif
+    if (subitems.length > 0) {
+      const hasMoreSpecificMatch = subitems.some(sub =>
+        currentPath === normalizePath(sub.url) ||
+        currentPath.startsWith(`${normalizePath(sub.url)}/`)
+      )
+
+      // Si un sous-item correspond mieux, utiliser une correspondance exacte pour le parent
+      if (hasMoreSpecificMatch && currentPath !== targetPath) {
+        return false
+      }
+    }
+
     return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
   }
 
@@ -165,16 +201,61 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {visibleItems.map(item => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {visibleItems.map(item => {
+                // If item has subitems, render as collapsible
+                if (item.subitems) {
+                  const isAnySubitemActive = item.subitems.some(subitem =>
+                    isActiveRoute(subitem.url)
+                  )
+
+                  return (
+                    <Collapsible
+                      key={item.title}
+                      open={openMenus[item.title] ?? isAnySubitemActive}
+                      onOpenChange={open => setOpenMenus(prev => ({ ...prev, [item.title]: open }))}
+                      className="group/collapsible"
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton tooltip={item.title}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                            <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.subitems.map(subitem => (
+                              <SidebarMenuSubItem key={subitem.title}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={isActiveRoute(subitem.url, item.subitems)}
+                                >
+                                  <Link to={subitem.url}>
+                                    <span>{subitem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  )
+                }
+
+                // Regular menu item without subitems
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

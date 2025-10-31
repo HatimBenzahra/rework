@@ -193,6 +193,9 @@ export class HistoriqueZone {
 
   @Field(() => Int)
   totalPortesProspectes: number;
+
+  @Field(() => Zone, { nullable: true })
+  zone?: Zone;
 }
 
 @InputType()

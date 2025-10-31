@@ -406,6 +406,14 @@ export function useCurrentZoneAssignment(
   )
 }
 
+export function useAllZoneHistory(): UseApiListState<any> & UseApiActions {
+  return useApiCall(() => api.zones.getAllZoneHistory(), [], 'allZoneHistory')
+}
+
+export function useAllCurrentAssignments(): UseApiListState<any> & UseApiActions {
+  return useApiCall(() => api.zones.getAllCurrentAssignments(), [], 'allCurrentAssignments')
+}
+
 // =============================================================================
 // Immeuble Hooks
 // =============================================================================

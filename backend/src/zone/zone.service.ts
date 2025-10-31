@@ -409,6 +409,34 @@ export class ZoneService {
     });
   }
 
+  /**
+   * Récupère TOUT l'historique des assignations de zones
+   */
+  async getAllZoneHistory() {
+    return this.prisma.historiqueZone.findMany({
+      include: {
+        zone: true,
+      },
+      orderBy: {
+        unassignedAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Récupère TOUTES les assignations en cours
+   */
+  async getAllCurrentAssignments() {
+    return this.prisma.zoneEnCours.findMany({
+      include: {
+        zone: true,
+      },
+      orderBy: {
+        assignedAt: 'desc',
+      },
+    });
+  }
+
   async update(data: UpdateZoneInput) {
     const { id, ...updateData } = data;
     return this.prisma.zone.update({

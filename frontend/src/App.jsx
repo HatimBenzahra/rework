@@ -14,6 +14,8 @@ import Managers from '@/pages-ADMIN-DIRECTEUR-MANAGER/managers/Managers'
 import Directeurs from '@/pages-ADMIN-DIRECTEUR-MANAGER/directeurs/Directeurs'
 import Immeubles from '@/pages-ADMIN-DIRECTEUR-MANAGER/immeubles/Immeubles'
 import Zones from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/Zones'
+import HistoriqueZones from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/HistoriqueZones'
+import AssignationsEnCours from '@/pages-ADMIN-DIRECTEUR-MANAGER/zones/AssignationsEnCours'
 import CommercialDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/commercial/CommercialDetails'
 import ManagerDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/managers/ManagerDetails'
 import DirecteurDetails from '@/pages-ADMIN-DIRECTEUR-MANAGER/directeurs/DirecteurDetails'
@@ -59,6 +61,8 @@ function AdminLayout() {
             <Route path="/immeubles" element={<Immeubles />} />
             <Route path="/immeubles/:id" element={<ImmeubleDetails />} />
             <Route path="/zones" element={<Zones />} />
+            <Route path="/zones/historique" element={<HistoriqueZones />} />
+            <Route path="/zones/assignations" element={<AssignationsEnCours />} />
             <Route path="/zones/:id" element={<ZoneDetails />} />
             <Route path="/gps-tracking" element={<GPSTracking />} />
             <Route path="/ecoutes" element={<EcoutesManagement />} />
