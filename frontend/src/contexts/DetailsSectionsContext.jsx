@@ -4,9 +4,12 @@ const DetailsSectionsContext = createContext()
 
 export function DetailsSectionsProvider({ children }) {
   const [sections, setSections] = useState([])
+  const [focusedSection, setFocusedSection] = useState(null)
 
   return (
-    <DetailsSectionsContext.Provider value={{ sections, setSections }}>
+    <DetailsSectionsContext.Provider
+      value={{ sections, setSections, focusedSection, setFocusedSection }}
+    >
       {children}
     </DetailsSectionsContext.Provider>
   )

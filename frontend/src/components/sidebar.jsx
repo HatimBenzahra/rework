@@ -125,7 +125,7 @@ export function AppSidebar() {
   const { currentRole, currentUserId } = useRole()
   const location = useLocation()
   const [openMenus, setOpenMenus] = React.useState({})
-  const { sections } = useDetailsSections()
+  const { sections, setFocusedSection } = useDetailsSections()
   const [activeSection, setActiveSection] = React.useState(null)
 
   const normalizePath = value => {
@@ -164,7 +164,23 @@ export function AppSidebar() {
   const handleScrollToSection = sectionId => {
     const element = document.getElementById(sectionId)
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      // Définir la section comme focusée pour l'effet visuel
+      setFocusedSection(sectionId)
+
+      // Calculer la position pour centrer vraiment l'élément
+      const elementRect = element.getBoundingClientRect()
+      const absoluteElementTop = elementRect.top + window.pageYOffset
+      const middle = absoluteElementTop - window.innerHeight / 2 + elementRect.height / 2
+
+      window.scrollTo({
+        top: middle,
+        behavior: 'smooth',
+      })
+
+      // Retirer l'effet de focus après 2 secondes
+      setTimeout(() => {
+        setFocusedSection(null)
+      }, 2000)
     }
   }
 
@@ -203,6 +219,16 @@ export function AppSidebar() {
     if (sections.length === 0) return
 
     const handleScroll = () => {
+      // Vérifier si on est en bas de la page
+      const isBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 10
+
+      // Si on est en bas, activer la dernière section
+      if (isBottom && sections.length > 0) {
+        setActiveSection(sections[sections.length - 1].id)
+        return
+      }
+
       // Récupérer toutes les sections
       const sectionElements = sections.map(section => ({
         id: section.id,

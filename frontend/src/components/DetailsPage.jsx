@@ -279,7 +279,7 @@ export default function DetailsPage({
 }) {
   const navigate = useNavigate()
   const zonePermissions = useEntityPermissions('zones')
-  const { setSections } = useDetailsSections()
+  const { setSections, focusedSection } = useDetailsSections()
 
   // Créer un ID unique pour chaque section basé sur son titre
   const createSectionId = title => {
@@ -294,7 +294,6 @@ export default function DetailsPage({
   // Enregistrer les sections dans le contexte quand le composant est monté
   useEffect(() => {
     const sections = []
-
     // Ajouter la section des informations personnelles
     if (personalInfo.length > 0) {
       sections.push({
@@ -382,8 +381,15 @@ export default function DetailsPage({
     return <Icon className={`h-4 w-4 ${iconColor} ${className}`} />
   }
 
+  // Fonction pour obtenir les classes CSS d'une section focusée
+  const getSectionClasses = sectionId => {
+    return focusedSection === sectionId
+      ? 'transition-all duration-200 scale-[1.02] text-primary ring-primary/50 rounded-lg'
+      : 'transition-all duration-200'
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 mb-50">
       {/* Header avec bouton retour */}
       <div className="flex items-center gap-4 pb-6 border-b">
         <Button variant="outline" size="icon" onClick={() => navigate(-1)}>
@@ -399,7 +405,10 @@ export default function DetailsPage({
       </div>
       {/* Informations personnelles */}
       {personalInfo.length > 0 && (
-        <div id="informations-personnelles">
+        <div
+          id="informations-personnelles"
+          className={getSectionClasses('informations-personnelles')}
+        >
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-1">Informations personnelles</h2>
             <Separator className="border-t-2 border-primary mb-2" />
@@ -430,7 +439,7 @@ export default function DetailsPage({
 
       {/* Statistiques */}
       {statsCards.length > 0 && (
-        <div id="statistiques">
+        <div id="statistiques" className={getSectionClasses('statistiques')}>
           <div className="mb-6">
             <h2 className="text-xl font-bold mb-1 ">Statistiques</h2>
             <Separator className="border-t-2 border-primary mb-2" />
@@ -479,7 +488,7 @@ export default function DetailsPage({
 
       {/* Section des zones assignées (si applicable et autorisée) */}
       {assignedZones && zonePermissions.canView && (
-        <div id="zones-assignees">
+        <div id="zones-assignees" className={getSectionClasses('zones-assignees')}>
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-1">Zones assignées</h2>
             <Separator className="border-t-2 border-primary mb-2" />
@@ -509,7 +518,11 @@ export default function DetailsPage({
 
       {/* Sections additionnelles personnalisées */}
       {additionalSections.map((section, index) => (
-        <div key={index} id={createSectionId(section.title)}>
+        <div
+          key={index}
+          id={createSectionId(section.title)}
+          className={getSectionClasses(createSectionId(section.title))}
+        >
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-1">{section.title}</h2>
             <Separator className="border-t-2 border-primary mb-2" />
