@@ -41,6 +41,7 @@ export default function HistoriqueZones() {
 
       return {
         ...item,
+        id: item.zone?.id || item.id, // Utiliser l'ID de la zone pour la navigation
         userName,
         zoneName: item.zone?.nom || 'N/A',
         durationDays,
@@ -165,6 +166,7 @@ export default function HistoriqueZones() {
         columns={columns}
         searchKey="zoneName"
         itemsPerPage={15}
+        detailsPath="/zones"
       />
     </div>
   )
