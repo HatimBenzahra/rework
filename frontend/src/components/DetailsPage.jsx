@@ -384,8 +384,8 @@ export default function DetailsPage({
   // Fonction pour obtenir les classes CSS d'une section focusée
   const getSectionClasses = sectionId => {
     return focusedSection === sectionId
-      ? 'transition-all duration-200 scale-[1.02] text-primary ring-primary/50 rounded-lg'
-      : 'transition-all duration-200'
+      ? 'transition-all duration-400 scale-[1.03] text-primary/80 ring-primary/30 border-1 border-primary/30 rounded-lg'
+      : 'transition-all duration-400'
   }
 
   return (
