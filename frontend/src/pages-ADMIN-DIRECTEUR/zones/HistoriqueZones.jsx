@@ -152,7 +152,10 @@ export default function HistoriqueZones() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Zones</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Historique des Zones</h1>
+        <p className="text-muted-foreground text-base">
+          Consultez l'historique complet des assignations de zones avec leurs performances
+        </p>
       </div>
       <AdvancedDataTable
         showStatusColumn={false}

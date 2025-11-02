@@ -1,14 +1,43 @@
 import { useMemo } from 'react'
 import { useRole } from '@/contexts/userole'
-import {
-  useAllCurrentAssignments,
-  useCommercials,
-  useManagers,
-  useDirecteurs,
-} from '@/services'
+import { useAllCurrentAssignments, useCommercials, useManagers, useDirecteurs } from '@/services'
 import { AdvancedDataTable } from '@/components/tableau'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { apiCache } from '@/services/api-cache'
+
+// Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
+const fetchLocationName = async (longitude, latitude) => {
+  // Arrondir les coordonnées pour améliorer le taux de cache hit
+  const roundedLng = longitude.toFixed(4)
+  const roundedLat = latitude.toFixed(4)
+
+  // Créer une fonction unique pour cette géolocalisation
+  const fetchGeocode = async () => {
+    try {
+      const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
+      )
+      const data = await response.json()
+
+      if (data.features && data.features.length > 0) {
+        // Récupérer le lieu le plus pertinent (ville, région, pays)
+        const feature = data.features[0]
+        return feature.place_name || feature.text
+      } else {
+        return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération du nom de lieu:', error)
+      return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+    }
+  }
+
+  // Utiliser le système de cache avec namespace et gestion de déduplication
+  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+}
 
 export default function AssignationsEnCours() {
   const { currentRole, currentUserId } = useRole()
@@ -44,9 +73,7 @@ export default function AssignationsEnCours() {
       }
 
       // Calculer le nombre de jours depuis l'assignation
-      const daysSince = Math.ceil(
-        (new Date() - new Date(item.assignedAt)) / (1000 * 60 * 60 * 24)
-      )
+      const daysSince = Math.ceil((new Date() - new Date(item.assignedAt)) / (1000 * 60 * 60 * 24))
 
       return {
         ...item,
@@ -56,6 +83,31 @@ export default function AssignationsEnCours() {
       }
     })
   }, [rawAssignments, commercials, managers, directeurs])
+
+  // Configuration pour le lazy loading des adresses
+  const mapboxLazyLoader = useMemo(
+    () => ({
+      namespace: 'mapbox-geocode',
+      fetcher: async assignment => {
+        if (assignment.zone?.xOrigin && assignment.zone?.yOrigin) {
+          return fetchLocationName(assignment.zone.xOrigin, assignment.zone.yOrigin)
+        }
+        return null
+      },
+      getCacheKey: assignment => {
+        if (assignment.zone?.xOrigin && assignment.zone?.yOrigin) {
+          return [assignment.zone.xOrigin.toFixed(4), assignment.zone.yOrigin.toFixed(4)]
+        }
+        return null
+      },
+      shouldLoad: (assignment, currentData) => {
+        return assignment.zone?.xOrigin && assignment.zone?.yOrigin && !currentData
+      },
+      delay: 200, // 200ms entre chaque appel
+      maxConcurrent: 3,
+    }),
+    []
+  )
 
   // Configuration des colonnes
   const columns = [
@@ -106,18 +158,33 @@ export default function AssignationsEnCours() {
       accessor: 'rayon',
       sortable: true,
       className: 'hidden lg:table-cell text-center',
-      cell: row =>
-        row.zone?.rayon ? `${(row.zone.rayon / 1000).toFixed(1)} km` : 'N/A',
+      cell: row => (row.zone?.rayon ? `${(row.zone.rayon / 1000).toFixed(1)} km` : 'N/A'),
     },
     {
-      header: 'Coordonnées',
-      accessor: 'coordinates',
+      header: 'Localisation',
+      accessor: 'location',
       className: 'hidden xl:table-cell',
-      cell: row => {
+      cell: (row, { getLoadedData, isLoading }) => {
+        // Utiliser les données chargées dynamiquement
+        const loadedLocation = getLoadedData(row, 'mapbox-geocode')
+
+        if (loadedLocation) return loadedLocation
+
         if (row.zone?.xOrigin && row.zone?.yOrigin) {
+          const isCurrentlyLoading = isLoading(row, 'mapbox-geocode')
+          if (isCurrentlyLoading) {
+            return (
+              <span className="text-gray-500 text-sm flex items-center gap-1">
+                <div className="animate-spin h-3 w-3 border border-gray-300 border-t-blue-600 rounded-full"></div>
+                Chargement...
+              </span>
+            )
+          }
+          // Si pas encore chargé et pas en cours, afficher coordonnées temporaires
           return `${row.zone.yOrigin.toFixed(2)}°N, ${row.zone.xOrigin.toFixed(2)}°E`
         }
-        return 'N/A'
+
+        return 'Non disponible'
       },
     },
   ]
@@ -148,6 +215,12 @@ export default function AssignationsEnCours() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Assignations en Cours</h1>
+        <p className="text-muted-foreground text-base">
+          Visualisez toutes les zones actuellement assignées et leur progression
+        </p>
+      </div>
       <AdvancedDataTable
         showStatusColumn={false}
         title="Assignations en Cours"
@@ -157,6 +230,7 @@ export default function AssignationsEnCours() {
         searchKey="zoneName"
         itemsPerPage={15}
         detailsPath="/zones"
+        lazyLoaders={[mapboxLazyLoader]}
       />
     </div>
   )
