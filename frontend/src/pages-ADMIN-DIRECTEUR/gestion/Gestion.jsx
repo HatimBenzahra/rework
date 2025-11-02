@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useRole } from '@/contexts/userole'
 import {
-  useDirecteurs,
-  useManagers,
-  useCommercials,
-  useUpdateManager,
-  useUpdateCommercial,
-} from '@/services'
+  useDirecteursQuery,
+  useManagersQuery,
+  useCommercialsQuery,
+  useUpdateManagerMutation,
+  useUpdateCommercialMutation,
+} from '@/hooks/metier/use-react-query-api'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { Card } from '@/components/ui/card'
@@ -34,31 +34,31 @@ export default function Gestion() {
   const { currentRole, currentUserId, isAdmin, isDirecteur } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
-  // Récupérer les données
+  // Récupérer les données avec React Query
   const {
-    data: directeurs,
-    loading: loadingDirecteurs,
+    data: directeurs = [],
+    isLoading: loadingDirecteurs,
     error: errorDirecteurs,
     refetch: refetchDirecteurs,
-  } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  } = useDirecteursQuery(parseInt(currentUserId, 10), currentRole)
 
   const {
-    data: managers,
-    loading: loadingManagers,
+    data: managers = [],
+    isLoading: loadingManagers,
     error: errorManagers,
     refetch: refetchManagers,
-  } = useManagers(parseInt(currentUserId, 10), currentRole)
+  } = useManagersQuery(parseInt(currentUserId, 10), currentRole)
 
   const {
-    data: commercials,
-    loading: loadingCommercials,
+    data: commercials = [],
+    isLoading: loadingCommercials,
     error: errorCommercials,
     refetch: refetchCommercials,
-  } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  } = useCommercialsQuery(parseInt(currentUserId, 10), currentRole)
 
-  // Mutations
-  const { mutate: updateManager } = useUpdateManager()
-  const { mutate: updateCommercial } = useUpdateCommercial()
+  // Mutations avec optimistic updates
+  const { mutate: updateManager } = useUpdateManagerMutation()
+  const { mutate: updateCommercial } = useUpdateCommercialMutation()
 
   // État local
   const [activeId, setActiveId] = useState(null)
@@ -191,19 +191,32 @@ export default function Gestion() {
       if (activeType === 'commercial') {
         if (overType === 'manager') {
           // Assigner commercial à un manager
-          await updateCommercial({
-            id: activeUserId,
-            managerId: overUserId,
-          })
-          showSuccess('Commercial assigné au manager avec succès')
+          // React Query va mettre à jour l'UI instantanément avec optimistic update
+          updateCommercial(
+            {
+              id: activeUserId,
+              managerId: overUserId,
+            },
+            {
+              onSuccess: () => {
+                showSuccess('Commercial assigné au manager avec succès')
+              },
+            }
+          )
         } else if (overType === 'directeur') {
           // Assigner commercial directement à un directeur (sans manager)
-          await updateCommercial({
-            id: activeUserId,
-            directeurId: overUserId,
-            managerId: null,
-          })
-          showSuccess('Commercial assigné au directeur avec succès')
+          updateCommercial(
+            {
+              id: activeUserId,
+              directeurId: overUserId,
+              managerId: null,
+            },
+            {
+              onSuccess: () => {
+                showSuccess('Commercial assigné au directeur avec succès')
+              },
+            }
+          )
         }
       } else if (activeType === 'manager') {
         if (overType === 'directeur') {
@@ -212,27 +225,30 @@ export default function Gestion() {
           const managerCommercials = commercials?.filter(c => c.managerId === activeUserId)
 
           // Mettre à jour le directeur du manager
-          await updateManager({
-            id: activeUserId,
-            directeurId: overUserId,
-          })
+          updateManager(
+            {
+              id: activeUserId,
+              directeurId: overUserId,
+            },
+            {
+              onSuccess: () => {
+                // Mettre à jour tous les commerciaux du manager pour enlever leur managerId
+                // Ils deviendront "sans manager" mais resteront à leur place
+                if (managerCommercials && managerCommercials.length > 0) {
+                  managerCommercials.forEach(commercial => {
+                    updateCommercial({
+                      id: commercial.id,
+                      managerId: null,
+                      // Garder le directeurId s'il existe, sinon le mettre à null aussi
+                      directeurId: commercial.directeurId || null,
+                    })
+                  })
+                }
 
-          // Mettre à jour tous les commerciaux du manager pour enlever leur managerId
-          // Ils deviendront "sans manager" mais resteront à leur place
-          if (managerCommercials && managerCommercials.length > 0) {
-            await Promise.all(
-              managerCommercials.map(commercial =>
-                updateCommercial({
-                  id: commercial.id,
-                  managerId: null,
-                  // Garder le directeurId s'il existe, sinon le mettre à null aussi
-                  directeurId: commercial.directeurId || null,
-                })
-              )
-            )
-          }
-
-          showSuccess('Manager assigné au directeur avec succès')
+                showSuccess('Manager assigné au directeur avec succès')
+              },
+            }
+          )
         } else {
           // Empêcher le drop de manager sur autre chose qu'un directeur
           showError(
@@ -242,9 +258,6 @@ export default function Gestion() {
           return
         }
       }
-
-      // Rafraîchir les données
-      await Promise.all([refetchDirecteurs(), refetchManagers(), refetchCommercials()])
     } catch (error) {
       showError(error, 'Gestion.handleDragEnd')
     }
@@ -272,7 +285,7 @@ export default function Gestion() {
   }
 
   const loading = loadingDirecteurs || loadingManagers || loadingCommercials
-  const error = errorDirecteurs || errorManagers || errorCommercials
+  const error = errorDirecteurs?.message || errorManagers?.message || errorCommercials?.message
 
   if (loading) {
     return (

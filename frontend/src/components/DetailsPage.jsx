@@ -286,7 +286,7 @@ export default function DetailsPage({
     return title
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
+      .replace(/[\u0300-\u036f]/g, '') // Enlever l es accents
       .replace(/[^a-z0-9]+/g, '-') // Remplacer les caractères spéciaux par des tirets
       .replace(/^-+|-+$/g, '') // Enlever les tirets au début et à la fin
   }
