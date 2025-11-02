@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from '@/components/ui/toast'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { useRole } from '@/contexts/userole'
@@ -23,7 +23,8 @@ import DirecteurDetails from '@/pages-ADMIN-DIRECTEUR/directeurs/DirecteurDetail
 import ImmeubleDetails from '@/pages-ADMIN-DIRECTEUR/immeubles/ImmeubleDetails'
 import ZoneDetails from '@/pages-ADMIN-DIRECTEUR/zones/ZoneDetails'
 import GPSTracking from '@/pages-ADMIN-DIRECTEUR/gps-tracking/GPSTracking'
-import EcoutesManagement from '@/pages-ADMIN-DIRECTEUR/ecoutes/EcoutesManagement'
+import EcouteLive from '@/pages-ADMIN-DIRECTEUR/ecoutes/EcouteLive'
+import Enregistrement from '@/pages-ADMIN-DIRECTEUR/ecoutes/Enregistrement'
 import Statistiques from '@/pages-ADMIN-DIRECTEUR/statistiques/Statistiques'
 import Gestion from '@/pages-ADMIN-DIRECTEUR/gestion/Gestion'
 // Import Commercial Layouts & Pages
@@ -69,7 +70,9 @@ function AdminLayout() {
               <Route path="/zones/:id" element={<ZoneDetails />} />
               <Route path="/gestion" element={<Gestion />} />
               <Route path="/gps-tracking" element={<GPSTracking />} />
-              <Route path="/ecoutes" element={<EcoutesManagement />} />
+              <Route path="/ecoutes" element={<Navigate to="/ecoutes/live" replace />} />
+              <Route path="/ecoutes/live" element={<EcouteLive />} />
+              <Route path="/ecoutes/enregistrement" element={<Enregistrement />} />
               <Route path="/statistiques" element={<Statistiques />} />
             </Routes>
           </div>

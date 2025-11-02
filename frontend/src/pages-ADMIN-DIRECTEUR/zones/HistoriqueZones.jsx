@@ -1,11 +1,6 @@
 import { useMemo } from 'react'
 import { useRole } from '@/contexts/userole'
-import {
-  useAllZoneHistory,
-  useCommercials,
-  useManagers,
-  useDirecteurs,
-} from '@/services'
+import { useAllZoneHistory, useCommercials, useManagers, useDirecteurs } from '@/services'
 import { AdvancedDataTable } from '@/components/tableau'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,11 +9,7 @@ export default function HistoriqueZones() {
   const { currentRole, currentUserId } = useRole()
 
   // Charger les données
-  const {
-    data: rawHistory,
-    loading: historyLoading,
-    error: historyError,
-  } = useAllZoneHistory()
+  const { data: rawHistory, loading: historyLoading, error: historyError } = useAllZoneHistory()
 
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
@@ -160,6 +151,9 @@ export default function HistoriqueZones() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Zones</h1>
+      </div>
       <AdvancedDataTable
         showStatusColumn={false}
         title="Historique des Zones"

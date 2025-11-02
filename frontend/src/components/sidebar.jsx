@@ -112,6 +112,16 @@ const items = [
     url: '/ecoutes',
     icon: Headphones,
     entity: 'ecoutes',
+    subitems: [
+      {
+        title: 'Écoute Live',
+        url: '/ecoutes/live',
+      },
+      {
+        title: 'Enregistrement',
+        url: '/ecoutes/enregistrement',
+      },
+    ],
   },
   {
     title: 'Statistiques',

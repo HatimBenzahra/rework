@@ -16,7 +16,7 @@ async function bootstrap() {
     'https://localhost:5173',
     'https://192.168.1.107:5173',
   ];
-  // Configuration CORS pour permettre les requêtes du frontend et tablettes
+  // Configuration CORS pour permettre les requêtes du frontpour end et tablettes
   app.enableCors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
