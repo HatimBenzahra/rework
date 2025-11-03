@@ -6,8 +6,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../services/api-service'
 import { useErrorToast } from '../utils/use-error-toast'
+import { invalidateRelatedCaches } from '../../services/api-cache'
 import type {
-  Directeur,
   Manager,
   Commercial,
   UpdateManagerInput,
@@ -19,10 +19,8 @@ import type {
 // =============================================================================
 
 const queryKeys = {
-  directeurs: (userId?: number, userRole?: string) =>
-    ['directeurs', { userId, userRole }] as const,
-  managers: (userId?: number, userRole?: string) =>
-    ['managers', { userId, userRole }] as const,
+  directeurs: (userId?: number, userRole?: string) => ['directeurs', { userId, userRole }] as const,
+  managers: (userId?: number, userRole?: string) => ['managers', { userId, userRole }] as const,
   commercials: (userId?: number, userRole?: string) =>
     ['commercials', { userId, userRole }] as const,
 }
@@ -57,7 +55,7 @@ export function useUpdateManagerMutation() {
 
   return useMutation({
     mutationFn: (input: UpdateManagerInput) => api.managers.update(input),
-    onMutate: async (variables) => {
+    onMutate: async variables => {
       // Annuler les refetch en cours
       await queryClient.cancelQueries({ queryKey: ['managers'] })
 
@@ -65,17 +63,23 @@ export function useUpdateManagerMutation() {
       const previousManagers = queryClient.getQueriesData({ queryKey: ['managers'] })
 
       // Mise à jour optimiste - met à jour le cache immédiatement
-      queryClient.setQueriesData<Manager[]>(
-        { queryKey: ['managers'] },
-        (old) => {
-          if (!old) return old
-          return old.map(manager =>
-            manager.id === variables.id
-              ? { ...manager, ...variables }
-              : manager
-          )
-        }
-      )
+      queryClient.setQueriesData<Manager[]>({ queryKey: ['managers'] }, old => {
+        if (!old) return old
+        return old.map(manager => {
+          if (manager.id === variables.id) {
+            // Fusionner les données en s'assurant que les types correspondent
+            return {
+              ...manager,
+              ...variables,
+              // Normaliser numTelephone en string si c'est un number
+              numTelephone: variables.numTelephone
+                ? String(variables.numTelephone)
+                : manager.numTelephone,
+            } as Manager
+          }
+          return manager
+        })
+      })
 
       // Retourner le contexte pour rollback en cas d'erreur
       return { previousManagers }
@@ -90,7 +94,9 @@ export function useUpdateManagerMutation() {
       showError(error, 'useUpdateManagerMutation')
     },
     onSettled: () => {
-      // Rafraîchir les données après la mutation (succès ou erreur)
+      // Invalider AUSSI l'ancien cache pour compatibilité avec les anciens hooks
+      invalidateRelatedCaches('managers')
+      // Rafraîchir les données React Query après la mutation
       queryClient.invalidateQueries({ queryKey: ['managers'] })
     },
   })
@@ -114,7 +120,7 @@ export function useUpdateCommercialMutation() {
 
   return useMutation({
     mutationFn: (input: UpdateCommercialInput) => api.commercials.update(input),
-    onMutate: async (variables) => {
+    onMutate: async variables => {
       // Annuler les refetch en cours
       await queryClient.cancelQueries({ queryKey: ['commercials'] })
 
@@ -122,17 +128,19 @@ export function useUpdateCommercialMutation() {
       const previousCommercials = queryClient.getQueriesData({ queryKey: ['commercials'] })
 
       // Mise à jour optimiste - met à jour le cache immédiatement
-      queryClient.setQueriesData<Commercial[]>(
-        { queryKey: ['commercials'] },
-        (old) => {
-          if (!old) return old
-          return old.map(commercial =>
-            commercial.id === variables.id
-              ? { ...commercial, ...variables }
-              : commercial
-          )
-        }
-      )
+      queryClient.setQueriesData<Commercial[]>({ queryKey: ['commercials'] }, old => {
+        if (!old) return old
+        return old.map(commercial => {
+          if (commercial.id === variables.id) {
+            // Fusionner les données en s'assurant que les types correspondent
+            return {
+              ...commercial,
+              ...variables,
+            } as Commercial
+          }
+          return commercial
+        })
+      })
 
       // Retourner le contexte pour rollback en cas d'erreur
       return { previousCommercials }
@@ -147,7 +155,9 @@ export function useUpdateCommercialMutation() {
       showError(error, 'useUpdateCommercialMutation')
     },
     onSettled: () => {
-      // Rafraîchir les données après la mutation (succès ou erreur)
+      // Invalider AUSSI l'ancien cache pour compatibilité avec les anciens hooks
+      invalidateRelatedCaches('commercials')
+      // Rafraîchir les données React Query après la mutation
       queryClient.invalidateQueries({ queryKey: ['commercials'] })
     },
   })
