@@ -31,13 +31,6 @@ type Commercial {
   zones: [Zone!]!
 }
 
-type CommercialZoneRelation {
-  commercialId: Int!
-  createdAt: DateTime!
-  id: Int!
-  zoneId: Int!
-}
-
 input CreateCommercialInput {
   age: Int!
   directeurId: Int
@@ -451,7 +444,6 @@ enum UserType {
 }
 
 type Zone {
-  commercials: [CommercialZoneRelation!]
   createdAt: DateTime!
   directeurId: Int
   id: Int!

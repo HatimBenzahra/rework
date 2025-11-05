@@ -21,21 +21,6 @@ registerEnumType(UserType, {
 });
 
 @ObjectType()
-export class CommercialZoneRelation {
-  @Field(() => Int)
-  id: number;
-
-  @Field(() => Int)
-  commercialId: number;
-
-  @Field(() => Int)
-  zoneId: number;
-
-  @Field()
-  createdAt: Date;
-}
-
-@ObjectType()
 export class Zone {
   @Field(() => Int)
   id: number;
@@ -53,13 +38,10 @@ export class Zone {
   rayon: number;
 
   @Field(() => Int, { nullable: true })
-  directeurId?: number;
+  directeurId?: number | null;
 
   @Field(() => Int, { nullable: true })
-  managerId?: number;
-
-  @Field(() => [CommercialZoneRelation], { nullable: true })
-  commercials?: CommercialZoneRelation[];
+  managerId?: number | null;
 
   @Field(() => [Immeuble], { nullable: true })
   immeubles?: Immeuble[];

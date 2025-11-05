@@ -24,6 +24,7 @@ import {
   GET_CURRENT_USER_ASSIGNMENT,
   GET_ALL_ZONE_HISTORY,
   GET_ALL_CURRENT_ASSIGNMENTS,
+  GET_ZONE_CURRENT_ASSIGNMENTS,
   GET_PORTES,
   GET_PORTE,
   GET_PORTES_BY_IMMEUBLE,
@@ -397,6 +398,11 @@ export const zoneApi = {
       { userId, userRole }
     )
     return response.allCurrentAssignments
+  },
+
+  async getZoneCurrentAssignments(zoneId: number): Promise<any[]> {
+    const response = await gql<any, { zoneId: number }>(GET_ZONE_CURRENT_ASSIGNMENTS, { zoneId })
+    return response.zoneCurrentAssignments
   },
 }
 

@@ -169,85 +169,55 @@ export class ZoneService {
       case 'admin':
         return this.prisma.zone.findMany({
           include: {
-            commercials: {
-              include: {
-                commercial: true,
-              },
-            },
             immeubles: true,
           },
         });
 
       case 'directeur':
-        // Zones assignées directement au directeur ou à ses commerciaux
+        // Zones assignées au directeur
         return this.prisma.zone.findMany({
           where: {
-            OR: [
-              { directeurId: userId },
-              {
-                commercials: {
-                  some: {
-                    commercial: {
-                      directeurId: userId,
-                    },
-                  },
-                },
-              },
-            ],
+            directeurId: userId,
           },
           include: {
-            commercials: {
-              include: {
-                commercial: true,
-              },
-            },
             immeubles: true,
           },
         });
 
       case 'manager':
-        // Zones assignées directement au manager ou à ses commerciaux
+        // Zones assignées au manager
         return this.prisma.zone.findMany({
           where: {
-            OR: [
-              { managerId: userId },
-              {
-                commercials: {
-                  some: {
-                    commercial: {
-                      managerId: userId,
-                    },
-                  },
-                },
-              },
-            ],
+            managerId: userId,
           },
           include: {
-            commercials: {
-              include: {
-                commercial: true,
-              },
-            },
             immeubles: true,
           },
         });
 
       case 'commercial':
-        // Zones assignées au commercial
-        return this.prisma.zone.findMany({
+        // Zones assignées au commercial via ZoneEnCours
+        const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
           where: {
-            commercials: {
-              some: {
-                commercialId: userId,
-              },
+            userId_userType: {
+              userId,
+              userType: UserType.COMMERCIAL,
             },
           },
+          select: {
+            zoneId: true,
+          },
+        });
+
+        if (!zoneEnCours) {
+          return [];
+        }
+
+        return this.prisma.zone.findMany({
+          where: {
+            id: zoneEnCours.zoneId,
+          },
           include: {
-            commercials: {
-              include: {
-                commercial: true,
-              },
-            },
             immeubles: true,
           },
         });
@@ -261,11 +231,6 @@ export class ZoneService {
     return this.prisma.zone.findUnique({
       where: { id },
       include: {
-        commercials: {
-          include: {
-            commercial: true,
-          },
-        },
         immeubles: true,
       },
     });
@@ -431,22 +396,11 @@ export class ZoneService {
         });
 
       case 'directeur':
-        // Historique des zones du directeur et de ses commerciaux
+        // Historique des zones du directeur
         return this.prisma.historiqueZone.findMany({
           where: {
             zone: {
-              OR: [
-                { directeurId: userId },
-                {
-                  commercials: {
-                    some: {
-                      commercial: {
-                        directeurId: userId,
-                      },
-                    },
-                  },
-                },
-              ],
+              directeurId: userId,
             },
           },
           include: {
@@ -458,22 +412,11 @@ export class ZoneService {
         });
 
       case 'manager':
-        // Historique des zones du manager et de ses commerciaux
+        // Historique des zones du manager
         return this.prisma.historiqueZone.findMany({
           where: {
             zone: {
-              OR: [
-                { managerId: userId },
-                {
-                  commercials: {
-                    some: {
-                      commercial: {
-                        managerId: userId,
-                      },
-                    },
-                  },
-                },
-              ],
+              managerId: userId,
             },
           },
           include: {
@@ -488,13 +431,8 @@ export class ZoneService {
         // Historique des zones du commercial uniquement
         return this.prisma.historiqueZone.findMany({
           where: {
-            zone: {
-              commercials: {
-                some: {
-                  commercialId: userId,
-                },
-              },
-            },
+            userId: userId,
+            userType: UserType.COMMERCIAL,
           },
           include: {
             zone: true,
@@ -531,22 +469,11 @@ export class ZoneService {
         });
 
       case 'directeur':
-        // Assignations des zones du directeur et de ses commerciaux
+        // Assignations des zones du directeur
         return this.prisma.zoneEnCours.findMany({
           where: {
             zone: {
-              OR: [
-                { directeurId: userId },
-                {
-                  commercials: {
-                    some: {
-                      commercial: {
-                        directeurId: userId,
-                      },
-                    },
-                  },
-                },
-              ],
+              directeurId: userId,
             },
           },
           include: {
@@ -558,22 +485,11 @@ export class ZoneService {
         });
 
       case 'manager':
-        // Assignations des zones du manager et de ses commerciaux
+        // Assignations des zones du manager
         return this.prisma.zoneEnCours.findMany({
           where: {
             zone: {
-              OR: [
-                { managerId: userId },
-                {
-                  commercials: {
-                    some: {
-                      commercial: {
-                        managerId: userId,
-                      },
-                    },
-                  },
-                },
-              ],
+              managerId: userId,
             },
           },
           include: {
@@ -588,13 +504,8 @@ export class ZoneService {
         // Assignations des zones du commercial uniquement
         return this.prisma.zoneEnCours.findMany({
           where: {
-            zone: {
-              commercials: {
-                some: {
-                  commercialId: userId,
-                },
-              },
-            },
+            userId: userId,
+            userType: UserType.COMMERCIAL,
           },
           include: {
             zone: true,
@@ -620,15 +531,13 @@ export class ZoneService {
   async remove(id: number) {
     // Use a transaction to ensure all deletions succeed or fail together
     return this.prisma.$transaction(async (prisma) => {
-      // First, delete all CommercialZone associations
-      await prisma.commercialZone.deleteMany({
-        where: { zoneId: id },
-      });
-
       // Delete all statistics related to this zone
       await prisma.statistic.deleteMany({
         where: { zoneId: id },
       });
+
+      // Note: ZoneEnCours and HistoriqueZone are deleted automatically
+      // via cascade delete (onDelete: Cascade in schema)
 
       // Finally, delete the zone itself
       return prisma.zone.delete({

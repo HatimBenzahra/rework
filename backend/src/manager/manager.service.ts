@@ -109,7 +109,6 @@ export class ManagerService {
     const zones = await this.prisma.zone.findMany({
       where: { managerId: id },
       include: {
-        commercials: true,
         immeubles: true,
       },
     });
@@ -134,30 +133,6 @@ export class ManagerService {
         directeur: false,
         zones: {
           include: {
-            commercials: {
-              include: {
-                commercial: {
-                  include: {
-                    statistics: true,
-                    immeubles: {
-                      include: {
-                        portes: true,
-                      },
-                    },
-                    zones: {
-                      include: {
-                        zone: {
-                          include: {
-                            commercials: true,
-                            immeubles: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
             immeubles: {
               include: {
                 portes: true,
@@ -172,16 +147,6 @@ export class ManagerService {
             immeubles: {
               include: {
                 portes: true,
-              },
-            },
-            zones: {
-              include: {
-                zone: {
-                  include: {
-                    commercials: true,
-                    immeubles: true,
-                  },
-                },
               },
             },
           },

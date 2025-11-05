@@ -7,7 +7,6 @@ async function main() {
 
   // Nettoyer les données existantes
   console.log('🧹 Nettoyage des données existantes...');
-  await prisma.commercialZone.deleteMany();
   await prisma.statistic.deleteMany();
   await prisma.immeuble.deleteMany();
   await prisma.commercial.deleteMany();
@@ -222,30 +221,21 @@ async function main() {
     ],
   });
 
-  // Assigner des zones aux commerciaux
+  // Assigner des zones aux commerciaux via ZoneEnCours
   console.log('🔗 Attribution des zones aux commerciaux...');
-  await prisma.commercialZone.createMany({
+  // Note: Un commercial ne peut avoir qu'une seule zone active à la fois avec ZoneEnCours
+  await prisma.zoneEnCours.createMany({
     data: [
       // Commercial1 travaille sur zone1 (Tunis Centre - directeur1)
-      { commercialId: commercial1.id, zoneId: zone1.id },
-      // Commercial1 travaille aussi sur zone4 (Ariana - manager1)
-      { commercialId: commercial1.id, zoneId: zone4.id },
+      { userId: commercial1.id, zoneId: zone1.id, userType: 'COMMERCIAL' },
       // Commercial2 travaille sur zone2 (Sfax - manager2)
-      { commercialId: commercial2.id, zoneId: zone2.id },
-      // Commercial2 travaille aussi sur zone5 (Monastir - directeur2)
-      { commercialId: commercial2.id, zoneId: zone5.id },
+      { userId: commercial2.id, zoneId: zone2.id, userType: 'COMMERCIAL' },
       // Commercial3 travaille sur zone3 (Sousse - non assignée)
-      { commercialId: commercial3.id, zoneId: zone3.id },
-      // Commercial3 travaille aussi sur zone4 (Ariana - manager1)
-      { commercialId: commercial3.id, zoneId: zone4.id },
-      // Commercial4 travaille sur zone2 (Sfax - manager2)
-      { commercialId: commercial4.id, zoneId: zone2.id },
-      // Commercial4 travaille aussi sur zone5 (Monastir - directeur2)
-      { commercialId: commercial4.id, zoneId: zone5.id },
-      // Commercial5 travaille sur zone1 (Tunis Centre - directeur1)
-      { commercialId: commercial5.id, zoneId: zone1.id },
-      // Commercial5 travaille aussi sur zone4 (Ariana - manager1)
-      { commercialId: commercial5.id, zoneId: zone4.id },
+      { userId: commercial3.id, zoneId: zone3.id, userType: 'COMMERCIAL' },
+      // Commercial4 travaille sur zone2 (Sfax - manager2) - Changé à zone4 car zone2 déjà assignée
+      { userId: commercial4.id, zoneId: zone4.id, userType: 'COMMERCIAL' },
+      // Commercial5 travaille sur zone5 (Monastir - directeur2)
+      { userId: commercial5.id, zoneId: zone5.id, userType: 'COMMERCIAL' },
     ],
   });
 

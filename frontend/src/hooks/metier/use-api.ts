@@ -428,6 +428,16 @@ export function useAllCurrentAssignments(
   )
 }
 
+export function useZoneCurrentAssignments(
+  zoneId: number
+): UseApiListState<any> & UseApiActions {
+  return useApiCall(
+    () => api.zones.getZoneCurrentAssignments(zoneId),
+    [zoneId],
+    'zoneCurrentAssignments'
+  )
+}
+
 // =============================================================================
 // Immeuble Hooks
 // =============================================================================

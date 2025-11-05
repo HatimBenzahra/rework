@@ -212,12 +212,17 @@ export class StatisticSyncService {
    * Met à jour ou crée une statistique pour un commercial
    */
   private async upsertStatistic(commercialId: number, stats: any) {
-    // Récupérer la zone assignée au commercial
-    const commercialZone = await this.prisma.commercialZone.findFirst({
-      where: { commercialId }
+    // Récupérer la zone assignée au commercial via ZoneEnCours
+    const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
+      where: {
+        userId_userType: {
+          userId: commercialId,
+          userType: 'COMMERCIAL',
+        },
+      },
     });
 
-    const zoneId = commercialZone?.zoneId || null;
+    const zoneId = zoneEnCours?.zoneId || null;
 
     // Chercher d'abord s'il existe une stat pour ce commercial
     const existingStat = await this.prisma.statistic.findFirst({

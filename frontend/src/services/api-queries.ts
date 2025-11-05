@@ -224,12 +224,6 @@ export const GET_MANAGER_FULL = `
           managerId
           createdAt
           updatedAt
-          commercials {
-            id
-            commercialId
-            zoneId
-            createdAt
-          }
           immeubles {
             id
             adresse
@@ -250,12 +244,6 @@ export const GET_MANAGER_FULL = `
         managerId
         createdAt
         updatedAt
-        commercials {
-          id
-          commercialId
-          zoneId
-          createdAt
-        }
         immeubles {
           id
           adresse
@@ -401,12 +389,6 @@ export const GET_COMMERCIAL_FULL = `
         rayon
         directeurId
         managerId
-        commercials {
-          id
-          commercialId
-          zoneId
-          createdAt
-        }
         createdAt
         updatedAt
       }
@@ -438,11 +420,6 @@ export const GET_ZONES = `
       rayon
       directeurId
       managerId
-      commercials {
-        id
-        commercialId
-        zoneId
-      }
       immeubles {
         id
         adresse
@@ -473,12 +450,6 @@ export const GET_ZONES_WITH_COMMERCIALS = `
         rayon
         directeurId
         managerId
-        commercials {
-          id
-          commercialId
-          zoneId
-          createdAt
-        }
         createdAt
         updatedAt
       }
@@ -496,11 +467,6 @@ export const GET_ZONE = `
       rayon
       directeurId
       managerId
-      commercials {
-        id
-        commercialId
-        zoneId
-      }
       immeubles {
         id
         adresse
@@ -686,6 +652,18 @@ export const GET_ALL_CURRENT_ASSIGNMENTS = `
           nbPortesParEtage
         }
       }
+    }
+  }
+`
+
+export const GET_ZONE_CURRENT_ASSIGNMENTS = `
+  query GetZoneCurrentAssignments($zoneId: Int!) {
+    zoneCurrentAssignments(zoneId: $zoneId) {
+      id
+      zoneId
+      userId
+      userType
+      assignedAt
     }
   }
 `

@@ -1,7 +1,13 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useZone, useStatisticsByZone, useCommercials, useZoneStatistics } from '@/services'
+import {
+  useZone,
+  useStatisticsByZone,
+  useCommercials,
+  useZoneStatistics,
+  useZoneCurrentAssignments,
+} from '@/services'
 import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
@@ -23,14 +29,18 @@ export default function ZoneDetails() {
     currentRole
   )
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: zoneAssignments } = useZoneCurrentAssignments(parseInt(id))
   const permissions = useEntityPermissions('zones')
 
   // Transformation des données API vers format UI
   const zoneData = useMemo(() => {
     if (!zone) return null
 
-    // Trouver les commercials assignés à cette zone via la relation commercials
-    const assignedCommercialIds = zone.commercials?.map(cz => cz.commercialId) || []
+    // Trouver les commercials assignés à cette zone via ZoneEnCours
+    const assignedCommercialIds =
+      zoneAssignments
+        ?.filter(assignment => assignment.userType === 'COMMERCIAL')
+        .map(assignment => assignment.userId) || []
     const assignedCommercials = commercials?.filter(c => assignedCommercialIds.includes(c.id)) || []
 
     // Compter les immeubles dans cette zone
@@ -52,7 +62,7 @@ export default function ZoneDetails() {
       population: 'Non définie',
       avg_rent: 'Non défini',
     }
-  }, [zone, commercials])
+  }, [zone, commercials, zoneAssignments])
 
   // Obtenir les statistiques agrégées de la zone depuis l'API
   const zoneStats = useMemo(() => {

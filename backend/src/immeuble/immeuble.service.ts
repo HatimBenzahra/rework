@@ -11,15 +11,18 @@ export class ImmeubleService {
     let zoneId = data.zoneId; // Utiliser la zone fournie explicitement
 
     if (!zoneId && data.commercialId) {
-      // Chercher la zone assignée au commercial
-      const commercialZone = await this.prisma.commercialZone.findFirst({
+      // Chercher la zone assignée au commercial via ZoneEnCours
+      const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
         where: {
-          commercialId: data.commercialId,
+          userId_userType: {
+            userId: data.commercialId,
+            userType: 'COMMERCIAL',
+          },
         },
       });
 
-      if (commercialZone) {
-        zoneId = commercialZone.zoneId;
+      if (zoneEnCours) {
+        zoneId = zoneEnCours.zoneId;
       }
     }
 

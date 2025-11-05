@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCommercialInput, UpdateCommercialInput } from './commercial.dto';
+import { UserType } from '../zone/zone.dto';
 
 @Injectable()
 export class CommercialService {
@@ -46,15 +47,6 @@ export class CommercialService {
             manager: true,
             directeur: true,
             immeubles: true,
-            zones: {
-              include: {
-                zone: {
-                  include: {
-                    commercials: true,
-                  },
-                },
-              },
-            },
             statistics: true,
           },
         });
@@ -68,15 +60,6 @@ export class CommercialService {
             manager: true,
             directeur: true,
             immeubles: true,
-            zones: {
-              include: {
-                zone: {
-                  include: {
-                    commercials: true,
-                  },
-                },
-              },
-            },
             statistics: true,
           },
         });
@@ -91,15 +74,6 @@ export class CommercialService {
             manager: true,
             directeur: true,
             immeubles: true,
-            zones: {
-              include: {
-                zone: {
-                  include: {
-                    commercials: true,
-                  },
-                },
-              },
-            },
             statistics: true,
           },
         });
@@ -114,15 +88,6 @@ export class CommercialService {
             manager: true,
             directeur: true,
             immeubles: true,
-            zones: {
-              include: {
-                zone: {
-                  include: {
-                    commercials: true,
-                  },
-                },
-              },
-            },
             statistics: true,
           },
         });
@@ -141,16 +106,6 @@ export class CommercialService {
         immeubles: {
           include: {
             portes: true,
-          },
-        },
-        zones: {
-          include: {
-            zone: {
-              include: {
-                commercials: true,
-                immeubles: true,
-              },
-            },
           },
         },
         statistics: true,
@@ -200,5 +155,21 @@ export class CommercialService {
         directeur: true,
       },
     });
+  }
+
+  async getCurrentZone(commercialId: number) {
+    const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
+      where: {
+        userId_userType: {
+          userId: commercialId,
+          userType: UserType.COMMERCIAL,
+        },
+      },
+      include: {
+        zone: true,
+      },
+    });
+
+    return zoneEnCours?.zone || null;
   }
 }

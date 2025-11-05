@@ -62,9 +62,10 @@ export class CommercialResolver {
   }
 
   @ResolveField(() => [Zone])
-  zones(@Parent() commercial: CommercialWithRelations): Zone[] {
-    // Mapper les relations CommercialZone vers Zone
-    return commercial.zones?.map((cz) => cz.zone) || [];
+  async zones(@Parent() commercial: CommercialWithRelations): Promise<Zone[]> {
+    // Récupérer la zone actuelle du commercial via ZoneEnCours
+    const zoneEnCours = await this.commercialService.getCurrentZone(commercial.id);
+    return zoneEnCours ? [zoneEnCours] : [];
   }
 
   @ResolveField(() => [Immeuble])

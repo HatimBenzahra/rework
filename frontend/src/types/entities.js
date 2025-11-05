@@ -41,14 +41,6 @@
  */
 
 /**
- * @typedef {Object} CommercialZoneRelation
- * @property {number} id
- * @property {number} commercialId
- * @property {number} zoneId
- * @property {string} createdAt
- */
-
-/**
  * @typedef {BaseEntity & Object} Zone
  * @property {string} nom
  * @property {number} rayon
@@ -56,7 +48,6 @@
  * @property {number} yOrigin
  * @property {number|null} directeurId
  * @property {number|null} managerId
- * @property {CommercialZoneRelation[]} commercials
  */
 
 /**

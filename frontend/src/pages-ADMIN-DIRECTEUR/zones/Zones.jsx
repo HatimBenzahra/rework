@@ -14,6 +14,7 @@ import {
   useAssignZone,
   useAssignZoneToDirecteur,
   useAssignZoneToManager,
+  useAllCurrentAssignments,
 } from '@/services'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useState, useMemo } from 'react'
@@ -80,6 +81,10 @@ export default function Zones() {
   const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: allAssignments } = useAllCurrentAssignments(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
 
   // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
   const filteredZones = useMemo(() => zonesApi || [], [zonesApi])
@@ -289,9 +294,13 @@ export default function Zones() {
       return `manager-${zone.managerId}`
     }
 
-    // Pour les commerciaux, prendre le premier assigné s'il y en a
-    if (zone.commercials && zone.commercials.length > 0) {
-      return `commercial-${zone.commercials[0].commercialId}`
+    // Pour les commerciaux, chercher dans les assignations en cours
+    const commercialAssignment = allAssignments?.find(
+      assignment => assignment.zoneId === zone.id && assignment.userType === 'COMMERCIAL'
+    )
+
+    if (commercialAssignment) {
+      return `commercial-${commercialAssignment.userId}`
     }
 
     return ''
