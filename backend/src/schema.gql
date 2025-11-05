@@ -269,8 +269,8 @@ type Porte {
 }
 
 type Query {
-  allCurrentAssignments: [ZoneEnCours!]!
-  allZoneHistory: [HistoriqueZone!]!
+  allCurrentAssignments(userId: Int, userRole: String): [ZoneEnCours!]!
+  allZoneHistory(userId: Int, userRole: String): [HistoriqueZone!]!
   commercial(id: Int!): Commercial!
   commercials(userId: Int, userRole: String): [Commercial!]!
   currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours

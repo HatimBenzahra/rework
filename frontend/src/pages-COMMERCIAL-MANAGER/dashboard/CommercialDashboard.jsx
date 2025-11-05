@@ -116,7 +116,9 @@ export default function CommercialDashboard() {
             {/* Rang actuel */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Award className={`w-5 h-5 ${currentRank.textColor}`} />
+                <div className={`p-1.5 rounded-lg ${currentRank.bgColor}`}>
+                  <Award className="w-5 h-5 text-white" />
+                </div>
                 <span className={`text-base sm:text-lg font-bold ${base.text.primary}`}>
                   Rang {currentRank.name}
                 </span>
@@ -141,7 +143,7 @@ export default function CommercialDashboard() {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div
-                    className={`h-2.5 rounded-full transition-all duration-500 ${currentRank.textColor === 'text-orange-700' ? 'bg-orange-500' : currentRank.textColor === 'text-gray-700' ? 'bg-gray-500' : currentRank.textColor === 'text-yellow-700' ? 'bg-yellow-500' : currentRank.textColor === 'text-blue-700' ? 'bg-blue-500' : 'bg-cyan-500'}`}
+                    className={`h-2.5 rounded-full transition-all duration-500 ${currentRank.bgColor}`}
                     style={{
                       width: `${rankProgress.percentage}%`,
                     }}

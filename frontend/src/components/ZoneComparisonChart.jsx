@@ -74,8 +74,6 @@ export default function ZoneComparisonChart({
         tauxSuccesRdv: zoneStat.tauxSuccesRdv || 0,
         performanceScore: zoneStat.performanceGlobale || 0,
         nbCommerciaux: zoneStat.nombreCommerciaux || 0,
-        // Calcul simplifié pour repassages (on ne l'a plus dans les stats)
-        repassagesConvertis: Math.floor(zoneStat.totalContratsSignes * 0.3), // Estimation
       }))
       .sort((a, b) => b.performanceScore - a.performanceScore)
       .slice(0, maxZones)
@@ -261,9 +259,12 @@ export default function ZoneComparisonChart({
                 <TableHead>Zone</TableHead>
                 <TableHead className="text-center">Contrats signés</TableHead>
                 <TableHead className="text-center">RDV pris</TableHead>
-                <TableHead className="text-center">Repassages convertis</TableHead>
                 <TableHead className="text-center">Refus</TableHead>
-                <TableHead className="text-center">Score</TableHead>
+                <TableHead className="text-center">Taux de conversion</TableHead>
+                <TableHead className="text-center">Taux de succès RDV</TableHead>
+                <TableHead className="text-center">
+                  Score (taux de conversion + taux de succès RDV)
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -293,7 +294,9 @@ export default function ZoneComparisonChart({
                         <div>
                           <div className="font-medium">{zone.nom}</div>
                           <div className="text-sm text-muted-foreground">
-                            {zone.nbCommerciaux} commerciaux
+                            {zone.nbCommerciaux} commercial{zone.nbCommerciaux > 1 ? 's' : ''}
+                            /manager{zone.nbCommerciaux > 1 ? 's' : ''} assigné
+                            {zone.nbCommerciaux > 1 ? 's' : ''}
                           </div>
                         </div>
                       </div>
@@ -309,12 +312,17 @@ export default function ZoneComparisonChart({
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="font-bold text-purple-600">
-                        {formatNumber(zone.repassagesConvertis)}
+                      <div className="font-bold text-red-600">{formatNumber(zone.refus)}</div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="font-bold text-yellow-600">
+                        {formatNumber(zone.tauxConversion)}%
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
-                      <div className="font-bold text-red-600">{formatNumber(zone.refus)}</div>
+                      <div className="font-bold text-green-600">
+                        {formatNumber(zone.tauxSuccesRdv)}%
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge variant="outline" className="font-mono">

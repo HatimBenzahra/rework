@@ -47,7 +47,7 @@ export default function AssignationsEnCours() {
     data: rawAssignments,
     loading: assignmentsLoading,
     error: assignmentsError,
-  } = useAllCurrentAssignments()
+  } = useAllCurrentAssignments(parseInt(currentUserId), currentRole)
 
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)

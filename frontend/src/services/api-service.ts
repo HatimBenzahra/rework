@@ -383,13 +383,19 @@ export const zoneApi = {
     return response.currentUserAssignment
   },
 
-  async getAllZoneHistory(): Promise<any[]> {
-    const response = await gql<any, {}>(GET_ALL_ZONE_HISTORY, {})
+  async getAllZoneHistory(userId?: number, userRole?: string): Promise<any[]> {
+    const response = await gql<any, { userId?: number; userRole?: string }>(GET_ALL_ZONE_HISTORY, {
+      userId,
+      userRole,
+    })
     return response.allZoneHistory
   },
 
-  async getAllCurrentAssignments(): Promise<any[]> {
-    const response = await gql<any, {}>(GET_ALL_CURRENT_ASSIGNMENTS, {})
+  async getAllCurrentAssignments(userId?: number, userRole?: string): Promise<any[]> {
+    const response = await gql<any, { userId?: number; userRole?: string }>(
+      GET_ALL_CURRENT_ASSIGNMENTS,
+      { userId, userRole }
+    )
     return response.allCurrentAssignments
   },
 }

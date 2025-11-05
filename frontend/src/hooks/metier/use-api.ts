@@ -406,12 +406,26 @@ export function useCurrentZoneAssignment(
   )
 }
 
-export function useAllZoneHistory(): UseApiListState<any> & UseApiActions {
-  return useApiCall(() => api.zones.getAllZoneHistory(), [], 'allZoneHistory')
+export function useAllZoneHistory(
+  userId?: number,
+  userRole?: string
+): UseApiListState<any> & UseApiActions {
+  return useApiCall(
+    () => api.zones.getAllZoneHistory(userId, userRole),
+    [userId, userRole],
+    'allZoneHistory'
+  )
 }
 
-export function useAllCurrentAssignments(): UseApiListState<any> & UseApiActions {
-  return useApiCall(() => api.zones.getAllCurrentAssignments(), [], 'allCurrentAssignments')
+export function useAllCurrentAssignments(
+  userId?: number,
+  userRole?: string
+): UseApiListState<any> & UseApiActions {
+  return useApiCall(
+    () => api.zones.getAllCurrentAssignments(userId, userRole),
+    [userId, userRole],
+    'allCurrentAssignments'
+  )
 }
 
 // =============================================================================

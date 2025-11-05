@@ -641,8 +641,8 @@ export const GET_CURRENT_USER_ASSIGNMENT = `
 `
 
 export const GET_ALL_ZONE_HISTORY = `
-  query GetAllZoneHistory {
-    allZoneHistory {
+  query GetAllZoneHistory($userId: Int, $userRole: String) {
+    allZoneHistory(userId: $userId, userRole: $userRole) {
       id
       zoneId
       userId
@@ -664,8 +664,8 @@ export const GET_ALL_ZONE_HISTORY = `
 `
 
 export const GET_ALL_CURRENT_ASSIGNMENTS = `
-  query GetAllCurrentAssignments {
-    allCurrentAssignments {
+  query GetAllCurrentAssignments($userId: Int, $userRole: String) {
+    allCurrentAssignments(userId: $userId, userRole: $userRole) {
       id
       zoneId
       userId
@@ -677,6 +677,14 @@ export const GET_ALL_CURRENT_ASSIGNMENTS = `
         xOrigin
         yOrigin
         rayon
+        immeubles {
+          id
+          adresse
+          latitude
+          longitude
+          nbEtages
+          nbPortesParEtage
+        }
       }
     }
   }

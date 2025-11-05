@@ -35,8 +35,8 @@ export class ZoneService {
           { managerId: userId }, // ses propres stats
           {
             commercial: {
-              managerId: userId
-            }
+              managerId: userId,
+            },
           }, // stats de ses commerciaux
         ];
         break;
@@ -45,13 +45,13 @@ export class ZoneService {
         whereCondition.OR = [
           {
             commercial: {
-              directeurId: userId
-            }
+              directeurId: userId,
+            },
           }, // commerciaux du directeur
           {
             manager: {
-              directeurId: userId
-            }
+              directeurId: userId,
+            },
           }, // managers du directeur
         ];
         break;
@@ -411,30 +411,202 @@ export class ZoneService {
 
   /**
    * Récupère TOUT l'historique des assignations de zones
+   * Avec filtrage selon le rôle de l'utilisateur
    */
-  async getAllZoneHistory() {
-    return this.prisma.historiqueZone.findMany({
-      include: {
-        zone: true,
-      },
-      orderBy: {
-        unassignedAt: 'desc',
-      },
-    });
+  async getAllZoneHistory(userId?: number, userRole?: string) {
+    if (!userId || !userRole) {
+      throw new ForbiddenException('UNAUTHORIZED');
+    }
+
+    // Filtrage selon le rôle
+    switch (userRole) {
+      case 'admin':
+        return this.prisma.historiqueZone.findMany({
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            unassignedAt: 'desc',
+          },
+        });
+
+      case 'directeur':
+        // Historique des zones du directeur et de ses commerciaux
+        return this.prisma.historiqueZone.findMany({
+          where: {
+            zone: {
+              OR: [
+                { directeurId: userId },
+                {
+                  commercials: {
+                    some: {
+                      commercial: {
+                        directeurId: userId,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            unassignedAt: 'desc',
+          },
+        });
+
+      case 'manager':
+        // Historique des zones du manager et de ses commerciaux
+        return this.prisma.historiqueZone.findMany({
+          where: {
+            zone: {
+              OR: [
+                { managerId: userId },
+                {
+                  commercials: {
+                    some: {
+                      commercial: {
+                        managerId: userId,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            unassignedAt: 'desc',
+          },
+        });
+
+      case 'commercial':
+        // Historique des zones du commercial uniquement
+        return this.prisma.historiqueZone.findMany({
+          where: {
+            zone: {
+              commercials: {
+                some: {
+                  commercialId: userId,
+                },
+              },
+            },
+          },
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            unassignedAt: 'desc',
+          },
+        });
+
+      default:
+        return [];
+    }
   }
 
   /**
    * Récupère TOUTES les assignations en cours
+   * Avec filtrage selon le rôle de l'utilisateur
    */
-  async getAllCurrentAssignments() {
-    return this.prisma.zoneEnCours.findMany({
-      include: {
-        zone: true,
-      },
-      orderBy: {
-        assignedAt: 'desc',
-      },
-    });
+  async getAllCurrentAssignments(userId?: number, userRole?: string) {
+    if (!userId || !userRole) {
+      throw new ForbiddenException('UNAUTHORIZED');
+    }
+
+    // Filtrage selon le rôle
+    switch (userRole) {
+      case 'admin':
+        return this.prisma.zoneEnCours.findMany({
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        });
+
+      case 'directeur':
+        // Assignations des zones du directeur et de ses commerciaux
+        return this.prisma.zoneEnCours.findMany({
+          where: {
+            zone: {
+              OR: [
+                { directeurId: userId },
+                {
+                  commercials: {
+                    some: {
+                      commercial: {
+                        directeurId: userId,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        });
+
+      case 'manager':
+        // Assignations des zones du manager et de ses commerciaux
+        return this.prisma.zoneEnCours.findMany({
+          where: {
+            zone: {
+              OR: [
+                { managerId: userId },
+                {
+                  commercials: {
+                    some: {
+                      commercial: {
+                        managerId: userId,
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        });
+
+      case 'commercial':
+        // Assignations des zones du commercial uniquement
+        return this.prisma.zoneEnCours.findMany({
+          where: {
+            zone: {
+              commercials: {
+                some: {
+                  commercialId: userId,
+                },
+              },
+            },
+          },
+          include: {
+            zone: true,
+          },
+          orderBy: {
+            assignedAt: 'desc',
+          },
+        });
+
+      default:
+        return [];
+    }
   }
 
   async update(data: UpdateZoneInput) {

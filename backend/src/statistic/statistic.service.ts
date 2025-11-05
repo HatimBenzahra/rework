@@ -174,7 +174,7 @@ export class StatisticService {
     }
 
     // =====================================================
-    // Nouvelle logique: Utiliser ZoneEnCours + HistoriqueZone
+    // ZoneEnCours + HistoriqueZone
     // =====================================================
 
     // 1. Récupérer toutes les assignations en cours
@@ -314,8 +314,10 @@ export class StatisticService {
 
         // Calculs des taux
         const tauxConversion =
-          totalPortesProspectes > 0
-            ? (totalContratsSignes / totalPortesProspectes) * 100
+          totalRefus + totalRendezVousPris + totalContratsSignes > 0
+            ? (totalContratsSignes /
+                (totalRefus + totalRendezVousPris + totalContratsSignes)) *
+              100
             : 0;
 
         const tauxSuccesRdv =
@@ -323,11 +325,8 @@ export class StatisticService {
             ? (totalRendezVousPris / totalImmeublesVisites) * 100
             : 0;
 
-        // Performance globale (score composite)
-        const performanceGlobale =
-          tauxConversion * 0.4 +
-          tauxSuccesRdv * 0.3 +
-          (totalContratsSignes / Math.max(1, usersInZone.size)) * 0.3;
+        // Performance globale (somme des 2 taux)
+        const performanceGlobale = tauxConversion + tauxSuccesRdv;
 
         return {
           zoneId: zone.id,

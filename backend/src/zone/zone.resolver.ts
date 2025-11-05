@@ -1,6 +1,14 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { ZoneService } from './zone.service';
-import { Zone, CreateZoneInput, UpdateZoneInput, ZoneEnCours, HistoriqueZone, AssignZoneInput, UserType } from './zone.dto';
+import {
+  Zone,
+  CreateZoneInput,
+  UpdateZoneInput,
+  ZoneEnCours,
+  HistoriqueZone,
+  AssignZoneInput,
+  UserType,
+} from './zone.dto';
 
 @Resolver(() => Zone)
 export class ZoneResolver {
@@ -77,7 +85,11 @@ export class ZoneResolver {
 
   @Mutation(() => ZoneEnCours, { name: 'assignZoneToUser' })
   assignZoneToUser(@Args('input') input: AssignZoneInput) {
-    return this.zoneService.assignZoneToUser(input.zoneId, input.userId, input.userType);
+    return this.zoneService.assignZoneToUser(
+      input.zoneId,
+      input.userId,
+      input.userType,
+    );
   }
 
   @Mutation(() => Boolean, { name: 'unassignUser' })
@@ -110,17 +122,25 @@ export class ZoneResolver {
   }
 
   @Query(() => [ZoneEnCours], { name: 'zoneCurrentAssignments' })
-  getZoneCurrentAssignments(@Args('zoneId', { type: () => Int }) zoneId: number) {
+  getZoneCurrentAssignments(
+    @Args('zoneId', { type: () => Int }) zoneId: number,
+  ) {
     return this.zoneService.getZoneCurrentAssignments(zoneId);
   }
 
   @Query(() => [HistoriqueZone], { name: 'allZoneHistory' })
-  getAllZoneHistory() {
-    return this.zoneService.getAllZoneHistory();
+  getAllZoneHistory(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.zoneService.getAllZoneHistory(userId, userRole);
   }
 
   @Query(() => [ZoneEnCours], { name: 'allCurrentAssignments' })
-  getAllCurrentAssignments() {
-    return this.zoneService.getAllCurrentAssignments();
+  getAllCurrentAssignments(
+    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
+    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+  ) {
+    return this.zoneService.getAllCurrentAssignments(userId, userRole);
   }
 }

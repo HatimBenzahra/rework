@@ -8,8 +8,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function HistoriqueZones() {
   const { currentRole, currentUserId } = useRole()
 
-  // Charger les données
-  const { data: rawHistory, loading: historyLoading, error: historyError } = useAllZoneHistory()
+  // implemented useAllZoneHistory hook as a filter by current user role and id
+  const {
+    data: rawHistory,
+    loading: historyLoading,
+    error: historyError,
+  } = useAllZoneHistory(parseInt(currentUserId), currentRole)
 
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)

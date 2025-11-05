@@ -180,6 +180,11 @@ export default function Statistiques() {
     )
     const nbCommerciaux = filteredCommercials?.length || 0
 
+    const repassagesConvertis =
+      refus + rendezVousPris + contratsSignes > 0
+        ? (contratsSignes / (refus + rendezVousPris + contratsSignes)) * 100
+        : 0
+
     return {
       contratsSignes,
       rendezVousPris,
@@ -187,7 +192,7 @@ export default function Statistiques() {
       nbRepassages,
       nbImmeubles,
       nbCommerciaux,
-      repassagesConvertis: Math.min(nbRepassages, contratsSignes),
+      repassagesConvertis,
     }
   }, [timeFilteredStatistics, filteredCommercials])
 
@@ -280,7 +285,7 @@ export default function Statistiques() {
 
         <MetricCard
           title="Repassages convertis"
-          value={metrics.repassagesConvertis}
+          value={`${(metrics.repassagesConvertis || 0).toFixed(2)}%`}
           description="En contrats signés"
           icon={RefreshCw}
           color="purple"
