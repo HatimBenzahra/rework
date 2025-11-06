@@ -188,48 +188,48 @@ export default function Zones() {
 
     return filteredZones
       .map(zone => {
-        const assignedToList = []
+        let assignedTo = null
 
         // 1. Vérifier l'assignation directe au directeur (recherche O(1))
         if (zone.directeurId) {
           const directeur = directeursMap.get(zone.directeurId)
           if (directeur) {
-            assignedToList.push(`${directeur.prenom} ${directeur.nom} (Directeur)`)
+            assignedTo = `${directeur.prenom} ${directeur.nom} (Directeur)`
           }
         }
-
-        // 2. Vérifier l'assignation directe au manager (recherche O(1))
-        if (zone.managerId) {
+        // 2. Sinon, vérifier l'assignation directe au manager (recherche O(1))
+        else if (zone.managerId) {
           const manager = managersMap.get(zone.managerId)
           if (manager) {
-            assignedToList.push(`${manager.prenom} ${manager.nom} (Manager)`)
+            assignedTo = `${manager.prenom} ${manager.nom} (Manager)`
           }
         }
+        // 3. Sinon, trouver la première assignation via ZoneEnCours (recherche O(1))
+        else {
+          const zoneAssignments = assignmentsByZone[zone.id] || []
 
-        // 3. Trouver les assignations via ZoneEnCours (recherche O(1))
-        // 3. Trouver les assignations via ZoneEnCours (recherche O(1))
-        const zoneAssignments = assignmentsByZone[zone.id] || []
+          // Prendre uniquement la première assignation trouvée
+          const firstAssignment = zoneAssignments[0]
 
-        zoneAssignments.forEach(assignment => {
-          if (assignment.userType === 'COMMERCIAL') {
-            const commercial = commercialsMap.get(assignment.userId)
-            if (commercial) {
-              assignedToList.push(`${commercial.prenom} ${commercial.nom} (Commercial)`)
-            }
-          } else if (assignment.userType === 'MANAGER') {
-            const manager = managersMap.get(assignment.userId)
-            if (manager) {
-              assignedToList.push(`${manager.prenom} ${manager.nom} (Manager)`)
-            }
-          } else if (assignment.userType === 'DIRECTEUR') {
-            const directeur = directeursMap.get(assignment.userId)
-            if (directeur) {
-              assignedToList.push(`${directeur.prenom} ${directeur.nom} (Directeur)`)
+          if (firstAssignment) {
+            if (firstAssignment.userType === 'COMMERCIAL') {
+              const commercial = commercialsMap.get(firstAssignment.userId)
+              if (commercial) {
+                assignedTo = `${commercial.prenom} ${commercial.nom} (Commercial)`
+              }
+            } else if (firstAssignment.userType === 'MANAGER') {
+              const manager = managersMap.get(firstAssignment.userId)
+              if (manager) {
+                assignedTo = `${manager.prenom} ${manager.nom} (Manager)`
+              }
+            } else if (firstAssignment.userType === 'DIRECTEUR') {
+              const directeur = directeursMap.get(firstAssignment.userId)
+              if (directeur) {
+                assignedTo = `${directeur.prenom} ${directeur.nom} (Directeur)`
+              }
             }
           }
-        })
-
-        const assignedTo = assignedToList.length > 0 ? assignedToList.join(', ') : null
+        }
 
         return {
           ...zone,

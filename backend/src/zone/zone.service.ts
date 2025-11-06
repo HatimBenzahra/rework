@@ -86,8 +86,130 @@ export class ZoneService {
   }
 
   /**
+   * Récupère tous les commerciaux sous un manager
+   */
+  private async getCommercialsUnderManager(
+    managerId: number,
+    tx?: any,
+  ): Promise<number[]> {
+    const prisma = tx || this.prisma;
+    const commercials = await prisma.commercial.findMany({
+      where: { managerId },
+      select: { id: true },
+    });
+    return commercials.map((c) => c.id);
+  }
+
+  /**
+   * Récupère tous les managers et commerciaux sous un directeur
+   */
+  private async getTeamUnderDirector(
+    directeurId: number,
+    tx?: any,
+  ): Promise<{ managers: number[]; commercials: number[] }> {
+    const prisma = tx || this.prisma;
+
+    // Récupérer tous les managers du directeur
+    const managers = await prisma.manager.findMany({
+      where: { directeurId },
+      select: { id: true },
+    });
+    const managerIds = managers.map((m) => m.id);
+
+    // Récupérer tous les commerciaux directement sous le directeur
+    const directCommercials = await prisma.commercial.findMany({
+      where: { directeurId },
+      select: { id: true },
+    });
+
+    // Récupérer tous les commerciaux sous les managers de ce directeur
+    const managersCommercials = await prisma.commercial.findMany({
+      where: { managerId: { in: managerIds } },
+      select: { id: true },
+    });
+
+    // Combiner tous les commerciaux (éviter les doublons avec Set)
+    const allCommercialIds = new Set([
+      ...directCommercials.map((c) => c.id),
+      ...managersCommercials.map((c) => c.id),
+    ]);
+
+    return {
+      managers: managerIds,
+      commercials: Array.from(allCommercialIds),
+    };
+  }
+
+  /**
+   * Assigne un utilisateur à une zone (fonction interne, sans cascade)
+   */
+  private async assignSingleUserToZone(
+    zoneId: number,
+    userId: number,
+    userType: UserType,
+    tx: any,
+  ) {
+    // 1. Récupérer l'assignation en cours de cet utilisateur (s'il en a une)
+    const currentAssignment = await tx.zoneEnCours.findUnique({
+      where: {
+        userId_userType: {
+          userId,
+          userType,
+        },
+      },
+    });
+
+    // 2. Si une assignation existe, la déplacer vers l'historique
+    if (currentAssignment) {
+      // Calculer les stats pour la période d'assignation
+      const stats = await this.calculateUserStatsForZone(
+        userId,
+        userType,
+        currentAssignment.zoneId,
+        currentAssignment.assignedAt,
+        new Date(),
+      );
+
+      // Créer l'entrée historique
+      await tx.historiqueZone.create({
+        data: {
+          zoneId: currentAssignment.zoneId,
+          userId,
+          userType,
+          assignedAt: currentAssignment.assignedAt,
+          unassignedAt: new Date(),
+          ...stats,
+        },
+      });
+
+      // Supprimer l'assignation en cours
+      await tx.zoneEnCours.delete({
+        where: { id: currentAssignment.id },
+      });
+    }
+
+    // 3. Créer la nouvelle assignation en cours
+    const newAssignment = await tx.zoneEnCours.create({
+      data: {
+        zoneId,
+        userId,
+        userType,
+      },
+      include: {
+        zone: true,
+      },
+    });
+
+    return newAssignment;
+  }
+
+  /**
    * Fonction unifiée pour assigner une zone à un utilisateur (commercial, manager ou directeur)
-   * Gère automatiquement l'historique des assignations
+   * Gère automatiquement l'historique des assignations et l'assignation en cascade
+   *
+   * CASCADE:
+   * - Manager → assigne automatiquement tous ses commerciaux
+   * - Directeur → assigne automatiquement tous ses managers ET commerciaux
    */
   async assignZoneToUser(zoneId: number, userId: number, userType: UserType) {
     return this.prisma.$transaction(async (tx) => {
@@ -97,58 +219,54 @@ export class ZoneService {
         throw new ForbiddenException('Zone not found');
       }
 
-      // 2. Récupérer l'assignation en cours de cet utilisateur (s'il en a une)
-      const currentAssignment = await tx.zoneEnCours.findUnique({
-        where: {
-          userId_userType: {
-            userId,
-            userType,
-          },
-        },
-      });
+      // 2. Assigner l'utilisateur principal
+      const mainAssignment = await this.assignSingleUserToZone(
+        zoneId,
+        userId,
+        userType,
+        tx,
+      );
 
-      // 3. Si une assignation existe, la déplacer vers l'historique
-      if (currentAssignment) {
-        // Calculer les stats pour la période d'assignation
-        const stats = await this.calculateUserStatsForZone(
-          userId,
-          userType,
-          currentAssignment.zoneId,
-          currentAssignment.assignedAt,
-          new Date(),
-        );
+      // 3. CASCADE: Assigner les subordonnés selon le type d'utilisateur
+      if (userType === UserType.MANAGER) {
+        // Récupérer tous les commerciaux du manager
+        const commercialIds = await this.getCommercialsUnderManager(userId, tx);
 
-        // Créer l'entrée historique
-        await tx.historiqueZone.create({
-          data: {
-            zoneId: currentAssignment.zoneId,
-            userId,
-            userType,
-            assignedAt: currentAssignment.assignedAt,
-            unassignedAt: new Date(),
-            ...stats,
-          },
-        });
+        // Assigner chaque commercial à la même zone
+        for (const commercialId of commercialIds) {
+          await this.assignSingleUserToZone(
+            zoneId,
+            commercialId,
+            UserType.COMMERCIAL,
+            tx,
+          );
+        }
+      } else if (userType === UserType.DIRECTEUR) {
+        // Récupérer tous les managers et commerciaux du directeur
+        const team = await this.getTeamUnderDirector(userId, tx);
 
-        // Supprimer l'assignation en cours
-        await tx.zoneEnCours.delete({
-          where: { id: currentAssignment.id },
-        });
+        // Assigner tous les managers
+        for (const managerId of team.managers) {
+          await this.assignSingleUserToZone(
+            zoneId,
+            managerId,
+            UserType.MANAGER,
+            tx,
+          );
+        }
+
+        // Assigner tous les commerciaux
+        for (const commercialId of team.commercials) {
+          await this.assignSingleUserToZone(
+            zoneId,
+            commercialId,
+            UserType.COMMERCIAL,
+            tx,
+          );
+        }
       }
 
-      // 4. Créer la nouvelle assignation en cours
-      const newAssignment = await tx.zoneEnCours.create({
-        data: {
-          zoneId,
-          userId,
-          userType,
-        },
-        include: {
-          zone: true,
-        },
-      });
-
-      return newAssignment;
+      return mainAssignment;
     });
   }
 
