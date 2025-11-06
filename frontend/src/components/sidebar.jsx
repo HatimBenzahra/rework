@@ -106,6 +106,7 @@ const items = [
     url: '/gps-tracking',
     icon: Navigation2,
     entity: 'gps-tracking',
+    disabled: true, // Ajouter cette ligne
   },
   {
     title: 'Écoutes',
@@ -128,12 +129,6 @@ const items = [
     url: '/statistiques',
     icon: BarChart3,
     entity: 'statistics',
-  },
-  {
-    title: 'Paramètres',
-    url: '/settings',
-    icon: Settings,
-    entity: null, // Paramètres toujours visibles
   },
 ]
 
@@ -314,8 +309,8 @@ export function AppSidebar() {
                   <User2 className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Mon App</span>
-                  <span className="truncate text-xs">Gestion commerciale</span>
+                  <span className="truncate font-semibold">Pro-Win</span>
+                  <span className="truncate text-xs">Module prospection</span>
                 </div>
               </div>
             </SidebarMenuButton>
@@ -384,11 +379,23 @@ export function AppSidebar() {
                 // Regular menu item without subitems
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActiveRoute(item.url)}>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
+                    <SidebarMenuButton
+                      asChild={!item.disabled}
+                      isActive={isActiveRoute(item.url)}
+                      disabled={item.disabled}
+                      className={item.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                    >
+                      {item.disabled ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </div>
+                      ) : (
+                        <Link to={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )

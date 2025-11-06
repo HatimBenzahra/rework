@@ -3,6 +3,8 @@ import { ToastProvider } from '@/components/ui/toast'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { useRole } from '@/contexts/userole'
 import { DetailsSectionsProvider } from '@/contexts/DetailsSectionsContext'
+// Import Auth Pages
+import Login from '@/pages-AUTH/Login'
 // Import Admin/Directeur/Manager Layout & Pages
 import { AppSidebar } from '@/components/sidebar'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
@@ -120,7 +122,13 @@ function App() {
   return (
     <ToastProvider>
       <RoleProvider>
-        <AppRouter />
+        <Routes>
+          {/* Route publique pour la page de login */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Routes protégées */}
+          <Route path="/*" element={<AppRouter />} />
+        </Routes>
       </RoleProvider>
     </ToastProvider>
   )
