@@ -229,7 +229,7 @@ export class StatisticService {
           // Construire la condition selon le type d'utilisateur
           let statsWhere: any = {
             zoneId: zone.id,
-            createdAt: {
+            updatedAt: {
               gte: assignment.assignedAt,
             },
           };
