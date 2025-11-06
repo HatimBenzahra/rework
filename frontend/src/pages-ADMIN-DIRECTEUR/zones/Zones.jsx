@@ -81,7 +81,7 @@ export default function Zones() {
   const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
   const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: allAssignments } = useAllCurrentAssignments(
+  const { data: allAssignments, refetch: refetchAssignments } = useAllCurrentAssignments(
     parseInt(currentUserId, 10),
     currentRole
   )
@@ -168,49 +168,76 @@ export default function Zones() {
   ]
 
   // Enrichir les zones avec l'information d'assignation
+  // Enrichir les zones avec l'information d'assignation
   const enrichedZones = useMemo(() => {
     if (!filteredZones) return []
 
-    return filteredZones.map(zone => {
-      const assignedToList = []
+    // Créer des Maps pour un accès O(1) au lieu de .find() qui est O(n)
+    const directeursMap = new Map(directeurs?.map(d => [d.id, d]) || [])
+    const managersMap = new Map(managers?.map(m => [m.id, m]) || [])
+    const commercialsMap = new Map(commercials?.map(c => [c.id, c]) || [])
 
-      // 1. Vérifier l'assignation directe au directeur
-      if (zone.directeurId && directeurs) {
-        const directeur = directeurs.find(d => d.id === zone.directeurId)
-        if (directeur) {
-          assignedToList.push(`${directeur.prenom} ${directeur.nom} (Directeur)`)
+    // Créer un index des assignations par zoneId pour éviter les filtres répétés
+    const assignmentsByZone = (allAssignments || []).reduce((acc, assignment) => {
+      if (!acc[assignment.zoneId]) {
+        acc[assignment.zoneId] = []
+      }
+      acc[assignment.zoneId].push(assignment)
+      return acc
+    }, {})
+
+    return filteredZones
+      .map(zone => {
+        const assignedToList = []
+
+        // 1. Vérifier l'assignation directe au directeur (recherche O(1))
+        if (zone.directeurId) {
+          const directeur = directeursMap.get(zone.directeurId)
+          if (directeur) {
+            assignedToList.push(`${directeur.prenom} ${directeur.nom} (Directeur)`)
+          }
         }
-      }
 
-      // 2. Vérifier l'assignation directe au manager
-      if (zone.managerId && managers) {
-        const manager = managers.find(m => m.id === zone.managerId)
-        if (manager) {
-          assignedToList.push(`${manager.prenom} ${manager.nom} (Manager)`)
+        // 2. Vérifier l'assignation directe au manager (recherche O(1))
+        if (zone.managerId) {
+          const manager = managersMap.get(zone.managerId)
+          if (manager) {
+            assignedToList.push(`${manager.prenom} ${manager.nom} (Manager)`)
+          }
         }
-      }
 
-      // 3. Trouver les commerciaux assignés à cette zone (via CommercialZone)
-      if (commercials) {
-        const assignedCommercials = commercials.filter(commercial =>
-          commercial.zones?.some(z => z.id === zone.id)
-        )
-        if (assignedCommercials.length > 0) {
-          assignedCommercials.forEach(c => {
-            assignedToList.push(`${c.prenom} ${c.nom} (Commercial)`)
-          })
+        // 3. Trouver les assignations via ZoneEnCours (recherche O(1))
+        // 3. Trouver les assignations via ZoneEnCours (recherche O(1))
+        const zoneAssignments = assignmentsByZone[zone.id] || []
+
+        zoneAssignments.forEach(assignment => {
+          if (assignment.userType === 'COMMERCIAL') {
+            const commercial = commercialsMap.get(assignment.userId)
+            if (commercial) {
+              assignedToList.push(`${commercial.prenom} ${commercial.nom} (Commercial)`)
+            }
+          } else if (assignment.userType === 'MANAGER') {
+            const manager = managersMap.get(assignment.userId)
+            if (manager) {
+              assignedToList.push(`${manager.prenom} ${manager.nom} (Manager)`)
+            }
+          } else if (assignment.userType === 'DIRECTEUR') {
+            const directeur = directeursMap.get(assignment.userId)
+            if (directeur) {
+              assignedToList.push(`${directeur.prenom} ${directeur.nom} (Directeur)`)
+            }
+          }
+        })
+
+        const assignedTo = assignedToList.length > 0 ? assignedToList.join(', ') : null
+
+        return {
+          ...zone,
+          assignedTo,
         }
-      }
-
-      const assignedTo = assignedToList.length > 0 ? assignedToList.join(', ') : null
-
-      return {
-        ...zone,
-        assignedTo,
-      }
-    })
-  }, [filteredZones, directeurs, managers, commercials])
-
+      })
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  }, [filteredZones, directeurs, managers, commercials, allAssignments])
   // Préparer les utilisateurs assignables selon le rôle
   const getAssignableUsers = () => {
     if (!permissions.canAdd && !permissions.canEdit) {
@@ -423,7 +450,7 @@ export default function Zones() {
       showSuccess(editingZone ? 'Zone modifiée avec succès' : 'Zone créée avec succès')
 
       // Rafraîchir la liste des zones
-      await refetchZones()
+      await Promise.all([refetchZones(), refetchAssignments()])
       setShowZoneModal(false)
     } catch (error) {
       showError(error, 'Zones.handleZoneValidate')

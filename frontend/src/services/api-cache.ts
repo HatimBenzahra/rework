@@ -440,7 +440,7 @@ export const CACHE_INVALIDATION_MAP: Record<string, string[]> = {
   // When commercials change, invalidate zones and immeubles
   commercials: ['commercials', 'zones', 'immeubles', 'portes'],
   // Zones and immeubles are independent
-  zones: ['zones'],
+  zones: ['zones', 'allcurrentassignations', 'zonehistory'],
   // When immeubles change, invalidate portes cache (portes belong to immeubles)
   immeubles: ['immeubles', 'portes'],
   // When portes change, invalidate portes and immeubles cache (stats impact)

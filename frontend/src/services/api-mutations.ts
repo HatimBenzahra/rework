@@ -170,11 +170,6 @@ export const CREATE_ZONE = `
       rayon
       directeurId
       managerId
-      commercials {
-        id
-        commercialId
-        zoneId
-      }
       createdAt
       updatedAt
     }
@@ -191,11 +186,6 @@ export const UPDATE_ZONE = `
       rayon
       directeurId
       managerId
-      commercials {
-        id
-        commercialId
-        zoneId
-      }
       createdAt
       updatedAt
     }
