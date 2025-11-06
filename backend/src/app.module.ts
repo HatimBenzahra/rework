@@ -5,6 +5,7 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma.service';
+import { AuthModule } from './auth/auth.module';
 import { DirecteurModule } from './directeur/directeur.module';
 import { ManagerModule } from './manager/manager.module';
 import { CommercialModule } from './commercial/commercial.module';
@@ -24,6 +25,7 @@ import { RecordingModule } from './recording/recording.module';
       playground: true,
       introspection: true,
     }),
+    AuthModule,
     DirecteurModule,
     ManagerModule,
     CommercialModule,

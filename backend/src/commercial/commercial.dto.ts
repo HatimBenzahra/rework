@@ -26,11 +26,11 @@ export class Commercial {
   @Field()
   email: string;
 
-  @Field()
-  numTel: string;
+  @Field({ nullable: true })
+  numTel?: string;
 
-  @Field(() => Int)
-  age: number;
+  @Field(() => Int, { nullable: true })
+  age?: number;
 
   @Field(() => Int, { nullable: true })
   managerId?: number;
@@ -72,7 +72,6 @@ export class CreateCommercialInput {
   email: string;
 
   @Field()
-  @IsNotEmpty()
   @IsString()
   numTel: string;
 
@@ -111,6 +110,7 @@ export class UpdateCommercialInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsEmail()
+  @IsNotEmpty()
   email?: string;
 
   @Field({ nullable: true })

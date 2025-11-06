@@ -42,7 +42,7 @@ export default function Dashboard() {
 
   // Chargement des données
   const { data: commercials, loading: loadingCommercials } = useCommercials(
-    +currentUserId,
+    parseInt(currentUserId, 10),
     currentRole
   )
   const { data: managers, loading: loadingManagers } = useManagers(+currentUserId, currentRole)
@@ -51,9 +51,12 @@ export default function Dashboard() {
     currentRole
   )
   const { data: statistics, loading: loadingStats } = useStatistics(+currentUserId, currentRole)
-  const { data: immeubles, loading: loadingImmeubles } = useImmeubles(+currentUserId, currentRole)
+  const { data: immeubles, loading: loadingImmeubles } = useImmeubles(
+    parseInt(currentUserId, 10),
+    currentRole
+  )
   const { data: assignments, loading: loadingAssignments } = useAllCurrentAssignments(
-    +currentUserId,
+    parseInt(currentUserId, 10),
     currentRole
   )
   const { data: portesModifiedToday, loading: loadingPortesModified } = usePortesModifiedToday()
@@ -135,7 +138,6 @@ export default function Dashboard() {
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Tableau de bord</h1>
           <p className="text-sm text-muted-foreground">Aperçu des performances du jour</p>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
@@ -212,7 +214,9 @@ export default function Dashboard() {
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
-                            <Building2 className="h-6 w-6 text-primary" />
+                            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
+                              <Building2 className="h-6 w-6 text-blue-600 dark:text-blue-500" />
+                            </div>{' '}
                           </div>
                           <div className="flex flex-col">
                             <span className="font-semibold text-base text-primary">

@@ -5,6 +5,7 @@ import { useRole } from '@/contexts/userole'
 import { DetailsSectionsProvider } from '@/contexts/DetailsSectionsContext'
 // Import Auth Pages
 import Login from '@/pages-AUTH/Login'
+import Unauthorized from '@/pages-AUTH/Unauthorized'
 // Import Admin/Directeur/Manager Layout & Pages
 import { AppSidebar } from '@/components/sidebar'
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar'
@@ -123,8 +124,9 @@ function App() {
     <ToastProvider>
       <RoleProvider>
         <Routes>
-          {/* Route publique pour la page de login */}
+          {/* Routes publiques */}
           <Route path="/login" element={<Login />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
           {/* Routes protégées */}
           <Route path="/*" element={<AppRouter />} />

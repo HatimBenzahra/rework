@@ -12,14 +12,14 @@ export class Directeur {
   @Field()
   prenom: string;
 
-  @Field()
-  adresse: string;
+  @Field({ nullable: true })
+  adresse?: string;
 
   @Field()
   email: string;
 
-  @Field()
-  numTelephone: string;
+  @Field({ nullable: true })
+  numTelephone?: string;
 
   @Field()
   createdAt: Date;
@@ -51,7 +51,6 @@ export class CreateDirecteurInput {
   email: string;
 
   @Field()
-  @IsNotEmpty()
   @IsString()
   numTelephone: string;
 }
@@ -79,6 +78,7 @@ export class UpdateDirecteurInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsEmail()
+  @IsNotEmpty()
   email?: string;
 
   @Field({ nullable: true })

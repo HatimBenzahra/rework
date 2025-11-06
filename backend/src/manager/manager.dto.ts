@@ -66,10 +66,10 @@ export class CreateManagerInput {
   @IsString()
   prenom: string;
 
-  @Field({ nullable: true })
-  @IsOptional()
+  @Field()
+  @IsNotEmpty()
   @IsString()
-  email?: string;
+  email: string;
 
   @Field({ nullable: true })
   @IsOptional()
@@ -100,6 +100,7 @@ export class UpdateManagerInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  @IsNotEmpty()
   email?: string;
 
   @Field({ nullable: true })

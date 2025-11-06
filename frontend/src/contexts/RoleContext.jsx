@@ -1,59 +1,92 @@
 /**
  * Contexte global pour la gestion des rôles et des données filtrées
+ * Intégré avec Keycloak SSO
  */
-import React, { useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ROLES } from '../hooks/metier/roleFilters'
 import { RoleContext } from './userole'
-
-// Fonctions utilitaires pour localStorage
-const getUserRole = () => {
-  const storedRole = localStorage.getItem('userRole')
-  if (!storedRole) {
-    // Initialiser avec admin par défaut si non défini
-    localStorage.setItem('userRole', ROLES.ADMIN)
-    return ROLES.ADMIN
-  }
-  return storedRole
-}
-
-const getUserId = () => {
-  const storedId = localStorage.getItem('userId')
-  if (!storedId) {
-    // Initialiser avec l'ID 1 par défaut si non défini
-    localStorage.setItem('userId', '1')
-    return '1'
-  }
-  return storedId
-}
+import { authService } from '../services/auth.service'
 
 export const RoleProvider = ({ children }) => {
-  const currentRole = getUserRole()
-  const currentUserId = getUserId()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const setUserRole = role => {
+  // Utiliser des states pour rendre le contexte réactif
+  const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('userRole'))
+  const [currentUserId, setCurrentUserId] = useState(() => {
+    const storedId = localStorage.getItem('userId')
+    return storedId ? parseInt(storedId, 10) : null
+  })
+
+  // Vérifier l'authentification au montage
+  useEffect(() => {
+    const publicRoutes = ['/login', '/unauthorized']
+    const isPublicRoute = publicRoutes.some(route => location.pathname.startsWith(route))
+
+    // Si on n'est pas sur une route publique et pas authentifié, rediriger vers login
+    if (!isPublicRoute && !authService.isAuthenticated()) {
+      navigate('/login', { replace: true })
+    }
+  }, [navigate, location])
+
+  // Écouter les changements dans localStorage (pour mise à jour du contexte)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const newRole = localStorage.getItem('userRole')
+      const newId = localStorage.getItem('userId')
+
+      setCurrentRole(newRole)
+      setCurrentUserId(newId ? parseInt(newId, 10) : null)
+    }
+
+    // Écouter les changements de storage (entre onglets)
+    window.addEventListener('storage', handleAuthChange)
+
+    // Custom event pour les changements dans le même onglet
+    window.addEventListener('auth-changed', handleAuthChange)
+
+    return () => {
+      window.removeEventListener('storage', handleAuthChange)
+      window.removeEventListener('auth-changed', handleAuthChange)
+    }
+  }, [])
+
+  const updateUserRole = useCallback(role => {
     localStorage.setItem('userRole', role)
-    // Force un rechargement pour mettre à jour le contexte
-    window.location.reload()
-  }
+    setCurrentRole(role)
+    // Dispatch custom event pour notifier les autres composants
+    window.dispatchEvent(new Event('auth-changed'))
+  }, [])
 
-  const setUserId = id => {
-    localStorage.setItem('userId', id)
-    // Force un rechargement pour mettre à jour le contexte
-    window.location.reload()
-  }
+  const updateUserId = useCallback(id => {
+    localStorage.setItem('userId', id.toString())
+    setCurrentUserId(id)
+    // Dispatch custom event pour notifier les autres composants
+    window.dispatchEvent(new Event('auth-changed'))
+  }, [])
+
+  const logout = useCallback(() => {
+    authService.logout()
+    setCurrentRole(null)
+    setCurrentUserId(null)
+    navigate('/login', { replace: true })
+  }, [navigate])
 
   const value = useMemo(
     () => ({
       currentRole,
       currentUserId,
-      setUserRole,
-      setUserId,
+      setUserRole: updateUserRole,
+      setUserId: updateUserId,
+      logout,
+      isAuthenticated: authService.isAuthenticated(),
       isAdmin: currentRole === ROLES.ADMIN,
       isDirecteur: currentRole === ROLES.DIRECTEUR,
       isManager: currentRole === ROLES.MANAGER,
       isCommercial: currentRole === ROLES.COMMERCIAL,
     }),
-    [currentRole, currentUserId]
+    [currentRole, currentUserId, updateUserRole, updateUserId, logout]
   )
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>

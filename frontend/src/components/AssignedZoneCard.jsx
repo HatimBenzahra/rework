@@ -110,6 +110,13 @@ export default function AssignedZoneCard({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMapLocked, setIsMapLocked] = useState(true) // Map verrouillée par défaut
   const [locationName, setLocationName] = useState('Chargement...')
+  const [isMounted, setIsMounted] = useState(false) // ← AJOUT
+
+  // S'assurer que le composant est monté avant de rendre la carte
+  useEffect(() => {
+    setIsMounted(true)
+    return () => setIsMounted(false)
+  }, [])
 
   // Charger le nom de la localisation
   useEffect(() => {
@@ -167,115 +174,174 @@ export default function AssignedZoneCard({
     )
   }
 
-  const MapContent = ({ height = '300px', showControls = false }) => (
-    <div style={{ height, width: '100%', position: 'relative' }}>
-      {mapLoading && (
-        <div className="absolute inset-0 z-10">
-          <MapSkeleton />
-        </div>
-      )}
+  const MapContent = ({ height = '300px', showControls = false }) => {
+    const containerRef = useRef(null)
+    const [containerHeight, setContainerHeight] = useState(null)
 
-      {/* Overlay de verrouillage */}
-      {isMapLocked && !isFullscreen && (
+    // Observer pour obtenir la hauteur réelle du conteneur quand height="100%"
+    useEffect(() => {
+      if (containerRef.current && height === '100%') {
+        const resizeObserver = new ResizeObserver(entries => {
+          for (let entry of entries) {
+            const h = entry.contentRect.height
+            if (h > 0) {
+              setContainerHeight(h)
+            }
+          }
+        })
+        resizeObserver.observe(containerRef.current)
+        return () => resizeObserver.disconnect()
+      } else if (height !== '100%') {
+        // Si height n'est pas 100%, on peut utiliser directement la valeur
+        setContainerHeight(height)
+      }
+    }, [height])
+
+    // Vérifier que tout est prêt avant de rendre la carte
+    const canRenderMap =
+      isMounted &&
+      zone?.xOrigin != null &&
+      zone?.yOrigin != null &&
+      zone?.rayon != null &&
+      !isNaN(zone.xOrigin) &&
+      !isNaN(zone.yOrigin) &&
+      containerHeight != null
+
+    if (!canRenderMap) {
+      return (
         <div
-          className="absolute inset-0 z-20 bg-transparent cursor-pointer flex items-center justify-center group"
-          onClick={() => setIsMapLocked(false)}
+          ref={containerRef}
+          style={{ height, width: '100%' }}
+          className="flex items-center justify-center bg-muted rounded-lg"
         >
-          <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg border-2 border-primary/20 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Unlock className="h-4 w-4" />
-              <span>Cliquez pour déverrouiller la carte</span>
-            </div>
+          <div className="text-center space-y-2">
+            <MapPin className="h-8 w-8 mx-auto text-muted-foreground animate-pulse" />
+            <p className="text-sm text-muted-foreground">
+              {!isMounted
+                ? 'Initialisation...'
+                : containerHeight == null
+                  ? 'Calcul des dimensions...'
+                  : 'Coordonnées invalides'}
+            </p>
           </div>
         </div>
-      )}
+      )
+    }
 
-      <Map
-        ref={mapRef}
-        initialViewState={{
-          longitude: zone.xOrigin,
-          latitude: zone.yOrigin,
-          zoom: 11,
-        }}
-        style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
-        onLoad={() => setMapLoading(false)}
-        onError={error => {
-          logError(error, 'AssignedZoneCard.Map.onError', {
-            zoneId: zone?.id,
-            zoneName: zone?.nom,
-          })
-          setMapLoading(false)
-        }}
-        attributionControl={false}
-        scrollZoom={!isMapLocked || isFullscreen}
-        dragPan={!isMapLocked || isFullscreen}
-        dragRotate={!isMapLocked || isFullscreen}
-        doubleClickZoom={!isMapLocked || isFullscreen}
-        touchZoomRotate={!isMapLocked || isFullscreen}
-      >
-        {showControls && <NavigationControl position="top-right" />}
+    // Convertir la hauteur en pixels si nécessaire
+    const actualHeight =
+      typeof containerHeight === 'number' ? `${containerHeight}px` : containerHeight
 
-        {/* Centre de la zone */}
-        <Marker longitude={zone.xOrigin} latitude={zone.yOrigin} />
+    return (
+      <div ref={containerRef} style={{ height, width: '100%', position: 'relative' }}>
+        {mapLoading && (
+          <div className="absolute inset-0 z-10">
+            <MapSkeleton />
+          </div>
+        )}
 
-        {/* Immeubles sur la carte */}
-        {immeublesWithCoordinates.map(immeuble => (
-          <Marker
-            key={`immeuble-${immeuble.id}`}
-            longitude={immeuble.longitude}
-            latitude={immeuble.latitude}
+        {/* Overlay de verrouillage */}
+        {isMapLocked && !isFullscreen && (
+          <div
+            className="absolute inset-0 z-20 bg-transparent cursor-pointer flex items-center justify-center group"
+            onClick={() => setIsMapLocked(false)}
           >
-            <div
-              className="relative cursor-pointer group"
-              title={`${immeuble.adresse}\n${immeuble.nbEtages} étages, ${immeuble.nbPortesParEtage} portes/étage\nCliquez pour voir les détails`}
-              onClick={e => {
-                e.stopPropagation()
-                handleImmeubleClick(immeuble.id)
-              }}
-            >
-              {/* Icône bâtiment */}
-              <div className="bg-blue-600 text-white p-2 rounded-lg shadow-lg border-2 border-white hover:bg-blue-700 hover:scale-110 transition-all duration-200 active:scale-95">
-                <Building2 className="h-4 w-4" />
-              </div>
-
-              {/* Tooltip au survol */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                <div className="font-medium">{immeuble.adresse}</div>
-                <div className="text-gray-300">
-                  {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
-                </div>
-                <div className="text-gray-300">
-                  Total: {immeuble.nbEtages * immeuble.nbPortesParEtage} portes
-                </div>
-                <div className="text-blue-300 mt-1 text-center">
-                  👆 Cliquez pour voir les détails
-                </div>
-                {/* Flèche du tooltip */}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            <div className="bg-background/90 backdrop-blur-sm px-4 py-2 rounded-lg border-2 border-primary/20 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Unlock className="h-4 w-4" />
+                <span>Cliquez pour déverrouiller la carte</span>
               </div>
             </div>
-          </Marker>
-        ))}
-
-        {/* Cercle de la zone */}
-        {circleGeoJSON && (
-          <Source id="zone-circle" type="geojson" data={circleGeoJSON}>
-            <Layer
-              id="zone-fill"
-              type="fill"
-              paint={{ 'fill-color': zoneColor, 'fill-opacity': 0.25 }}
-            />
-            <Layer
-              id="zone-line"
-              type="line"
-              paint={{ 'line-color': zoneColor, 'line-width': 2 }}
-            />
-          </Source>
+          </div>
         )}
-      </Map>
-    </div>
-  )
+
+        <Map
+          ref={mapRef}
+          initialViewState={{
+            longitude: zone.xOrigin,
+            latitude: zone.yOrigin,
+            zoom: 11,
+          }}
+          style={{ height: actualHeight, width: '100%', borderRadius: '0.5rem' }}
+          mapStyle="mapbox://styles/mapbox/streets-v12"
+          onLoad={() => setMapLoading(false)}
+          onError={error => {
+            logError(error, 'AssignedZoneCard.Map.onError', {
+              zoneId: zone?.id,
+              zoneName: zone?.nom,
+            })
+            setMapLoading(false)
+          }}
+          attributionControl={false}
+          scrollZoom={!isMapLocked || isFullscreen}
+          dragPan={!isMapLocked || isFullscreen}
+          dragRotate={!isMapLocked || isFullscreen}
+          doubleClickZoom={!isMapLocked || isFullscreen}
+          touchZoomRotate={!isMapLocked || isFullscreen}
+        >
+          {showControls && <NavigationControl position="top-right" />}
+
+          {/* Centre de la zone */}
+          <Marker longitude={zone.xOrigin} latitude={zone.yOrigin} />
+
+          {/* Immeubles sur la carte */}
+          {immeublesWithCoordinates.map(immeuble => (
+            <Marker
+              key={`immeuble-${immeuble.id}`}
+              longitude={immeuble.longitude}
+              latitude={immeuble.latitude}
+            >
+              <div
+                className="relative cursor-pointer group"
+                title={`${immeuble.adresse}\n${immeuble.nbEtages} étages, ${immeuble.nbPortesParEtage} portes/étage\nCliquez pour voir les détails`}
+                onClick={e => {
+                  e.stopPropagation()
+                  handleImmeubleClick(immeuble.id)
+                }}
+              >
+                {/* Icône bâtiment */}
+                <div className="bg-blue-600 text-white p-2 rounded-lg shadow-lg border-2 border-white hover:bg-blue-700 hover:scale-110 transition-all duration-200 active:scale-95">
+                  <Building2 className="h-4 w-4" />
+                </div>
+
+                {/* Tooltip au survol */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                  <div className="font-medium">{immeuble.adresse}</div>
+                  <div className="text-gray-300">
+                    {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
+                  </div>
+                  <div className="text-gray-300">
+                    Total: {immeuble.nbEtages * immeuble.nbPortesParEtage} portes
+                  </div>
+                  <div className="text-blue-300 mt-1 text-center">
+                    👆 Cliquez pour voir les détails
+                  </div>
+                  {/* Flèche du tooltip */}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                </div>
+              </div>
+            </Marker>
+          ))}
+
+          {/* Cercle de la zone */}
+          {circleGeoJSON && (
+            <Source id="zone-circle" type="geojson" data={circleGeoJSON}>
+              <Layer
+                id="zone-fill"
+                type="fill"
+                paint={{ 'fill-color': zoneColor, 'fill-opacity': 0.25 }}
+              />
+              <Layer
+                id="zone-line"
+                type="line"
+                paint={{ 'line-color': zoneColor, 'line-width': 2 }}
+              />
+            </Source>
+          )}
+        </Map>
+      </div>
+    )
+  }
 
   return (
     <>

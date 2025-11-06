@@ -133,7 +133,7 @@ const items = [
 ]
 
 export function AppSidebar() {
-  const { currentRole, currentUserId } = useRole()
+  const { currentRole, logout } = useRole()
   const location = useLocation()
   const [openMenus, setOpenMenus] = React.useState({})
   const { sections, setFocusedSection } = useDetailsSections()
@@ -277,18 +277,6 @@ export function AppSidebar() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [sections])
 
-  // Fonction helper pour changer rôle + userId
-  const switchRole = (role, userId) => {
-    localStorage.setItem('userRole', role)
-    localStorage.setItem('userId', userId)
-    // Rediriger vers la page d'accueil appropriée selon le rôle
-    if (role === ROLES.COMMERCIAL || role === ROLES.MANAGER) {
-      window.location.href = '/' // Dashboard commercial
-    } else {
-      window.location.reload() // Recharger pour les autres rôles
-    }
-  }
-
   // Filtrer les éléments enrichis selon les permissions
   const visibleItems = enrichedItems.filter(item => {
     // Si pas d'entité spécifiée, toujours visible (Dashboard, Paramètres)
@@ -429,81 +417,12 @@ export function AppSidebar() {
               >
                 <DropdownMenuItem>Profil</DropdownMenuItem>
                 <DropdownMenuItem>Paramètres</DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-xs font-semibold">
-                  Changer de rôle
-                </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.ADMIN, '1')}
-                  className={currentRole === ROLES.ADMIN ? 'bg-accent' : ''}
+                  onClick={logout}
+                  className="text-destructive focus:text-destructive"
                 >
-                  Admin {currentRole === ROLES.ADMIN && '✓'}
+                  Se déconnecter
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-xs">
-                  Directeurs:
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.DIRECTEUR, '1')}
-                  className={
-                    currentRole === ROLES.DIRECTEUR && currentUserId === '1' ? 'bg-accent' : ''
-                  }
-                >
-                  Fatma Gharbi {currentRole === ROLES.DIRECTEUR && currentUserId === '1' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.DIRECTEUR, '2')}
-                  className={
-                    currentRole === ROLES.DIRECTEUR && currentUserId === '2' ? 'bg-accent' : ''
-                  }
-                >
-                  Mohamed Triki {currentRole === ROLES.DIRECTEUR && currentUserId === '2' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-xs">
-                  Managers:
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.MANAGER, '5')}
-                  className={
-                    currentRole === ROLES.MANAGER && currentUserId === '5' ? 'bg-accent' : ''
-                  }
-                >
-                  Ahmed Ben Salem {currentRole === ROLES.MANAGER && currentUserId === '5' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.MANAGER, '6')}
-                  className={
-                    currentRole === ROLES.MANAGER && currentUserId === '6' ? 'bg-accent' : ''
-                  }
-                >
-                  Sarra Khelifi {currentRole === ROLES.MANAGER && currentUserId === '6' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem disabled className="text-xs">
-                  Commerciaux:
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.COMMERCIAL, '10')}
-                  className={
-                    currentRole === ROLES.COMMERCIAL && currentUserId === '10' ? 'bg-accent' : ''
-                  }
-                >
-                  Ahmed Ben Ali {currentRole === ROLES.COMMERCIAL && currentUserId === '10' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.COMMERCIAL, '11')}
-                  className={
-                    currentRole === ROLES.COMMERCIAL && currentUserId === '11' ? 'bg-accent' : ''
-                  }
-                >
-                  Sarra Mejri {currentRole === ROLES.COMMERCIAL && currentUserId === '11' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => switchRole(ROLES.COMMERCIAL, '12')}
-                  className={
-                    currentRole === ROLES.COMMERCIAL && currentUserId === '12' ? 'bg-accent' : ''
-                  }
-                >
-                  Karim Ouali {currentRole === ROLES.COMMERCIAL && currentUserId === '12' && '✓'}
-                </DropdownMenuItem>
-                <DropdownMenuItem>Se déconnecter</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

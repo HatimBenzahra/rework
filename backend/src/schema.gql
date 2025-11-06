@@ -15,8 +15,20 @@ input AssignZoneInput {
   zoneId: Int!
 }
 
+type AuthResponse {
+  access_token: String!
+  email: String
+  expires_in: Float!
+  groups: [String!]!
+  refresh_token: String!
+  role: String!
+  scope: String
+  token_type: String
+  userId: Float!
+}
+
 type Commercial {
-  age: Int!
+  age: Int
   createdAt: DateTime!
   directeurId: Int
   email: String!
@@ -24,7 +36,7 @@ type Commercial {
   immeubles: [Immeuble!]!
   managerId: Int
   nom: String!
-  numTel: String!
+  numTel: String
   prenom: String!
   statistics: [Statistic!]!
   updatedAt: DateTime!
@@ -64,7 +76,7 @@ input CreateImmeubleInput {
 
 input CreateManagerInput {
   directeurId: Int
-  email: String
+  email: String!
   nom: String!
   numTelephone: String
   prenom: String!
@@ -111,12 +123,12 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 scalar DateTime
 
 type Directeur {
-  adresse: String!
+  adresse: String
   createdAt: DateTime!
   email: String!
   id: Int!
   nom: String!
-  numTelephone: String!
+  numTelephone: String
   prenom: String!
   updatedAt: DateTime!
 }
@@ -168,6 +180,11 @@ type LiveKitConnectionDetails {
   serverUrl: String!
 }
 
+input LoginInput {
+  password: String!
+  username: String!
+}
+
 type Manager {
   commercials: [Commercial!]
   createdAt: DateTime!
@@ -217,6 +234,7 @@ type Mutation {
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
   generateCommercialToken(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
+  login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!

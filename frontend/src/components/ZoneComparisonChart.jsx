@@ -1,12 +1,5 @@
 import React, { useMemo } from 'react'
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-} from 'recharts'
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Badge } from '@/components/ui/badge'
@@ -137,52 +130,50 @@ export default function ZoneComparisonChart({
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfig} className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis
-                  dataKey="zone"
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                  className="fill-muted-foreground"
-                />
-                <PolarRadiusAxis
-                  angle={90}
-                  domain={[0, 100]}
-                  tick={{ fontSize: 9, fill: '#94a3b8' }}
-                  tickCount={5}
-                  className="fill-muted-foreground"
-                />
-                <ChartTooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload
-                      return (
-                        <div className="rounded-lg border bg-background p-3 shadow-sm">
-                          <div className="grid grid-cols-1 gap-2">
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">{data.zone}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {formatNumber(data.actualValue)} • {data.value}%
-                              </span>
-                            </div>
+            <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+              <PolarGrid stroke="#e2e8f0" />
+              <PolarAngleAxis
+                dataKey="zone"
+                tick={{ fontSize: 11, fill: '#64748b' }}
+                className="fill-muted-foreground"
+              />
+              <PolarRadiusAxis
+                angle={90}
+                domain={[0, 100]}
+                tick={{ fontSize: 9, fill: '#94a3b8' }}
+                tickCount={5}
+                className="fill-muted-foreground"
+              />
+              <ChartTooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload
+                    return (
+                      <div className="rounded-lg border bg-background p-3 shadow-sm">
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{data.zone}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {formatNumber(data.actualValue)} • {data.value}%
+                            </span>
                           </div>
                         </div>
-                      )
-                    }
-                    return null
-                  }}
-                />
-                <Radar
-                  name="performance"
-                  dataKey="value"
-                  stroke={`var(--chart-1)`}
-                  fill={`var(--chart-1)`}
-                  fillOpacity={0.3}
-                  strokeWidth={2}
-                  dot={{ fill: `var(--chart-1)`, strokeWidth: 2, r: 4 }}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+                      </div>
+                    )
+                  }
+                  return null
+                }}
+              />
+              <Radar
+                name="performance"
+                dataKey="value"
+                stroke={`var(--chart-1)`}
+                fill={`var(--chart-1)`}
+                fillOpacity={0.3}
+                strokeWidth={2}
+                dot={{ fill: `var(--chart-1)`, strokeWidth: 2, r: 4 }}
+              />
+            </RadarChart>
           </ChartContainer>
           <div className="mt-4 space-y-2">
             {data.map((item, index) => (
