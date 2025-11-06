@@ -62,7 +62,7 @@ const getImmeublesEditFields = (commercials = []) => [
     required: true,
     section: 'Caractéristiques',
     min: 1,
-    max: 50,
+    max: 100,
   },
   {
     key: 'doors_per_floor',
@@ -71,7 +71,7 @@ const getImmeublesEditFields = (commercials = []) => [
     required: true,
     section: 'Caractéristiques',
     min: 1,
-    max: 20,
+    max: 100,
   },
   {
     key: 'commercial_name',
@@ -79,11 +79,10 @@ const getImmeublesEditFields = (commercials = []) => [
     type: 'select',
     required: true,
     section: 'Gestion',
-    options:
-      commercials.map(c => ({
-        value: `${c.prenom} ${c.nom}`,
-        label: `${c.prenom} ${c.nom}`,
-      })) || [],
+    options: (commercials || []).map(c => ({
+      value: `${c.prenom} ${c.nom}`,
+      label: `${c.prenom} ${c.nom}`,
+    })),
   },
 ]
 
