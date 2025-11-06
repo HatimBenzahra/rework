@@ -112,67 +112,6 @@ export class StatisticService {
     userId?: number,
     userRole?: string,
   ): Promise<ZoneStatistic[]> {
-    // Construire les conditions de filtrage selon le rôle pour les zones
-    let zoneWhereConditions: any = {};
-
-    if (userId && userRole) {
-      switch (userRole) {
-        case 'admin':
-          // Pas de filtrage pour admin
-          break;
-
-        case 'directeur':
-          // Zones assignées directement au directeur ou à ses commerciaux
-          zoneWhereConditions = {
-            OR: [
-              { directeurId: userId },
-              {
-                commercials: {
-                  some: {
-                    commercial: {
-                      directeurId: userId,
-                    },
-                  },
-                },
-              },
-            ],
-          };
-          break;
-
-        case 'manager':
-          // Zones assignées directement au manager ou à ses commerciaux
-          zoneWhereConditions = {
-            OR: [
-              { managerId: userId },
-              {
-                commercials: {
-                  some: {
-                    commercial: {
-                      managerId: userId,
-                    },
-                  },
-                },
-              },
-            ],
-          };
-          break;
-
-        case 'commercial':
-          // Zones assignées au commercial
-          zoneWhereConditions = {
-            commercials: {
-              some: {
-                commercialId: userId,
-              },
-            },
-          };
-          break;
-
-        default:
-          return [];
-      }
-    }
-
     // =====================================================
     // ZoneEnCours + HistoriqueZone
     // =====================================================
@@ -192,9 +131,125 @@ export class StatisticService {
     });
 
     // 3. Créer un Set de toutes les zones qui ont été prospectées
-    const allZoneIds = new Set<number>();
+    let allZoneIds = new Set<number>();
     currentAssignments.forEach((a) => allZoneIds.add(a.zoneId));
     historyAssignments.forEach((h) => allZoneIds.add(h.zoneId));
+
+    // 4. Filtrer les zones selon le rôle de l'utilisateur
+    if (userId && userRole && userRole !== 'admin') {
+      const authorizedZoneIds = new Set<number>();
+
+      switch (userRole) {
+        case 'commercial':
+          // Un commercial ne voit que les zones où il a été assigné
+          currentAssignments
+            .filter(
+              (a) => a.userId === userId && a.userType === 'COMMERCIAL',
+            )
+            .forEach((a) => authorizedZoneIds.add(a.zoneId));
+          historyAssignments
+            .filter(
+              (h) => h.userId === userId && h.userType === 'COMMERCIAL',
+            )
+            .forEach((h) => authorizedZoneIds.add(h.zoneId));
+          break;
+
+        case 'manager':
+          // Un manager voit les zones où lui ou ses commerciaux ont été assignés
+          // Récupérer les IDs des commerciaux du manager
+          const managerCommercials = await this.prisma.commercial.findMany({
+            where: { managerId: userId },
+            select: { id: true },
+          });
+          const commercialIds = managerCommercials.map((c) => c.id);
+
+          // Zones du manager lui-même
+          currentAssignments
+            .filter((a) => a.userId === userId && a.userType === 'MANAGER')
+            .forEach((a) => authorizedZoneIds.add(a.zoneId));
+          historyAssignments
+            .filter((h) => h.userId === userId && h.userType === 'MANAGER')
+            .forEach((h) => authorizedZoneIds.add(h.zoneId));
+
+          // Zones des commerciaux du manager
+          currentAssignments
+            .filter(
+              (a) =>
+                commercialIds.includes(a.userId) &&
+                a.userType === 'COMMERCIAL',
+            )
+            .forEach((a) => authorizedZoneIds.add(a.zoneId));
+          historyAssignments
+            .filter(
+              (h) =>
+                commercialIds.includes(h.userId) &&
+                h.userType === 'COMMERCIAL',
+            )
+            .forEach((h) => authorizedZoneIds.add(h.zoneId));
+          break;
+
+        case 'directeur':
+          // Un directeur voit les zones où lui, ses managers ou ses commerciaux ont été assignés
+          // Récupérer les IDs des managers du directeur
+          const directeurManagers = await this.prisma.manager.findMany({
+            where: { directeurId: userId },
+            select: { id: true },
+          });
+          const managerIds = directeurManagers.map((m) => m.id);
+
+          // Récupérer les IDs des commerciaux du directeur
+          const directeurCommercials = await this.prisma.commercial.findMany({
+            where: {
+              OR: [{ directeurId: userId }, { managerId: { in: managerIds } }],
+            },
+            select: { id: true },
+          });
+          const directeurCommercialIds = directeurCommercials.map((c) => c.id);
+
+          // Zones du directeur lui-même
+          currentAssignments
+            .filter((a) => a.userId === userId && a.userType === 'DIRECTEUR')
+            .forEach((a) => authorizedZoneIds.add(a.zoneId));
+          historyAssignments
+            .filter((h) => h.userId === userId && h.userType === 'DIRECTEUR')
+            .forEach((h) => authorizedZoneIds.add(h.zoneId));
+
+          // Zones des managers du directeur
+          currentAssignments
+            .filter(
+              (a) => managerIds.includes(a.userId) && a.userType === 'MANAGER',
+            )
+            .forEach((a) => authorizedZoneIds.add(a.zoneId));
+          historyAssignments
+            .filter(
+              (h) => managerIds.includes(h.userId) && h.userType === 'MANAGER',
+            )
+            .forEach((h) => authorizedZoneIds.add(h.zoneId));
+
+          // Zones des commerciaux du directeur
+          currentAssignments
+            .filter(
+              (a) =>
+                directeurCommercialIds.includes(a.userId) &&
+                a.userType === 'COMMERCIAL',
+            )
+            .forEach((a) => authorizedZoneIds.add(a.zoneId));
+          historyAssignments
+            .filter(
+              (h) =>
+                directeurCommercialIds.includes(h.userId) &&
+                h.userType === 'COMMERCIAL',
+            )
+            .forEach((h) => authorizedZoneIds.add(h.zoneId));
+          break;
+
+        default:
+          return [];
+      }
+
+      // Utiliser uniquement les zones autorisées
+      allZoneIds = authorizedZoneIds;
+    }
 
     // 4. Récupérer les détails des zones
     const zones = await this.prisma.zone.findMany({
@@ -206,111 +261,98 @@ export class StatisticService {
     // 5. Calculer les statistiques agrégées pour chaque zone
     const zoneStatistics: ZoneStatistic[] = await Promise.all(
       zones.map(async (zone) => {
-        // Récupérer les assignations EN COURS pour cette zone
+        // NOUVELLE LOGIQUE: Compter directement les portes des immeubles dans cette zone
+        // Ceci donne les vraies statistiques de la zone, pas les stats agrégées des commerciaux
+
+        // Compter les portes par statut pour cette zone
+        const portesGroupedByStatut = await this.prisma.porte.groupBy({
+          by: ['statut'],
+          where: {
+            immeuble: {
+              zoneId: zone.id,
+            },
+          },
+          _count: {
+            statut: true,
+          },
+        });
+
+        // Calculer les stats à partir des portes
+        let totalStats = {
+          contratsSignes: 0,
+          immeublesVisites: 0,
+          rendezVousPris: 0,
+          refus: 0,
+          immeublesProspectes: 0,
+          portesProspectes: 0,
+        };
+
+        portesGroupedByStatut.forEach((group) => {
+          const count = group._count.statut;
+
+          switch (group.statut) {
+            case 'CONTRAT_SIGNE':
+              totalStats.contratsSignes += count;
+              totalStats.portesProspectes += count;
+              break;
+            case 'RENDEZ_VOUS_PRIS':
+              totalStats.rendezVousPris += count;
+              totalStats.portesProspectes += count;
+              break;
+            case 'REFUS':
+              totalStats.refus += count;
+              totalStats.portesProspectes += count;
+              break;
+            case 'CURIEUX':
+            case 'NECESSITE_REPASSAGE':
+              totalStats.portesProspectes += count;
+              break;
+          }
+        });
+
+        // Compter les immeubles visités (au moins une porte non NON_VISITE)
+        const immeublesVisites = await this.prisma.immeuble.count({
+          where: {
+            zoneId: zone.id,
+            portes: {
+              some: {
+                statut: {
+                  not: 'NON_VISITE',
+                },
+              },
+            },
+          },
+        });
+
+        totalStats.immeublesVisites = immeublesVisites;
+        totalStats.immeublesProspectes = immeublesVisites;
+
+        // Compter le nombre unique de commerciaux et managers assignés à cette zone
+        const usersInZone = new Set<number>();
+
+        // Utilisateurs des assignations actuelles
         const zoneCurrentAssignments = currentAssignments.filter(
           (a) => a.zoneId === zone.id,
         );
-
-        let currentStats = {
-          contratsSignes: 0,
-          immeublesVisites: 0,
-          rendezVousPris: 0,
-          refus: 0,
-          immeublesProspectes: 0,
-          portesProspectes: 0,
-        };
-
-        const usersInZone = new Set<number>();
-
-        // Calculer les stats pour chaque assignation EN COURS
-        for (const assignment of zoneCurrentAssignments) {
+        zoneCurrentAssignments.forEach((assignment) => {
           usersInZone.add(assignment.userId);
+        });
 
-          // Construire la condition selon le type d'utilisateur
-          let statsWhere: any = {
-            zoneId: zone.id,
-            updatedAt: {
-              gte: assignment.assignedAt,
-            },
-          };
-
-          // Respecter la hiérarchie des rôles
-          switch (assignment.userType) {
-            case 'COMMERCIAL':
-              statsWhere.commercialId = assignment.userId;
-              break;
-            case 'MANAGER':
-              statsWhere.OR = [
-                { managerId: assignment.userId },
-                { commercial: { managerId: assignment.userId } },
-              ];
-              break;
-            case 'DIRECTEUR':
-              statsWhere.OR = [
-                { commercial: { directeurId: assignment.userId } },
-                { manager: { directeurId: assignment.userId } },
-              ];
-              break;
-          }
-
-          const stats = await this.prisma.statistic.findMany({
-            where: statsWhere,
-            include: {
-              commercial: true,
-              manager: true,
-            },
-          });
-
-          stats.forEach((stat) => {
-            currentStats.contratsSignes += stat.contratsSignes || 0;
-            currentStats.immeublesVisites += stat.immeublesVisites || 0;
-            currentStats.rendezVousPris += stat.rendezVousPris || 0;
-            currentStats.refus += stat.refus || 0;
-            currentStats.immeublesProspectes += stat.nbImmeublesProspectes || 0;
-            currentStats.portesProspectes += stat.nbPortesProspectes || 0;
-          });
-        }
-
-        // Récupérer les stats HISTORIQUES (déjà calculées)
+        // Utilisateurs de l'historique
         const zoneHistory = historyAssignments.filter(
           (h) => h.zoneId === zone.id,
         );
-
-        let historicalStats = {
-          contratsSignes: 0,
-          immeublesVisites: 0,
-          rendezVousPris: 0,
-          refus: 0,
-          immeublesProspectes: 0,
-          portesProspectes: 0,
-        };
-
         zoneHistory.forEach((history) => {
           usersInZone.add(history.userId);
-          historicalStats.contratsSignes += history.totalContratsSignes || 0;
-          historicalStats.immeublesVisites +=
-            history.totalImmeublesVisites || 0;
-          historicalStats.rendezVousPris += history.totalRendezVousPris || 0;
-          historicalStats.refus += history.totalRefus || 0;
-          historicalStats.immeublesProspectes +=
-            history.totalImmeublesProspectes || 0;
-          historicalStats.portesProspectes +=
-            history.totalPortesProspectes || 0;
         });
 
-        // Combiner les stats actuelles + historiques
-        const totalContratsSignes =
-          currentStats.contratsSignes + historicalStats.contratsSignes;
-        const totalImmeublesVisites =
-          currentStats.immeublesVisites + historicalStats.immeublesVisites;
-        const totalRendezVousPris =
-          currentStats.rendezVousPris + historicalStats.rendezVousPris;
-        const totalRefus = currentStats.refus + historicalStats.refus;
-        const totalImmeublesProspectes =
-          currentStats.immeublesProspectes +
-          historicalStats.immeublesProspectes;
-        const totalPortesProspectes =
-          currentStats.portesProspectes + historicalStats.portesProspectes;
+        // Les totaux finaux
+        const totalContratsSignes = totalStats.contratsSignes;
+        const totalImmeublesVisites = totalStats.immeublesVisites;
+        const totalRendezVousPris = totalStats.rendezVousPris;
+        const totalRefus = totalStats.refus;
+        const totalImmeublesProspectes = totalStats.immeublesProspectes;
+        const totalPortesProspectes = totalStats.portesProspectes;
 
         // Calculs des taux
         const tauxConversion =

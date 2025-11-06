@@ -27,15 +27,18 @@ export class ImmeubleService {
     }
 
     if (!zoneId && data.managerId) {
-      // Chercher la zone assignée au manager
-      const managerZone = await this.prisma.zone.findFirst({
+      // Chercher la zone assignée au manager via ZoneEnCours (nouveau système)
+      const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
         where: {
-          managerId: data.managerId,
+          userId_userType: {
+            userId: data.managerId,
+            userType: 'MANAGER',
+          },
         },
       });
 
-      if (managerZone) {
-        zoneId = managerZone.id;
+      if (zoneEnCours) {
+        zoneId = zoneEnCours.zoneId;
       }
     }
 

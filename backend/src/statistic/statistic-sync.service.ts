@@ -255,12 +255,17 @@ export class StatisticSyncService {
    * Met à jour ou crée une statistique pour un manager
    */
   private async upsertManagerStatistic(managerId: number, stats: any) {
-    // Récupérer la zone assignée au manager
-    const managerZone = await this.prisma.zone.findFirst({
-      where: { managerId }
+    // Récupérer la zone assignée au manager via ZoneEnCours (nouveau système)
+    const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
+      where: {
+        userId_userType: {
+          userId: managerId,
+          userType: 'MANAGER',
+        },
+      },
     });
 
-    const zoneId = managerZone?.id || null;
+    const zoneId = zoneEnCours?.zoneId || null;
 
     // Chercher d'abord s'il existe une stat pour ce manager
     const existingStat = await this.prisma.statistic.findFirst({
