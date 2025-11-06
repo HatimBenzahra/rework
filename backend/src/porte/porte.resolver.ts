@@ -42,7 +42,24 @@ export class PorteResolver {
     @Args('nbEtages', { type: () => Int }) nbEtages: number,
     @Args('nbPortesParEtage', { type: () => Int }) nbPortesParEtage: number,
   ) {
-    await this.porteService.createPortesForImmeuble(immeubleId, nbEtages, nbPortesParEtage);
+    await this.porteService.createPortesForImmeuble(
+      immeubleId,
+      nbEtages,
+      nbPortesParEtage,
+    );
     return true;
+  }
+  /* affichage du tableau de bord */
+  @Query(() => [Porte], { name: 'portesModifiedToday' })
+  findModifiedToday(
+    @Args('immeubleId', { type: () => Int, nullable: true })
+    immeubleId?: number,
+  ) {
+    return this.porteService.findModifiedToday(immeubleId);
+  }
+
+  @Query(() => [Porte], { name: 'portesRdvToday' })
+  findRdvToday() {
+    return this.porteService.findRdvToday();
   }
 }

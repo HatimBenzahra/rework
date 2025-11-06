@@ -284,6 +284,8 @@ type Query {
   porte(id: Int!): Porte!
   portes: [Porte!]!
   portesByImmeuble(immeubleId: Int!): [Porte!]!
+  portesModifiedToday(immeubleId: Int): [Porte!]!
+  portesRdvToday: [Porte!]!
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int, userId: Int, userRole: String): [Statistic!]!
   userZoneHistory(userId: Int!, userType: UserType!): [HistoriqueZone!]!

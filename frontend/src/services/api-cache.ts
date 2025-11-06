@@ -65,13 +65,13 @@ function hashDependencies(deps: any[]): string {
  * TTL configuration by namespace
  */
 const TTL_BY_NAMESPACE: Record<string, number> = {
-  statistics: 30_000, // 30s - données volatiles
-  zones: 10 * 60_000, // 10min - données semi-statiques
-  directeurs: 5 * 60_000, // 5min - default
-  managers: 5 * 60_000, // 5min - default
-  commercials: 3 * 60_000, // 3min - plus volatile
-  immeubles: 10 * 60_000, // 10min - données statiques
-  portes: 2 * 60_000, // 2min - données volatiles (changent souvent)
+  statistics: 10_000, // 30s - données volatiles
+  zones: 10_000, // 10min - données semi-statiques
+  directeurs: 10_000, // 5min - default
+  managers: 10_000, // 5min - default
+  commercials: 10_000, // 3min - plus volatile
+  immeubles: 10_000, // 10min - données statiques
+  portes: 10_000, // 10s - données volatiles (changent souvent)
   'mapbox-geocode': 30 * 24 * 60 * 60_000, // 30 jours - géolocalisation très stable
 }
 

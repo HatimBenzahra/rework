@@ -731,3 +731,45 @@ export const GET_PORTES_BY_IMMEUBLE = `
     }
   }
 `
+/**
+ * Requête pour les portes modifiées aujourd'hui _ affichage du tableau de bord
+ */
+export const GET_PORTES_MODIFIED_TODAY = `
+  query GetPortesModifiedToday($immeubleId: Int) {
+    portesModifiedToday(immeubleId: $immeubleId) {
+      id
+      numero
+      nomPersonnalise
+      etage
+      immeubleId
+      statut
+      nbRepassages
+      rdvDate
+      rdvTime
+      commentaire
+      derniereVisite
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_PORTES_RDV_TODAY = `
+  query GetPortesRdvToday {
+    portesRdvToday {
+      id
+      numero
+      nomPersonnalise
+      etage
+      immeubleId
+      statut
+      nbRepassages
+      rdvDate
+      rdvTime
+      commentaire
+      derniereVisite
+      createdAt
+      updatedAt
+    }
+  }
+`

@@ -104,6 +104,14 @@ export interface QueryPortesByImmeubleResponse {
   portesByImmeuble: Porte[]
 }
 
+export interface QueryPortesModifiedTodayResponse {
+  portesModifiedToday: Porte[]
+}
+
+export interface QueryPortesRdvTodayResponse {
+  portesRdvToday: Porte[]
+}
+
 // =============================================================================
 // Mutation Types
 // =============================================================================
@@ -276,6 +284,10 @@ export interface UpdatePorteVariables {
 
 export interface GetPortesByImmeubleVariables {
   immeubleId: number
+}
+
+export interface GetPortesModifiedTodayVariables {
+  immeubleId?: number
 }
 
 export interface AssignZoneVariables {

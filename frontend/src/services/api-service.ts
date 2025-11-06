@@ -28,6 +28,8 @@ import {
   GET_PORTES,
   GET_PORTE,
   GET_PORTES_BY_IMMEUBLE,
+  GET_PORTES_MODIFIED_TODAY,
+  GET_PORTES_RDV_TODAY,
 } from './api-queries'
 
 import {
@@ -82,6 +84,8 @@ import type {
   QueryPortesResponse,
   QueryPorteResponse,
   QueryPortesByImmeubleResponse,
+  QueryPortesModifiedTodayResponse,
+  QueryPortesRdvTodayResponse,
   MutationCreateDirecteurResponse,
   MutationUpdateDirecteurResponse,
   MutationRemoveDirecteurResponse,
@@ -121,6 +125,7 @@ import type {
   CreatePorteVariables,
   UpdatePorteVariables,
   GetPortesByImmeubleVariables,
+  GetPortesModifiedTodayVariables,
   AssignZoneVariables,
   UnassignZoneVariables,
   QueryManagerPersonalResponse,
@@ -584,6 +589,19 @@ export const porteApi = {
       id,
     })
     return response.removePorte
+  },
+
+  async getModifiedToday(immeubleId?: number): Promise<Porte[]> {
+    const response = await gql<QueryPortesModifiedTodayResponse, GetPortesModifiedTodayVariables>(
+      GET_PORTES_MODIFIED_TODAY,
+      { immeubleId }
+    )
+    return response.portesModifiedToday
+  },
+
+  async getRdvToday(): Promise<Porte[]> {
+    const response = await gql<QueryPortesRdvTodayResponse>(GET_PORTES_RDV_TODAY)
+    return response.portesRdvToday
   },
 }
 

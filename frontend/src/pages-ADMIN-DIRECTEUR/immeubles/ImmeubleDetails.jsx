@@ -37,7 +37,7 @@ export default function ImmeubleDetails() {
             doors: portesEtage.map(porte => ({
               id: porte.id,
               number: porte.numero,
-              status: porte.statut.toLowerCase().replace(/_/g, '_'),
+              status: porte.statut.toLowerCase(),
               rdvDate: porte.rdvDate
                 ? new Date(porte.rdvDate).toLocaleDateString('fr-FR', {
                     day: '2-digit',
@@ -115,7 +115,7 @@ export default function ImmeubleDetails() {
     {
       title: 'RDV programmés',
       value: immeubleData.floorDetails.reduce(
-        (acc, floor) => acc + floor.doors.filter(door => door.status === 'rdv_pris').length,
+        (acc, floor) => acc + floor.doors.filter(door => door.status === 'rendez_vous_pris').length,
         0
       ),
       description: 'Rendez-vous à venir',
@@ -174,7 +174,7 @@ export default function ImmeubleDetails() {
           switch (status) {
             case 'contrat_signe':
               return 'bg-green-100 text-green-800'
-            case 'rdv_pris':
+            case 'rendez_vous_pris':
               return 'bg-blue-100 text-blue-800'
             case 'curieux':
               return 'bg-yellow-100 text-yellow-800'
@@ -191,7 +191,7 @@ export default function ImmeubleDetails() {
           switch (status) {
             case 'contrat_signe':
               return 'Contrat signé'
-            case 'rdv_pris':
+            case 'rendez_vous_pris':
               return 'RDV programmé'
             case 'curieux':
               return 'Curieux'
@@ -275,7 +275,7 @@ export default function ImmeubleDetails() {
         customFilters: [
           { value: 'all', label: 'Tous les statuts' },
           { value: 'contrat_signe', label: 'Contrats signés' },
-          { value: 'rdv_pris', label: 'RDV programmés' },
+          { value: 'rendez_vous_pris', label: 'RDV programmés' },
           { value: 'curieux', label: 'Curieux' },
           { value: 'necessite_repassage', label: 'Repassages nécessaires' },
           { value: 'refus', label: 'Refus' },

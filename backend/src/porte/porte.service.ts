@@ -169,4 +169,61 @@ export class PorteService {
           : '0',
     };
   }
+
+  async findModifiedToday(immeubleId?: number) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const whereClause: any = {
+      updatedAt: {
+        gte: today,
+        lt: tomorrow,
+      },
+      statut: {
+        not: StatutPorte.NON_VISITE, // Exclure les portes non visitées
+      },
+    };
+
+    if (immeubleId) {
+      whereClause.immeubleId = immeubleId;
+    }
+
+    return this.prisma.porte.findMany({
+      where: whereClause,
+      include: {
+        immeuble: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+  }
+
+  async findRdvToday() {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
+
+    return this.prisma.porte.findMany({
+      where: {
+        statut: StatutPorte.RENDEZ_VOUS_PRIS,
+        rdvDate: {
+          gte: new Date(todayStr),
+          lt: new Date(new Date(todayStr).getTime() + 24 * 60 * 60 * 1000),
+        },
+      },
+      include: {
+        immeuble: {
+          include: {
+            zone: true,
+          },
+        },
+      },
+      orderBy: {
+        rdvTime: 'asc',
+      },
+    });
+  }
 }

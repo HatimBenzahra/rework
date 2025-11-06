@@ -588,3 +588,11 @@ export function useUpdatePorte(): UseApiMutation<UpdatePorteInput, Porte> {
 export function useRemovePorte(): UseApiMutation<number, Porte> {
   return useApiMutation(api.portes.remove, 'portes')
 }
+
+export function usePortesModifiedToday(immeubleId?: number): UseApiListState<Porte> & UseApiActions {
+  return useApiCall(() => api.portes.getModifiedToday(immeubleId), [immeubleId], 'portes-modified-today')
+}
+
+export function usePortesRdvToday(): UseApiListState<Porte> & UseApiActions {
+  return useApiCall(() => api.portes.getRdvToday(), [], 'portes-rdv-today')
+}
