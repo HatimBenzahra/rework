@@ -8,10 +8,10 @@ export default function CommercialHeader({
   showGreeting = true,
   stats,
   pageTitle = null,
+  currentZone,
 }) {
   // Récupérer la zone assignée
-  const assignedZone = commercial?.zones?.[0]
-
+  const assignedZone = currentZone || commercial?.zones?.[0]
   // Système de badges unifié basé sur les points
   const getBadgeInfo = stats => {
     const contratsSignes = stats?.contratsSignes || 0

@@ -2,7 +2,7 @@ import React from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { BarChart3, Building2, History, Users } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
-import { useWorkspaceProfile } from '@/hooks/metier/use-api'
+import { useWorkspaceProfile, useCurrentUserAssignment } from '@/hooks/metier/use-api'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useCommercialAutoAudio } from '@/hooks/audio/useCommercialAutoAudio'
 import CommercialHeader from '@/components/CommercialHeader'
@@ -35,6 +35,11 @@ export default function CommercialLayout() {
     error: profileError,
     refetch,
   } = useWorkspaceProfile(userId, workspaceRole, includeTeam)
+
+  const { data: currentZoneAssignment } = useCurrentUserAssignment(
+    userId,
+    isManager ? 'MANAGER' : 'COMMERCIAL'
+  )
 
   // Activer l'audio monitoring automatique pour commerciaux ET managers
   const {
@@ -152,6 +157,7 @@ export default function CommercialLayout() {
       <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
         <CommercialHeader
           commercial={null}
+          currentZone={currentZoneAssignment?.zone}
           showGreeting={true}
           stats={workspaceStats}
           pageTitle={getPageTitle()}
@@ -185,6 +191,7 @@ export default function CommercialLayout() {
     <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
       <CommercialHeader
         commercial={workspaceProfile}
+        currentZone={currentZoneAssignment?.zone}
         showGreeting={true}
         stats={workspaceStats}
         pageTitle={getPageTitle()}

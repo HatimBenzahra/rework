@@ -428,13 +428,22 @@ export function useAllCurrentAssignments(
   )
 }
 
-export function useZoneCurrentAssignments(
-  zoneId: number
-): UseApiListState<any> & UseApiActions {
+export function useZoneCurrentAssignments(zoneId: number): UseApiListState<any> & UseApiActions {
   return useApiCall(
     () => api.zones.getZoneCurrentAssignments(zoneId),
     [zoneId],
     'zoneCurrentAssignments'
+  )
+}
+
+export function useCurrentUserAssignment(
+  userId: number,
+  userType: 'COMMERCIAL' | 'MANAGER' | 'DIRECTEUR'
+): UseApiState<any> & UseApiActions {
+  return useApiCall(
+    () => api.zones.getCurrentUserAssignment(userId, userType),
+    [userId, userType],
+    `current-zone-assignment-${userId}-${userType}`
   )
 }
 
@@ -589,8 +598,14 @@ export function useRemovePorte(): UseApiMutation<number, Porte> {
   return useApiMutation(api.portes.remove, 'portes')
 }
 
-export function usePortesModifiedToday(immeubleId?: number): UseApiListState<Porte> & UseApiActions {
-  return useApiCall(() => api.portes.getModifiedToday(immeubleId), [immeubleId], 'portes-modified-today')
+export function usePortesModifiedToday(
+  immeubleId?: number
+): UseApiListState<Porte> & UseApiActions {
+  return useApiCall(
+    () => api.portes.getModifiedToday(immeubleId),
+    [immeubleId],
+    'portes-modified-today'
+  )
 }
 
 export function usePortesRdvToday(): UseApiListState<Porte> & UseApiActions {
