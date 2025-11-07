@@ -44,7 +44,8 @@ const GET_ACTIVE_SESSIONS = `
   query GetActiveSessions {
     getActiveSessions {
       id
-      commercialId
+      userId
+      userType
       roomName
       status
       startedAt
@@ -112,10 +113,10 @@ export class AudioMonitoringService {
   /**
    * Démarre une session de monitoring (superviseur)
    */
-  static async startMonitoring(commercialId, supervisorId, roomName = null) {
+  static async startMonitoring(userId, userType, supervisorId, roomName = null) {
     try {
       const data = await graphqlClient.request(START_MONITORING, {
-        input: { commercialId, supervisorId, roomName },
+        input: { userId, userType, supervisorId, roomName },
       })
       return data.startMonitoring
     } catch (error) {

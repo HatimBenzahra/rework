@@ -27,24 +27,28 @@ export default function EcouteLive() {
   const { allUsers, loading, error, refetch } = useEcoutesUsers()
   const { showSuccess, showError } = useErrorToast()
 
-  // Hook pour surveiller les rooms actives et les commerciaux en ligne
-  const { isCommercialOnline, refetch: refetchRooms } = useActiveRooms(3000)
+  // Hook pour surveiller les rooms actives et les utilisateurs en ligne
+  const { isUserOnline, refetch: refetchRooms } = useActiveRooms(3000)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCommercial, setSelectedCommercial] = useState(null)
   const [isMuted, setIsMuted] = useState(false)
   const [activeListeningRooms, setActiveListeningRooms] = useState(new Map())
+  const [showOnlyOnline, setShowOnlyOnline] = useState(true)
 
-  // Filtrer les utilisateurs selon la recherche
+  // Filtrer les utilisateurs selon la recherche et le statut en ligne
   const filteredUsers = useMemo(() => {
     if (!allUsers) return []
     return allUsers.filter(user => {
       const searchMatch =
         user.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.prenom?.toLowerCase().includes(searchTerm.toLowerCase())
-      return searchMatch
+
+      const onlineMatch = showOnlyOnline ? isUserOnline(user.id, user.userType) : true
+
+      return searchMatch && onlineMatch
     })
-  }, [allUsers, searchTerm])
+  }, [allUsers, searchTerm, showOnlyOnline, isUserOnline])
 
   // Utiliser le hook de pagination
   const {
@@ -59,31 +63,34 @@ export default function EcouteLive() {
     hasPreviousPage,
   } = usePagination(filteredUsers, 10)
 
-  const handleStartListening = async commercial => {
+  const handleStartListening = async user => {
     try {
-      if (!isCommercialOnline(commercial.id)) {
+      if (!isUserOnline(user.id, user.userType)) {
         showError("Cet utilisateur n'est pas actuellement en ligne")
         return
       }
 
       // Arrêter toutes les écoutes en cours
-      for (const [commercialId] of activeListeningRooms) {
-        await handleStopListening(commercialId)
+      for (const [userKey] of activeListeningRooms) {
+        await handleStopListening(userKey)
       }
 
       const connectionDetails = await AudioMonitoringService.startMonitoring(
-        commercial.id,
+        user.id,
+        user.userType,
         parseInt(currentUserId)
       )
 
+      // Utiliser une clé unique combinant type et id
+      const userKey = `${user.userType}-${user.id}`
       const audioContainer = document.createElement('div')
-      audioContainer.id = `audio-container-${commercial.id}`
+      audioContainer.id = `audio-container-${userKey}`
       document.body.appendChild(audioContainer)
 
       const room = await LiveKitUtils.connectAsSupervisor(connectionDetails, audioContainer)
 
       setActiveListeningRooms(prev =>
-        new Map(prev).set(commercial.id, {
+        new Map(prev).set(userKey, {
           room,
           sessionId: connectionDetails.sessionId || `session-${Date.now()}`,
           startTime: new Date().toLocaleTimeString(),
@@ -92,8 +99,8 @@ export default function EcouteLive() {
         })
       )
 
-      setSelectedCommercial(commercial)
-      showSuccess(`Écoute en live démarrée pour ${commercial.prenom} ${commercial.nom}`)
+      setSelectedCommercial(user)
+      showSuccess(`Écoute en live démarrée pour ${user.prenom} ${user.nom}`)
       refetchRooms()
     } catch (error) {
       console.error('Erreur démarrage écoute:', error)
@@ -101,9 +108,9 @@ export default function EcouteLive() {
     }
   }
 
-  const handleStopListening = async commercialId => {
+  const handleStopListening = async userKey => {
     try {
-      const listeningData = activeListeningRooms.get(commercialId)
+      const listeningData = activeListeningRooms.get(userKey)
       if (!listeningData) return
 
       if (listeningData.room) {
@@ -124,11 +131,14 @@ export default function EcouteLive() {
 
       setActiveListeningRooms(prev => {
         const newMap = new Map(prev)
-        newMap.delete(commercialId)
+        newMap.delete(userKey)
         return newMap
       })
 
-      if (selectedCommercial?.id === commercialId) {
+      if (
+        selectedCommercial &&
+        `${selectedCommercial.userType}-${selectedCommercial.id}` === userKey
+      ) {
         setSelectedCommercial(null)
       }
 
@@ -202,7 +212,7 @@ export default function EcouteLive() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredUsers.filter(u => isCommercialOnline(u.id)).length}
+              {filteredUsers.filter(u => isUserOnline(u.id, u.userType)).length}
             </div>
             <p className="text-xs text-muted-foreground">Commerciaux & Managers en ligne</p>
           </CardContent>
@@ -228,23 +238,32 @@ export default function EcouteLive() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
+          <div className="mb-4 flex items-center gap-4">
             <Input
               placeholder="Rechercher un utilisateur..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="max-w-sm"
             />
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOnlyOnline}
+                onChange={e => setShowOnlyOnline(e.target.checked)}
+                className="w-4 h-4 text-primary rounded focus:ring-2 focus:ring-primary"
+              />
+              <span className="text-sm font-medium">Uniquement en ligne</span>
+            </label>
           </div>
 
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right p-0.5">Actions</TableHead>
+                  <TableHead className="w-[35%]">Utilisateur</TableHead>
+                  <TableHead className="w-[20%]">Type</TableHead>
+                  <TableHead className="w-[25%]">Statut</TableHead>
+                  <TableHead className="w-[10%] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,9 +275,10 @@ export default function EcouteLive() {
                   </TableRow>
                 ) : (
                   currentUsers.map(user => {
-                    const isOnline = isCommercialOnline(user.id)
-                    const isCurrentlyListening = activeListeningRooms.has(user.id)
-                    const listeningData = activeListeningRooms.get(user.id)
+                    const userKey = `${user.userType}-${user.id}`
+                    const isOnline = isUserOnline(user.id, user.userType)
+                    const isCurrentlyListening = activeListeningRooms.has(userKey)
+                    const listeningData = activeListeningRooms.get(userKey)
 
                     return (
                       <React.Fragment key={`user-${user.userType}-${user.id}`}>
@@ -266,7 +286,7 @@ export default function EcouteLive() {
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
                               <div
-                                className={`w-2 h-2 rounded-full ${
+                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
                                   isOnline ? 'bg-green-500' : 'bg-gray-400'
                                 }`}
                               />
@@ -293,37 +313,38 @@ export default function EcouteLive() {
                               </Badge>
                             )}
                           </TableCell>
-
                           <TableCell className="text-right">
-                            {isCurrentlyListening ? (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleStopListening(user.id)}
-                              >
-                                <Square className="w-4 h-4 mr-2" />
-                                Arrêter
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                disabled={!isOnline}
-                                onClick={() => handleStartListening(user)}
-                              >
-                                <Play className="w-4 h-4 mr-2" />
-                                Écouter
-                              </Button>
-                            )}
+                            <div className="flex items-center gap-2 justify-end">
+                              {isCurrentlyListening ? (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleStopListening(userKey)}
+                                >
+                                  <Square className="w-4 h-4 mr-2" />
+                                  Arrêter
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={!isOnline}
+                                  onClick={() => handleStartListening(user)}
+                                >
+                                  <Play className="w-4 h-4 mr-2" />
+                                  Écouter
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                         {isCurrentlyListening && listeningData && (
                           <TableRow className="bg-muted/30">
-                            <TableCell colSpan={4}>
-                              <div className="flex items-center justify-between p-4 border rounded-md">
+                            <TableCell colSpan={4} className="p-4">
+                              <div className="flex items-center justify-between border rounded-md p-4">
                                 <div className="flex items-center gap-4 flex-1">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
                                     <span className="font-medium">
                                       {user.prenom} {user.nom}
                                     </span>

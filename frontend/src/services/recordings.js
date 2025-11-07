@@ -39,15 +39,21 @@ const GET_STREAMING_URL = `
 // Service pour la gestion des enregistrements
 export class RecordingService {
   /**
-   * Récupère la liste des enregistrements pour un commercial
-   * @param {number} commercialId - ID du commercial
+   * Récupère la liste des enregistrements pour un utilisateur (commercial ou manager)
+   * @param {number} userId - ID de l'utilisateur
+   * @param {string} userType - Type d'utilisateur ('commercial' ou 'manager')
    * @returns {Promise<Array>} Liste des enregistrements filtrés (uniquement .mp4)
    */
-  static async getRecordingsForCommercial(commercialId) {
+  static async getRecordingsForUser(userId, userType) {
     try {
-      // Le roomName suit le pattern room_commercial_{id} basé sur la structure S3 réelle
-      const roomName = `room_commercial_${commercialId}`
-      console.log('🔍 Recherche enregistrements pour roomName:', roomName)
+      // Le roomName suit le pattern room_{userType}_{id} basé sur la structure S3 réelle
+      // Note: LiveKit remplace les : par des _ dans les noms de fichiers S3
+      const roomName = `room_${userType.toLowerCase()}_${userId}`
+      console.log(
+        '🔍 Recherche enregistrements pour roomName:',
+        roomName,
+        `(${userType} ID: ${userId})`
+      )
 
       const data = await graphqlClient.request(LIST_RECORDINGS, {
         roomName,
@@ -76,7 +82,8 @@ export class RecordingService {
         date: recording.lastModified ? new Date(recording.lastModified).toLocaleDateString() : '',
         time: recording.lastModified ? new Date(recording.lastModified).toLocaleTimeString() : '',
         duration: this.formatFileSize(recording.size), // On affiche la taille en attendant la vraie durée
-        commercialId,
+        userId,
+        userType,
       }))
 
       console.log('✨ Enregistrements enrichis:', enrichedRecordings)
@@ -88,13 +95,13 @@ export class RecordingService {
   }
 
   /**
-   * Démarre un enregistrement pour un commercial
+   * Démarre un enregistrement pour un utilisateur (commercial ou manager)
    */
-  static async startRecording(commercialId, audioOnly = true) {
+  static async startRecording(userId, userType, audioOnly = true) {
     try {
-      console.log('🔧 Service startRecording appelé avec:', { commercialId, audioOnly })
+      console.log('🔧 Service startRecording appelé avec:', { userId, userType, audioOnly })
 
-      const roomName = `room:commercial:${commercialId}`
+      const roomName = `room:${userType.toLowerCase()}:${userId}`
 
       console.log('🎤 Démarrage enregistrement (room composite):', {
         roomName,

@@ -6,12 +6,17 @@ import { useTimeout } from '@/hooks/utils/useTimeout'
 import { useCleanup } from '@/hooks/utils/useCleanup'
 
 /**
- * Hook pour gérer l'enregistrement automatique des commerciaux
+ * Hook pour gérer l'enregistrement automatique des commerciaux et managers
  * Se déclenche automatiquement selon le flow :
  * - START: Navigation vers page des portes (PortesGestion) + Connexion LiveKit active
  * - STOP: Retour vers liste des immeubles (click bouton retour)
  */
-export function useRecording(commercialId, enabled = false, audioConnected = false) {
+export function useRecording(
+  userId,
+  userType = 'commercial',
+  enabled = false,
+  audioConnected = false
+) {
   const [isRecording, setIsRecording] = useState(false)
   const [isStarting, setIsStarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
@@ -31,9 +36,10 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
    * Démarre l'enregistrement automatiquement
    */
   const startRecording = useCallback(async () => {
-    if (!commercialId || !enabled || !audioConnected || isProcessingRef.current || isRecording) {
+    if (!userId || !enabled || !audioConnected || isProcessingRef.current || isRecording) {
       logger.debug('Recording', '🚫 Enregistrement non démarré:', {
-        commercialId,
+        userId,
+        userType,
         enabled,
         audioConnected,
         isProcessing: isProcessingRef.current,
@@ -47,15 +53,16 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
       setIsStarting(true)
       setError(null)
 
-      logger.info('Recording', '🎤 Démarrage enregistrement pour commercial:', commercialId)
+      logger.info('Recording', `🎤 Démarrage enregistrement pour ${userType}:`, userId)
       logger.debug('Recording', '📋 État avant startRecording:', {
-        commercialId,
+        userId,
+        userType,
         enabled,
         isRecording,
         isProcessingRef: isProcessingRef.current,
       })
 
-      const result = await RecordingService.startRecording(commercialId, true)
+      const result = await RecordingService.startRecording(userId, userType, true)
       logger.debug('Recording', '🎯 Result from RecordingService:', result)
 
       logger.info('Recording', '✅ Enregistrement démarré:', result)
@@ -74,7 +81,7 @@ export function useRecording(commercialId, enabled = false, audioConnected = fal
       setIsStarting(false)
       isProcessingRef.current = false
     }
-  }, [commercialId, enabled, audioConnected, isRecording, addCleanup])
+  }, [userId, userType, enabled, audioConnected, isRecording, addCleanup])
 
   /**
    * Arrête l'enregistrement et upload vers S3

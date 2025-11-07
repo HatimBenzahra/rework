@@ -9,7 +9,7 @@ import { useConnectionCleanup } from '../utils/useCleanup'
  * Hook pour gérer l'audio monitoring automatique des commerciaux et managers
  * Se connecte automatiquement quand l'utilisateur se connecte à son espace
  */
-export function useCommercialAutoAudio(userId, enabled = true) {
+export function useAutoAudio(userId, userType, enabled = true) {
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState(null)
@@ -20,7 +20,7 @@ export function useCommercialAutoAudio(userId, enabled = true) {
 
   // Utiliser useConnectionCleanup pour gérer les ressources
   const { addConnection, cleanupAll } = useConnectionCleanup({
-    namespace: 'CommercialAudio',
+    namespace: 'AutoAudio',
   })
 
   // Fonction pour démarrer la connexion audio
@@ -33,9 +33,9 @@ export function useCommercialAutoAudio(userId, enabled = true) {
       setIsConnecting(true)
       setError(null)
 
-      // 1. Générer le token utilisateur (commercial par défaut, manager si spécifié)
-      logger.debug('Audio', '🎤 Génération token utilisateur...', userId)
-      const details = await AudioMonitoringService.generateCommercialToken(userId)
+      // 1. Générer le token utilisateur selon le type (commercial ou manager)
+      logger.debug('Audio', `🎤 Génération token ${userType}...`, userId)
+      const details = await AudioMonitoringService.generateUserToken(userId, userType)
       setConnectionDetails(details)
 
       // 2. Se connecter à LiveKit comme publisher
@@ -45,7 +45,7 @@ export function useCommercialAutoAudio(userId, enabled = true) {
 
       // 3. Marquer comme connecté
       setIsConnected(true)
-      logger.info('Audio', '✅ Audio monitoring actif pour utilisateur', userId)
+      logger.info('Audio', `✅ Audio monitoring actif pour ${userType}`, userId)
 
       // 4. Gérer les événements de déconnexion
       room.on('disconnected', () => {
@@ -69,7 +69,7 @@ export function useCommercialAutoAudio(userId, enabled = true) {
     } finally {
       setIsConnecting(false)
     }
-  }, [userId, enabled, isConnecting, isConnected, addConnection])
+  }, [userId, userType, enabled, isConnecting, isConnected, addConnection])
 
   // Fonction pour arrêter la connexion audio
   const stopAudioPublishing = useCallback(async () => {
@@ -119,4 +119,4 @@ export function useCommercialAutoAudio(userId, enabled = true) {
   }
 }
 
-export default useCommercialAutoAudio
+export default useAutoAudio

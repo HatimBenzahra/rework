@@ -44,7 +44,9 @@ export default function Enregistrement() {
 
     setLoadingRecordings(true)
     try {
-      const recordingsData = await RecordingService.getRecordingsForCommercial(commercial.id)
+      // Utiliser userType pour charger les bons enregistrements (manager ou commercial)
+      const userType = commercial.userType
+      const recordingsData = await RecordingService.getRecordingsForUser(commercial.id, userType)
       setRecordings(recordingsData)
       showSuccess(
         `${recordingsData.length} enregistrement(s) chargé(s) pour ${commercial.prenom} ${commercial.nom}`
@@ -216,7 +218,7 @@ export default function Enregistrement() {
                 </DropdownMenuItem>
                 {allUsers.map(user => (
                   <DropdownMenuItem
-                    key={user.id}
+                    key={`${user.userType}-${user.id}`}
                     onClick={() => {
                       setSelectedCommercialForRecordings(user)
                       loadRecordingsForCommercial(user)
@@ -264,7 +266,7 @@ export default function Enregistrement() {
                       <TableHead>Fichier</TableHead>
                       <TableHead>Date & Heure</TableHead>
                       <TableHead>Taille</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -316,14 +318,13 @@ export default function Enregistrement() {
                             </TableCell>
                           </TableRow>
                           {playingRecording?.id === recording.id && playingRecording?.url && (
-                            <TableRow className="bg-muted/30">
-                              <TableCell colSpan={4}>
-                                <div className="p-4">
+                            <TableRow className="bg-muted/20 hover:bg-muted/20">
+                              <TableCell colSpan={4} className="p-2 sm:p-4">
+                                <div className="w-full max-w-full">
                                   <AudioPlayer
                                     src={playingRecording.url}
                                     title={`Enregistrement - ${playingRecording.filename}`}
                                     onDownload={() => handleDownloadRecording(playingRecording)}
-                                    className="border-0 shadow-none bg-transparent"
                                   />
                                 </div>
                               </TableCell>

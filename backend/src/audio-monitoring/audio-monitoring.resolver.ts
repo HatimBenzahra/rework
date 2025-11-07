@@ -43,19 +43,15 @@ export class AudioMonitoringResolver {
     );
   }
 
-  @Query(() => LiveKitConnectionDetails)
-  async getCommercialConnection(
-    @Args('commercialId', { type: () => Int }) commercialId: number,
+  @Mutation(() => LiveKitConnectionDetails)
+  async generateManagerToken(
+    @Args('managerId', { type: () => Int }) managerId: number,
     @Args('roomName', { nullable: true }) roomName?: string,
   ) {
-    return this.audioMonitoringService.generateCommercialToken(
-      commercialId,
+    return this.audioMonitoringService.generateManagerToken(
+      managerId,
       roomName,
     );
   }
 
-  @Mutation(() => Boolean)
-  async updateCommercialHeartbeat(@Args('commercialId', { type: () => Int }) commercialId: number) {
-    return this.audioMonitoringService.updateCommercialHeartbeat(commercialId);
-  }
 }

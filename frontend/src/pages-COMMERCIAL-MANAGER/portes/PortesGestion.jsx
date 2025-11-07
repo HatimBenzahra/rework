@@ -40,17 +40,20 @@ import {
 export default function PortesGestion() {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
-  const { currentUserId } = useRole()
+  const { currentUserId, isManager } = useRole()
 
   // Récupère la ref de scroll depuis le layout (fallback possible si non fourni)
   const { scrollContainerRef, audioStatus } = useOutletContext() || {}
+
+  // Déterminer le type d'utilisateur
+  const userType = isManager ? 'manager' : 'commercial'
 
   // Hook d'enregistrement automatique (attend la connexion audio)
   const {
     isRecording,
     isStarting,
     error: recordingError,
-  } = useRecording(parseInt(currentUserId), true, audioStatus?.audioConnected)
+  } = useRecording(parseInt(currentUserId), userType, true, audioStatus?.audioConnected)
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base, getButtonClasses } = useCommercialTheme()

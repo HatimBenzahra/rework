@@ -21,7 +21,10 @@ export class MonitoringSession {
   id: string;
 
   @Field(() => Int)
-  commercialId: number;
+  userId: number;
+
+  @Field()
+  userType: string;
 
   @Field()
   roomName: string;
@@ -60,7 +63,10 @@ export class LiveKitConnectionDetails {
 @InputType()
 export class StartMonitoringInput {
   @Field(() => Int)
-  commercialId: number;
+  userId: number;
+
+  @Field()
+  userType: string;
 
   @Field(() => Int)
   supervisorId: number;

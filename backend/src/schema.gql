@@ -202,7 +202,6 @@ type Manager {
 }
 
 type MonitoringSession {
-  commercialId: Int!
   endedAt: DateTime
   id: ID!
   participantToken: String
@@ -210,6 +209,8 @@ type MonitoringSession {
   startedAt: DateTime!
   status: MonitoringStatus!
   supervisorId: Int!
+  userId: Int!
+  userType: String!
 }
 
 enum MonitoringStatus {
@@ -234,6 +235,7 @@ type Mutation {
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
   generateCommercialToken(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
+  generateManagerToken(managerId: Int!, roomName: String): LiveKitConnectionDetails!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
   removeCommercial(id: Int!): Commercial!
@@ -254,7 +256,6 @@ type Mutation {
   unassignUser(userId: Int!, userType: UserType!): Boolean!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
-  updateCommercialHeartbeat(commercialId: Int!): Boolean!
   updateDirecteur(updateDirecteurInput: UpdateDirecteurInput!): Directeur!
   updateImmeuble(updateImmeubleInput: UpdateImmeubleInput!): Immeuble!
   updateManager(updateManagerInput: UpdateManagerInput!): Manager!
@@ -290,7 +291,6 @@ type Query {
   egressState(egressId: String!): EgressState!
   getActiveRooms: [ActiveRoom!]!
   getActiveSessions: [MonitoringSession!]!
-  getCommercialConnection(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
   getStreamingUrl(key: String!): String!
   immeuble(id: Int!): Immeuble!
   immeubles(userId: Int, userRole: String): [Immeuble!]!
@@ -331,9 +331,10 @@ type RecordingResult {
 }
 
 input StartMonitoringInput {
-  commercialId: Int!
   roomName: String
   supervisorId: Int!
+  userId: Int!
+  userType: String!
 }
 
 input StartRecordingInput {

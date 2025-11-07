@@ -4,7 +4,7 @@ import { BarChart3, Building2, History, Users } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
 import { useWorkspaceProfile, useCurrentUserAssignment } from '@/hooks/metier/use-api'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { useCommercialAutoAudio } from '@/hooks/audio/useCommercialAutoAudio'
+import { useAutoAudio } from '@/hooks/audio/useAutoAudio'
 import CommercialHeader from '@/components/CommercialHeader'
 import CommercialBottomBar from '@/components/CommercialBottomBar'
 
@@ -47,7 +47,7 @@ export default function CommercialLayout() {
     isConnecting: audioConnecting,
     error: audioError,
     roomName,
-  } = useCommercialAutoAudio(userId, true)
+  } = useAutoAudio(userId, workspaceRole, true)
 
   // Statistiques agrégées pour le header et les badges
   const workspaceStats = React.useMemo(() => {

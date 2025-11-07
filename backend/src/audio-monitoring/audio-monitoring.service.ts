@@ -19,8 +19,8 @@ export class AudioMonitoringService {
     private liveKit: LiveKitService,
   ) {}
 
-  private roomNameFor(commercialId: number) {
-    return `room:commercial:${commercialId}`;
+  private roomNameFor(userId: number, userType: string) {
+    return `room:${userType.toLowerCase()}:${userId}`;
   }
 
   /**
@@ -29,8 +29,21 @@ export class AudioMonitoringService {
   async startMonitoring(
     input: StartMonitoringInput,
   ): Promise<LiveKitConnectionDetails> {
-    const { commercialId, supervisorId, roomName } = input;
-    const finalRoomName = roomName || this.roomNameFor(commercialId);
+    const { userId, userType, supervisorId, roomName } = input;
+    const finalRoomName = roomName || this.roomNameFor(userId, userType);
+
+    // Nettoyer les sessions en double du même superviseur pour le même utilisateur
+    const existingSessions = Array.from(this.activeSessions.values()).filter(
+      (s) =>
+        s.userId === userId &&
+        s.userType === userType &&
+        s.supervisorId === supervisorId,
+    );
+
+    for (const session of existingSessions) {
+      this.logger.warn(`Cleaning up duplicate session: ${session.id}`);
+      this.activeSessions.delete(session.id);
+    }
 
     await this.liveKit.createOrJoinRoom(finalRoomName);
 
@@ -42,17 +55,18 @@ export class AudioMonitoringService {
 
     const session: MonitoringSession = {
       id: `session-${Date.now()}`,
-      commercialId,
+      userId,
+      userType,
       roomName: finalRoomName,
       status: MonitoringStatus.ACTIVE,
       startedAt: new Date(),
       supervisorId,
-      participantToken: supConn.participantToken, // string (plus de Promise<string>)
+      participantToken: supConn.participantToken,
     };
 
     this.activeSessions.set(session.id, session);
     this.logger.log(
-      `Monitoring started for commercial ${commercialId} in ${finalRoomName}`,
+      `Monitoring started for ${userType} ${userId} in ${finalRoomName}`,
     );
 
     return supConn;
@@ -64,7 +78,9 @@ export class AudioMonitoringService {
   async stopMonitoring(sessionId: string): Promise<boolean> {
     const session = this.activeSessions.get(sessionId);
     if (!session) {
-      this.logger.warn(`Monitoring session ${sessionId} already stopped or not found`);
+      this.logger.warn(
+        `Monitoring session ${sessionId} already stopped or not found`,
+      );
       return true; // Considérer comme succès si déjà arrêtée
     }
 
@@ -86,7 +102,50 @@ export class AudioMonitoringService {
   }
 
   async getActiveSessions(): Promise<MonitoringSession[]> {
+    // Nettoyer les sessions fantômes avant de retourner la liste
+    await this.cleanupGhostSessions();
     return Array.from(this.activeSessions.values());
+  }
+
+  /**
+   * Nettoie les sessions où l'utilisateur cible n'est plus dans la room
+   */
+  private async cleanupGhostSessions(): Promise<void> {
+    const rooms = await this.liveKit.listRoomsWithParticipants();
+    const sessionsToDelete: string[] = [];
+
+    for (const [sessionId, session] of this.activeSessions.entries()) {
+      // Trouver la room correspondante
+      const room = rooms.find((r) => r.roomName === session.roomName);
+
+      if (!room) {
+        // La room n'existe plus du tout
+        this.logger.warn(
+          `Ghost session detected: room ${session.roomName} doesn't exist anymore`,
+        );
+        sessionsToDelete.push(sessionId);
+        continue;
+      }
+
+      // Vérifier si l'utilisateur cible est dans la room
+      const expectedParticipant = `${session.userType.toLowerCase()}-${session.userId}`;
+      const userIsPresent = room.participants.some(
+        (p) => p === expectedParticipant,
+      );
+
+      if (!userIsPresent) {
+        this.logger.warn(
+          `Ghost session detected: ${expectedParticipant} not in ${session.roomName}`,
+        );
+        sessionsToDelete.push(sessionId);
+      }
+    }
+
+    // Supprimer toutes les sessions fantômes
+    for (const sessionId of sessionsToDelete) {
+      this.activeSessions.delete(sessionId);
+      this.logger.log(`Ghost session ${sessionId} cleaned up`);
+    }
   }
 
   /**
@@ -97,10 +156,11 @@ export class AudioMonitoringService {
     const active: ActiveRoom[] = [];
 
     for (const r of rooms) {
-      const commercials = r.participants.filter((id) =>
-        id.startsWith('commercial-'),
+      // Détecter les commerciaux et managers en ligne
+      const users = r.participants.filter(
+        (id) => id.startsWith('commercial-') || id.startsWith('manager-'),
       );
-      if (commercials.length > 0) {
+      if (users.length > 0) {
         active.push({
           roomName: r.roomName,
           numParticipants: r.participants.length,
@@ -121,7 +181,8 @@ export class AudioMonitoringService {
     commercialId: number,
     roomName?: string,
   ): Promise<LiveKitConnectionDetails> {
-    const finalRoomName = roomName || this.roomNameFor(commercialId);
+    const finalRoomName =
+      roomName || this.roomNameFor(commercialId, 'commercial');
 
     await this.liveKit.createOrJoinRoom(finalRoomName);
 
@@ -134,13 +195,29 @@ export class AudioMonitoringService {
     this.logger.log(
       `Commercial token generated for commercial ${commercialId} (room ${finalRoomName})`,
     );
-    return conn; // participantToken est bien un string
+    return conn;
   }
 
   /**
-   * Optionnel : heartbeat no-op (tu peux le garder pour compat)
+   * Génère un token PUBLISHER pour le manager (micro ON côté client).
    */
-  async updateCommercialHeartbeat(_commercialId: number): Promise<boolean> {
-    return true;
+  async generateManagerToken(
+    managerId: number,
+    roomName?: string,
+  ): Promise<LiveKitConnectionDetails> {
+    const finalRoomName = roomName || this.roomNameFor(managerId, 'manager');
+
+    await this.liveKit.createOrJoinRoom(finalRoomName);
+
+    const conn = await this.liveKit.generateConnectionDetails(
+      finalRoomName,
+      `manager-${managerId}`,
+      'publisher',
+    );
+
+    this.logger.log(
+      `Manager token generated for manager ${managerId} (room ${finalRoomName})`,
+    );
+    return conn;
   }
 }

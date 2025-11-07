@@ -37,28 +37,31 @@ export function useActiveRooms(refreshInterval = 5000) {
   })
 
   // Fonctions utilitaires qui utilisent les données de asyncState
-  const isCommercialOnline = useCallback(
-    commercialId => {
-      const commercialKey = `commercial-${commercialId}`
+  const isUserOnline = useCallback(
+    (userId, userType = 'commercial') => {
+      // Supporter à la fois commercial et manager
+      const userKey = userType === 'manager' ? `manager-${userId}` : `commercial-${userId}`
       const activeRooms = asyncState.data?.activeRooms || []
 
-      // Vérifier si le commercial a une room active
-      return activeRooms.some(room => room.participantNames.includes(commercialKey))
+      // Vérifier si l'utilisateur a une room active
+      return activeRooms.some(room => room.participantNames.includes(userKey))
     },
     [asyncState.data]
   )
 
-  const getOnlineCommercials = useCallback(() => {
-    const onlineCommercials = []
+  const getOnlineUsers = useCallback(() => {
+    const onlineUsers = []
     const activeRooms = asyncState.data?.activeRooms || []
 
     activeRooms.forEach(room => {
       room.participantNames.forEach(participantName => {
-        if (participantName.startsWith('commercial-')) {
-          const commercialId = parseInt(participantName.replace('commercial-', ''))
-          if (!isNaN(commercialId)) {
-            onlineCommercials.push({
-              commercialId,
+        if (participantName.startsWith('commercial-') || participantName.startsWith('manager-')) {
+          const [userType, userIdStr] = participantName.split('-')
+          const userId = parseInt(userIdStr)
+          if (!isNaN(userId)) {
+            onlineUsers.push({
+              userId,
+              userType,
               roomName: room.roomName,
               participantName,
               connectedAt: room.createdAt,
@@ -69,14 +72,15 @@ export function useActiveRooms(refreshInterval = 5000) {
       })
     })
 
-    return onlineCommercials
+    return onlineUsers
   }, [asyncState.data])
 
-  const getActiveSessionsForCommercial = useCallback(
-    commercialId => {
+  const getActiveSessionsForUser = useCallback(
+    (userId, userType) => {
       const activeSessions = asyncState.data?.activeSessions || []
       return activeSessions.filter(
-        session => session.commercialId === commercialId && session.status === 'ACTIVE'
+        session =>
+          session.userId === userId && session.userType === userType && session.status === 'ACTIVE'
       )
     },
     [asyncState.data]
@@ -91,10 +95,10 @@ export function useActiveRooms(refreshInterval = 5000) {
     loading: asyncState.loading,
     error: asyncState.error,
 
-    // Fonctions utilitaires
-    isCommercialOnline,
-    getOnlineCommercials,
-    getActiveSessionsForCommercial,
+    // Fonctions utilitaires (nouvelles)
+    isUserOnline,
+    getOnlineUsers,
+    getActiveSessionsForUser,
 
     // Actions
     refetch: () => asyncState.execute(fetchData),
