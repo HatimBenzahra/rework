@@ -24,6 +24,7 @@ import { RecordingModule } from './recording/recording.module';
       sortSchema: true,
       playground: true,
       introspection: true,
+      context: ({ req }) => ({ req }),
     }),
     AuthModule,
     DirecteurModule,

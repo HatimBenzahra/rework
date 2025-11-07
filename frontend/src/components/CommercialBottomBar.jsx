@@ -6,11 +6,11 @@ import { LogOut, X } from 'lucide-react'
 
 export default function CommercialBottomBar({ navigationItems, activeTab, onTabChange }) {
   const { colors, base } = useCommercialTheme()
-  const { setUserRole } = useRole()
+  const { logout } = useRole()
   const [showMenu, setShowMenu] = useState(false)
 
   const handleLogout = () => {
-    setUserRole('admin')
+    logout()
   }
 
   return (
@@ -48,7 +48,7 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
                 </div>
                 <div className="flex-1 text-left">
                   <p className="font-medium text-sm">Se déconnecter</p>
-                  <p className="text-xs text-red-400">Retour à l'interface admin</p>
+                  <p className="text-xs text-red-400">Retour à la page de connexion</p>
                 </div>
               </button>
             </div>

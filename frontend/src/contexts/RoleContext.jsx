@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ROLES } from '../hooks/metier/roleFilters'
 import { RoleContext } from './userole'
 import { authService } from '../services/auth.service'
+import { apiCache } from '../services/api-cache'
 
 export const RoleProvider = ({ children }) => {
   const navigate = useNavigate()
@@ -67,9 +68,17 @@ export const RoleProvider = ({ children }) => {
   }, [])
 
   const logout = useCallback(() => {
+    // Nettoyer les tokens et données d'authentification
     authService.logout()
+
+    // Nettoyer tout le cache API pour éviter les fuites de données
+    apiCache.clear()
+
+    // Réinitialiser les états locaux
     setCurrentRole(null)
     setCurrentUserId(null)
+
+    // Rediriger vers la page de connexion
     navigate('/login', { replace: true })
   }, [navigate])
 

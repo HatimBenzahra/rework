@@ -7,6 +7,7 @@ import {
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { CommercialService } from './commercial.service';
 import {
   Commercial,
@@ -16,6 +17,9 @@ import {
 import { Zone } from '../zone/zone.dto';
 import { Immeuble } from '../immeuble/immeuble.dto';
 import { Statistic } from '../statistic/statistic.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 // Types pour les relations Prisma
 interface CommercialWithRelations {
@@ -26,10 +30,12 @@ interface CommercialWithRelations {
 }
 
 @Resolver(() => Commercial)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class CommercialResolver {
   constructor(private readonly commercialService: CommercialService) {}
 
   @Mutation(() => Commercial)
+  @Roles('admin', 'directeur')
   createCommercial(
     @Args('createCommercialInput') createCommercialInput: CreateCommercialInput,
   ) {
@@ -37,6 +43,7 @@ export class CommercialResolver {
   }
 
   @Query(() => [Commercial], { name: 'commercials' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
   findAll(
     @Args('userId', { type: () => Int, nullable: true }) userId?: number,
     @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
@@ -45,11 +52,13 @@ export class CommercialResolver {
   }
 
   @Query(() => Commercial, { name: 'commercial' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.commercialService.findOne(id);
   }
 
   @Mutation(() => Commercial)
+  @Roles('admin', 'directeur')
   updateCommercial(
     @Args('updateCommercialInput') updateCommercialInput: UpdateCommercialInput,
   ) {
@@ -57,6 +66,7 @@ export class CommercialResolver {
   }
 
   @Mutation(() => Commercial)
+  @Roles('admin', 'directeur')
   removeCommercial(@Args('id', { type: () => Int }) id: number) {
     return this.commercialService.remove(id);
   }
@@ -64,7 +74,9 @@ export class CommercialResolver {
   @ResolveField(() => [Zone])
   async zones(@Parent() commercial: CommercialWithRelations): Promise<Zone[]> {
     // Récupérer la zone actuelle du commercial via ZoneEnCours
-    const zoneEnCours = await this.commercialService.getCurrentZone(commercial.id);
+    const zoneEnCours = await this.commercialService.getCurrentZone(
+      commercial.id,
+    );
     return zoneEnCours ? [zoneEnCours] : [];
   }
 

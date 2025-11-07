@@ -1,16 +1,22 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import { DirecteurService } from './directeur.service';
 import {
   Directeur,
   CreateDirecteurInput,
   UpdateDirecteurInput,
 } from './directeur.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Resolver(() => Directeur)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class DirecteurResolver {
   constructor(private readonly directeurService: DirecteurService) {}
 
   @Mutation(() => Directeur)
+  @Roles('admin')
   createDirecteur(
     @Args('createDirecteurInput') createDirecteurInput: CreateDirecteurInput,
   ) {
@@ -18,6 +24,7 @@ export class DirecteurResolver {
   }
 
   @Query(() => [Directeur], { name: 'directeurs' })
+  @Roles('admin', 'directeur')
   findAll(
     @Args('userId', { type: () => Int, nullable: true }) userId?: number,
     @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
@@ -26,11 +33,13 @@ export class DirecteurResolver {
   }
 
   @Query(() => Directeur, { name: 'directeur' })
+  @Roles('admin', 'directeur')
   findOne(@Args('id', { type: () => Int }) id: number) {
     return this.directeurService.findOne(id);
   }
 
   @Mutation(() => Directeur)
+  @Roles('admin')
   updateDirecteur(
     @Args('updateDirecteurInput') updateDirecteurInput: UpdateDirecteurInput,
   ) {
@@ -38,6 +47,7 @@ export class DirecteurResolver {
   }
 
   @Mutation(() => Directeur)
+  @Roles('admin')
   removeDirecteur(@Args('id', { type: () => Int }) id: number) {
     return this.directeurService.remove(id);
   }
