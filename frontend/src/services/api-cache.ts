@@ -1,5 +1,5 @@
 /**
- * @fileoverview Global API Cache System - Production Ready
+ * @fileoverview Global API Cache System - OPTIMIZED
  * Provides intelligent caching for all API calls with automatic invalidation
  */
 
@@ -7,12 +7,14 @@ interface CacheEntry<T> {
   data: T
   timestamp: number
   ttl: number
+  accessCount: number // NEW: Pour LRU amélioré
 }
 
 interface CacheConfig {
-  defaultTTL: number // Time to live in milliseconds
+  defaultTTL: number
   maxSize: number
   enableDebug?: boolean
+  persistToStorage?: boolean // NEW: Option pour désactiver sessionStorage
 }
 
 interface CacheStats {
@@ -62,16 +64,16 @@ function hashDependencies(deps: any[]): string {
 }
 
 /**
- * TTL configuration by namespace
+ * TTL configuration by namespace - FIXED VALUES
  */
 const TTL_BY_NAMESPACE: Record<string, number> = {
-  statistics: 10_000, // 30s - données volatiles
-  zones: 10_000, // 10min - données semi-statiques
-  directeurs: 10_000, // 5min - default
-  managers: 10_000, // 5min - default
-  commercials: 10_000, // 3min - plus volatile
-  immeubles: 10_000, // 10min - données statiques
-  portes: 10_000, // 10s - données volatiles (changent souvent)
+  statistics: 30_000, // 30s - données volatiles
+  zones: 10 * 60_000, // 10min - données semi-statiques
+  directeurs: 5 * 60_000, // 5min - default
+  managers: 5 * 60_000, // 5min - default
+  commercials: 3 * 60_000, // 3min - plus volatile
+  immeubles: 10 * 60_000, // 10min - données statiques
+  portes: 60_000, // 1min - données plus volatiles
   'mapbox-geocode': 30 * 24 * 60 * 60_000, // 30 jours - géolocalisation très stable
 }
 
@@ -79,17 +81,51 @@ class APICache {
   private cache = new Map<string, CacheEntry<any>>()
   private inflight = new Map<string, Promise<any>>()
   private config: CacheConfig
-  private storageKey = 'api-cache-v3'
+  private storageKey = 'api-cache-v4' // Changed version
   private saveScheduled = false
+  private saveDebounceTimer: number | null = null
   private hits = 0
   private misses = 0
   private currentUserId: string | null = null
+  private broadcastChannel: BroadcastChannel | null = null // REUSE channel
 
-  constructor(config: CacheConfig = { defaultTTL: 5 * 60 * 1000, maxSize: 200 }) {
+  constructor(
+    config: CacheConfig = {
+      defaultTTL: 5 * 60 * 1000,
+      maxSize: 500, // Increased from 200
+      persistToStorage: true,
+    }
+  ) {
     this.config = config
     if (isBrowser()) {
-      this.loadFromSessionStorage()
+      if (this.config.persistToStorage) {
+        this.loadFromSessionStorage()
+      }
       this.setupMultiTabSync()
+
+      // Cleanup expired entries every 5 minutes
+      setInterval(() => this.cleanupExpired(), 5 * 60_000)
+    }
+  }
+
+  /**
+   * Clean up expired entries proactively
+   */
+  private cleanupExpired(): void {
+    const now = Date.now()
+    const keysToDelete: string[] = []
+
+    this.cache.forEach((entry, key) => {
+      if (now - entry.timestamp >= entry.ttl) {
+        keysToDelete.push(key)
+      }
+    })
+
+    keysToDelete.forEach(key => this.cache.delete(key))
+
+    if (keysToDelete.length > 0) {
+      this.debugLog('Cleaned up expired entries:', keysToDelete.length)
+      this.scheduleSave()
     }
   }
 
@@ -105,14 +141,14 @@ class APICache {
   }
 
   /**
-   * Multi-tab synchronization with BroadcastChannel
+   * Multi-tab synchronization with BroadcastChannel - FIXED
    */
   private setupMultiTabSync(): void {
     if (!isBrowser() || !('BroadcastChannel' in window)) return
 
     try {
-      const channel = new BroadcastChannel('api-cache-sync')
-      channel.addEventListener('message', event => {
+      this.broadcastChannel = new BroadcastChannel('api-cache-sync')
+      this.broadcastChannel.addEventListener('message', event => {
         if (event.data.type === 'cache-invalidate') {
           const { namespace, key } = event.data
           if (namespace) {
@@ -128,14 +164,13 @@ class APICache {
   }
 
   /**
-   * Broadcast cache invalidation to other tabs
+   * Broadcast cache invalidation to other tabs - FIXED
    */
   private broadcast(type: string, data: any): void {
-    if (!isBrowser() || !('BroadcastChannel' in window)) return
+    if (!this.broadcastChannel) return
 
     try {
-      const channel = new BroadcastChannel('api-cache-sync')
-      channel.postMessage({ type, ...data })
+      this.broadcastChannel.postMessage({ type, ...data })
     } catch (e) {
       // Ignore broadcast errors
     }
@@ -145,48 +180,74 @@ class APICache {
    * Load cache from sessionStorage on initialization
    */
   private loadFromSessionStorage(): void {
-    if (!isBrowser()) return
+    if (!isBrowser() || !this.config.persistToStorage) return
 
     try {
       const stored = sessionStorage.getItem(this.storageKey)
       if (stored) {
         const parsed = JSON.parse(stored)
         for (const [key, entry] of Object.entries(parsed)) {
-          if (this.isValid(entry as CacheEntry<any>)) {
-            this.cache.set(key, entry as CacheEntry<any>)
+          const cacheEntry = entry as CacheEntry<any>
+          if (this.isValid(cacheEntry)) {
+            this.cache.set(key, cacheEntry)
           }
         }
+        this.debugLog('Loaded cache from storage:', this.cache.size, 'entries')
       }
     } catch (error) {
       this.debugLog('Failed to load cache from sessionStorage:', error)
+      // Clear corrupted storage
+      try {
+        sessionStorage.removeItem(this.storageKey)
+      } catch {}
     }
   }
 
   /**
-   * Throttled save to sessionStorage
+   * Debounced save to sessionStorage - OPTIMIZED
    */
   private scheduleSave(): void {
-    if (this.saveScheduled) return
-    this.saveScheduled = true
+    if (!this.config.persistToStorage) return
 
-    setTimeout(() => {
+    if (this.saveDebounceTimer !== null) {
+      clearTimeout(this.saveDebounceTimer)
+    }
+
+    this.saveDebounceTimer = window.setTimeout(() => {
       this.saveToSessionStorage()
-      this.saveScheduled = false
-    }, 0)
+      this.saveDebounceTimer = null
+    }, 1000) // Debounce 1 second
   }
 
   /**
-   * Save cache to sessionStorage with quota handling
+   * Save cache to sessionStorage with quota handling - OPTIMIZED
    */
   private saveToSessionStorage(): void {
-    if (!isBrowser()) return
+    if (!isBrowser() || !this.config.persistToStorage) return
 
     try {
-      const cacheObject = Object.fromEntries(this.cache.entries())
-      sessionStorage.setItem(this.storageKey, JSON.stringify(cacheObject))
-    } catch (error) {
-      this.debugLog('Quota exceeded, using memory-only cache:', error)
-      // Continue with memory-only cache
+      // Only save entries that are still valid
+      const now = Date.now()
+      const validEntries = Array.from(this.cache.entries())
+        .filter(([_, entry]) => now - entry.timestamp < entry.ttl)
+        .reduce(
+          (obj, [key, entry]) => {
+            obj[key] = entry
+            return obj
+          },
+          {} as Record<string, CacheEntry<any>>
+        )
+
+      sessionStorage.setItem(this.storageKey, JSON.stringify(validEntries))
+    } catch (error: any) {
+      // Quota exceeded - clear old cache and try again with smaller dataset
+      if (error?.name === 'QuotaExceededError') {
+        this.debugLog('Quota exceeded, clearing storage and using memory-only')
+        try {
+          sessionStorage.removeItem(this.storageKey)
+          this.config.persistToStorage = false // Disable persistence
+        } catch {}
+      }
     }
   }
 
@@ -222,11 +283,12 @@ class APICache {
   }
 
   /**
-   * Implement LRU: move accessed item to end (most recent)
+   * Implement LRU: move accessed item to end (most recent) + track access count
    */
   private markAsRecent(key: string): void {
     const entry = this.cache.get(key)
     if (entry) {
+      entry.accessCount++
       this.cache.delete(key)
       this.cache.set(key, entry)
     }
@@ -248,18 +310,18 @@ class APICache {
     // Check cache first
     const cached = this.get<T>(key)
     if (cached !== null) {
-      this.debugLog('Cache hit:', key)
+      this.debugLog('✅ Cache hit:', key)
       return cached
     }
 
     // Check if request is already in-flight
     if (this.inflight.has(key)) {
-      this.debugLog('In-flight hit:', key)
+      this.debugLog('🔄 In-flight hit:', key)
       return this.inflight.get(key) as Promise<T>
     }
 
     // Start new request
-    this.debugLog('Cache miss, fetching:', key)
+    this.debugLog('❌ Cache miss, fetching:', key)
     const promise = fetcher()
       .then(result => {
         this.set(key, result)
@@ -292,9 +354,8 @@ class APICache {
       return entry.data
     }
 
-    // Remove expired entry and save
+    // Remove expired entry
     this.cache.delete(key)
-    this.scheduleSave()
     this.misses++
     return null
   }
@@ -303,10 +364,26 @@ class APICache {
    * Store data in cache
    */
   set<T>(key: string, data: T, customTTL?: number): void {
-    // LRU eviction: remove oldest entries if cache is full
+    // LRU eviction: remove least accessed entries if cache is full
     while (this.cache.size >= this.config.maxSize) {
-      const oldestKey = this.cache.keys().next().value
-      this.cache.delete(oldestKey)
+      // Find entry with lowest access count
+      let minAccessCount = Infinity
+      let oldestKey: string | null = null
+
+      for (const [k, entry] of this.cache.entries()) {
+        if (entry.accessCount < minAccessCount) {
+          minAccessCount = entry.accessCount
+          oldestKey = k
+        }
+      }
+
+      if (oldestKey) {
+        this.cache.delete(oldestKey)
+      } else {
+        // Fallback to simple oldest (first in map)
+        const firstKey = this.cache.keys().next().value
+        this.cache.delete(firstKey)
+      }
     }
 
     // Determine TTL
@@ -317,9 +394,10 @@ class APICache {
       data,
       timestamp: Date.now(),
       ttl,
+      accessCount: 0,
     })
 
-    this.debugLog('Cache set:', key, 'TTL:', ttl)
+    this.debugLog('💾 Cache set:', key, 'TTL:', `${Math.round(ttl / 1000)}s`)
     this.scheduleSave()
   }
 
@@ -327,14 +405,17 @@ class APICache {
    * Invalidate single key
    */
   invalidateKey(key: string, broadcast = true): void {
-    this.cache.delete(key)
-    this.scheduleSave()
+    const deleted = this.cache.delete(key)
 
-    if (broadcast) {
-      this.broadcast('cache-invalidate', { key })
+    if (deleted) {
+      this.scheduleSave()
+
+      if (broadcast) {
+        this.broadcast('cache-invalidate', { key })
+      }
+
+      this.debugLog('🗑️ Invalidated key:', key)
     }
-
-    this.debugLog('Invalidated key:', key)
   }
 
   /**
@@ -351,13 +432,16 @@ class APICache {
     })
 
     keysToDelete.forEach(key => this.cache.delete(key))
-    this.scheduleSave()
 
-    if (broadcast) {
-      this.broadcast('cache-invalidate', { namespace })
+    if (keysToDelete.length > 0) {
+      this.scheduleSave()
+
+      if (broadcast) {
+        this.broadcast('cache-invalidate', { namespace })
+      }
+
+      this.debugLog('🗑️ Invalidated namespace:', namespace, 'Keys:', keysToDelete.length)
     }
-
-    this.debugLog('Invalidated namespace:', namespace, 'Keys:', keysToDelete.length)
   }
 
   /**
@@ -373,9 +457,11 @@ class APICache {
     })
 
     keysToDelete.forEach(key => this.cache.delete(key))
-    this.scheduleSave()
 
-    this.debugLog('Invalidated by predicate:', keysToDelete.length, 'keys')
+    if (keysToDelete.length > 0) {
+      this.scheduleSave()
+      this.debugLog('🗑️ Invalidated by predicate:', keysToDelete.length, 'keys')
+    }
   }
 
   /**
@@ -387,7 +473,7 @@ class APICache {
     this.hits = 0
     this.misses = 0
 
-    if (isBrowser()) {
+    if (isBrowser() && this.config.persistToStorage) {
       try {
         sessionStorage.removeItem(this.storageKey)
       } catch (e) {
@@ -395,7 +481,7 @@ class APICache {
       }
     }
 
-    this.debugLog('Cache cleared')
+    this.debugLog('🧹 Cache cleared')
   }
 
   /**
@@ -415,36 +501,62 @@ class APICache {
       maxSize: this.config.maxSize,
       hits: this.hits,
       misses: this.misses,
-      hitRate: total > 0 ? this.hits / total : 0,
+      hitRate: total > 0 ? Math.round((this.hits / total) * 100) / 100 : 0,
       keys: Array.from(this.cache.keys()),
     }
+  }
+
+  /**
+   * Clean up resources
+   */
+  destroy(): void {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.close()
+      this.broadcastChannel = null
+    }
+
+    if (this.saveDebounceTimer !== null) {
+      clearTimeout(this.saveDebounceTimer)
+      this.saveDebounceTimer = null
+    }
+
+    this.clear()
+  }
+
+  /**
+   * Check if debug mode is enabled
+   */
+  isDebugEnabled(): boolean {
+    return this.config.enableDebug || false
   }
 }
 
 // Global cache instance
 export const apiCache = new APICache({
   defaultTTL: 5 * 60 * 1000, // 5 minutes
-  maxSize: 200,
-  enableDebug: process.env.NODE_ENV === 'development',
+  maxSize: 500, // Increased
+  enableDebug: import.meta.env.DEV, // Use Vite env
+  persistToStorage: true,
 })
 
+// Clean up on page unload
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    apiCache.destroy()
+  })
+}
+
 /**
- * Cache invalidation mappings
+ * Cache invalidation mappings - OPTIMIZED
  * When an entity is modified, invalidate related caches by namespace
  */
 export const CACHE_INVALIDATION_MAP: Record<string, string[]> = {
-  // When directeurs change, invalidate managers cache (they have directeurId)
   directeurs: ['directeurs', 'managers'],
-  // When managers change, invalidate commercials cache
   managers: ['managers', 'commercials'],
-  // When commercials change, invalidate zones and immeubles
-  commercials: ['commercials', 'zones', 'immeubles', 'portes'],
-  // Zones and immeubles are independent
-  zones: ['zones', 'allcurrentassignations', 'zonehistory'],
-  // When immeubles change, invalidate portes cache (portes belong to immeubles)
-  immeubles: ['immeubles', 'portes'],
-  // When portes change, invalidate portes and immeubles cache (stats impact)
-  portes: ['portes', 'immeubles', 'statistics', 'commercials'],
+  commercials: ['commercials', 'zones', 'immeubles', 'statistics'],
+  zones: ['zones', 'allcurrentassignations', 'zonehistory', 'statistics'],
+  immeubles: ['immeubles', 'portes', 'statistics'],
+  portes: ['portes', 'immeubles', 'statistics'],
   statistics: ['statistics'],
 }
 
@@ -457,6 +569,10 @@ export function invalidateRelatedCaches(entityType: string): void {
   toInvalidate.forEach(namespace => {
     apiCache.invalidateNamespace(namespace)
   })
+
+  if (apiCache.isDebugEnabled()) {
+    console.log(`🔄 Invalidated caches for: ${entityType} → [${toInvalidate.join(', ')}]`)
+  }
 }
 
 /**
