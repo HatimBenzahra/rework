@@ -295,7 +295,7 @@ export function AppSidebar() {
   })
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" data-sidebar="sidebar">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

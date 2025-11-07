@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from '@/components/ui/toast'
 import { RoleProvider } from '@/contexts/RoleContext'
 import { useRole } from '@/contexts/userole'
-import { DetailsSectionsProvider } from '@/contexts/DetailsSectionsContext'
+import { DetailsSectionsProvider } from '@/contexts/DetailsSectionsProvider'
+import { AppLoadingProvider } from '@/contexts/AppLoadingProvider'
 // Import Auth Pages
 import Login from '@/pages-AUTH/Login'
 import Unauthorized from '@/pages-AUTH/Unauthorized'
@@ -122,16 +123,18 @@ function AppRouter() {
 function App() {
   return (
     <ToastProvider>
-      <RoleProvider>
-        <Routes>
-          {/* Routes publiques */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
+      <AppLoadingProvider>
+        <RoleProvider>
+          <Routes>
+            {/* Routes publiques */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* Routes protégées */}
-          <Route path="/*" element={<AppRouter />} />
-        </Routes>
-      </RoleProvider>
+            {/* Routes protégées */}
+            <Route path="/*" element={<AppRouter />} />
+          </Routes>
+        </RoleProvider>
+      </AppLoadingProvider>
     </ToastProvider>
   )
 }

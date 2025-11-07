@@ -292,19 +292,19 @@ export default function Dashboard() {
               {
                 label: 'Managers',
                 icon: Award,
-                path: '/gestion-managers',
+                path: '/managers',
                 info: `${managers?.length || 0}`,
               },
               {
                 label: 'Zones',
                 icon: MapPin,
-                path: '/gestion-zones',
+                path: '/zones',
                 info: `${assignments?.length || 0}`,
               },
               {
                 label: 'Immeubles',
                 icon: Building2,
-                path: '/gestion-immeubles',
+                path: '/immeubles',
                 info: `${immeubles?.length || 0}`,
               },
               {
@@ -314,22 +314,22 @@ export default function Dashboard() {
                 info: 'Performances détaillées',
               },
               {
-                label: 'Historique',
+                label: 'Historique zones',
                 icon: Calendar,
-                path: '/historique',
-                info: 'Historique complet',
+                path: '/zones/historique',
+                info: 'Historique des zones',
               },
               {
-                label: 'Classement',
+                label: 'Directeurs',
                 icon: Trophy,
-                path: '/classement',
-                info: 'Podium des performances',
+                path: '/directeurs',
+                info: `${directeurs?.length || 0}`,
               },
               {
-                label: 'Analyse zones',
+                label: 'Gestion',
                 icon: Target,
-                path: '/analyse-zones',
-                info: 'Analyse détaillée',
+                path: '/gestion',
+                info: 'Gestion globale',
               },
             ].map(({ label, icon: Icon, path, info }) => (
               <Button
