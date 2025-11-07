@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Map, { Marker, Source, Layer, NavigationControl } from 'react-map-gl/mapbox'
+import Map, { Marker, Source, Layer, NavigationControl, useControl } from 'react-map-gl/mapbox'
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css'
 import mapboxgl from 'mapbox-gl'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,6 +15,24 @@ import { logError } from '@/services/graphql-errors'
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+
+// Geocoder Control Component pour la searchbar
+function GeocoderControl() {
+  useControl(
+    () => {
+      const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        marker: false,
+        countries: 'fr',
+        language: 'fr',
+        placeholder: 'Rechercher une adresse...',
+      })
+      return geocoder
+    },
+    { position: 'top-left' }
+  )
+  return null
+}
 
 // Generate a deterministic color from zone ID
 function getZoneColor(zoneId) {
@@ -61,7 +81,7 @@ const fetchLocationName = async (longitude, latitude) => {
     try {
       const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,reg  ion,country&language=fr`
       )
 
       if (!response.ok) {
@@ -92,17 +112,22 @@ const fetchLocationName = async (longitude, latitude) => {
 
 /**
  * Composant pour afficher la zone assignée à un commercial/manager/directeur
+ * OU pour afficher tous les immeubles sur une carte
  * @param {Object} props
  * @param {Object} props.zone - Objet zone avec xOrigin, yOrigin, rayon, nom, id, immeubles
  * @param {string} props.assignmentDate - Date d'assignation au format ISO
  * @param {number} props.immeublesCount - Nombre d'immeubles dans la zone
  * @param {string} props.className - Classes CSS supplémentaires
+ * @param {boolean} props.showAllImmeubles - Mode "tous les immeubles" sans zone spécifique
+ * @param {Array} props.allImmeubles - Liste de tous les immeubles (si showAllImmeubles = true)
  */
 export default function AssignedZoneCard({
   zone,
   assignmentDate,
   className = '',
   fullWidth = false,
+  showAllImmeubles = false,
+  allImmeubles = [],
 }) {
   const mapRef = useRef(null)
   const navigate = useNavigate()
@@ -147,22 +172,61 @@ export default function AssignedZoneCard({
 
   // Filtrer les immeubles qui ont des coordonnées valides
   const immeublesWithCoordinates = useMemo(() => {
-    if (!zone?.immeubles) return []
-    return zone.immeubles.filter(
+    const sourceImmeubles = showAllImmeubles ? allImmeubles : zone?.immeubles
+    if (!sourceImmeubles) return []
+    return sourceImmeubles.filter(
       immeuble =>
         immeuble.latitude != null &&
         immeuble.longitude != null &&
         !isNaN(immeuble.latitude) &&
         !isNaN(immeuble.longitude)
     )
-  }, [zone?.immeubles])
+  }, [zone?.immeubles, allImmeubles, showAllImmeubles])
+
+  // Calculer le centre de la carte basé sur la zone ou sur tous les immeubles
+  const mapCenter = useMemo(() => {
+    if (zone?.xOrigin && zone?.yOrigin && !showAllImmeubles) {
+      return {
+        longitude: zone.xOrigin,
+        latitude: zone.yOrigin,
+        zoom: 11,
+      }
+    }
+
+    // Si pas de zone ou mode "tous les immeubles", calculer le centre basé sur les immeubles
+    if (immeublesWithCoordinates.length === 0) {
+      return { longitude: 2.3522, latitude: 48.8566, zoom: 5 }
+    }
+
+    const avgLat =
+      immeublesWithCoordinates.reduce((sum, imm) => sum + imm.latitude, 0) /
+      immeublesWithCoordinates.length
+    const avgLng =
+      immeublesWithCoordinates.reduce((sum, imm) => sum + imm.longitude, 0) /
+      immeublesWithCoordinates.length
+
+    const lats = immeublesWithCoordinates.map(i => i.latitude)
+    const lngs = immeublesWithCoordinates.map(i => i.longitude)
+    const latRange = Math.max(...lats) - Math.min(...lats)
+    const lngRange = Math.max(...lngs) - Math.min(...lngs)
+    const maxRange = Math.max(latRange, lngRange)
+
+    let zoom = 10
+    if (maxRange > 10) zoom = 5
+    else if (maxRange > 5) zoom = 6
+    else if (maxRange > 2) zoom = 7
+    else if (maxRange > 1) zoom = 8
+    else if (maxRange > 0.5) zoom = 9
+
+    return { longitude: avgLng, latitude: avgLat, zoom }
+  }, [zone, immeublesWithCoordinates, showAllImmeubles])
 
   // Fonction pour gérer le clic sur un immeuble
   const handleImmeubleClick = immeubleId => {
     navigate(`/immeubles/${immeubleId}`)
   }
 
-  if (!zone) {
+  if (!zone && !showAllImmeubles) {
     return (
       <Card className={`border-2 ${className}`}>
         <CardContent className="pt-6">
@@ -200,12 +264,13 @@ export default function AssignedZoneCard({
     // Vérifier que tout est prêt avant de rendre la carte
     const canRenderMap =
       isMounted &&
-      zone?.xOrigin != null &&
-      zone?.yOrigin != null &&
-      zone?.rayon != null &&
-      !isNaN(zone.xOrigin) &&
-      !isNaN(zone.yOrigin) &&
-      containerHeight != null
+      containerHeight != null &&
+      (showAllImmeubles ||
+        (zone?.xOrigin != null &&
+          zone?.yOrigin != null &&
+          zone?.rayon != null &&
+          !isNaN(zone.xOrigin) &&
+          !isNaN(zone.yOrigin)))
 
     if (!canRenderMap) {
       return (
@@ -257,11 +322,7 @@ export default function AssignedZoneCard({
 
         <Map
           ref={mapRef}
-          initialViewState={{
-            longitude: zone.xOrigin,
-            latitude: zone.yOrigin,
-            zoom: 11,
-          }}
+          initialViewState={mapCenter}
           style={{ height: actualHeight, width: '100%', borderRadius: '0.5rem' }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
           onLoad={() => setMapLoading(false)}
@@ -280,9 +341,10 @@ export default function AssignedZoneCard({
           touchZoomRotate={!isMapLocked || isFullscreen}
         >
           {showControls && <NavigationControl position="top-right" />}
+          <GeocoderControl />
 
-          {/* Centre de la zone */}
-          <Marker longitude={zone.xOrigin} latitude={zone.yOrigin} />
+          {/* Centre de la zone - seulement si on a une zone */}
+          {zone && !showAllImmeubles && <Marker longitude={zone.xOrigin} latitude={zone.yOrigin} />}
 
           {/* Immeubles sur la carte */}
           {immeublesWithCoordinates.map(immeuble => (
@@ -323,8 +385,8 @@ export default function AssignedZoneCard({
             </Marker>
           ))}
 
-          {/* Cercle de la zone */}
-          {circleGeoJSON && (
+          {/* Cercle de la zone - seulement si on a une zone */}
+          {circleGeoJSON && !showAllImmeubles && (
             <Source id="zone-circle" type="geojson" data={circleGeoJSON}>
               <Layer
                 id="zone-fill"
@@ -357,25 +419,33 @@ export default function AssignedZoneCard({
 
                   {/* Boutons de contrôle */}
                   <div className="absolute bottom-3 left-3 right-3 z-30 flex items-center justify-between gap-2">
-                    <Button
-                      variant={isMapLocked ? 'secondary' : 'default'}
-                      size="sm"
-                      onClick={() => setIsMapLocked(!isMapLocked)}
-                      className="shadow-lg"
-                      title={isMapLocked ? 'Déverrouiller la carte' : 'Verrouiller la carte'}
-                    >
-                      {isMapLocked ? (
-                        <>
-                          <Lock className="h-4 w-4 mr-2" />
-                          Verrouillée
-                        </>
-                      ) : (
-                        <>
-                          <Unlock className="h-4 w-4 mr-2" />
-                          Déverrouillée
-                        </>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant={isMapLocked ? 'secondary' : 'default'}
+                        size="sm"
+                        onClick={() => setIsMapLocked(!isMapLocked)}
+                        className="shadow-lg"
+                        title={isMapLocked ? 'Déverrouiller la carte' : 'Verrouiller la carte'}
+                      >
+                        {isMapLocked ? (
+                          <>
+                            <Lock className="h-4 w-4 mr-2" />
+                            Verrouillée
+                          </>
+                        ) : (
+                          <>
+                            <Unlock className="h-4 w-4 mr-2" />
+                            Déverrouillée
+                          </>
+                        )}
+                      </Button>
+
+                      {showAllImmeubles && (
+                        <Badge variant="secondary" className="shadow-lg">
+                          {immeublesWithCoordinates.length} immeubles affichés
+                        </Badge>
                       )}
-                    </Button>
+                    </div>
 
                     <Button
                       variant="secondary"
@@ -391,62 +461,111 @@ export default function AssignedZoneCard({
               </div>
 
               {/* Informations sous la map */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
-                      Zone
-                    </p>
-                  </div>
-                  <p className="text-xl font-bold">{zone.nom}</p>
-                </div>
-
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
-                      Localisation
-                    </p>
-                  </div>
-                  <p className="font-semibold">{locationName}</p>
-                </div>
-
-                <div className="flex flex-col space-y-2">
-                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
-                    Rayon de couverture
-                  </p>
-                  <p className="text-xl font-bold">{(zone.rayon / 1000).toFixed(1)} km</p>
-                </div>
-
-                <div className="flex flex-col space-y-2">
-                  <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
-                    Surface totale
-                  </p>
-                  <p className="text-xl font-bold">
-                    {(Math.PI * Math.pow(zone.rayon / 1000, 2)).toFixed(1)} km²
-                  </p>
-                </div>
-              </div>
-
-              {assignmentDate && (
-                <div className="pt-4 border-t">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                        Date d'assignation
+              {showAllImmeubles ? (
+                /* Statistiques pour tous les immeubles */
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                        Total Immeubles
                       </p>
-                      <p className="font-semibold">
-                        {new Date(assignmentDate).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                        })}
+                    </div>
+                    <p className="text-2xl font-bold">{allImmeubles.length}</p>
+                  </div>
+
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                        Géolocalisés
+                      </p>
+                    </div>
+                    <p className="text-2xl font-bold">{immeublesWithCoordinates.length}</p>
+                  </div>
+
+                  <div className="flex flex-col space-y-2">
+                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                      Total Étages
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {allImmeubles.reduce((sum, imm) => sum + (imm.nbEtages || 0), 0)}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col space-y-2">
+                    <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                      Total Portes
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {allImmeubles.reduce(
+                        (sum, imm) => sum + (imm.nbEtages || 0) * (imm.nbPortesParEtage || 0),
+                        0
+                      )}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Informations de zone */
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                          Zone
+                        </p>
+                      </div>
+                      <p className="text-xl font-bold">{zone.nom}</p>
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                          Localisation
+                        </p>
+                      </div>
+                      <p className="font-semibold">{locationName}</p>
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                        Rayon de couverture
+                      </p>
+                      <p className="text-xl font-bold">{(zone.rayon / 1000).toFixed(1)} km</p>
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium">
+                        Surface totale
+                      </p>
+                      <p className="text-xl font-bold">
+                        {(Math.PI * Math.pow(zone.rayon / 1000, 2)).toFixed(1)} km²
                       </p>
                     </div>
                   </div>
-                </div>
+
+                  {assignmentDate && (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground uppercase tracking-wide font-medium mb-1">
+                            Date d'assignation
+                          </p>
+                          <p className="font-semibold">
+                            {new Date(assignmentDate).toLocaleDateString('fr-FR', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : (
@@ -569,8 +688,14 @@ export default function AssignedZoneCard({
         <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col p-4 animate-in fade-in-0">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold">{zone.nom}</h2>
-              <p className="text-muted-foreground">{locationName}</p>
+              <h2 className="text-2xl font-bold">
+                {showAllImmeubles ? 'Carte des Immeubles' : zone.nom}
+              </h2>
+              <p className="text-muted-foreground">
+                {showAllImmeubles
+                  ? `${immeublesWithCoordinates.length} immeubles géolocalisés`
+                  : locationName}
+              </p>
             </div>
             <Button variant="outline" size="icon" onClick={() => setIsFullscreen(false)}>
               <X className="h-5 w-5" />
@@ -580,34 +705,72 @@ export default function AssignedZoneCard({
             <MapContent height="100%" showControls={true} />
           </div>
           <div className="grid grid-cols-4 gap-4 mt-4 p-4 bg-card rounded-lg border">
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                Nom de la zone
-              </p>
-              <p className="font-semibold">{zone.nom}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                Rayon
-              </p>
-              <p className="font-semibold">{(zone.rayon / 1000).toFixed(1)} km</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                Immeubles géolocalisés
-              </p>
-              <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                Date d'assignation
-              </p>
-              <p className="font-semibold">
-                {assignmentDate
-                  ? new Date(assignmentDate).toLocaleDateString('fr-FR')
-                  : 'Non disponible'}
-              </p>
-            </div>
+            {showAllImmeubles ? (
+              <>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Total Immeubles
+                  </p>
+                  <p className="font-semibold text-lg">{allImmeubles.length}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Géolocalisés
+                  </p>
+                  <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Total Étages
+                  </p>
+                  <p className="font-semibold text-lg">
+                    {allImmeubles.reduce((sum, imm) => sum + (imm.nbEtages || 0), 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Total Portes
+                  </p>
+                  <p className="font-semibold text-lg">
+                    {allImmeubles.reduce(
+                      (sum, imm) => sum + (imm.nbEtages || 0) * (imm.nbPortesParEtage || 0),
+                      0
+                    )}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Nom de la zone
+                  </p>
+                  <p className="font-semibold">{zone.nom}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Rayon
+                  </p>
+                  <p className="font-semibold">{(zone.rayon / 1000).toFixed(1)} km</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Immeubles géolocalisés
+                  </p>
+                  <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                    Date d'assignation
+                  </p>
+                  <p className="font-semibold">
+                    {assignmentDate
+                      ? new Date(assignmentDate).toLocaleDateString('fr-FR')
+                      : 'Non disponible'}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

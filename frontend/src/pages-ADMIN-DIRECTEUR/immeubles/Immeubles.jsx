@@ -10,7 +10,10 @@ import {
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import AssignedZoneCard from '@/components/AssignedZoneCard'
+import { Button } from '@/components/ui/button'
+import { LayoutList, Map } from 'lucide-react'
 
 const immeublesColumns = [
   {
@@ -94,6 +97,7 @@ const getImmeublesEditFields = (commercials = []) => [
 
 export default function Immeubles() {
   const { showError, showSuccess } = useErrorToast()
+  const [viewMode, setViewMode] = useState('list') // 'list' ou 'map'
 
   // Récupération du rôle de l'utilisateur
   const { currentRole, currentUserId } = useRole()
@@ -200,23 +204,54 @@ export default function Immeubles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Immeubles</h1>
-        <p className="text-muted-foreground text-base">{description}</p>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold tracking-tight">Immeubles</h1>
+          <p className="text-muted-foreground text-base">{description}</p>
+        </div>
+
+        {/* Toggle entre vue liste et vue carte */}
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            onClick={() => setViewMode('list')}
+            className="gap-2"
+          >
+            <LayoutList className="h-4 w-4" />
+            Vue Liste
+          </Button>
+          <Button
+            variant={viewMode === 'map' ? 'default' : 'outline'}
+            onClick={() => setViewMode('map')}
+            className="gap-2"
+          >
+            <Map className="h-4 w-4" />
+            Vue Carte
+          </Button>
+        </div>
       </div>
 
-      <AdvancedDataTable
-        showStatusColumn={false}
-        title="Liste des Immeubles"
-        description={description}
-        data={tableData}
-        columns={immeublesColumns}
-        searchKey="address"
-        detailsPath="/immeubles"
-        editFields={getImmeublesEditFields(commercials)}
-        onEdit={permissions.canEdit ? handleEditImmeuble : undefined}
-        onDelete={permissions.canDelete ? handleDeleteImmeuble : undefined}
-      />
+      {/* Affichage conditionnel basé sur viewMode */}
+      {viewMode === 'list' ? (
+        <AdvancedDataTable
+          showStatusColumn={false}
+          title="Liste des Immeubles"
+          description={description}
+          data={tableData}
+          columns={immeublesColumns}
+          searchKey="address"
+          detailsPath="/immeubles"
+          editFields={getImmeublesEditFields(commercials)}
+          onEdit={permissions.canEdit ? handleEditImmeuble : undefined}
+          onDelete={permissions.canDelete ? handleDeleteImmeuble : undefined}
+        />
+      ) : (
+        <AssignedZoneCard
+          showAllImmeubles={true}
+          allImmeubles={filteredImmeubles}
+          fullWidth={true}
+        />
+      )}
     </div>
   )
 }
