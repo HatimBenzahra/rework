@@ -52,12 +52,11 @@ export class ImmeubleResolver {
     return this.immeubleService.remove(id);
   }
 
-
   @Mutation(() => Immeuble)
   @Roles('admin', 'directeur', 'manager', 'commercial')
   addPorteToEtage(
     @Args('immeubleId', { type: () => Int }) immeubleId: number,
-    @Args('etage', { type: () => Int }) etage: number
+    @Args('etage', { type: () => Int }) etage: number,
   ) {
     return this.immeubleService.addPorteToEtage(immeubleId, etage);
   }
@@ -66,7 +65,7 @@ export class ImmeubleResolver {
   @Roles('admin', 'directeur', 'manager', 'commercial')
   removePorteFromEtage(
     @Args('immeubleId', { type: () => Int }) immeubleId: number,
-    @Args('etage', { type: () => Int }) etage: number
+    @Args('etage', { type: () => Int }) etage: number,
   ) {
     return this.immeubleService.removePorteFromEtage(immeubleId, etage);
   }
