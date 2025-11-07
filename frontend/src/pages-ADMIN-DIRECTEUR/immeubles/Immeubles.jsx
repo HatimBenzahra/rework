@@ -1,6 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials } from '@/services'
+import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials, useManagers } from '@/services'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
@@ -99,6 +99,7 @@ export default function Immeubles() {
     refetch,
   } = useImmeubles(parseInt(currentUserId, 10), currentRole)
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 
@@ -117,10 +118,19 @@ export default function Immeubles() {
     })
     return sortedImmeubles.map(immeuble => {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
+      const manager = managers?.find(m => m.id === immeuble.managerId)
       const portesImmeuble = immeuble.portes || []
       const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
       const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
       const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
+
+      // Déterminer le nom du responsable
+      let responsibleName = 'N/A'
+      if (commercial) {
+        responsibleName = `${commercial.prenom} ${commercial.nom}`
+      } else if (manager) {
+        responsibleName = `${manager.prenom} ${manager.nom} (Manager)`
+      }
 
       return {
         ...immeuble,
@@ -129,10 +139,10 @@ export default function Immeubles() {
         doors_per_floor: immeuble.nbPortesParEtage,
         total_doors: totalDoors,
         couverture: couverture,
-        commercial_name: commercial ? `${commercial.prenom} ${commercial.nom}` : 'N/A',
+        commercial_name: responsibleName,
       }
     })
-  }, [filteredImmeubles, commercials])
+  }, [filteredImmeubles, commercials, managers])
 
   const handleEditImmeuble = async editedData => {
     try {

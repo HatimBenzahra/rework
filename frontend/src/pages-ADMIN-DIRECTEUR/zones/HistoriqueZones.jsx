@@ -169,7 +169,7 @@ export default function HistoriqueZones() {
         data={enrichedHistory}
         columns={columns}
         searchKey="zoneName"
-        itemsPerPage={15}
+        itemsPerPage={10}
         detailsPath="/zones"
       />
     </div>

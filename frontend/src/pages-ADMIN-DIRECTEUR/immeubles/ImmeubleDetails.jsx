@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useImmeuble, useCommercials, usePortesByImmeuble } from '@/services'
+import { useImmeuble, useCommercials, useManagers, usePortesByImmeuble } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +13,7 @@ export default function ImmeubleDetails() {
   // API hooks
   const { data: immeuble, loading: immeubleLoading, error } = useImmeuble(parseInt(id))
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
   const { data: portes, loading: portesLoading } = usePortesByImmeuble(parseInt(id))
 
   // Transformation des données API vers format UI
@@ -20,10 +21,16 @@ export default function ImmeubleDetails() {
     if (!immeuble) return null
 
     const commercial = commercials?.find(c => c.id === immeuble.commercialId)
+    const manager = managers?.find(m => m.id === immeuble.managerId)
     const totalDoors = portes?.length || immeuble.nbEtages * immeuble.nbPortesParEtage
 
-    // Commercial responsable
-    const commercialName = commercial ? `${commercial.prenom} ${commercial.nom}` : 'Non assigné'
+    // Déterminer le responsable (commercial ou manager)
+    let commercialName = 'Non assigné'
+    if (commercial) {
+      commercialName = `${commercial.prenom} ${commercial.nom}`
+    } else if (manager) {
+      commercialName = `${manager.prenom} ${manager.nom} (Manager)`
+    }
 
     // Grouper les portes par étage à partir des vraies données
     const floorDetails = portes
@@ -68,7 +75,7 @@ export default function ImmeubleDetails() {
       updated_at: immeuble.updatedAt,
       floorDetails,
     }
-  }, [immeuble, commercials, portes])
+  }, [immeuble, commercials, managers, portes])
 
   // Préparer les données pour le tableau - DOIT être après immeubleData mais avant les returns conditionnels
   const doorsData = useMemo(() => {

@@ -499,6 +499,7 @@ export const GET_IMMEUBLES = `
       ascenseurPresent
       digitalCode
       commercialId
+      managerId
       portes {
         id
         statut
@@ -521,6 +522,7 @@ export const GET_IMMEUBLE = `
       ascenseurPresent
       digitalCode
       commercialId
+      managerId
       createdAt
       updatedAt
     }

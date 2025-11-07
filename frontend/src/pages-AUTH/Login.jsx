@@ -5,7 +5,7 @@ import ThemeToggle from '@/components/ThemeSwitchDarklight'
 import ThemeSelector from '@/components/Theme'
 import { authService } from '@/services/auth.service'
 import { useToast } from '@/components/ui/toast'
-
+import { logger as Logger } from '@/services/graphql-errors'
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -23,7 +23,7 @@ export default function Login() {
       // Appel au service d'authentification
       const authResponse = await authService.login({ username, password })
 
-      console.log('✅ Connexion réussie:', authResponse)
+      Logger.debug('✅ Connexion réussie:', authResponse)
 
       // Notifier le contexte du changement d'authentification
       window.dispatchEvent(new Event('auth-changed'))
@@ -33,7 +33,7 @@ export default function Login() {
         navigate('/')
       }, 500)
     } catch (err) {
-      console.error('❌ Erreur de connexion:', err)
+      Logger.debug('❌ Erreur de connexion:', err)
 
       // Vérifier si c'est une erreur de groupe non autorisé
       if (err.message === 'UNAUTHORIZED_GROUP') {
