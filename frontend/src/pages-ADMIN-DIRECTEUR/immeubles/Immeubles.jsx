@@ -1,6 +1,12 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { useImmeubles, useUpdateImmeuble, useRemoveImmeuble, useCommercials, useManagers } from '@/services'
+import {
+  useImmeubles,
+  useUpdateImmeuble,
+  useRemoveImmeuble,
+  useCommercials,
+  useManagers,
+} from '@/services'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
