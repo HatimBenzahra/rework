@@ -13,6 +13,7 @@ import {
   Headphones,
   BarChart3,
   Users,
+  ArrowLeft,
 } from 'lucide-react'
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
@@ -36,12 +37,6 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from '@/components/ui/sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 // Menu items avec permissions requises
 const items = [
@@ -200,16 +195,29 @@ export function AppSidebar() {
     return items.map(item => {
       // Si on est sur une page de détails et qu'il y a des sections disponibles
       if (sections.length > 0 && location.pathname.includes(item.url) && item.url !== '/') {
-        // Créer des sous-items à partir des sections
-        const dynamicSubitems = sections.map(section => ({
-          title: section.title,
-          id: section.id,
-          isSection: true, // Marquer comme section pour gérer différemment
-        }))
+        // Vérifier si on est sur une page de détail (avec un ID dans l'URL)
+        const isDetailPage =
+          location.pathname !== item.url && location.pathname.startsWith(item.url + '/')
 
-        return {
-          ...item,
-          subitems: dynamicSubitems,
+        if (isDetailPage) {
+          // Créer un premier sous-item pour retourner au tableau principal
+          const backToListItem = {
+            title: `Voir tous les ${item.title}`,
+            url: item.url,
+            isBackLink: true, // Marquer comme lien de retour
+          }
+
+          // Créer des sous-items à partir des sections
+          const dynamicSubitems = sections.map(section => ({
+            title: section.title,
+            id: section.id,
+            isSection: true, // Marquer comme section pour gérer différemment
+          }))
+
+          return {
+            ...item,
+            subitems: [backToListItem, ...dynamicSubitems], // Ajouter le lien de retour en premier
+          }
         }
       }
       return item
@@ -344,6 +352,18 @@ export function AppSidebar() {
                                   >
                                     <span>{subitem.title}</span>
                                   </SidebarMenuSubButton>
+                                ) : subitem.isBackLink ? (
+                                  // Pour le lien de retour, utiliser un style différent avec une icône
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={false}
+                                    className="font-semibold text-primary"
+                                  >
+                                    <Link to={subitem.url}>
+                                      <ArrowLeft className="h-3 w-3 mr-1" />
+                                      <span>{subitem.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
                                 ) : (
                                   // Pour les vraies sous-pages, utiliser un lien
                                   <SidebarMenuSubButton
@@ -395,36 +415,29 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
+            <div className="flex flex-col gap-2 p-2">
+              {/* Affichage des informations utilisateur */}
+              <div className="flex items-center gap-3 px-2 py-2">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <User2 className="size-4" />
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">Utilisateur</span>
-                    <span className="truncate text-xs capitalize">{currentRole}</span>
-                  </div>
-                  <ChevronUp className="ml-auto size-4" />
-                </SidebarMenuButton>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-                side="bottom"
-                align="end"
-                sideOffset={4}
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Utilisateur</span>
+                  <span className="truncate text-xs capitalize text-muted-foreground">
+                    {currentRole}
+                  </span>
+                </div>
+              </div>
+              {/* Bouton de déconnexion */}
+              <SidebarMenuButton
+                onClick={logout}
+                className="w-full bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+                size="sm"
               >
-                <DropdownMenuItem>Profil</DropdownMenuItem>
-                <DropdownMenuItem>Paramètres</DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="text-destructive focus:text-destructive"
-                >
-                  Se déconnecter
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                <ChevronUp className="h-4 w-4 rotate-180" />
+                <span>Se déconnecter</span>
+              </SidebarMenuButton>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
