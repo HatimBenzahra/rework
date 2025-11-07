@@ -5,7 +5,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.jsx'
 import { initTheme } from './config/theme'
+import { initSentry } from './config/sentry'
 import ScrollToTop from './components/ScrollToTop'
+import './utils/errorHandler' // Initialiser le gestionnaire d'erreurs global
+
+// Initialise Sentry pour le monitoring des erreurs
+initSentry()
 
 // Initialise le thème avant le rendu de l'application
 initTheme()

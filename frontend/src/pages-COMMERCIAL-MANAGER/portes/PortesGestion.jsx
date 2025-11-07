@@ -50,9 +50,9 @@ export default function PortesGestion() {
 
   // Hook d'enregistrement automatique (attend la connexion audio)
   const {
-    isRecording,
-    isStarting,
-    error: recordingError,
+    isRecording: _isRecording,
+    isStarting: _isStarting,
+    error: _recordingError,
   } = useRecording(parseInt(currentUserId), userType, true, audioStatus?.audioConnected)
 
   // Hook pour le thème commercial - centralise TOUS les styles
@@ -334,18 +334,6 @@ export default function PortesGestion() {
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-gray-700">Gestion de l'immeuble</h3>
               {/* Indicateur d'enregistrement */}
-              {isRecording && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-red-50 border border-red-200 rounded-full">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-medium text-red-700">REC</span>
-                </div>
-              )}
-              {isStarting && (
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded-full">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-medium text-yellow-700">Démarrage...</span>
-                </div>
-              )}
             </div>
             {immeuble && (
               <div className="text-xs text-gray-500">
@@ -355,31 +343,6 @@ export default function PortesGestion() {
           </div>
 
           {/* Message d'info ou d'erreur */}
-          {recordingError ? (
-            <div className="text-xs md:text-sm text-red-600 bg-red-50 p-3 md:p-4 rounded-lg border border-red-200">
-              <div className="flex items-start gap-2">
-                <div className="text-red-500 text-sm mt-0.5 flex-shrink-0">⚠️</div>
-                <div className="leading-relaxed">
-                  <span className="font-medium">Erreur d'enregistrement :</span> {recordingError}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="text-xs md:text-sm text-gray-600 bg-gray-50 p-3 md:p-4 rounded-lg border border-gray-200">
-              <div className="flex items-start gap-2">
-                <div className="text-blue-500 text-sm mt-0.5 flex-shrink-0">💡</div>
-                <div className="leading-relaxed">
-                  <span className="font-medium">Astuce :</span> Utilisez les boutons + à la fin de
-                  chaque étage pour ajouter des portes ou à la fin pour ajouter un étage complet.
-                  {isRecording && (
-                    <span className="block mt-1 text-green-600 font-medium">
-                      📹 Votre session est enregistrée automatiquement.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Filtres par statut */}
@@ -455,9 +418,6 @@ export default function PortesGestion() {
       statusCounts.byStatus,
       statusCounts.totalSansContrat,
       toggleFilter,
-      isRecording,
-      isStarting,
-      recordingError,
     ]
   )
 

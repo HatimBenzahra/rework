@@ -10,6 +10,7 @@ import { authService } from '../services/auth.service'
 import { apiCache } from '../services/api-cache'
 import LoadingScreen from '../components/LoadingScreen'
 import { useAppLoading } from './AppLoadingContext'
+import { setUser as setSentryUser } from '../config/sentry'
 
 export const RoleProvider = ({ children }) => {
   const navigate = useNavigate()
@@ -25,6 +26,16 @@ export const RoleProvider = ({ children }) => {
     const storedId = localStorage.getItem('userId')
     return storedId ? parseInt(storedId, 10) : null
   })
+
+  // Envoyer les infos utilisateur à Sentry au montage initial (si authentifié)
+  useEffect(() => {
+    if (currentUserId && currentRole && authService.isAuthenticated()) {
+      setSentryUser({
+        id: currentUserId.toString(),
+        role: currentRole,
+      })
+    }
+  }, [currentUserId, currentRole])
 
   // Vérifier l'authentification au montage
   useEffect(() => {
@@ -85,6 +96,14 @@ export const RoleProvider = ({ children }) => {
 
       setCurrentRole(newRole)
       setCurrentUserId(newId ? parseInt(newId, 10) : null)
+
+      // Envoyer les infos utilisateur à Sentry (si configuré)
+      if (newId && newRole) {
+        setSentryUser({
+          id: newId,
+          role: newRole,
+        })
+      }
 
       // Nettoyer les anciens timers
       authChangeTimers.forEach(timer => clearTimeout(timer))
@@ -161,6 +180,9 @@ export const RoleProvider = ({ children }) => {
     // Réinitialiser les états locaux
     setCurrentRole(null)
     setCurrentUserId(null)
+
+    // Retirer l'utilisateur de Sentry
+    setSentryUser(null)
 
     // Rediriger vers la page de connexion
     navigate('/login', { replace: true })

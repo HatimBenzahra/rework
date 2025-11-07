@@ -123,9 +123,7 @@ export default function Enregistrement() {
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Enregistrements</h1>
-          <p className="text-muted-foreground text-base">
-            Consultation des enregistrements des appels commerciaux
-          </p>
+          <p className="text-muted-foreground text-base">Consultation des enregistrements</p>
         </div>
         <TableSkeleton />
       </div>
@@ -137,9 +135,7 @@ export default function Enregistrement() {
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">Enregistrements</h1>
-          <p className="text-muted-foreground text-base">
-            Consultation des enregistrements des appels commerciaux
-          </p>
+          <p className="text-muted-foreground text-base">Consultation des enregistrements</p>
         </div>
         <div className="p-6 border border-red-200 rounded-lg bg-red-50">
           <p className="text-red-800">Erreur lors du chargement des données : {error}</p>
@@ -155,9 +151,7 @@ export default function Enregistrement() {
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Enregistrements</h1>
-        <p className="text-muted-foreground text-base">
-          Consultation des enregistrements des appels commerciaux
-        </p>
+        <p className="text-muted-foreground text-base">Consultation des enregistrements</p>
       </div>
 
       {/* Statistiques rapides */}
@@ -191,7 +185,7 @@ export default function Enregistrement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Enregistrements des Appels</CardTitle>
+          <CardTitle>Enregistrements</CardTitle>
           <CardDescription>
             Sélectionnez un commercial ou manager pour voir ses enregistrements
           </CardDescription>
@@ -266,7 +260,7 @@ export default function Enregistrement() {
                       <TableHead>Fichier</TableHead>
                       <TableHead>Date & Heure</TableHead>
                       <TableHead>Taille</TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead className="text-center`">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
