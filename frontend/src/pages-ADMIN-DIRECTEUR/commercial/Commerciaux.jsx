@@ -187,7 +187,7 @@ export default function Commerciaux() {
       type: 'tel',
       required: true,
       section: 'Informations personnelles',
-      placeholder: '+216 XX XXX XXX',
+      placeholder: '+33 XX XXX XXX',
     },
     {
       key: 'age',

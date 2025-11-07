@@ -206,6 +206,7 @@ export default function Immeubles() {
       </div>
 
       <AdvancedDataTable
+        showStatusColumn={false}
         title="Liste des Immeubles"
         description={description}
         data={tableData}

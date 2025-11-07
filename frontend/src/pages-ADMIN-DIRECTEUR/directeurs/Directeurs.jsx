@@ -51,7 +51,7 @@ const directeursEditFields = [
     type: 'email',
     section: 'Informations personnelles',
     validate: value => {
-      if (value && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value)) {
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         return 'Email invalide'
       }
     },
@@ -61,7 +61,7 @@ const directeursEditFields = [
     label: 'Téléphone',
     type: 'tel',
     section: 'Informations personnelles',
-    placeholder: '+216 XX XXX XXX',
+    placeholder: '+33 XX XXX XXX',
   },
   {
     key: 'adresse',

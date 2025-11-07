@@ -93,11 +93,13 @@ export default function CommercialDetails() {
     const immeublesCount =
       commercial?.immeubles?.filter(immeuble => immeuble.zoneId === currentZone.zoneId).length || 0
 
-    return [{
-      ...currentZone.zone,
-      assignmentDate: currentZone.assignedAt,
-      immeublesCount,
-    }]
+    return [
+      {
+        ...currentZone.zone,
+        assignmentDate: currentZone.assignedAt,
+        immeublesCount,
+      },
+    ]
   }, [currentZone, commercial])
 
   // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date)

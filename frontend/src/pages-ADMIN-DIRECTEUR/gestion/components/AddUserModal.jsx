@@ -1,9 +1,22 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCreateDirecteur, useCreateManager, useCreateCommercial } from '@/services'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { Crown, Briefcase, UserCircle, Loader2 } from 'lucide-react'
@@ -18,7 +31,7 @@ export default function AddUserModal({
   userType,
   parentId,
   directeurs,
-  managers
+  managers,
 }) {
   const { showError, showSuccess } = useErrorToast()
 
@@ -37,7 +50,7 @@ export default function AddUserModal({
     age: '',
     adresse: '',
     directeurId: parentId ? parentId.toString() : 'none',
-    managerId: parentId && userType === 'commercial' ? parentId.toString() : 'none'
+    managerId: parentId && userType === 'commercial' ? parentId.toString() : 'none',
   })
 
   const [errors, setErrors] = useState({})
@@ -48,13 +61,13 @@ export default function AddUserModal({
       setFormData(prev => ({
         ...prev,
         directeurId: userType === 'manager' ? parentId.toString() : prev.directeurId,
-        managerId: userType === 'commercial' ? parentId.toString() : prev.managerId
+        managerId: userType === 'commercial' ? parentId.toString() : prev.managerId,
       }))
     }
   }, [isOpen, parentId, userType])
 
   // Réinitialiser le formulaire quand on ouvre/ferme le modal
-  const handleOpenChange = (open) => {
+  const handleOpenChange = open => {
     if (!open) {
       setFormData({
         nom: '',
@@ -65,7 +78,7 @@ export default function AddUserModal({
         age: '',
         adresse: '',
         directeurId: 'none',
-        managerId: 'none'
+        managerId: 'none',
       })
       setErrors({})
       onClose()
@@ -90,7 +103,7 @@ export default function AddUserModal({
 
     if (userType === 'commercial') {
       if (!formData.age || parseInt(formData.age) < 18 || parseInt(formData.age) > 65) {
-        newErrors.age = 'L\'âge doit être entre 18 et 65 ans'
+        newErrors.age = "L'âge doit être entre 18 et 65 ans"
       }
     }
 
@@ -103,7 +116,7 @@ export default function AddUserModal({
   }
 
   // Gérer la soumission
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault()
 
     if (!validateForm()) {
@@ -117,7 +130,7 @@ export default function AddUserModal({
           prenom: formData.prenom,
           email: formData.email || undefined,
           numTelephone: formData.numTelephone || undefined,
-          adresse: formData.adresse || undefined
+          adresse: formData.adresse || undefined,
         })
         showSuccess('Directeur créé avec succès')
       } else if (userType === 'manager') {
@@ -126,7 +139,7 @@ export default function AddUserModal({
           prenom: formData.prenom,
           email: formData.email || undefined,
           numTelephone: formData.numTelephone || undefined,
-          directeurId: parseInt(formData.directeurId)
+          directeurId: parseInt(formData.directeurId),
         })
         showSuccess('Manager créé avec succès')
       } else if (userType === 'commercial') {
@@ -135,7 +148,7 @@ export default function AddUserModal({
           prenom: formData.prenom,
           email: formData.email || undefined,
           numTel: formData.numTel || undefined,
-          age: parseInt(formData.age)
+          age: parseInt(formData.age),
         }
 
         // Ajouter managerId seulement s'il est défini et pas "none"
@@ -161,30 +174,33 @@ export default function AddUserModal({
   const loading = creatingDirecteur || creatingManager || creatingCommercial
 
   // Icône et titre selon le type
-  const TypeIcon = {
-    directeur: Crown,
-    manager: Briefcase,
-    commercial: UserCircle
-  }[userType] || UserCircle
+  const TypeIcon =
+    {
+      directeur: Crown,
+      manager: Briefcase,
+      commercial: UserCircle,
+    }[userType] || UserCircle
 
-  const title = {
-    directeur: 'Nouveau Directeur',
-    manager: 'Nouveau Manager',
-    commercial: 'Nouveau Commercial'
-  }[userType] || 'Nouvel Utilisateur'
+  const title =
+    {
+      directeur: 'Nouveau Directeur',
+      manager: 'Nouveau Manager',
+      commercial: 'Nouveau Commercial',
+    }[userType] || 'Nouvel Utilisateur'
 
-  const description = {
-    directeur: 'Ajoutez un nouveau directeur à l\'organisation',
-    manager: 'Ajoutez un nouveau manager',
-    commercial: 'Ajoutez un nouveau commercial'
-  }[userType] || 'Ajoutez un nouvel utilisateur'
+  const description =
+    {
+      directeur: "Ajoutez un nouveau directeur à l'organisation",
+      manager: 'Ajoutez un nouveau manager',
+      commercial: 'Ajoutez un nouveau commercial',
+    }[userType] || 'Ajoutez un nouvel utilisateur'
 
   // Options pour les selects
   const directeurOptions = useMemo(() => {
     if (!directeurs) return []
     return directeurs.map(d => ({
       value: d.id.toString(),
-      label: `${d.prenom} ${d.nom}`
+      label: `${d.prenom} ${d.nom}`,
     }))
   }, [directeurs])
 
@@ -196,12 +212,12 @@ export default function AddUserModal({
         .filter(m => m.directeurId === parseInt(formData.directeurId))
         .map(m => ({
           value: m.id.toString(),
-          label: `${m.prenom} ${m.nom}`
+          label: `${m.prenom} ${m.nom}`,
         }))
     }
     return managers.map(m => ({
       value: m.id.toString(),
-      label: `${m.prenom} ${m.nom}`
+      label: `${m.prenom} ${m.nom}`,
     }))
   }, [managers, formData.directeurId, userType])
 
@@ -223,7 +239,7 @@ export default function AddUserModal({
             <Input
               id="nom"
               value={formData.nom}
-              onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+              onChange={e => setFormData({ ...formData, nom: e.target.value })}
               placeholder="Nom de famille"
               className={errors.nom ? 'border-red-500' : ''}
             />
@@ -236,7 +252,7 @@ export default function AddUserModal({
             <Input
               id="prenom"
               value={formData.prenom}
-              onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+              onChange={e => setFormData({ ...formData, prenom: e.target.value })}
               placeholder="Prénom"
               className={errors.prenom ? 'border-red-500' : ''}
             />
@@ -250,7 +266,7 @@ export default function AddUserModal({
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={e => setFormData({ ...formData, email: e.target.value })}
               placeholder="email@exemple.com"
               className={errors.email ? 'border-red-500' : ''}
             />
@@ -264,13 +280,13 @@ export default function AddUserModal({
               id="telephone"
               type="tel"
               value={userType === 'commercial' ? formData.numTel : formData.numTelephone}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({
                   ...formData,
-                  [userType === 'commercial' ? 'numTel' : 'numTelephone']: e.target.value
+                  [userType === 'commercial' ? 'numTel' : 'numTelephone']: e.target.value,
                 })
               }
-              placeholder="+216 XX XXX XXX"
+              placeholder="+33 XX XXX XXX"
             />
           </div>
 
@@ -281,7 +297,7 @@ export default function AddUserModal({
               <Input
                 id="adresse"
                 value={formData.adresse}
-                onChange={(e) => setFormData({ ...formData, adresse: e.target.value })}
+                onChange={e => setFormData({ ...formData, adresse: e.target.value })}
                 placeholder="Adresse complète"
               />
             </div>
@@ -297,7 +313,7 @@ export default function AddUserModal({
                 min="18"
                 max="65"
                 value={formData.age}
-                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                onChange={e => setFormData({ ...formData, age: e.target.value })}
                 placeholder="25"
                 className={errors.age ? 'border-red-500' : ''}
               />
@@ -313,8 +329,12 @@ export default function AddUserModal({
               </Label>
               <Select
                 value={formData.directeurId.toString()}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, directeurId: value, managerId: value ? '' : formData.managerId })
+                onValueChange={value => {
+                  setFormData({
+                    ...formData,
+                    directeurId: value,
+                    managerId: value ? '' : formData.managerId,
+                  })
                 }}
                 disabled={!!parentId && userType !== 'commercial'}
               >
@@ -322,10 +342,8 @@ export default function AddUserModal({
                   <SelectValue placeholder="Sélectionner un directeur" />
                 </SelectTrigger>
                 <SelectContent>
-                  {userType === 'commercial' && (
-                    <SelectItem value="none">Aucun</SelectItem>
-                  )}
-                  {directeurOptions.map((option) => (
+                  {userType === 'commercial' && <SelectItem value="none">Aucun</SelectItem>}
+                  {directeurOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -342,7 +360,7 @@ export default function AddUserModal({
               <Label htmlFor="manager">Manager (optionnel)</Label>
               <Select
                 value={formData.managerId.toString()}
-                onValueChange={(value) => setFormData({ ...formData, managerId: value })}
+                onValueChange={value => setFormData({ ...formData, managerId: value })}
                 disabled={!formData.directeurId || formData.directeurId === 'none' || !!parentId}
               >
                 <SelectTrigger>
@@ -350,7 +368,7 @@ export default function AddUserModal({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Aucun (commercial direct)</SelectItem>
-                  {managerOptions.map((option) => (
+                  {managerOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>

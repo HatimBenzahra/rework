@@ -330,36 +330,27 @@ export default function Gestion() {
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Users className="h-8 w-8" />
-          Gestion de l'Organisation
-        </h1>
-        <p className="text-muted-foreground text-base">
-          Visualisez et gérez la structure hiérarchique de votre organisation
-        </p>
+      {/* En-tête compact */}
+      <div className="flex items-center gap-3">
+        <Users className="h-7 w-7 text-primary" />
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Gestion de l'Organisation</h1>
+          <p className="text-sm text-muted-foreground">Structure hiérarchique et assignations</p>
+        </div>
       </div>
 
-      {/* Carte d'information */}
-      <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-primary/10 rounded-lg">
-            <Info className="h-6 w-6 text-primary" />
+      {/* Carte d'information compacte */}
+      <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+            <Info className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex-1 space-y-2">
-            <h3 className="text-lg font-semibold">Comment utiliser le drag & drop</h3>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Glissez un commercial sur un manager pour l'assigner à ce manager</li>
-              <li>
-                • Glissez un commercial sur un directeur pour l'assigner directement au directeur
-              </li>
-              <li>• Glissez un manager sur un directeur pour l'assigner à ce directeur</li>
-              <li>
-                • Utilisez les boutons <Plus className="h-3 w-3 inline" /> pour ajouter de nouveaux
-                membres
-              </li>
-            </ul>
+          <div className="flex-1">
+            <h3 className="text-base font-semibold mb-1">Drag & Drop</h3>
+            <p className="text-xs text-muted-foreground">
+              Glissez les commerciaux sur les managers ou directeurs, et les managers sur les
+              directeurs pour les assigner.
+            </p>
           </div>
         </div>
       </Card>
