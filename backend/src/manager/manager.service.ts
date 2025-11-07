@@ -124,6 +124,7 @@ export class ManagerService {
   /**
    * Récupère toutes les données du manager pour la page équipe
    * Retourne ses commerciaux avec leurs immeubles et statistiques
+   * SÉPARATION: personalStatistics (manager seul) vs teamStatistics (commerciaux) vs statistics (total)
    */
   async findFull(id: number) {
     // Récupérer le manager avec ses relations
@@ -177,11 +178,13 @@ export class ManagerService {
       ) || [];
     const aggregatedImmeubles = [...managerImmeubles, ...commercialImmeubles];
 
-    // Agréger les statistiques des commerciaux + les propres statistiques du manager
+    // Agréger les statistiques des commerciaux
     const commercialStatistics =
       managerData.commercials?.flatMap(
         (commercial: any) => commercial.statistics || [],
       ) || [];
+
+    // Toutes les statistiques combinées (pour compatibilité)
     const aggregatedStatistics = [
       ...managerStatistics,
       ...commercialStatistics,
@@ -190,7 +193,9 @@ export class ManagerService {
     return {
       ...managerData,
       immeubles: aggregatedImmeubles,
-      statistics: aggregatedStatistics,
+      statistics: aggregatedStatistics, // Toutes les stats (compatibilité)
+      personalStatistics: managerStatistics, // NOUVEAU: Stats du manager uniquement
+      teamStatistics: commercialStatistics, // NOUVEAU: Stats de l'équipe uniquement
     };
   }
 

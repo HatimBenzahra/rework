@@ -281,6 +281,36 @@ export const GET_MANAGER_FULL = `
         createdAt
         updatedAt
       }
+      personalStatistics {
+        id
+        commercialId
+        managerId
+        immeubleId
+        zoneId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
+      teamStatistics {
+        id
+        commercialId
+        managerId
+        immeubleId
+        zoneId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
     }
   }
 `

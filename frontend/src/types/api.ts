@@ -37,6 +37,8 @@ export interface Manager extends BaseEntity {
   zones?: Zone[]
   immeubles?: Immeuble[]
   statistics?: Statistic[]
+  personalStatistics?: Statistic[]
+  teamStatistics?: Statistic[]
 }
 
 export interface Commercial extends BaseEntity {

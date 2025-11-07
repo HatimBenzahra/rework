@@ -50,8 +50,14 @@ export default function CommercialLayout() {
   } = useAutoAudio(userId, workspaceRole, true)
 
   // Statistiques agrégées pour le header et les badges
+  // CORRECTION: Utiliser UNIQUEMENT les stats personnelles du manager
   const workspaceStats = React.useMemo(() => {
-    if (!workspaceProfile?.statistics || workspaceProfile.statistics.length === 0) {
+    // Déterminer quelles stats utiliser selon le contexte
+    // - Si c'est un manager avec personalStatistics disponible, utiliser celles-ci
+    // - Sinon, utiliser statistics (pour les commerciaux ou fallback)
+    const statsToUse = workspaceProfile?.personalStatistics || workspaceProfile?.statistics || []
+
+    if (statsToUse.length === 0) {
       return {
         contratsSignes: 0,
         immeublesVisites: 0,
@@ -60,7 +66,7 @@ export default function CommercialLayout() {
       }
     }
 
-    return workspaceProfile.statistics.reduce(
+    return statsToUse.reduce(
       (acc, stat) => ({
         contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
         immeublesVisites: acc.immeublesVisites + (stat.immeublesVisites || 0),
@@ -74,7 +80,7 @@ export default function CommercialLayout() {
         refus: 0,
       }
     )
-  }, [workspaceProfile?.statistics])
+  }, [workspaceProfile?.personalStatistics, workspaceProfile?.statistics])
 
   // Configuration des onglets de navigation
   const navigationItems = React.useMemo(() => {

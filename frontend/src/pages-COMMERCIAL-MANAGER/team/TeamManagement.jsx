@@ -40,7 +40,8 @@ const formatNumber = value => new Intl.NumberFormat('fr-FR').format(value || 0)
 
 const buildCommercialSnapshot = (commercial, timePeriod) => {
   // Filtrer les statistiques selon la période
-  const filteredStats = filterStatisticsByPeriod(commercial.statistics || [], timePeriod)
+  const globalStats = (commercial.statistics || []).filter(stat => stat.immeubleId === null)
+  const filteredStats = filterStatisticsByPeriod(globalStats, timePeriod)
 
   const stats = filteredStats.reduce(
     (acc, stat) => ({
@@ -329,7 +330,7 @@ export default function TeamManagement() {
       {topPerformer && (
         <Card className={`${base.bg.card} ${base.border.card} shadow-md`}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className={`flex items-center gap-2 ${base.text.primary}`}>
               <Trophy className="h-5 w-5 text-yellow-500" />
               Meilleur commercial de l'équipe
             </CardTitle>

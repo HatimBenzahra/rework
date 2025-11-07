@@ -195,8 +195,10 @@ type Manager {
   immeubles: [Immeuble!]
   nom: String!
   numTelephone: String
+  personalStatistics: [Statistic!]
   prenom: String!
   statistics: [Statistic!]
+  teamStatistics: [Statistic!]
   updatedAt: DateTime!
   zones: [Zone!]
 }

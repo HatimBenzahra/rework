@@ -39,35 +39,128 @@ const formatNumber = num => {
 
 /**
  * Composant de comparaison des zones avec 3 graphiques radar séparés et tableau de classement
- * Utilise maintenant les statistiques précalculées depuis ZoneEnCours + HistoriqueZone
+ * Supporte deux modes :
+ * 1. zoneStatistics précalculées depuis le backend (ancien système)
+ * 2. zones + statistics pour calcul côté client (nouveau système)
  */
 export default function ZoneComparisonChart({
-  zoneStatistics = [], // Nouveau: stats précalculées depuis le backend
+  zoneStatistics = [], // Option 1: stats précalculées depuis le backend
+  zones = [], // Option 2: liste des zones
+  statistics = [], // Option 2: statistiques à agréger par zone
   title = 'Comparaison des zones',
   description = 'Analyse par critères et classement',
   maxZones = 4,
 }) {
   const { contratsData, rdvData, refusData, zoneMetrics } = useMemo(() => {
-    if (!zoneStatistics?.length) {
+    // Mode 1 : zoneStatistics précalculées
+    if (zoneStatistics?.length) {
+      const zonesWithMetrics = zoneStatistics
+        .map(zoneStat => ({
+          id: zoneStat.zoneId,
+          nom: zoneStat.zoneName,
+          contratsSignes: zoneStat.totalContratsSignes || 0,
+          rendezVousPris: zoneStat.totalRendezVousPris || 0,
+          refus: zoneStat.totalRefus || 0,
+          immeublesProspectes: zoneStat.totalImmeublesProspectes || 0,
+          portesProspectes: zoneStat.totalPortesProspectes || 0,
+          tauxConversion: zoneStat.tauxConversion || 0,
+          tauxSuccesRdv: zoneStat.tauxSuccesRdv || 0,
+          performanceScore: zoneStat.performanceGlobale || 0,
+          nbCommerciaux: zoneStat.nombreCommerciaux || 0,
+        }))
+        .sort((a, b) => b.performanceScore - a.performanceScore)
+        .slice(0, maxZones)
+
+      // Reste du calcul identique...
+      const maxValues = zonesWithMetrics.reduce(
+        (max, zone) => ({
+          contratsSignes: Math.max(max.contratsSignes, zone.contratsSignes),
+          rendezVousPris: Math.max(max.rendezVousPris, zone.rendezVousPris),
+          refus: Math.max(max.refus, zone.refus),
+        }),
+        { contratsSignes: 1, rendezVousPris: 1, refus: 1 }
+      )
+
+      const contratsData = zonesWithMetrics.map((zone, index) => ({
+        zone: zone.nom,
+        value: Math.round((zone.contratsSignes / maxValues.contratsSignes) * 100),
+        actualValue: zone.contratsSignes,
+        color: `var(--chart-${index + 1})`,
+      }))
+
+      const rdvData = zonesWithMetrics.map((zone, index) => ({
+        zone: zone.nom,
+        value: Math.round((zone.rendezVousPris / maxValues.rendezVousPris) * 100),
+        actualValue: zone.rendezVousPris,
+        color: `var(--chart-${index + 1})`,
+      }))
+
+      const refusData = zonesWithMetrics.map((zone, index) => ({
+        zone: zone.nom,
+        value: Math.round((zone.refus / maxValues.refus) * 100),
+        actualValue: zone.refus,
+        color: `var(--chart-${index + 1})`,
+      }))
+
+      return { contratsData, rdvData, refusData, zoneMetrics: zonesWithMetrics }
+    }
+
+    // Mode 2 : Calculer à partir de zones + statistics
+    if (!zones?.length || !statistics?.length) {
       return { contratsData: [], rdvData: [], refusData: [], zoneMetrics: [] }
     }
 
-    // Les statistiques sont déjà calculées côté backend (historique + actuelles)
-    // On les utilise directement !
-    const zonesWithMetrics = zoneStatistics
-      .map(zoneStat => ({
-        id: zoneStat.zoneId,
-        nom: zoneStat.zoneName,
-        contratsSignes: zoneStat.totalContratsSignes || 0,
-        rendezVousPris: zoneStat.totalRendezVousPris || 0,
-        refus: zoneStat.totalRefus || 0,
-        immeublesProspectes: zoneStat.totalImmeublesProspectes || 0,
-        portesProspectes: zoneStat.totalPortesProspectes || 0,
-        tauxConversion: zoneStat.tauxConversion || 0,
-        tauxSuccesRdv: zoneStat.tauxSuccesRdv || 0,
-        performanceScore: zoneStat.performanceGlobale || 0,
-        nbCommerciaux: zoneStat.nombreCommerciaux || 0,
-      }))
+    // Calculer les métriques pour chaque zone
+    const zonesWithMetrics = zones
+      .map(zone => {
+        // Filtrer les stats pour cette zone
+        const zoneStats = statistics.filter(stat => stat.zoneId === zone.id)
+
+        // Agréger les stats
+        const totals = zoneStats.reduce(
+          (acc, stat) => ({
+            contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
+            rendezVousPris: acc.rendezVousPris + (stat.rendezVousPris || 0),
+            refus: acc.refus + (stat.refus || 0),
+            immeublesProspectes: acc.immeublesProspectes + (stat.nbImmeublesProspectes || 0),
+            portesProspectes: acc.portesProspectes + (stat.nbPortesProspectes || 0),
+          }),
+          {
+            contratsSignes: 0,
+            rendezVousPris: 0,
+            refus: 0,
+            immeublesProspectes: 0,
+            portesProspectes: 0,
+          }
+        )
+
+        // Calculer les taux
+        const tauxConversion =
+          totals.portesProspectes > 0
+            ? Math.round((totals.contratsSignes / totals.portesProspectes) * 100)
+            : 0
+
+        const tauxSuccesRdv =
+          totals.rendezVousPris > 0
+            ? Math.round((totals.contratsSignes / totals.rendezVousPris) * 100)
+            : 0
+
+        const performanceScore = tauxConversion + tauxSuccesRdv
+
+        return {
+          id: zone.id,
+          nom: zone.nom,
+          contratsSignes: totals.contratsSignes,
+          rendezVousPris: totals.rendezVousPris,
+          refus: totals.refus,
+          immeublesProspectes: totals.immeublesProspectes,
+          portesProspectes: totals.portesProspectes,
+          tauxConversion,
+          tauxSuccesRdv,
+          performanceScore,
+          nbCommerciaux: zone.commercials?.length || 0,
+        }
+      })
       .sort((a, b) => b.performanceScore - a.performanceScore)
       .slice(0, maxZones)
 
@@ -106,7 +199,7 @@ export default function ZoneComparisonChart({
     }))
 
     return { contratsData, rdvData, refusData, zoneMetrics: zonesWithMetrics }
-  }, [zoneStatistics, maxZones])
+  }, [zoneStatistics, zones, statistics, maxZones])
 
   // Composant pour créer un radar chart
   const RadarChart3D = ({ data, title, icon, color }) => {

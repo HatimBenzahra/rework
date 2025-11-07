@@ -52,6 +52,12 @@ export class Manager {
 
   @Field(() => [Statistic], { nullable: true })
   statistics?: Statistic[];
+
+  @Field(() => [Statistic], { nullable: true })
+  personalStatistics?: Statistic[];
+
+  @Field(() => [Statistic], { nullable: true })
+  teamStatistics?: Statistic[];
 }
 
 @InputType()
