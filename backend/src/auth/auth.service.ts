@@ -327,8 +327,18 @@ export class AuthService {
           return manager.id;
         }
 
-        case 'directeur':
         case 'admin': {
+          // L'admin ne nécessite pas d'enregistrement en BD
+          // Il supervise tout sans être filtré par userId
+          Logger.debug(
+            'AuthService',
+            `✅ Admin connecté: ${prenom} ${nom} (${email})`,
+          );
+          // Retourner un ID spécial (0) qui ne sera jamais utilisé pour filtrer
+          return 0;
+        }
+
+        case 'directeur': {
           // Chercher le directeur existant
           let directeur = await this.prisma.directeur.findUnique({
             where: { email },
