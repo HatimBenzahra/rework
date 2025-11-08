@@ -84,7 +84,7 @@ export class ImmeubleService {
 
   async findAll(userId?: number, userRole?: string) {
     // Si pas de paramètres de filtrage, retourner tous les immeubles
-    if (!userId || !userRole) {
+    if (userId === undefined || userId === null || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 

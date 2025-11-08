@@ -9,6 +9,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Directeur)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -25,11 +26,9 @@ export class DirecteurResolver {
 
   @Query(() => [Directeur], { name: 'directeurs' })
   @Roles('admin', 'directeur')
-  findAll(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.directeurService.findAll(userId, userRole);
+  findAll(@CurrentUser() user: any) {
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.directeurService.findAll(user.id, user.role);
   }
 
   @Query(() => Directeur, { name: 'directeur' })

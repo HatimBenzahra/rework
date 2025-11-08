@@ -5,6 +5,7 @@ import { Manager, CreateManagerInput, UpdateManagerInput } from './manager.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Manager)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,11 +22,9 @@ export class ManagerResolver {
 
   @Query(() => [Manager], { name: 'managers' })
   @Roles('admin', 'directeur', 'manager')
-  findAll(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.managerService.findAll(userId, userRole);
+  findAll(@CurrentUser() user: any) {
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.managerService.findAll(user.id, user.role);
   }
 
   @Query(() => Manager, { name: 'manager' })

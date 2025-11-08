@@ -45,16 +45,9 @@ export class CommercialResolver {
 
   @Query(() => [Commercial], { name: 'commercials' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findAll(
-    @CurrentUser() user: any,
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    // Utiliser les informations du JWT si les paramètres ne sont pas fournis
-    const effectiveUserId = userId ?? user?.id;
-    const effectiveUserRole = userRole ?? user?.role;
-
-    return this.commercialService.findAll(effectiveUserId, effectiveUserRole);
+  findAll(@CurrentUser() user: any) {
+    
+    return this.commercialService.findAll(user.id, user.role);
   }
 
   @Query(() => Commercial, { name: 'commercial' })

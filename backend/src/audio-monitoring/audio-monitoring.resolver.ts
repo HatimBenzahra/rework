@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -42,26 +43,19 @@ export class AudioMonitoringResolver {
   }
 
   @Mutation(() => LiveKitConnectionDetails)
-  @Roles('commercial')
-  async generateCommercialToken(
-    @Args('commercialId', { type: () => Int }) commercialId: number,
+  @Roles('commercial', 'manager')
+  async generateUserToken(
+    @CurrentUser() user: any,
     @Args('roomName', { nullable: true }) roomName?: string,
   ) {
-    return this.audioMonitoringService.generateCommercialToken(
-      commercialId,
-      roomName,
-    );
-  }
-
-  @Mutation(() => LiveKitConnectionDetails)
-  @Roles('manager')
-  async generateManagerToken(
-    @Args('managerId', { type: () => Int }) managerId: number,
-    @Args('roomName', { nullable: true }) roomName?: string,
-  ) {
-    return this.audioMonitoringService.generateManagerToken(
-      managerId,
-      roomName,
-    );
+    // Utiliser l'ID du JWT selon le rôle
+    if (user.role === 'commercial') {
+      return this.audioMonitoringService.generateCommercialToken(
+        user.id,
+        roomName,
+      );
+    } else if (user.role === 'manager') {
+      return this.audioMonitoringService.generateManagerToken(user.id, roomName);
+    }
   }
 }

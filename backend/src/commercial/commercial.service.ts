@@ -35,8 +35,8 @@ export class CommercialService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    // Si pas de paramètres de filtrage, retourner tous les commerciaux
-    if (!userId || !userRole) {
+    // Vérifier que les paramètres sont fournis (userId peut être 0 pour admin)
+    if (userId === undefined || userId === null || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 

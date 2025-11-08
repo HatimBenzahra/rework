@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Statistic)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -31,12 +32,12 @@ export class StatisticResolver {
   @Query(() => [Statistic], { name: 'statistics' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
   findAll(
+    @CurrentUser() user: any,
     @Args('commercialId', { type: () => Int, nullable: true })
     commercialId?: number,
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
   ) {
-    return this.statisticService.findAll(commercialId, userId, userRole);
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.statisticService.findAll(commercialId, user.id, user.role);
   }
 
   @Query(() => Statistic, { name: 'statistic' })
@@ -61,11 +62,9 @@ export class StatisticResolver {
 
   @Query(() => [ZoneStatistic], { name: 'zoneStatistics' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  getZoneStatistics(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.statisticService.getZoneStatistics(userId, userRole);
+  getZoneStatistics(@CurrentUser() user: any) {
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.statisticService.getZoneStatistics(user.id, user.role);
   }
 
   @Mutation(() => String, { name: 'recalculateAllStats' })

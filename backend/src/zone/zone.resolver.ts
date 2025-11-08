@@ -13,6 +13,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Zone)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,11 +28,9 @@ export class ZoneResolver {
 
   @Query(() => [Zone], { name: 'zones' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findAll(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.zoneService.findAll(userId, userRole);
+  findAll(@CurrentUser() user: any) {
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.zoneService.findAll(user.id, user.role);
   }
 
   @Query(() => Zone, { name: 'zone' })
@@ -151,19 +150,15 @@ export class ZoneResolver {
 
   @Query(() => [HistoriqueZone], { name: 'allZoneHistory' })
   @Roles('admin', 'directeur', 'manager')
-  getAllZoneHistory(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.zoneService.getAllZoneHistory(userId, userRole);
+  getAllZoneHistory(@CurrentUser() user: any) {
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.zoneService.getAllZoneHistory(user.id, user.role);
   }
 
   @Query(() => [ZoneEnCours], { name: 'allCurrentAssignments' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  getAllCurrentAssignments(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.zoneService.getAllCurrentAssignments(userId, userRole);
+  getAllCurrentAssignments(@CurrentUser() user: any) {
+    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
+    return this.zoneService.getAllCurrentAssignments(user.id, user.role);
   }
 }

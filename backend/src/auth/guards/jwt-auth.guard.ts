@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
+import { PrismaService } from '../../prisma.service';
 import axios from 'axios';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class JwtAuthGuard implements CanActivate {
   private readonly REALM = process.env.KEYCLOAK_REALM;
   private readonly CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID as string;
   private readonly CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET as string;
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const gqlContext = GqlExecutionContext.create(context);
@@ -40,17 +43,23 @@ export class JwtAuthGuard implements CanActivate {
       const groups = this.extractGroups(decodedToken);
       const role = this.mapGroupToRole(groups);
 
+      // Récupérer l'ID de la base de données selon le rôle
+      const userId = await this.getUserIdByEmailAndRole(
+        decodedToken.email,
+        role,
+      );
+
       // Attacher les informations utilisateur au contexte
       request.user = {
         sub: decodedToken.sub,
         email: decodedToken.email,
         groups,
         role,
-        userId: decodedToken.sub,
+        id: userId, // ID de la base de données
       };
 
       this.logger.debug(
-        `✅ Utilisateur authentifié: ${request.user.email} (${request.user.role})`,
+        `✅ Utilisateur authentifié: ${request.user.email} (${request.user.role}) - ID: ${userId}`,
       );
 
       return true;
@@ -109,5 +118,68 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     throw new UnauthorizedException('Aucun rôle autorisé');
+  }
+
+  /**
+   * Récupère l'ID de la base de données selon l'email et le rôle
+   */
+  private async getUserIdByEmailAndRole(
+    email: string,
+    role: string,
+  ): Promise<number> {
+    try {
+      switch (role) {
+        case 'commercial': {
+          const commercial = await this.prisma.commercial.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+          if (!commercial) {
+            throw new UnauthorizedException(
+              'Commercial introuvable dans la base',
+            );
+          }
+          return commercial.id;
+        }
+
+        case 'manager': {
+          const manager = await this.prisma.manager.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+          if (!manager) {
+            throw new UnauthorizedException('Manager introuvable dans la base');
+          }
+          return manager.id;
+        }
+
+        case 'directeur': {
+          const directeur = await this.prisma.directeur.findUnique({
+            where: { email },
+            select: { id: true },
+          });
+          if (!directeur) {
+            throw new UnauthorizedException(
+              'Directeur introuvable dans la base',
+            );
+          }
+          return directeur.id;
+        }
+
+        case 'admin': {
+          // Pour les admins, on retourne 0 (pas d'ID spécifique)
+          return 0;
+        }
+
+        default:
+          throw new UnauthorizedException('Rôle non reconnu');
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Erreur lors de la récupération de l'ID utilisateur:`,
+        error,
+      );
+      throw error;
+    }
   }
 }

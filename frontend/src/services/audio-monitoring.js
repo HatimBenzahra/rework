@@ -1,20 +1,9 @@
 import { graphqlClient } from './graphql-client'
 
 // GraphQL Mutations et Queries
-const GENERATE_COMMERCIAL_TOKEN = `
-  mutation GenerateCommercialToken($commercialId: Int!, $roomName: String) {
-    generateCommercialToken(commercialId: $commercialId, roomName: $roomName) {
-      serverUrl
-      participantToken
-      roomName
-      participantName
-    }
-  }
-`
-
-const GENERATE_MANAGER_TOKEN = `
-  mutation GenerateManagerToken($managerId: Int!, $roomName: String) {
-    generateManagerToken(managerId: $managerId, roomName: $roomName) {
+const GENERATE_USER_TOKEN = `
+  mutation GenerateUserToken($roomName: String) {
+    generateUserToken(roomName: $roomName) {
       serverUrl
       participantToken
       roomName
@@ -68,46 +57,35 @@ const GET_ACTIVE_ROOMS = `
 // Service pour l'audio monitoring
 export class AudioMonitoringService {
   /**
-   * Génère un token commercial pour publisher
+   * Génère un token pour l'utilisateur actuel (commercial ou manager)
+   * L'ID utilisateur est automatiquement récupéré depuis le JWT
+   */
+  static async generateUserToken(roomName = null) {
+    try {
+      const data = await graphqlClient.request(GENERATE_USER_TOKEN, {
+        roomName,
+      })
+      return data.generateUserToken
+    } catch (error) {
+      console.error('Erreur génération token utilisateur:', error)
+      throw error
+    }
+  }
+
+  /**
+   * @deprecated Utiliser generateUserToken() à la place
    */
   static async generateCommercialToken(commercialId, roomName = null) {
-    try {
-      const data = await graphqlClient.request(GENERATE_COMMERCIAL_TOKEN, {
-        commercialId,
-        roomName,
-      })
-      return data.generateCommercialToken
-    } catch (error) {
-      console.error('Erreur génération token commercial:', error)
-      throw error
-    }
+    console.warn('⚠️ generateCommercialToken est déprécié, utiliser generateUserToken()')
+    return this.generateUserToken(roomName)
   }
 
   /**
-   * Génère un token manager pour publisher
+   * @deprecated Utiliser generateUserToken() à la place
    */
   static async generateManagerToken(managerId, roomName = null) {
-    try {
-      const data = await graphqlClient.request(GENERATE_MANAGER_TOKEN, {
-        managerId,
-        roomName,
-      })
-      return data.generateManagerToken
-    } catch (error) {
-      console.error('Erreur génération token manager:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Génère un token universel (commercial ou manager)
-   */
-  static async generateUserToken(userId, userType, roomName = null) {
-    if (userType === 'manager') {
-      return this.generateManagerToken(userId, roomName)
-    } else {
-      return this.generateCommercialToken(userId, roomName)
-    }
+    console.warn('⚠️ generateManagerToken est déprécié, utiliser generateUserToken()')
+    return this.generateUserToken(roomName)
   }
 
   /**

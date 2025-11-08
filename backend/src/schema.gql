@@ -236,8 +236,7 @@ type Mutation {
   createPortesForImmeuble(immeubleId: Int!, nbEtages: Int!, nbPortesParEtage: Int!): Boolean!
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
-  generateCommercialToken(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
-  generateManagerToken(managerId: Int!, roomName: String): LiveKitConnectionDetails!
+  generateUserToken(roomName: String): LiveKitConnectionDetails!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
   removeCommercial(id: Int!): Commercial!
@@ -283,38 +282,38 @@ type Porte {
 }
 
 type Query {
-  allCurrentAssignments(userId: Int, userRole: String): [ZoneEnCours!]!
-  allZoneHistory(userId: Int, userRole: String): [HistoriqueZone!]!
+  allCurrentAssignments: [ZoneEnCours!]!
+  allZoneHistory: [HistoriqueZone!]!
   commercial(id: Int!): Commercial!
-  commercials(userId: Int, userRole: String): [Commercial!]!
+  commercials: [Commercial!]!
   currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours
   directeur(id: Int!): Directeur!
-  directeurs(userId: Int, userRole: String): [Directeur!]!
+  directeurs: [Directeur!]!
   egressState(egressId: String!): EgressState!
   getActiveRooms: [ActiveRoom!]!
   getActiveSessions: [MonitoringSession!]!
   getStreamingUrl(key: String!): String!
   immeuble(id: Int!): Immeuble!
-  immeubles(userId: Int, userRole: String): [Immeuble!]!
+  immeubles: [Immeuble!]!
   listRecordings(roomName: String!): [RecordingItem!]!
   manager(id: Int!): Manager!
   managerFull(id: Int!): Manager
   managerPersonal(id: Int!): Manager
-  managers(userId: Int, userRole: String): [Manager!]!
+  managers: [Manager!]!
   porte(id: Int!): Porte!
   portes: [Porte!]!
   portesByImmeuble(immeubleId: Int!): [Porte!]!
   portesModifiedToday(immeubleId: Int): [Porte!]!
   portesRdvToday: [Porte!]!
   statistic(id: Int!): Statistic!
-  statistics(commercialId: Int, userId: Int, userRole: String): [Statistic!]!
+  statistics(commercialId: Int): [Statistic!]!
   userZoneHistory(userId: Int!, userType: UserType!): [HistoriqueZone!]!
   validateStatsCoherence: String!
   zone(id: Int!): Zone!
   zoneCurrentAssignments(zoneId: Int!): [ZoneEnCours!]!
   zoneHistory(zoneId: Int!): [HistoriqueZone!]!
-  zoneStatistics(userId: Int, userRole: String): [ZoneStatistic!]!
-  zones(userId: Int, userRole: String): [Zone!]!
+  zoneStatistics: [ZoneStatistic!]!
+  zones: [Zone!]!
 }
 
 type RecordingItem {
