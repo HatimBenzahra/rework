@@ -338,6 +338,24 @@ class APICache {
   }
 
   /**
+   * Check if a key exists in cache and is valid
+   */
+  has(key: string): boolean {
+    const entry = this.cache.get(key)
+    if (!entry) {
+      return false
+    }
+    
+    if (this.isValid(entry)) {
+      return true
+    }
+    
+    // Remove expired entry
+    this.cache.delete(key)
+    return false
+  }
+
+  /**
    * Get data from cache if valid
    */
   get<T>(key: string): T | null {
