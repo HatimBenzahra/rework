@@ -327,8 +327,12 @@ export class AuthService {
           return manager.id;
         }
 
-        case 'directeur':
         case 'admin': {
+          Logger.debug('AuthService', `✅ Admin authentifié: ${email}`);
+          return 0; // ID spécial pour les admins
+        }
+
+        case 'directeur': {
           // Chercher le directeur existant
           let directeur = await this.prisma.directeur.findUnique({
             where: { email },

@@ -21,11 +21,9 @@ export const RoleProvider = ({ children }) => {
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
   // Utiliser des states pour rendre le contexte réactif
-  const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('userRole'))
-  const [currentUserId, setCurrentUserId] = useState(() => {
-    const storedId = localStorage.getItem('userId')
-    return storedId ? parseInt(storedId, 10) : null
-  })
+  // ⚠️ SÉCURITÉ : Le rôle est maintenant décodé depuis le JWT, pas depuis localStorage
+  const [currentRole, setCurrentRole] = useState(() => authService.getUserRole())
+  const [currentUserId, setCurrentUserId] = useState(() => authService.getUserId())
 
   // Envoyer les infos utilisateur à Sentry au montage initial (si authentifié)
   useEffect(() => {
@@ -91,11 +89,12 @@ export const RoleProvider = ({ children }) => {
     let authChangeTimers = []
 
     const handleAuthChange = () => {
-      const newRole = localStorage.getItem('userRole')
-      const newId = localStorage.getItem('userId')
+      // ⚠️ SÉCURITÉ : Récupérer le rôle depuis le JWT, pas depuis localStorage
+      const newRole = authService.getUserRole()
+      const newId = authService.getUserId()
 
       setCurrentRole(newRole)
-      setCurrentUserId(newId ? parseInt(newId, 10) : null)
+      setCurrentUserId(newId)
 
       // Envoyer les infos utilisateur à Sentry (si configuré)
       if (newId && newRole) {

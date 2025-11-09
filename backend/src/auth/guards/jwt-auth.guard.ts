@@ -141,8 +141,10 @@ export class JwtAuthGuard implements CanActivate {
           where: { email },
           select: { id: true },
         });
-      case 'directeur':
       case 'admin':
+        this.logger.debug(`Admin authentifié: ${email}`);
+        return { id: 0 };
+      case 'directeur':
         return this.prisma.directeur.findUnique({
           where: { email },
           select: { id: true },

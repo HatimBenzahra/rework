@@ -141,18 +141,41 @@ export class AuthService {
   }
 
   /**
-   * Récupère le rôle de l'utilisateur
+   * Récupère le rôle de l'utilisateur depuis le JWT token
    */
   getUserRole(): string | null {
-    return localStorage.getItem('userRole')
+    const token = this.getAccessToken()
+    if (!token) return null
+
+    try {
+      const payload = this.decodeToken(token)
+      const groups = payload.groups || []
+
+      // Mapper le groupe au rôle
+      for (const group of groups) {
+        if (GROUP_TO_ROLE_MAP[group]) {
+          return GROUP_TO_ROLE_MAP[group]
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
   }
 
   /**
-   * Récupère les groupes de l'utilisateur
+   * Récupère les groupes de l'utilisateur depuis le JWT token
    */
   getUserGroups(): string[] {
-    const groups = localStorage.getItem('userGroups')
-    return groups ? JSON.parse(groups) : []
+    const token = this.getAccessToken()
+    if (!token) return []
+
+    try {
+      const payload = this.decodeToken(token)
+      return payload.groups || []
+    } catch {
+      return []
+    }
   }
 
   /**
@@ -181,20 +204,11 @@ export class AuthService {
     }
   }
 
-  /**
-   * Stocke les données d'authentification dans le localStorage
-   */
   private storeAuthData(authResponse: AuthResponse): void {
     localStorage.setItem('access_token', authResponse.access_token)
     localStorage.setItem('refresh_token', authResponse.refresh_token)
-    localStorage.setItem('userRole', authResponse.role)
-    localStorage.setItem('userId', authResponse.userId.toString())
-    localStorage.setItem('userGroups', JSON.stringify(authResponse.groups))
 
-    // Stocker l'email si disponible
-    if (authResponse.email) {
-      localStorage.setItem('userEmail', authResponse.email)
-    }
+    localStorage.setItem('userId', authResponse.userId.toString())
 
     // Stocker l'expiration
     const expiresAt = Date.now() + authResponse.expires_in * 1000
@@ -207,11 +221,13 @@ export class AuthService {
   private clearAuthData(): void {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+    localStorage.removeItem('token_expires_at')
+
+    // Nettoyer aussi les anciennes clés si elles existent (migration)
     localStorage.removeItem('userRole')
     localStorage.removeItem('userId')
     localStorage.removeItem('userEmail')
     localStorage.removeItem('userGroups')
-    localStorage.removeItem('token_expires_at')
   }
 
   /**
@@ -234,22 +250,18 @@ export class AuthService {
   }
 
   /**
-   * Extrait l'ID utilisateur depuis le token
+   * Récupère l'ID utilisateur métier (ID dans notre base de données)
+   * Cet ID vient du backend, pas du JWT Keycloak
+   * Note: Même si stocké dans localStorage, il ne peut pas être exploité
+   * car le backend valide toutes les requêtes via le JWT token
    */
-  getUserId(): string | null {
-    const token = this.getAccessToken()
-    if (!token) return null
-
-    try {
-      const payload = this.decodeToken(token)
-      return payload.sub || null
-    } catch {
-      return null
-    }
+  getUserId(): number | null {
+    const storedId = localStorage.getItem('userId')
+    return storedId ? parseInt(storedId, 10) : null
   }
 
   /**
-   * Extrait l'email depuis le token
+   * Extrait l'email depuis le token JWT
    */
   getUserEmail(): string | null {
     const token = this.getAccessToken()
