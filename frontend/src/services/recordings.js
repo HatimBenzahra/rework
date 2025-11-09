@@ -46,9 +46,9 @@ export class RecordingService {
    */
   static async getRecordingsForUser(userId, userType) {
     try {
-      // Le roomName suit le pattern room_{userType}_{id} basé sur la structure S3 réelle
-      // Note: LiveKit remplace les : par des _ dans les noms de fichiers S3
-      const roomName = `room_${userType.toLowerCase()}_${userId}`
+      // Le backend, LiveKit et les clés S3 attendent le format room:<userType>:<id>
+      // (le service backend remplace les deux-points par des underscores pour le stockage)
+      const roomName = `room:${userType.toLowerCase()}:${userId}`
       console.log(
         '🔍 Recherche enregistrements pour roomName:',
         roomName,

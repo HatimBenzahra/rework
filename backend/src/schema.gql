@@ -236,8 +236,8 @@ type Mutation {
   createPortesForImmeuble(immeubleId: Int!, nbEtages: Int!, nbPortesParEtage: Int!): Boolean!
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
-  generateCommercialToken(commercialId: Int!, roomName: String): LiveKitConnectionDetails!
-  generateManagerToken(managerId: Int!, roomName: String): LiveKitConnectionDetails!
+  generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
+  generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
   removeCommercial(id: Int!): Commercial!

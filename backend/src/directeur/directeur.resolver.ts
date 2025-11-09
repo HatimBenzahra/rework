@@ -9,6 +9,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Directeur)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,21 +35,22 @@ export class DirecteurResolver {
 
   @Query(() => Directeur, { name: 'directeur' })
   @Roles('admin', 'directeur')
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.directeurService.findOne(id);
+  findOne(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.directeurService.findOne(id, user.id, user.role);
   }
 
   @Mutation(() => Directeur)
   @Roles('admin')
   updateDirecteur(
     @Args('updateDirecteurInput') updateDirecteurInput: UpdateDirecteurInput,
+    @CurrentUser() user: any,
   ) {
-    return this.directeurService.update(updateDirecteurInput);
+    return this.directeurService.update(updateDirecteurInput, user.id, user.role);
   }
 
   @Mutation(() => Directeur)
   @Roles('admin')
-  removeDirecteur(@Args('id', { type: () => Int }) id: number) {
-    return this.directeurService.remove(id);
+  removeDirecteur(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.directeurService.remove(id, user.id, user.role);
   }
 }

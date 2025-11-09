@@ -2,8 +2,8 @@ import { graphqlClient } from './graphql-client'
 
 // GraphQL Mutations et Queries
 const GENERATE_COMMERCIAL_TOKEN = `
-  mutation GenerateCommercialToken($commercialId: Int!, $roomName: String) {
-    generateCommercialToken(commercialId: $commercialId, roomName: $roomName) {
+  mutation GenerateCommercialToken($roomName: String) {
+    generateCommercialToken(roomName: $roomName) {
       serverUrl
       participantToken
       roomName
@@ -13,8 +13,8 @@ const GENERATE_COMMERCIAL_TOKEN = `
 `
 
 const GENERATE_MANAGER_TOKEN = `
-  mutation GenerateManagerToken($managerId: Int!, $roomName: String) {
-    generateManagerToken(managerId: $managerId, roomName: $roomName) {
+  mutation GenerateManagerToken($roomName: String) {
+    generateManagerToken(roomName: $roomName) {
       serverUrl
       participantToken
       roomName
@@ -70,12 +70,9 @@ export class AudioMonitoringService {
   /**
    * Génère un token commercial pour publisher
    */
-  static async generateCommercialToken(commercialId, roomName = null) {
+  static async generateCommercialToken(roomName = null) {
     try {
-      const data = await graphqlClient.request(GENERATE_COMMERCIAL_TOKEN, {
-        commercialId,
-        roomName,
-      })
+      const data = await graphqlClient.request(GENERATE_COMMERCIAL_TOKEN, { roomName })
       return data.generateCommercialToken
     } catch (error) {
       console.error('Erreur génération token commercial:', error)
@@ -86,12 +83,9 @@ export class AudioMonitoringService {
   /**
    * Génère un token manager pour publisher
    */
-  static async generateManagerToken(managerId, roomName = null) {
+  static async generateManagerToken(roomName = null) {
     try {
-      const data = await graphqlClient.request(GENERATE_MANAGER_TOKEN, {
-        managerId,
-        roomName,
-      })
+      const data = await graphqlClient.request(GENERATE_MANAGER_TOKEN, { roomName })
       return data.generateManagerToken
     } catch (error) {
       console.error('Erreur génération token manager:', error)
@@ -102,12 +96,10 @@ export class AudioMonitoringService {
   /**
    * Génère un token universel (commercial ou manager)
    */
-  static async generateUserToken(userId, userType, roomName = null) {
-    if (userType === 'manager') {
-      return this.generateManagerToken(userId, roomName)
-    } else {
-      return this.generateCommercialToken(userId, roomName)
-    }
+  static async generateUserToken(userType, roomName = null) {
+    return userType === 'manager'
+      ? this.generateManagerToken(roomName)
+      : this.generateCommercialToken(roomName)
   }
 
   /**

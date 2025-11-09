@@ -20,6 +20,7 @@ import { Statistic } from '../statistic/statistic.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 // Types pour les relations Prisma
 interface CommercialWithRelations {
@@ -53,22 +54,29 @@ export class CommercialResolver {
 
   @Query(() => Commercial, { name: 'commercial' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.commercialService.findOne(id);
+  findOne(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.commercialService.findOne(id, user.id, user.role);
   }
 
   @Mutation(() => Commercial)
   @Roles('admin', 'directeur')
   updateCommercial(
     @Args('updateCommercialInput') updateCommercialInput: UpdateCommercialInput,
+    @CurrentUser() user: any,
   ) {
-    return this.commercialService.update(updateCommercialInput);
+    return this.commercialService.update(updateCommercialInput, user.id, user.role);
   }
 
   @Mutation(() => Commercial)
   @Roles('admin', 'directeur')
-  removeCommercial(@Args('id', { type: () => Int }) id: number) {
-    return this.commercialService.remove(id);
+  removeCommercial(
+    @Args('id', { type: () => Int }) id: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.commercialService.remove(id, user.id, user.role);
   }
 
   @ResolveField(() => [Zone])

@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -19,49 +20,61 @@ export class AudioMonitoringResolver {
 
   @Mutation(() => LiveKitConnectionDetails)
   @Roles('admin', 'directeur', 'manager')
-  async startMonitoring(@Args('input') input: StartMonitoringInput) {
-    return this.audioMonitoringService.startMonitoring(input);
+  async startMonitoring(
+    @Args('input') input: StartMonitoringInput,
+    @CurrentUser() user: any,
+  ) {
+    return this.audioMonitoringService.startMonitoring(input, user);
   }
 
   @Mutation(() => Boolean)
   @Roles('admin', 'directeur', 'manager')
-  async stopMonitoring(@Args('input') input: StopMonitoringInput) {
-    return this.audioMonitoringService.stopMonitoring(input.sessionId);
+  async stopMonitoring(
+    @Args('input') input: StopMonitoringInput,
+    @CurrentUser() user: any,
+  ) {
+    return this.audioMonitoringService.stopMonitoring(input.sessionId, user);
   }
 
   @Query(() => [MonitoringSession])
   @Roles('admin', 'directeur', 'manager')
-  async getActiveSessions() {
-    return this.audioMonitoringService.getActiveSessions();
+  async getActiveSessions(@CurrentUser() user: any) {
+    return this.audioMonitoringService.getActiveSessions(user);
   }
 
   @Query(() => [ActiveRoom])
   @Roles('admin', 'directeur', 'manager')
-  async getActiveRooms() {
-    return this.audioMonitoringService.getActiveRooms();
+  async getActiveRooms(@CurrentUser() user: any) {
+    return this.audioMonitoringService.getActiveRooms(user);
   }
 
   @Mutation(() => LiveKitConnectionDetails)
   @Roles('commercial')
   async generateCommercialToken(
-    @Args('commercialId', { type: () => Int }) commercialId: number,
+    @Args('commercialId', { type: () => Int, nullable: true })
+    commercialId: number | undefined,
     @Args('roomName', { nullable: true }) roomName?: string,
+    @CurrentUser() user?: any,
   ) {
     return this.audioMonitoringService.generateCommercialToken(
       commercialId,
       roomName,
+      user,
     );
   }
 
   @Mutation(() => LiveKitConnectionDetails)
   @Roles('manager')
   async generateManagerToken(
-    @Args('managerId', { type: () => Int }) managerId: number,
+    @Args('managerId', { type: () => Int, nullable: true })
+    managerId: number | undefined,
     @Args('roomName', { nullable: true }) roomName?: string,
+    @CurrentUser() user?: any,
   ) {
     return this.audioMonitoringService.generateManagerToken(
       managerId,
       roomName,
+      user,
     );
   }
 }

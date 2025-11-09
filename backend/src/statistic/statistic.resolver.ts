@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => Statistic)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,22 +42,23 @@ export class StatisticResolver {
 
   @Query(() => Statistic, { name: 'statistic' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.statisticService.findOne(id);
+  findOne(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.statisticService.findOne(id, user.id, user.role);
   }
 
   @Mutation(() => Statistic)
   @Roles('admin', 'directeur', 'manager', 'commercial')
   updateStatistic(
     @Args('updateStatisticInput') updateStatisticInput: UpdateStatisticInput,
+    @CurrentUser() user: any,
   ) {
-    return this.statisticService.update(updateStatisticInput);
+    return this.statisticService.update(updateStatisticInput, user.id, user.role);
   }
 
   @Mutation(() => Statistic)
   @Roles('admin', 'directeur')
-  removeStatistic(@Args('id', { type: () => Int }) id: number) {
-    return this.statisticService.remove(id);
+  removeStatistic(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.statisticService.remove(id, user.id, user.role);
   }
 
   @Query(() => [ZoneStatistic], { name: 'zoneStatistics' })
@@ -90,7 +92,13 @@ export class StatisticResolver {
   @Roles('admin', 'directeur', 'manager')
   async syncCommercialStats(
     @Args('immeubleId', { type: () => Int }) immeubleId: number,
+    @CurrentUser() user: any,
   ) {
+    await this.statisticService.ensureCanSyncCommercialStats(
+      immeubleId,
+      user.id,
+      user.role,
+    );
     await this.statisticSyncService.syncCommercialStats(immeubleId);
     return `✅ Statistiques synchronisées pour l'immeuble ${immeubleId}`;
   }
@@ -99,7 +107,13 @@ export class StatisticResolver {
   @Roles('admin', 'directeur', 'manager')
   async syncManagerStats(
     @Args('managerId', { type: () => Int }) managerId: number,
+    @CurrentUser() user: any,
   ) {
+    await this.statisticService.ensureCanSyncManagerStats(
+      managerId,
+      user.id,
+      user.role,
+    );
     await this.statisticSyncService.syncManagerStats(managerId);
     return `✅ Statistiques synchronisées pour le manager ${managerId}`;
   }

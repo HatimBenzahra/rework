@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateZoneInput, UpdateZoneInput, UserType } from './zone.dto';
 
@@ -211,15 +211,25 @@ export class ZoneService {
    * - Manager → assigne automatiquement tous ses commerciaux
    * - Directeur → assigne automatiquement tous ses managers ET commerciaux
    */
-  async assignZoneToUser(zoneId: number, userId: number, userType: UserType) {
+  async assignZoneToUser(zoneId: number, userId: number, userType: UserType, requestUserId?: number, requestUserRole?: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Vérifier que la zone existe
       const zone = await tx.zone.findUnique({ where: { id: zoneId } });
       if (!zone) {
-        throw new ForbiddenException('Zone not found');
+        throw new NotFoundException('Zone not found');
       }
 
-      // 2. Assigner l'utilisateur principal
+      // 2. Authorization check (if auth params provided)
+      if (requestUserId && requestUserRole && requestUserRole !== 'admin') {
+        if (requestUserRole === 'directeur' && zone.directeurId !== requestUserId) {
+          throw new ForbiddenException('Can only assign zones you own');
+        }
+        if (requestUserRole === 'manager' && zone.managerId !== requestUserId) {
+          throw new ForbiddenException('Can only assign zones you own');
+        }
+      }
+
+      // 3. Assigner l'utilisateur principal
       const mainAssignment = await this.assignSingleUserToZone(
         zoneId,
         userId,
@@ -227,7 +237,7 @@ export class ZoneService {
         tx,
       );
 
-      // 3. CASCADE: Assigner les subordonnés selon le type d'utilisateur
+      // 4. CASCADE: Assigner les subordonnés selon le type d'utilisateur
       if (userType === UserType.MANAGER) {
         // Récupérer tous les commerciaux du manager
         const commercialIds = await this.getCommercialsUnderManager(userId, tx);
@@ -345,35 +355,118 @@ export class ZoneService {
     }
   }
 
-  async findOne(id: number) {
-    return this.prisma.zone.findUnique({
+  async findOne(id: number, userId: number, userRole: string) {
+    // Admin can access all zones
+    if (userRole === 'admin') {
+      return this.prisma.zone.findUnique({
+        where: { id },
+        include: {
+          immeubles: true,
+        },
+      });
+    }
+
+    // Get the zone
+    const zone = await this.prisma.zone.findUnique({
       where: { id },
       include: {
         immeubles: true,
       },
     });
+
+    if (!zone) {
+      throw new NotFoundException('Zone not found');
+    }
+
+    // Directeur can only access their own zones
+    if (userRole === 'directeur' && zone.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Manager can only access their own zones
+    if (userRole === 'manager' && zone.managerId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Commercial can only access zones they are assigned to
+    if (userRole === 'commercial') {
+      const assignment = await this.prisma.zoneEnCours.findUnique({
+        where: {
+          userId_userType: {
+            userId,
+            userType: UserType.COMMERCIAL,
+          },
+          zoneId: id,
+        },
+      });
+
+      if (!assignment) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    return zone;
   }
 
-  async assignToCommercial(zoneId: number, commercialId: number) {
+  async assignToCommercial(zoneId: number, commercialId: number, userId: number, userRole: string) {
+    // Validate authorization before assignment
+    await this.validateZoneAssignmentAuth(zoneId, userId, userRole, 'manager');
     // Utiliser la nouvelle fonction unifiée
     return this.assignZoneToUser(zoneId, commercialId, UserType.COMMERCIAL);
   }
 
-  async assignToDirecteur(zoneId: number, directeurId: number) {
+  async assignToDirecteur(zoneId: number, directeurId: number, userId: number, userRole: string) {
+    // Only admin can assign to directeur
+    if (userRole !== 'admin') {
+      throw new ForbiddenException('Only admin can assign zones to directeurs');
+    }
     // Utiliser la nouvelle fonction unifiée
     return this.assignZoneToUser(zoneId, directeurId, UserType.DIRECTEUR);
   }
 
-  async assignToManager(zoneId: number, managerId: number) {
+  async assignToManager(zoneId: number, managerId: number, userId: number, userRole: string) {
+    // Only admin and directeur can assign to manager
+    await this.validateZoneAssignmentAuth(zoneId, userId, userRole, 'directeur');
     // Utiliser la nouvelle fonction unifiée
     return this.assignZoneToUser(zoneId, managerId, UserType.MANAGER);
+  }
+
+  private async validateZoneAssignmentAuth(zoneId: number, userId: number, userRole: string, minRole: 'admin' | 'directeur' | 'manager') {
+    // Admin can always assign
+    if (userRole === 'admin') return;
+
+    // Get the zone
+    const zone = await this.prisma.zone.findUnique({ where: { id: zoneId } });
+    if (!zone) {
+      throw new NotFoundException('Zone not found');
+    }
+
+    // Check based on minimum required role
+    if (minRole === 'directeur') {
+      if (userRole !== 'admin' && userRole !== 'directeur') {
+        throw new ForbiddenException('Access denied');
+      }
+      if (userRole === 'directeur' && zone.directeurId !== userId) {
+        throw new ForbiddenException('Can only assign zones you own');
+      }
+    } else if (minRole === 'manager') {
+      if (!['admin', 'directeur', 'manager'].includes(userRole)) {
+        throw new ForbiddenException('Access denied');
+      }
+      if (userRole === 'directeur' && zone.directeurId !== userId) {
+        throw new ForbiddenException('Can only assign zones you own');
+      }
+      if (userRole === 'manager' && zone.managerId !== userId) {
+        throw new ForbiddenException('Can only assign zones you own');
+      }
+    }
   }
 
   /**
    * Désassigne un utilisateur de sa zone actuelle
    * Met l'assignation dans l'historique avec les stats calculées
    */
-  async unassignUser(userId: number, userType: UserType) {
+  async unassignUser(userId: number, userType: UserType, requestUserId: number, requestUserRole: string) {
     return this.prisma.$transaction(async (tx) => {
       // Récupérer l'assignation en cours
       const currentAssignment = await tx.zoneEnCours.findUnique({
@@ -386,9 +479,24 @@ export class ZoneService {
       });
 
       if (!currentAssignment) {
-        throw new ForbiddenException(
+        throw new NotFoundException(
           'No active zone assignment found for this user',
         );
+      }
+
+      // Authorization check
+      if (requestUserRole !== 'admin') {
+        const zone = await tx.zone.findUnique({ where: { id: currentAssignment.zoneId } });
+        if (!zone) {
+          throw new NotFoundException('Zone not found');
+        }
+
+        if (requestUserRole === 'directeur' && zone.directeurId !== requestUserId) {
+          throw new ForbiddenException('Can only unassign from zones you own');
+        }
+        if (requestUserRole === 'manager' && zone.managerId !== requestUserId) {
+          throw new ForbiddenException('Can only unassign from zones you own');
+        }
       }
 
       // Calculer les stats pour la période d'assignation
@@ -424,15 +532,68 @@ export class ZoneService {
     });
   }
 
-  async unassignFromCommercial(zoneId: number, commercialId: number) {
+  async unassignFromCommercial(
+    zoneId: number,
+    commercialId: number,
+    requestUserId: number,
+    requestUserRole: string,
+  ) {
     // Utiliser la nouvelle fonction de désassignation
-    return this.unassignUser(commercialId, UserType.COMMERCIAL);
+    return this.unassignUser(
+      commercialId,
+      UserType.COMMERCIAL,
+      requestUserId,
+      requestUserRole,
+    );
   }
 
   /**
    * Récupère l'assignation en cours d'un utilisateur
    */
-  async getCurrentAssignment(userId: number, userType: UserType) {
+  async getCurrentAssignment(userId: number, userType: UserType, requestUserId: number, requestUserRole: string) {
+    // Authorization: users can only query their own assignment or their subordinates'
+    if (requestUserRole !== 'admin') {
+      if (requestUserRole === 'commercial' && userId !== requestUserId) {
+        throw new ForbiddenException('Can only view your own assignment');
+      }
+
+      // Manager can view their commercials' assignments
+      if (requestUserRole === 'manager' && userType === UserType.COMMERCIAL) {
+        const commercial = await this.prisma.commercial.findUnique({
+          where: { id: userId },
+          select: { managerId: true },
+        });
+        if (commercial?.managerId !== requestUserId) {
+          throw new ForbiddenException('Can only view your commercials assignments');
+        }
+      } else if (requestUserRole === 'manager' && userId !== requestUserId) {
+        throw new ForbiddenException('Access denied');
+      }
+
+      // Directeur can view their managers' and commercials' assignments
+      if (requestUserRole === 'directeur') {
+        if (userType === UserType.MANAGER) {
+          const manager = await this.prisma.manager.findUnique({
+            where: { id: userId },
+            select: { directeurId: true },
+          });
+          if (manager?.directeurId !== requestUserId) {
+            throw new ForbiddenException('Can only view your managers assignments');
+          }
+        } else if (userType === UserType.COMMERCIAL) {
+          const commercial = await this.prisma.commercial.findUnique({
+            where: { id: userId },
+            select: { directeurId: true },
+          });
+          if (commercial?.directeurId !== requestUserId) {
+            throw new ForbiddenException('Can only view your commercials assignments');
+          }
+        } else if (userId !== requestUserId) {
+          throw new ForbiddenException('Access denied');
+        }
+      }
+    }
+
     return this.prisma.zoneEnCours.findUnique({
       where: {
         userId_userType: {
@@ -449,7 +610,48 @@ export class ZoneService {
   /**
    * Récupère l'historique des assignations d'un utilisateur
    */
-  async getUserZoneHistory(userId: number, userType: UserType) {
+  async getUserZoneHistory(userId: number, userType: UserType, requestUserId: number, requestUserRole: string) {
+    // Same authorization logic as getCurrentAssignment
+    if (requestUserRole !== 'admin') {
+      if (requestUserRole === 'commercial' && userId !== requestUserId) {
+        throw new ForbiddenException('Can only view your own history');
+      }
+
+      if (requestUserRole === 'manager' && userType === UserType.COMMERCIAL) {
+        const commercial = await this.prisma.commercial.findUnique({
+          where: { id: userId },
+          select: { managerId: true },
+        });
+        if (commercial?.managerId !== requestUserId) {
+          throw new ForbiddenException('Can only view your commercials history');
+        }
+      } else if (requestUserRole === 'manager' && userId !== requestUserId) {
+        throw new ForbiddenException('Access denied');
+      }
+
+      if (requestUserRole === 'directeur') {
+        if (userType === UserType.MANAGER) {
+          const manager = await this.prisma.manager.findUnique({
+            where: { id: userId },
+            select: { directeurId: true },
+          });
+          if (manager?.directeurId !== requestUserId) {
+            throw new ForbiddenException('Can only view your managers history');
+          }
+        } else if (userType === UserType.COMMERCIAL) {
+          const commercial = await this.prisma.commercial.findUnique({
+            where: { id: userId },
+            select: { directeurId: true },
+          });
+          if (commercial?.directeurId !== requestUserId) {
+            throw new ForbiddenException('Can only view your commercials history');
+          }
+        } else if (userId !== requestUserId) {
+          throw new ForbiddenException('Access denied');
+        }
+      }
+    }
+
     return this.prisma.historiqueZone.findMany({
       where: {
         userId,
@@ -481,7 +683,22 @@ export class ZoneService {
   /**
    * Récupère tous les utilisateurs actuellement assignés à une zone
    */
-  async getZoneCurrentAssignments(zoneId: number) {
+  async getZoneCurrentAssignments(zoneId: number, userId: number, userRole: string) {
+    // Authorization: verify access to zone
+    if (userRole !== 'admin') {
+      const zone = await this.prisma.zone.findUnique({ where: { id: zoneId } });
+      if (!zone) {
+        throw new NotFoundException('Zone not found');
+      }
+
+      if (userRole === 'directeur' && zone.directeurId !== userId) {
+        throw new ForbiddenException('Can only view assignments for your zones');
+      }
+      if (userRole === 'manager' && zone.managerId !== userId) {
+        throw new ForbiddenException('Can only view assignments for your zones');
+      }
+    }
+
     return this.prisma.zoneEnCours.findMany({
       where: {
         zoneId,

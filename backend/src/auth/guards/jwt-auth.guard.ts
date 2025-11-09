@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import axios from 'axios';
+import { PrismaService } from '../../prisma.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -15,6 +16,8 @@ export class JwtAuthGuard implements CanActivate {
   private readonly REALM = process.env.KEYCLOAK_REALM;
   private readonly CLIENT_ID = process.env.KEYCLOAK_CLIENT_ID as string;
   private readonly CLIENT_SECRET = process.env.KEYCLOAK_CLIENT_SECRET as string;
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const gqlContext = GqlExecutionContext.create(context);
@@ -39,14 +42,21 @@ export class JwtAuthGuard implements CanActivate {
       // Extraire les groupes/rôles
       const groups = this.extractGroups(decodedToken);
       const role = this.mapGroupToRole(groups);
+      const email = decodedToken.email || decodedToken.preferred_username;
+      const userRecord = await this.resolveUserRecord(email, role);
+
+      if (!userRecord) {
+        throw new UnauthorizedException('User not provisioned');
+      }
 
       // Attacher les informations utilisateur au contexte
       request.user = {
         sub: decodedToken.sub,
-        email: decodedToken.email,
+        email,
         groups,
         role,
-        userId: decodedToken.sub,
+        id: userRecord.id,
+        userId: userRecord.id,
       };
 
       this.logger.debug(
@@ -109,5 +119,36 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     throw new UnauthorizedException('Aucun rôle autorisé');
+  }
+
+  private async resolveUserRecord(
+    email: string | undefined,
+    role: string,
+  ): Promise<{ id: number } | null> {
+    if (!email) {
+      this.logger.warn('JWT payload missing email, cannot resolve user record');
+      return null;
+    }
+
+    switch (role) {
+      case 'commercial':
+        return this.prisma.commercial.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+      case 'manager':
+        return this.prisma.manager.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+      case 'directeur':
+      case 'admin':
+        return this.prisma.directeur.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+      default:
+        return null;
+    }
   }
 }

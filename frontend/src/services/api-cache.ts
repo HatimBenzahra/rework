@@ -361,6 +361,24 @@ class APICache {
   }
 
   /**
+   * Lightweight existence check that respects TTL
+   */
+  has(key: string): boolean {
+    const entry = this.cache.get(key)
+    if (!entry) return false
+
+    const valid = this.isValid(entry)
+    if (!valid) {
+      this.cache.delete(key)
+      return false
+    }
+
+    // Maintain LRU order even on presence check
+    this.markAsRecent(key)
+    return true
+  }
+
+  /**
    * Store data in cache
    */
   set<T>(key: string, data: T, customTTL?: number): void {

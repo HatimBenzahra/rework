@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateCommercialInput, UpdateCommercialInput } from './commercial.dto';
 import { UserType } from '../zone/zone.dto';
@@ -6,6 +10,43 @@ import { UserType } from '../zone/zone.dto';
 @Injectable()
 export class CommercialService {
   constructor(private prisma: PrismaService) {}
+
+  private async ensureAccess(
+    commercialId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const commercial = await this.prisma.commercial.findUnique({
+      where: { id: commercialId },
+      select: {
+        id: true,
+        managerId: true,
+        directeurId: true,
+      },
+    });
+
+    if (!commercial) {
+      throw new NotFoundException('Commercial not found');
+    }
+
+    if (userRole === 'admin') {
+      return commercial;
+    }
+
+    if (userRole === 'directeur' && commercial.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager' && commercial.managerId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'commercial' && commercial.id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    return commercial;
+  }
 
   async create(data: CreateCommercialInput) {
     // Si un managerId est fourni, récupérer automatiquement le directeurId du manager
@@ -97,7 +138,9 @@ export class CommercialService {
     }
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId: number, userRole: string) {
+    await this.ensureAccess(id, userId, userRole);
+
     return this.prisma.commercial.findUnique({
       where: { id },
       include: {
@@ -113,8 +156,14 @@ export class CommercialService {
     });
   }
 
-  async update(data: UpdateCommercialInput) {
+  async update(
+    data: UpdateCommercialInput,
+    userId: number,
+    userRole: string,
+  ) {
     const { id, ...updateData } = data;
+
+    await this.ensureAccess(id, userId, userRole);
 
     // Si le managerId est modifié, mettre à jour automatiquement le directeurId
     let directeurId = updateData.directeurId;
@@ -147,7 +196,9 @@ export class CommercialService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number, userRole: string) {
+    await this.ensureAccess(id, userId, userRole);
+
     return this.prisma.commercial.delete({
       where: { id },
       include: {

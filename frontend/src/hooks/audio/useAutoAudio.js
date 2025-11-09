@@ -35,7 +35,7 @@ export function useAutoAudio(userId, userType, enabled = true) {
 
       // 1. Générer le token utilisateur selon le type (commercial ou manager)
       logger.debug('Audio', `🎤 Génération token ${userType}...`, userId)
-      const details = await AudioMonitoringService.generateUserToken(userId, userType)
+      const details = await AudioMonitoringService.generateUserToken(userType)
       setConnectionDetails(details)
 
       // 2. Se connecter à LiveKit comme publisher
