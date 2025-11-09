@@ -296,7 +296,7 @@ export default function ImmeubleDetails() {
     <DetailsPage
       title={immeubleData.name}
       subtitle={`Immeuble - ${immeubleData.zone}`}
-      status={immeubleData.status}
+      status={'Immeuble'}
       data={immeubleData}
       personalInfo={personalInfo}
       statsCards={statsCards}

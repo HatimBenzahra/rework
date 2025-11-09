@@ -421,7 +421,7 @@ export default function ManagerDetails() {
       icon: 'award',
     },
     {
-      label: 'Date de création :',
+      label: 'Date de création de compte:',
       value: managerData.date_promotion,
       icon: 'calendar',
     },

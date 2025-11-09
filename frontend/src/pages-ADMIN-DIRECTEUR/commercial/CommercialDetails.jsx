@@ -165,7 +165,7 @@ export default function CommercialDetails() {
       icon: 'award',
     },
     {
-      label: 'Date de création',
+      label: 'Date de création de compte',
       value: new Date(commercialData.createdAt).toLocaleDateString('fr-FR'),
       icon: 'calendar',
     },
@@ -360,7 +360,7 @@ export default function CommercialDetails() {
     <DetailsPage
       title={commercialData.name}
       subtitle={`Commercial - ID: ${commercialData.id}`}
-      status={'COMMERCIAL'}
+      status={'Commercial'}
       data={commercialData}
       personalInfo={personalInfo}
       statsCards={statsCards}

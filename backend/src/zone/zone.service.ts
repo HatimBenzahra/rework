@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateZoneInput, UpdateZoneInput, UserType } from './zone.dto';
 
@@ -9,6 +13,8 @@ export class ZoneService {
   /**
    * Calcule les statistiques d'un utilisateur pour une zone pendant une période donnée
    */
+  // Dans backend/src/zone/zone.service.ts, remplacer la fonction calculateUserStatsForZone
+
   private async calculateUserStatsForZone(
     userId: number,
     userType: UserType,
@@ -16,10 +22,12 @@ export class ZoneService {
     startDate: Date,
     endDate: Date,
   ) {
-    // Construire la condition selon le type d'utilisateur
-    const whereCondition: any = {
-      zoneId,
-      createdAt: {
+    //on calcule directement depuis les portes des immeubles de la zone
+    let portesWhere: any = {
+      immeuble: {
+        zoneId: zoneId,
+      },
+      updatedAt: {
         gte: startDate,
         lte: endDate,
       },
@@ -27,62 +35,107 @@ export class ZoneService {
 
     switch (userType) {
       case UserType.COMMERCIAL:
-        whereCondition.commercialId = userId;
+        portesWhere.immeuble.commercialId = userId;
         break;
 
       case UserType.MANAGER:
-        whereCondition.OR = [
-          { managerId: userId }, // ses propres stats
+        // Portes des immeubles du manager OU de ses commerciaux
+        portesWhere.immeuble.OR = [
+          { managerId: userId },
           {
             commercial: {
               managerId: userId,
             },
-          }, // stats de ses commerciaux
+          },
         ];
         break;
 
       case UserType.DIRECTEUR:
-        whereCondition.OR = [
+        // Portes des immeubles sous la responsabilité du directeur
+        portesWhere.immeuble.OR = [
           {
             commercial: {
               directeurId: userId,
             },
-          }, // commerciaux du directeur
+          },
           {
             manager: {
               directeurId: userId,
             },
-          }, // managers du directeur
+          },
         ];
         break;
     }
 
-    const stats = await this.prisma.statistic.findMany({
-      where: whereCondition,
-      include: {
-        commercial: true,
-        manager: true,
+    // Grouper les portes par statut
+    const portesGrouped = await this.prisma.porte.groupBy({
+      by: ['statut'],
+      where: portesWhere,
+      _count: {
+        statut: true,
       },
     });
 
-    // Calculer les totaux
-    return {
-      totalContratsSignes: stats.reduce((sum, s) => sum + s.contratsSignes, 0),
-      totalImmeublesVisites: stats.reduce(
-        (sum, s) => sum + s.immeublesVisites,
-        0,
-      ),
-      totalRendezVousPris: stats.reduce((sum, s) => sum + s.rendezVousPris, 0),
-      totalRefus: stats.reduce((sum, s) => sum + s.refus, 0),
-      totalImmeublesProspectes: stats.reduce(
-        (sum, s) => sum + s.nbImmeublesProspectes,
-        0,
-      ),
-      totalPortesProspectes: stats.reduce(
-        (sum, s) => sum + s.nbPortesProspectes,
-        0,
-      ),
+    // Calculer les immeubles visités
+    const immeublesVisites = await this.prisma.immeuble.count({
+      where: {
+        zoneId: zoneId,
+        ...(userType === UserType.COMMERCIAL
+          ? { commercialId: userId }
+          : userType === UserType.MANAGER
+            ? {
+                OR: [
+                  { managerId: userId },
+                  { commercial: { managerId: userId } },
+                ],
+              }
+            : {
+                OR: [
+                  { commercial: { directeurId: userId } },
+                  { manager: { directeurId: userId } },
+                ],
+              }),
+        updatedAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
+    // Calculer les totaux à partir des portes
+    const stats = {
+      totalContratsSignes: 0,
+      totalImmeublesVisites: immeublesVisites,
+      totalRendezVousPris: 0,
+      totalRefus: 0,
+      totalImmeublesProspectes: immeublesVisites,
+      totalPortesProspectes: 0,
     };
+
+    portesGrouped.forEach((group) => {
+      const count = group._count.statut;
+
+      switch (group.statut) {
+        case 'CONTRAT_SIGNE':
+          stats.totalContratsSignes += count;
+          stats.totalPortesProspectes += count;
+          break;
+        case 'RENDEZ_VOUS_PRIS':
+          stats.totalRendezVousPris += count;
+          stats.totalPortesProspectes += count;
+          break;
+        case 'REFUS':
+          stats.totalRefus += count;
+          stats.totalPortesProspectes += count;
+          break;
+        case 'CURIEUX':
+        case 'NECESSITE_REPASSAGE':
+          stats.totalPortesProspectes += count;
+          break;
+      }
+    });
+
+    return stats;
   }
 
   /**
@@ -211,7 +264,13 @@ export class ZoneService {
    * - Manager → assigne automatiquement tous ses commerciaux
    * - Directeur → assigne automatiquement tous ses managers ET commerciaux
    */
-  async assignZoneToUser(zoneId: number, userId: number, userType: UserType, requestUserId?: number, requestUserRole?: string) {
+  async assignZoneToUser(
+    zoneId: number,
+    userId: number,
+    userType: UserType,
+    requestUserId?: number,
+    requestUserRole?: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Vérifier que la zone existe
       const zone = await tx.zone.findUnique({ where: { id: zoneId } });
@@ -221,7 +280,10 @@ export class ZoneService {
 
       // 2. Authorization check (if auth params provided)
       if (requestUserId && requestUserRole && requestUserRole !== 'admin') {
-        if (requestUserRole === 'directeur' && zone.directeurId !== requestUserId) {
+        if (
+          requestUserRole === 'directeur' &&
+          zone.directeurId !== requestUserId
+        ) {
           throw new ForbiddenException('Can only assign zones you own');
         }
         if (requestUserRole === 'manager' && zone.managerId !== requestUserId) {
@@ -408,14 +470,24 @@ export class ZoneService {
     return zone;
   }
 
-  async assignToCommercial(zoneId: number, commercialId: number, userId: number, userRole: string) {
+  async assignToCommercial(
+    zoneId: number,
+    commercialId: number,
+    userId: number,
+    userRole: string,
+  ) {
     // Validate authorization before assignment
     await this.validateZoneAssignmentAuth(zoneId, userId, userRole, 'manager');
     // Utiliser la nouvelle fonction unifiée
     return this.assignZoneToUser(zoneId, commercialId, UserType.COMMERCIAL);
   }
 
-  async assignToDirecteur(zoneId: number, directeurId: number, userId: number, userRole: string) {
+  async assignToDirecteur(
+    zoneId: number,
+    directeurId: number,
+    userId: number,
+    userRole: string,
+  ) {
     // Only admin can assign to directeur
     if (userRole !== 'admin') {
       throw new ForbiddenException('Only admin can assign zones to directeurs');
@@ -424,14 +496,29 @@ export class ZoneService {
     return this.assignZoneToUser(zoneId, directeurId, UserType.DIRECTEUR);
   }
 
-  async assignToManager(zoneId: number, managerId: number, userId: number, userRole: string) {
+  async assignToManager(
+    zoneId: number,
+    managerId: number,
+    userId: number,
+    userRole: string,
+  ) {
     // Only admin and directeur can assign to manager
-    await this.validateZoneAssignmentAuth(zoneId, userId, userRole, 'directeur');
+    await this.validateZoneAssignmentAuth(
+      zoneId,
+      userId,
+      userRole,
+      'directeur',
+    );
     // Utiliser la nouvelle fonction unifiée
     return this.assignZoneToUser(zoneId, managerId, UserType.MANAGER);
   }
 
-  private async validateZoneAssignmentAuth(zoneId: number, userId: number, userRole: string, minRole: 'admin' | 'directeur' | 'manager') {
+  private async validateZoneAssignmentAuth(
+    zoneId: number,
+    userId: number,
+    userRole: string,
+    minRole: 'admin' | 'directeur' | 'manager',
+  ) {
     // Admin can always assign
     if (userRole === 'admin') return;
 
@@ -466,7 +553,12 @@ export class ZoneService {
    * Désassigne un utilisateur de sa zone actuelle
    * Met l'assignation dans l'historique avec les stats calculées
    */
-  async unassignUser(userId: number, userType: UserType, requestUserId: number, requestUserRole: string) {
+  async unassignUser(
+    userId: number,
+    userType: UserType,
+    requestUserId: number,
+    requestUserRole: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       // Récupérer l'assignation en cours
       const currentAssignment = await tx.zoneEnCours.findUnique({
@@ -486,12 +578,17 @@ export class ZoneService {
 
       // Authorization check
       if (requestUserRole !== 'admin') {
-        const zone = await tx.zone.findUnique({ where: { id: currentAssignment.zoneId } });
+        const zone = await tx.zone.findUnique({
+          where: { id: currentAssignment.zoneId },
+        });
         if (!zone) {
           throw new NotFoundException('Zone not found');
         }
 
-        if (requestUserRole === 'directeur' && zone.directeurId !== requestUserId) {
+        if (
+          requestUserRole === 'directeur' &&
+          zone.directeurId !== requestUserId
+        ) {
           throw new ForbiddenException('Can only unassign from zones you own');
         }
         if (requestUserRole === 'manager' && zone.managerId !== requestUserId) {
@@ -550,7 +647,12 @@ export class ZoneService {
   /**
    * Récupère l'assignation en cours d'un utilisateur
    */
-  async getCurrentAssignment(userId: number, userType: UserType, requestUserId: number, requestUserRole: string) {
+  async getCurrentAssignment(
+    userId: number,
+    userType: UserType,
+    requestUserId: number,
+    requestUserRole: string,
+  ) {
     // Authorization: users can only query their own assignment or their subordinates'
     if (requestUserRole !== 'admin') {
       if (requestUserRole === 'commercial' && userId !== requestUserId) {
@@ -564,7 +666,9 @@ export class ZoneService {
           select: { managerId: true },
         });
         if (commercial?.managerId !== requestUserId) {
-          throw new ForbiddenException('Can only view your commercials assignments');
+          throw new ForbiddenException(
+            'Can only view your commercials assignments',
+          );
         }
       } else if (requestUserRole === 'manager' && userId !== requestUserId) {
         throw new ForbiddenException('Access denied');
@@ -578,7 +682,9 @@ export class ZoneService {
             select: { directeurId: true },
           });
           if (manager?.directeurId !== requestUserId) {
-            throw new ForbiddenException('Can only view your managers assignments');
+            throw new ForbiddenException(
+              'Can only view your managers assignments',
+            );
           }
         } else if (userType === UserType.COMMERCIAL) {
           const commercial = await this.prisma.commercial.findUnique({
@@ -586,7 +692,9 @@ export class ZoneService {
             select: { directeurId: true },
           });
           if (commercial?.directeurId !== requestUserId) {
-            throw new ForbiddenException('Can only view your commercials assignments');
+            throw new ForbiddenException(
+              'Can only view your commercials assignments',
+            );
           }
         } else if (userId !== requestUserId) {
           throw new ForbiddenException('Access denied');
@@ -610,7 +718,12 @@ export class ZoneService {
   /**
    * Récupère l'historique des assignations d'un utilisateur
    */
-  async getUserZoneHistory(userId: number, userType: UserType, requestUserId: number, requestUserRole: string) {
+  async getUserZoneHistory(
+    userId: number,
+    userType: UserType,
+    requestUserId: number,
+    requestUserRole: string,
+  ) {
     // Same authorization logic as getCurrentAssignment
     if (requestUserRole !== 'admin') {
       if (requestUserRole === 'commercial' && userId !== requestUserId) {
@@ -623,7 +736,9 @@ export class ZoneService {
           select: { managerId: true },
         });
         if (commercial?.managerId !== requestUserId) {
-          throw new ForbiddenException('Can only view your commercials history');
+          throw new ForbiddenException(
+            'Can only view your commercials history',
+          );
         }
       } else if (requestUserRole === 'manager' && userId !== requestUserId) {
         throw new ForbiddenException('Access denied');
@@ -644,7 +759,9 @@ export class ZoneService {
             select: { directeurId: true },
           });
           if (commercial?.directeurId !== requestUserId) {
-            throw new ForbiddenException('Can only view your commercials history');
+            throw new ForbiddenException(
+              'Can only view your commercials history',
+            );
           }
         } else if (userId !== requestUserId) {
           throw new ForbiddenException('Access denied');
@@ -683,7 +800,11 @@ export class ZoneService {
   /**
    * Récupère tous les utilisateurs actuellement assignés à une zone
    */
-  async getZoneCurrentAssignments(zoneId: number, userId: number, userRole: string) {
+  async getZoneCurrentAssignments(
+    zoneId: number,
+    userId: number,
+    userRole: string,
+  ) {
     // Authorization: verify access to zone
     if (userRole !== 'admin') {
       const zone = await this.prisma.zone.findUnique({ where: { id: zoneId } });
@@ -692,10 +813,14 @@ export class ZoneService {
       }
 
       if (userRole === 'directeur' && zone.directeurId !== userId) {
-        throw new ForbiddenException('Can only view assignments for your zones');
+        throw new ForbiddenException(
+          'Can only view assignments for your zones',
+        );
       }
       if (userRole === 'manager' && zone.managerId !== userId) {
-        throw new ForbiddenException('Can only view assignments for your zones');
+        throw new ForbiddenException(
+          'Can only view assignments for your zones',
+        );
       }
     }
 

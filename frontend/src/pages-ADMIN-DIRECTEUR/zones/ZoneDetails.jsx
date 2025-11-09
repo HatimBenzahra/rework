@@ -10,12 +10,54 @@ import {
 } from '@/services'
 import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import AssignedZoneCard from '@/components/AssignedZoneCard'
+import { apiCache } from '@/services/api-cache'
+import { logError } from '@/services/graphql-errors'
+
+const fetchLocationName = async (longitude, latitude) => {
+  const roundedLng = longitude.toFixed(4)
+  const roundedLat = latitude.toFixed(4)
+
+  const fetchGeocode = async () => {
+    try {
+      const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
+      )
+
+      if (!response.ok) {
+        throw new Error(`Erreur Mapbox API: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0]
+        return feature.place_name || feature.text
+      } else {
+        return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+      }
+    } catch (error) {
+      // Utiliser le système centralisé de logging d'erreurs
+      logError(error, 'AssignedZoneCard.fetchLocationName', {
+        longitude,
+        latitude,
+      })
+      return `${latitude.toFixed(2)}°N, ${longitude.toFixed(2)}°E`
+    }
+  }
+
+  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+}
 
 export default function ZoneDetails() {
   const { id } = useParams()
   const { currentRole, currentUserId } = useRole()
+
+  // État pour le nom de la localisation
+  const [locationName, setLocationName] = useState('Chargement...')
 
   // API hooks
   const { data: zone, loading: zoneLoading, error } = useZone(parseInt(id))
@@ -31,6 +73,23 @@ export default function ZoneDetails() {
   const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
   const { data: zoneAssignments } = useZoneCurrentAssignments(parseInt(id))
   const permissions = useEntityPermissions('zones')
+
+  // Charger le nom de la localisation
+  useEffect(() => {
+    if (zone?.xOrigin && zone?.yOrigin) {
+      fetchLocationName(zone.xOrigin, zone.yOrigin)
+        .then(name => {
+          setLocationName(name)
+        })
+        .catch(error => {
+          logError(error, 'ZoneDetails.fetchLocationName', {
+            zoneId: zone.id,
+            zoneName: zone.nom,
+          })
+          setLocationName(`${zone.yOrigin.toFixed(2)}°N, ${zone.xOrigin.toFixed(2)}°E`)
+        })
+    }
+  }, [zone])
 
   // Transformation des données API vers format UI
   const zoneData = useMemo(() => {
@@ -155,7 +214,7 @@ export default function ZoneDetails() {
     { label: 'Rayon de couverture', value: zoneData.surface_area, icon: 'mapPin' },
     {
       label: 'Coordonnées centre',
-      value: `${zone.yOrigin.toFixed(4)}°N, ${zone.xOrigin.toFixed(4)}°E`,
+      value: locationName,
       icon: 'mapPin',
     },
     { label: 'Description', value: zoneData.description, icon: 'building' },
@@ -237,7 +296,7 @@ export default function ZoneDetails() {
     <DetailsPage
       title={zoneData.name}
       subtitle={`Zone - ${zoneData.region}`}
-      status={zoneData.status}
+      status={'Zone'}
       data={zoneData}
       personalInfo={personalInfo}
       statsCards={customStatsCards}

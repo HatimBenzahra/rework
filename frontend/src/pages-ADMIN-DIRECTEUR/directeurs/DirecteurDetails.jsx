@@ -639,7 +639,7 @@ export default function DirecteurDetails() {
     <DetailsPage
       title={directeurData.name}
       subtitle={`Directeur - ID: ${directeurData.id}`}
-      status={directeurData.status}
+      status={'Directeur'}
       data={directeurData}
       personalInfo={personalInfo}
       statsCards={statsCards}

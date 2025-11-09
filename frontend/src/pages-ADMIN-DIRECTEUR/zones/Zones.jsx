@@ -146,7 +146,7 @@ export default function Zones() {
       },
     },
     {
-      header: 'Date de création',
+      header: 'Date de création de la zone:',
       accessor: 'createdAt',
       sortable: true,
       className: 'hidden md:table-cell',

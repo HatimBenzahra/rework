@@ -81,7 +81,7 @@ const fetchLocationName = async (longitude, latitude) => {
     try {
       const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,reg  ion,country&language=fr`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
       )
 
       if (!response.ok) {
