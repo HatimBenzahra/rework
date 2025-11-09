@@ -148,7 +148,10 @@ import type {
 
 export const directeurApi = {
   async getAll(): Promise<Directeur[]> {
-    const response = await gql<QueryDirecteursResponse, QueryDirecteursVariables>(GET_DIRECTEURS, {})
+    const response = await gql<QueryDirecteursResponse, QueryDirecteursVariables>(
+      GET_DIRECTEURS,
+      {}
+    )
     return response.directeurs
   },
 
@@ -253,10 +256,7 @@ export const managerApi = {
 
 export const commercialApi = {
   async getAll(): Promise<Commercial[]> {
-    const response = await gql<QueryCommercialsResponse, {}>(
-      GET_COMMERCIALS,
-      {}
-    )
+    const response = await gql<QueryCommercialsResponse, {}>(GET_COMMERCIALS, {})
     return response.commercials
   },
 
@@ -326,10 +326,7 @@ export const commercialApi = {
 
 export const zoneApi = {
   async getAll(): Promise<Zone[]> {
-    const response = await gql<QueryZonesResponse, {}>(
-      GET_ZONES,
-      {}
-    )
+    const response = await gql<QueryZonesResponse, {}>(GET_ZONES, {})
     return response.zones
   },
 
@@ -389,10 +386,7 @@ export const zoneApi = {
   },
 
   async getAllCurrentAssignments(): Promise<any[]> {
-    const response = await gql<any, {}>(
-      GET_ALL_CURRENT_ASSIGNMENTS,
-      {}
-    )
+    const response = await gql<any, {}>(GET_ALL_CURRENT_ASSIGNMENTS, {})
     return response.allCurrentAssignments
   },
 
@@ -408,10 +402,7 @@ export const zoneApi = {
 
 export const immeubleApi = {
   async getAll(): Promise<Immeuble[]> {
-    const response = await gql<QueryImmeublesResponse, {}>(
-      GET_IMMEUBLES,
-      {}
-    )
+    const response = await gql<QueryImmeublesResponse, {}>(GET_IMMEUBLES, {})
     return response.immeubles
   },
 
@@ -483,10 +474,9 @@ export const immeubleApi = {
 
 export const statisticApi = {
   async getAll(commercialId?: number): Promise<Statistic[]> {
-    const response = await gql<
-      QueryStatisticsResponse,
-      { commercialId?: number }
-    >(GET_STATISTICS, { commercialId })
+    const response = await gql<QueryStatisticsResponse, { commercialId?: number }>(GET_STATISTICS, {
+      commercialId,
+    })
     return response.statistics
   },
 
@@ -522,10 +512,7 @@ export const statisticApi = {
   },
 
   async getZoneStatistics(): Promise<ZoneStatistic[]> {
-    const response = await gql<QueryZoneStatisticsResponse, {}>(
-      GET_ZONE_STATISTICS,
-      {}
-    )
+    const response = await gql<QueryZoneStatisticsResponse, {}>(GET_ZONE_STATISTICS, {})
     return response.zoneStatistics
   },
 
