@@ -18,7 +18,7 @@ export class ManagerService {
 
   async findAll(userId?: number, userRole?: string) {
     // Si pas de filtrage explicite, retourner tous les managers
-    if (!userId || !userRole) {
+    if (userId === undefined || !userRole) {
       return this.prisma.manager.findMany({
         include: {
           directeur: true,

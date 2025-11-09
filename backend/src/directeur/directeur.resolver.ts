@@ -26,11 +26,8 @@ export class DirecteurResolver {
 
   @Query(() => [Directeur], { name: 'directeurs' })
   @Roles('admin', 'directeur')
-  findAll(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.directeurService.findAll(userId, userRole);
+  findAll(@CurrentUser() user: any) {
+    return this.directeurService.findAll(user.id, user.role);
   }
 
   @Query(() => Directeur, { name: 'directeur' })

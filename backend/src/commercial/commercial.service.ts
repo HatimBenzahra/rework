@@ -76,8 +76,8 @@ export class CommercialService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    // Si pas de paramètres de filtrage, retourner tous les commerciaux
-    if (!userId || !userRole) {
+    // Vérifier que les paramètres sont définis (userId peut être 0 pour les admins)
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 
@@ -156,11 +156,7 @@ export class CommercialService {
     });
   }
 
-  async update(
-    data: UpdateCommercialInput,
-    userId: number,
-    userRole: string,
-  ) {
+  async update(data: UpdateCommercialInput, userId: number, userRole: string) {
     const { id, ...updateData } = data;
 
     await this.ensureAccess(id, userId, userRole);

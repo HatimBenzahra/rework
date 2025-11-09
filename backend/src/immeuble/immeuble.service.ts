@@ -144,8 +144,8 @@ export class ImmeubleService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    // Si pas de paramètres de filtrage, retourner tous les immeubles
-    if (!userId || !userRole) {
+    // Vérifier que les paramètres sont définis (userId peut être 0 pour les admins)
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 

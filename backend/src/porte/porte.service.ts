@@ -314,7 +314,7 @@ export class PorteService {
     userId?: number,
     userRole?: string,
   ) {
-    if (!userId || !userRole) {
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('Access denied');
     }
 

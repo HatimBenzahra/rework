@@ -147,11 +147,8 @@ import type {
 // =============================================================================
 
 export const directeurApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Directeur[]> {
-    const response = await gql<QueryDirecteursResponse, QueryDirecteursVariables>(GET_DIRECTEURS, {
-      userId,
-      userRole,
-    })
+  async getAll(): Promise<Directeur[]> {
+    const response = await gql<QueryDirecteursResponse, QueryDirecteursVariables>(GET_DIRECTEURS, {})
     return response.directeurs
   },
 
@@ -192,11 +189,8 @@ export const directeurApi = {
 // =============================================================================
 
 export const managerApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Manager[]> {
-    const response = await gql<QueryManagersResponse, QueryManagersVariables>(GET_MANAGERS, {
-      userId,
-      userRole,
-    })
+  async getAll(): Promise<Manager[]> {
+    const response = await gql<QueryManagersResponse, QueryManagersVariables>(GET_MANAGERS, {})
     return response.managers
   },
 
@@ -258,10 +252,10 @@ export const managerApi = {
 // =============================================================================
 
 export const commercialApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Commercial[]> {
-    const response = await gql<QueryCommercialsResponse, { userId?: number; userRole?: string }>(
+  async getAll(): Promise<Commercial[]> {
+    const response = await gql<QueryCommercialsResponse, {}>(
       GET_COMMERCIALS,
-      { userId, userRole }
+      {}
     )
     return response.commercials
   },
@@ -331,10 +325,10 @@ export const commercialApi = {
 // =============================================================================
 
 export const zoneApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Zone[]> {
-    const response = await gql<QueryZonesResponse, { userId?: number; userRole?: string }>(
+  async getAll(): Promise<Zone[]> {
+    const response = await gql<QueryZonesResponse, {}>(
       GET_ZONES,
-      { userId, userRole }
+      {}
     )
     return response.zones
   },
@@ -389,18 +383,15 @@ export const zoneApi = {
     return response.currentUserAssignment
   },
 
-  async getAllZoneHistory(userId?: number, userRole?: string): Promise<any[]> {
-    const response = await gql<any, { userId?: number; userRole?: string }>(GET_ALL_ZONE_HISTORY, {
-      userId,
-      userRole,
-    })
+  async getAllZoneHistory(): Promise<any[]> {
+    const response = await gql<any, {}>(GET_ALL_ZONE_HISTORY, {})
     return response.allZoneHistory
   },
 
-  async getAllCurrentAssignments(userId?: number, userRole?: string): Promise<any[]> {
-    const response = await gql<any, { userId?: number; userRole?: string }>(
+  async getAllCurrentAssignments(): Promise<any[]> {
+    const response = await gql<any, {}>(
       GET_ALL_CURRENT_ASSIGNMENTS,
-      { userId, userRole }
+      {}
     )
     return response.allCurrentAssignments
   },
@@ -416,10 +407,10 @@ export const zoneApi = {
 // =============================================================================
 
 export const immeubleApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Immeuble[]> {
-    const response = await gql<QueryImmeublesResponse, { userId?: number; userRole?: string }>(
+  async getAll(): Promise<Immeuble[]> {
+    const response = await gql<QueryImmeublesResponse, {}>(
       GET_IMMEUBLES,
-      { userId, userRole }
+      {}
     )
     return response.immeubles
   },
@@ -491,11 +482,11 @@ export const immeubleApi = {
 // =============================================================================
 
 export const statisticApi = {
-  async getAll(commercialId?: number, userId?: number, userRole?: string): Promise<Statistic[]> {
+  async getAll(commercialId?: number): Promise<Statistic[]> {
     const response = await gql<
       QueryStatisticsResponse,
-      { commercialId?: number; userId?: number; userRole?: string }
-    >(GET_STATISTICS, { commercialId, userId, userRole })
+      { commercialId?: number }
+    >(GET_STATISTICS, { commercialId })
     return response.statistics
   },
 
@@ -530,10 +521,10 @@ export const statisticApi = {
     return response.removeStatistic
   },
 
-  async getZoneStatistics(userId?: number, userRole?: string): Promise<ZoneStatistic[]> {
-    const response = await gql<QueryZoneStatisticsResponse, { userId?: number; userRole?: string }>(
+  async getZoneStatistics(): Promise<ZoneStatistic[]> {
+    const response = await gql<QueryZoneStatisticsResponse, {}>(
       GET_ZONE_STATISTICS,
-      { userId, userRole }
+      {}
     )
     return response.zoneStatistics
   },

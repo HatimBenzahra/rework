@@ -32,12 +32,10 @@ export class StatisticResolver {
   @Query(() => [Statistic], { name: 'statistics' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
   findAll(
-    @Args('commercialId', { type: () => Int, nullable: true })
-    commercialId?: number,
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
+    @Args('commercialId', { type: () => Int, nullable: true }) commercialId: number | undefined,
+    @CurrentUser() user: any,
   ) {
-    return this.statisticService.findAll(commercialId, userId, userRole);
+    return this.statisticService.findAll(commercialId, user.id, user.role);
   }
 
   @Query(() => Statistic, { name: 'statistic' })
@@ -63,11 +61,8 @@ export class StatisticResolver {
 
   @Query(() => [ZoneStatistic], { name: 'zoneStatistics' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  getZoneStatistics(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.statisticService.getZoneStatistics(userId, userRole);
+  getZoneStatistics(@CurrentUser() user: any) {
+    return this.statisticService.getZoneStatistics(user.id, user.role);
   }
 
   @Mutation(() => String, { name: 'recalculateAllStats' })

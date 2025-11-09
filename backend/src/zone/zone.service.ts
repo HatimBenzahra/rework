@@ -287,8 +287,8 @@ export class ZoneService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    // Si pas de paramètres de filtrage, retourner toutes les zones
-    if (!userId || !userRole) {
+    // Vérifier que les paramètres sont définis (userId peut être 0 pour les admins)
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 
@@ -714,7 +714,7 @@ export class ZoneService {
    * Avec filtrage selon le rôle de l'utilisateur
    */
   async getAllZoneHistory(userId?: number, userRole?: string) {
-    if (!userId || !userRole) {
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 
@@ -787,7 +787,7 @@ export class ZoneService {
    * Avec filtrage selon le rôle de l'utilisateur
    */
   async getAllCurrentAssignments(userId?: number, userRole?: string) {
-    if (!userId || !userRole) {
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 

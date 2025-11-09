@@ -17,7 +17,7 @@ export class DirecteurService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    if (!userId || !userRole) {
+    if (userId === undefined || !userRole) {
       return this.prisma.directeur.findMany({
         include: {
           managers: true,

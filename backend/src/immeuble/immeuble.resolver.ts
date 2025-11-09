@@ -26,11 +26,8 @@ export class ImmeubleResolver {
 
   @Query(() => [Immeuble], { name: 'immeubles' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findAll(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.immeubleService.findAll(userId, userRole);
+  findAll(@CurrentUser() user: any) {
+    return this.immeubleService.findAll(user.id, user.role);
   }
 
   @Query(() => Immeuble, { name: 'immeuble' })

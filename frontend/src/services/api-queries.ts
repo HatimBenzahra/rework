@@ -8,8 +8,8 @@
 // =============================================================================
 
 export const GET_DIRECTEURS = `
-  query GetDirecteurs($userId: Int, $userRole: String) {
-    directeurs(userId: $userId, userRole: $userRole) {
+  query GetDirecteurs {
+    directeurs {
       id
       nom
       prenom
@@ -42,8 +42,8 @@ export const GET_DIRECTEUR = `
 // =============================================================================
 
 export const GET_MANAGERS = `
-  query GetManagers($userId: Int, $userRole: String) {
-    managers(userId: $userId, userRole: $userRole) {
+  query GetManagers {
+    managers {
       id
       nom
       prenom
@@ -325,8 +325,8 @@ export const GET_MANAGER_FULL = `
  * Utilisée par : Page Commerciaux (liste/tableau)
  */
 export const GET_COMMERCIALS = `
-  query GetCommercials($userId: Int, $userRole: String) {
-    commercials(userId: $userId, userRole: $userRole) {
+  query GetCommercials {
+    commercials {
       id
       nom
       prenom
@@ -441,8 +441,8 @@ export const GET_COMMERCIAL_FULL = `
 // =============================================================================
 
 export const GET_ZONES = `
-  query GetZones($userId: Int, $userRole: String) {
-    zones(userId: $userId, userRole: $userRole) {
+  query GetZones {
+    zones {
       id
       nom
       xOrigin
@@ -518,8 +518,8 @@ export const GET_ZONE = `
 // =============================================================================
 
 export const GET_IMMEUBLES = `
-  query GetImmeubles($userId: Int, $userRole: String) {
-    immeubles(userId: $userId, userRole: $userRole) {
+  query GetImmeubles {
+    immeubles {
       id
       adresse
       latitude
@@ -564,8 +564,8 @@ export const GET_IMMEUBLE = `
 // =============================================================================
 
 export const GET_STATISTICS = `
-  query GetStatistics($commercialId: Int, $userId: Int, $userRole: String) {
-    statistics(commercialId: $commercialId, userId: $userId, userRole: $userRole) {
+  query GetStatistics($commercialId: Int) {
+    statistics(commercialId: $commercialId) {
       id
       commercialId
       managerId
@@ -599,8 +599,8 @@ export const GET_STATISTIC = `
 `
 
 export const GET_ZONE_STATISTICS = `
-  query GetZoneStatistics($userId: Int, $userRole: String) {
-    zoneStatistics(userId: $userId, userRole: $userRole) {
+  query GetZoneStatistics {
+    zoneStatistics {
       zoneId
       zoneName
       totalContratsSignes
@@ -639,8 +639,8 @@ export const GET_CURRENT_USER_ASSIGNMENT = `
 `
 
 export const GET_ALL_ZONE_HISTORY = `
-  query GetAllZoneHistory($userId: Int, $userRole: String) {
-    allZoneHistory(userId: $userId, userRole: $userRole) {
+  query GetAllZoneHistory {
+    allZoneHistory {
       id
       zoneId
       userId
@@ -662,8 +662,8 @@ export const GET_ALL_ZONE_HISTORY = `
 `
 
 export const GET_ALL_CURRENT_ASSIGNMENTS = `
-  query GetAllCurrentAssignments($userId: Int, $userRole: String) {
-    allCurrentAssignments(userId: $userId, userRole: $userRole) {
+  query GetAllCurrentAssignments {
+    allCurrentAssignments {
       id
       zoneId
       userId

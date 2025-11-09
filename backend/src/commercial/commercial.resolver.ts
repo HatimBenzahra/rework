@@ -45,11 +45,8 @@ export class CommercialResolver {
 
   @Query(() => [Commercial], { name: 'commercials' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findAll(
-    @Args('userId', { type: () => Int, nullable: true }) userId?: number,
-    @Args('userRole', { type: () => String, nullable: true }) userRole?: string,
-  ) {
-    return this.commercialService.findAll(userId, userRole);
+  findAll(@CurrentUser() user: any) {
+    return this.commercialService.findAll(user.id, user.role);
   }
 
   @Query(() => Commercial, { name: 'commercial' })
@@ -67,7 +64,11 @@ export class CommercialResolver {
     @Args('updateCommercialInput') updateCommercialInput: UpdateCommercialInput,
     @CurrentUser() user: any,
   ) {
-    return this.commercialService.update(updateCommercialInput, user.id, user.role);
+    return this.commercialService.update(
+      updateCommercialInput,
+      user.id,
+      user.role,
+    );
   }
 
   @Mutation(() => Commercial)
