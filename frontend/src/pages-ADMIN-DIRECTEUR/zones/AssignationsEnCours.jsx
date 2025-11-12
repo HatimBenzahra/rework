@@ -3,7 +3,7 @@ import { useAllCurrentAssignments, useCommercials, useManagers, useDirecteurs } 
 import { AdvancedDataTable } from '@/components/tableau'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { apiCache } from '@/services/api-cache'
+import { mapboxCache } from '@/services/api-cache'
 
 // Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
 const fetchLocationName = async (longitude, latitude) => {
@@ -33,9 +33,9 @@ const fetchLocationName = async (longitude, latitude) => {
     }
   }
 
-  // Utiliser le système de cache avec namespace et gestion de déduplication
-  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
-  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+  // Utiliser le cache dédié Mapbox avec namespace et gestion de déduplication
+  const cacheKey = mapboxCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return mapboxCache.fetchWithCache(cacheKey, fetchGeocode)
 }
 
 export default function AssignationsEnCours() {

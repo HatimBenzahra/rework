@@ -41,6 +41,7 @@ import Historique from '@/pages-COMMERCIAL-MANAGER/historique/Historique'
 import PortesGestion from '@/pages-COMMERCIAL-MANAGER/portes/PortesGestion'
 import PortesLecture from '@/pages-COMMERCIAL-MANAGER/portes/PortesLecture'
 import TeamManagement from '@/pages-COMMERCIAL-MANAGER/team/TeamManagement'
+
 // Layout pour Admin/Directeur/Manager (avec sidebar)
 function AdminLayout() {
   return (

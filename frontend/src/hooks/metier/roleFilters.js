@@ -13,6 +13,7 @@ export const ROLES = {
 // Permissions par rôle et par entité
 export const PERMISSIONS = {
   [ROLES.ADMIN]: {
+    dashboard: { view: true, add: false, edit: false, delete: false },
     commerciaux: { view: true, add: true, edit: true, delete: true },
     managers: { view: true, add: true, edit: true, delete: true },
     directeurs: { view: true, add: true, edit: true, delete: true },
@@ -24,6 +25,7 @@ export const PERMISSIONS = {
     gestion: { view: true, add: true, edit: true, delete: true },
   },
   [ROLES.DIRECTEUR]: {
+    dashboard: { view: true, add: false, edit: false, delete: false },
     commerciaux: { view: true, add: true, edit: true, delete: true },
     managers: { view: true, add: true, edit: true, delete: true },
     directeurs: { view: false, add: false, edit: false, delete: false },
@@ -35,6 +37,7 @@ export const PERMISSIONS = {
     gestion: { view: true, add: false, edit: true, delete: false },
   },
   [ROLES.MANAGER]: {
+    dashboard: { view: false, add: false, edit: false, delete: false },
     commerciaux: { view: false, add: false, edit: false, delete: false },
     managers: { view: false, add: false, edit: false, delete: false },
     directeurs: { view: false, add: false, edit: false, delete: false },
@@ -46,6 +49,7 @@ export const PERMISSIONS = {
     gestion: { view: false, add: false, edit: false, delete: false },
   },
   [ROLES.COMMERCIAL]: {
+    dashboard: { view: false, add: false, edit: false, delete: false },
     commerciaux: { view: false, add: false, edit: false, delete: false },
     managers: { view: false, add: false, edit: false, delete: false },
     directeurs: { view: false, add: false, edit: false, delete: false },

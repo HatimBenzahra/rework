@@ -28,14 +28,11 @@ const immeublesColumns = [
     cell: row => `${row.floors} étages`,
   },
   {
-    header: 'Portes/Étage',
-    accessor: 'doors_per_floor',
+    header: 'contrats signés',
+    accessor: 'contrats_signes',
+    sortable: true,
     className: 'hidden md:table-cell text-center',
-  },
-  {
-    header: 'Total Portes',
-    accessor: 'total_doors',
-    className: 'hidden lg:table-cell text-center',
+    cell: row => `${row.contrats_signes} contrats`,
   },
   {
     header: 'Couverture',
@@ -112,6 +109,10 @@ export default function Immeubles() {
   const permissions = useEntityPermissions('immeubles')
   const description = useEntityDescription('immeubles')
 
+  function calculnbcontrats(immeuble) {
+    return (immeuble.portes || []).filter(p => p.statut === 'CONTRAT_SIGNE').length
+  }
+
   // Préparation des données pour le tableau avec mapping API → UI
   const tableData = useMemo(() => {
     if (!filteredImmeubles) return []
@@ -122,9 +123,9 @@ export default function Immeubles() {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
       const manager = managers?.find(m => m.id === immeuble.managerId)
       const portesImmeuble = immeuble.portes || []
-      const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
+      const totalDoors = portesImmeuble.length
       const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
-      const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
+      const couverture = parseFloat(((portesProspectees / totalDoors) * 100).toFixed(1))
 
       // Déterminer le nom du responsable
       let responsibleName = 'N/A'
@@ -140,6 +141,7 @@ export default function Immeubles() {
         floors: immeuble.nbEtages,
         doors_per_floor: immeuble.nbPortesParEtage,
         total_doors: totalDoors,
+        contrats_signes: calculnbcontrats(immeuble),
         couverture: couverture,
         commercial_name: responsibleName,
       }

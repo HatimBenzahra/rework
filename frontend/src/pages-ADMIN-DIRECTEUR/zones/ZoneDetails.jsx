@@ -11,7 +11,7 @@ import {
 import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
 import { useMemo, useState, useEffect } from 'react'
 import AssignedZoneCard from '@/components/AssignedZoneCard'
-import { apiCache } from '@/services/api-cache'
+import { mapboxCache } from '@/services/api-cache'
 import { logError } from '@/services/graphql-errors'
 
 const fetchLocationName = async (longitude, latitude) => {
@@ -39,7 +39,7 @@ const fetchLocationName = async (longitude, latitude) => {
       }
     } catch (error) {
       // Utiliser le système centralisé de logging d'erreurs
-      logError(error, 'AssignedZoneCard.fetchLocationName', {
+      logError(error, 'ZoneDetails.fetchLocationName', {
         longitude,
         latitude,
       })
@@ -47,8 +47,9 @@ const fetchLocationName = async (longitude, latitude) => {
     }
   }
 
-  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
-  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+  // Utiliser le cache dédié Mapbox
+  const cacheKey = mapboxCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return mapboxCache.fetchWithCache(cacheKey, fetchGeocode)
 }
 
 export default function ZoneDetails() {

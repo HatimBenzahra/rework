@@ -44,7 +44,7 @@ const items = [
     title: 'Dashboard',
     url: '/',
     icon: Home,
-    entity: null, // Dashboard toujours visible
+    entity: 'dashboard',
   },
   {
     title: 'Directeurs',
@@ -101,7 +101,7 @@ const items = [
     url: '/gps-tracking',
     icon: Navigation2,
     entity: 'gps-tracking',
-    disabled: true, // Ajouter cette ligne
+    disabled: true,
   },
   {
     title: 'Écoutes',

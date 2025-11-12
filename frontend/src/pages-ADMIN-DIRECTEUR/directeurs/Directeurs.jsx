@@ -2,9 +2,7 @@ import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import {
   useDirecteurs,
-  useCreateDirecteur,
   useUpdateDirecteur,
-  useRemoveDirecteur,
 } from '@/services'
 import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
@@ -12,8 +10,14 @@ import { useMemo } from 'react'
 
 const directeursColumns = [
   {
-    header: 'Nom Prénom',
-    accessor: 'name',
+    header: 'Nom',
+    accessor: 'nom',
+    sortable: true,
+    className: 'font-medium',
+  },
+  {
+    header: 'Prénom',
+    accessor: 'prenom',
     sortable: true,
     className: 'font-medium',
   },
@@ -38,22 +42,18 @@ const directeursColumns = [
 // Configuration des champs du modal d'édition
 const directeursEditFields = [
   {
-    key: 'name',
-    label: 'Nom complet',
+    key: 'nom',
+    label: 'Nom',
     type: 'text',
     required: true,
     section: 'Informations personnelles',
   },
   {
-    key: 'email',
-    label: 'Email',
-    type: 'email',
+    key: 'prenom',
+    label: 'Prénom',
+    type: 'text',
+    required: true,
     section: 'Informations personnelles',
-    validate: value => {
-      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        return 'Email invalide'
-      }
-    },
   },
   {
     key: 'numTelephone',
@@ -77,9 +77,7 @@ export default function Directeurs() {
 
   // API hooks
   const { data: directeursApi, loading: directeursLoading, refetch } = useDirecteurs()
-  const { mutate: createDirecteur } = useCreateDirecteur()
   const { mutate: updateDirecteur } = useUpdateDirecteur()
-  const { mutate: removeDirecteur } = useRemoveDirecteur()
 
   // Utilisation du système de rôles pour filtrer les données
   const {
@@ -93,45 +91,20 @@ export default function Directeurs() {
     if (!filteredDirecteurs) return []
     return filteredDirecteurs.map(directeur => ({
       ...directeur,
-      name: `${directeur.prenom} ${directeur.nom}`,
+      nom: directeur.nom,
+      prenom: directeur.prenom,
       email: directeur.email || 'Non renseigné',
       numTelephone: directeur.numTelephone || 'Non renseigné',
       adresse: directeur.adresse || 'Non renseignée',
     }))
   }, [filteredDirecteurs])
 
-  const handleAddDirecteur = async formData => {
-    try {
-      const [prenom, ...nomParts] = (formData.name || '').split(' ')
-      const nom = nomParts.join(' ')
-
-      const directeurInput = {
-        nom: nom || formData.nom || '',
-        prenom: prenom || formData.prenom || '',
-        email: formData.email || null,
-        numTelephone: formData.numTelephone || null,
-        adresse: formData.adresse || null,
-      }
-
-      await createDirecteur(directeurInput)
-      await refetch()
-      showSuccess('Directeur créé avec succès')
-    } catch (error) {
-      showError(error, 'Directeurs.handleAddDirecteur')
-      throw error
-    }
-  }
-
   const handleEditDirecteur = async editedData => {
     try {
-      const [prenom, ...nomParts] = (editedData.name || '').split(' ')
-      const nom = nomParts.join(' ')
-
       const updateInput = {
         id: editedData.id,
-        nom: nom || editedData.nom,
-        prenom: prenom || editedData.prenom,
-        email: editedData.email,
+        nom: editedData.nom,
+        prenom: editedData.prenom,
         numTelephone: editedData.numTelephone,
         adresse: editedData.adresse,
       }
@@ -141,17 +114,6 @@ export default function Directeurs() {
       showSuccess('Directeur modifié avec succès')
     } catch (error) {
       showError(error, 'Directeurs.handleEditDirecteur')
-      throw error
-    }
-  }
-
-  const handleDeleteDirecteur = async id => {
-    try {
-      await removeDirecteur(id)
-      await refetch()
-      showSuccess('Directeur supprimé avec succès')
-    } catch (error) {
-      showError(error, 'Directeurs.handleDeleteDirecteur')
       throw error
     }
   }
@@ -181,13 +143,10 @@ export default function Directeurs() {
         description={description}
         data={tableData}
         columns={directeursColumns}
-        searchKey="name"
-        onAdd={permissions.canAdd ? handleAddDirecteur : undefined}
-        addButtonText="Nouveau Directeur"
+        searchKey="nom"
         detailsPath="/directeurs"
         editFields={directeursEditFields}
         onEdit={permissions.canEdit ? handleEditDirecteur : undefined}
-        onDelete={permissions.canDelete ? handleDeleteDirecteur : undefined}
       />
     </div>
   )

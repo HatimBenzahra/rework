@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Calendar, Maximize2, X, Lock, Unlock, Building2 } from 'lucide-react'
 import { MapSkeleton } from '@/components/LoadingSkeletons'
-import { apiCache } from '@/services/api-cache'
+import { mapboxCache } from '@/services/api-cache'
 import { logError } from '@/services/graphql-errors'
 
 // Set Mapbox access token
@@ -106,8 +106,9 @@ const fetchLocationName = async (longitude, latitude) => {
     }
   }
 
-  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
-  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+  // Utiliser le cache dédié Mapbox
+  const cacheKey = mapboxCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return mapboxCache.fetchWithCache(cacheKey, fetchGeocode)
 }
 
 /**

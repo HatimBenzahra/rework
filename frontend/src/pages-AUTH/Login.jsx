@@ -62,7 +62,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 pb-4">
       {/* Boutons de thème en haut à droite */}
       <div className="fixed top-4 right-4 flex items-center gap-2">
         <ThemeSelector />
@@ -110,7 +110,7 @@ export default function Login() {
                   disabled={isLoading}
                   required
                   className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="exemple@email.com"
+                  placeholder="Email ou nom d'utilisateur"
                 />
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function Login() {
                   disabled={isLoading}
                   required
                   className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="••••••••"
+                  placeholder="********"
                 />
               </div>
             </div>

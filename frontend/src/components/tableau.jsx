@@ -59,6 +59,7 @@ export function AdvancedDataTable({
   lazyLoaders = [], // Configuration pour le lazy loading
   customStatusFilter = null, // Filtres personnalisés pour le statut
   showStatusColumn = true,
+  placeholder = 'Rechercher...',
 }) {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
@@ -205,7 +206,7 @@ export function AdvancedDataTable({
           <div className="relative flex-1">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom ou email..."
+              placeholder={placeholder}
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-8"

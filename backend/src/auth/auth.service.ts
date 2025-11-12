@@ -112,7 +112,21 @@ export class AuthService {
         '- Rôle:',
         role,
       );
+      if (role === 'admin') {
+        const userInfo = this.extractUserInfo(decodedToken);
+        Logger.debug('AuthService', '✅ Admin authentifié:',userInfo.email);
 
+        return {
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_in: tokenData.expires_in,
+          token_type: tokenData.token_type,
+          groups,
+          role,
+          userId: 0,
+          email: userInfo.email,
+        };
+      }
       // Étape 5: Créer ou récupérer l'utilisateur dans la BD locale
       const userInfo = this.extractUserInfo(decodedToken);
       const userId = await this.findOrCreateUser(userInfo, role);
@@ -326,12 +340,6 @@ export class AuthService {
 
           return manager.id;
         }
-
-        case 'admin': {
-          Logger.debug('AuthService', `✅ Admin authentifié: ${email}`);
-          return 0; // ID spécial pour les admins
-        }
-
         case 'directeur': {
           // Chercher le directeur existant
           let directeur = await this.prisma.directeur.findUnique({

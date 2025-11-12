@@ -207,10 +207,8 @@ export class AuthService {
   private storeAuthData(authResponse: AuthResponse): void {
     localStorage.setItem('access_token', authResponse.access_token)
     localStorage.setItem('refresh_token', authResponse.refresh_token)
-
-    // Stocker l'expiration
-    const expiresAt = Date.now() + authResponse.expires_in * 1000
-    localStorage.setItem('token_expires_at', expiresAt.toString())
+    const expiresAt = authResponse.expires_in / 60
+    localStorage.setItem('token_expires_at (minutes)', expiresAt.toString())
   }
 
   /**
@@ -219,12 +217,7 @@ export class AuthService {
   private clearAuthData(): void {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-    localStorage.removeItem('token_expires_at')
-    localStorage.removeItem('userId')
-    // Nettoyer aussi les anciennes clés si elles existent (migration)
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userEmail')
-    localStorage.removeItem('userGroups')
+    localStorage.removeItem('token_expires_at (minutes)')
   }
 
   /**

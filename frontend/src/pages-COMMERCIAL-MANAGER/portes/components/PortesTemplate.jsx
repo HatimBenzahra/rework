@@ -214,7 +214,7 @@ export default function PortesTemplate({
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                   <div className="flex-1 min-w-0">
                     <p className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 truncate`}>
-                      Taux de visite
+                      Couverture
                     </p>
                     <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                       {stats.tauxVisite}%

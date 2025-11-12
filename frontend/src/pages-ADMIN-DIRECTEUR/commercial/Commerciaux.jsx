@@ -2,9 +2,7 @@ import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import {
   useCommercials,
-  useCreateCommercial,
   useUpdateCommercial,
-  useRemoveCommercial,
   useManagers,
   useDirecteurs,
 } from '@/services'
@@ -17,8 +15,14 @@ import { useRole } from '@/contexts/userole'
 const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   const baseColumns = [
     {
-      header: 'Nom Prénom',
-      accessor: 'name',
+      header: 'Nom',
+      accessor: 'nom',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Prénom',
+      accessor: 'prenom',
       sortable: true,
       className: 'font-medium',
     },
@@ -69,9 +73,7 @@ export default function Commerciaux() {
   const { data: commercials, loading, error, refetch } = useCommercials()
   const { data: managers } = useManagers()
   const { data: directeurs } = useDirecteurs()
-  const { mutate: createCommercial, loading: creating } = useCreateCommercial()
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
-  const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()
   const { showError, showSuccess } = useErrorToast()
 
   // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
@@ -129,7 +131,8 @@ export default function Commerciaux() {
 
       return {
         ...commercial,
-        name: `${commercial.prenom} ${commercial.nom}`,
+        nom: commercial.nom,
+        prenom: commercial.prenom,
         rankBadge,
         managerName,
         directeurName,
@@ -164,18 +167,6 @@ export default function Commerciaux() {
       section: 'Informations personnelles',
     },
     {
-      key: 'email',
-      label: 'Email',
-      type: 'email',
-      required: true,
-      section: 'Informations personnelles',
-      validate: value => {
-        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          return 'Email invalide'
-        }
-      },
-    },
-    {
       key: 'numTel',
       label: 'Téléphone',
       type: 'tel',
@@ -201,31 +192,12 @@ export default function Commerciaux() {
     },
   ]
 
-  const handleAddCommercial = async formData => {
-    try {
-      await createCommercial({
-        nom: formData.nom,
-        prenom: formData.prenom,
-        email: formData.email,
-        numTel: formData.numTel,
-        age: parseInt(formData.age),
-        managerId: formData.managerId ? parseInt(formData.managerId) : undefined,
-      })
-      await refetch()
-      showSuccess('Commercial créé avec succès')
-    } catch (error) {
-      showError(error, 'Commerciaux.handleAddCommercial')
-      throw error
-    }
-  }
-
   const handleEditCommercial = async editedData => {
     try {
       await updateCommercial({
         id: editedData.id,
         nom: editedData.nom,
         prenom: editedData.prenom,
-        email: editedData.email,
         numTel: editedData.numTel,
         age: editedData.age ? parseInt(editedData.age) : undefined,
         managerId: editedData.managerId ? parseInt(editedData.managerId) : undefined,
@@ -234,17 +206,6 @@ export default function Commerciaux() {
       showSuccess('Commercial modifié avec succès')
     } catch (error) {
       showError(error, 'Commerciaux.handleEditCommercial')
-      throw error
-    }
-  }
-
-  const handleDeleteCommercial = async id => {
-    try {
-      await removeCommercial(id)
-      await refetch()
-      showSuccess('Commercial supprimé avec succès')
-    } catch (error) {
-      showError(error, 'Commerciaux.handleDeleteCommercial')
       throw error
     }
   }
@@ -339,14 +300,11 @@ export default function Commerciaux() {
         description={description}
         data={tableData}
         columns={getCommerciauxColumns(isAdmin, isDirecteur)}
-        searchKey="name"
-        onAdd={permissions.canAdd ? handleAddCommercial : undefined}
-        addButtonText="Nouveau Commercial"
+        searchKey="nom"
         detailsPath="/commerciaux"
         editFields={commerciauxEditFields}
         onEdit={permissions.canEdit ? handleEditCommercial : undefined}
-        onDelete={permissions.canDelete ? handleDeleteCommercial : undefined}
-        loading={creating || updating || deleting}
+        loading={updating}
       />
     </div>
   )
