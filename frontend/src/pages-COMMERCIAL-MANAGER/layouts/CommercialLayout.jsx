@@ -21,7 +21,11 @@ export default function CommercialLayout() {
   // Ref pour le scroll container (utilisée par PortesGestion)
   const scrollContainerRef = React.useRef(null)
 
-  const userId = React.useMemo(() => parseInt(currentUserId, 10), [currentUserId])
+  const userId = React.useMemo(() => {
+    if (!currentUserId) return null
+    const parsed = parseInt(currentUserId, 10)
+    return isNaN(parsed) ? null : parsed
+  }, [currentUserId])
   const workspaceRole = isManager ? 'manager' : 'commercial'
 
   // Détecter si on est sur la page équipe pour charger les données complètes avec les commerciaux

@@ -25,7 +25,8 @@ export function useAutoAudio(userId, userType, enabled = true) {
 
   // Fonction pour démarrer la connexion audio
   const startAudioPublishing = useCallback(async () => {
-    if (!userId || !enabled || isConnecting || isConnected) {
+    // Vérifier que userId est valide (pas null, pas NaN, > 0)
+    if (!userId || isNaN(userId) || userId <= 0 || !enabled || isConnecting || isConnected) {
       return
     }
 

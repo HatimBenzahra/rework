@@ -27,7 +27,7 @@ import { Award, TrendingUp, FileText, Building2, Calendar, X, Users, BookX } fro
 
 export default function ManagerDetails() {
   const { id } = useParams()
-  const { isAdmin, currentRole, currentUserId } = useRole()
+  const { isAdmin } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
@@ -50,13 +50,10 @@ export default function ManagerDetails() {
     error,
     refetch,
   } = useManagerPersonal(parseInt(id))
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: directeurs } = useDirecteurs()
   // useCommercials récupère TOUS les commerciaux avec leurs statistiques incluses
   // via la requête GET_COMMERCIALS qui inclut le champ 'statistics' pour chaque commercial
-  const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: allCommercials, refetch: refetchCommercials } = useCommercials()
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
   const { data: currentManagerZone } = useCurrentZoneAssignment(parseInt(id), 'MANAGER')
 

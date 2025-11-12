@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercialFull, useManagers, useCurrentZoneAssignment } from '@/services'
-import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
@@ -16,9 +15,8 @@ import {
 
 export default function CommercialDetails() {
   const { id } = useParams()
-  const { currentRole, currentUserId } = useRole()
   const { data: commercial, loading, error } = useCommercialFull(parseInt(id))
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers()
   const { data: currentZone } = useCurrentZoneAssignment(parseInt(id), 'COMMERCIAL')
 
   // Hook pour gérer les filtres de date

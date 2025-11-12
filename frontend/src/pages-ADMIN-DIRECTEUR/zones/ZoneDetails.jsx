@@ -9,7 +9,6 @@ import {
   useZoneCurrentAssignments,
 } from '@/services'
 import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useMemo, useState, useEffect } from 'react'
 import AssignedZoneCard from '@/components/AssignedZoneCard'
 import { apiCache } from '@/services/api-cache'
@@ -54,23 +53,15 @@ const fetchLocationName = async (longitude, latitude) => {
 
 export default function ZoneDetails() {
   const { id } = useParams()
-  const { currentRole, currentUserId } = useRole()
 
   // État pour le nom de la localisation
   const [locationName, setLocationName] = useState('Chargement...')
 
   // API hooks
   const { data: zone, loading: zoneLoading, error } = useZone(parseInt(id))
-  const { data: statistics, loading: statsLoading } = useStatisticsByZone(
-    parseInt(id),
-    parseInt(currentUserId, 10),
-    currentRole
-  )
-  const { data: allZoneStats, loading: zoneStatsLoading } = useZoneStatistics(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  const { data: statistics, loading: statsLoading } = useStatisticsByZone(parseInt(id))
+  const { data: allZoneStats, loading: zoneStatsLoading } = useZoneStatistics()
+  const { data: commercials } = useCommercials()
   const { data: zoneAssignments } = useZoneCurrentAssignments(parseInt(id))
   const permissions = useEntityPermissions('zones')
 

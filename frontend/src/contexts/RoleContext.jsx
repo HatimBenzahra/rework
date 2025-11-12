@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ROLES } from '../hooks/metier/roleFilters'
 import { RoleContext } from './userole'
 import { authService } from '../services/auth.service'
+import { api } from '../services/api-service'
 import { apiCache } from '../services/api-cache'
 import LoadingScreen from '../components/LoadingScreen'
 import { useAppLoading } from './AppLoadingContext'
@@ -20,10 +21,9 @@ export const RoleProvider = ({ children }) => {
   // État de chargement initial
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
-  // Utiliser des states pour rendre le contexte réactif
-  // ⚠️ SÉCURITÉ : Le rôle est maintenant décodé depuis le JWT, pas depuis localStorage
+  // userId sera chargé depuis l'API via api.auth.getMe()
   const [currentRole, setCurrentRole] = useState(() => authService.getUserRole())
-  const [currentUserId, setCurrentUserId] = useState(() => authService.getUserId())
+  const [currentUserId, setCurrentUserId] = useState(null)
 
   // Envoyer les infos utilisateur à Sentry au montage initial (si authentifié)
   useEffect(() => {
@@ -89,19 +89,29 @@ export const RoleProvider = ({ children }) => {
     let authChangeTimers = []
 
     const handleAuthChange = () => {
-      // ⚠️ SÉCURITÉ : Récupérer le rôle depuis le JWT, pas depuis localStorage
       const newRole = authService.getUserRole()
-      const newId = authService.getUserId()
 
       setCurrentRole(newRole)
-      setCurrentUserId(newId)
+      // userId sera rechargé via api.auth.getMe() dans le useEffect séparé
+      // Ne pas essayer de le récupérer depuis le JWT car il n'y est pas
 
-      // Envoyer les infos utilisateur à Sentry (si configuré)
-      if (newId && newRole) {
-        setSentryUser({
-          id: newId,
-          role: newRole,
-        })
+      // Recharger les infos utilisateur depuis l'API
+      if (authService.isAuthenticated()) {
+        api.auth
+          .getMe()
+          .then(userInfo => {
+            setCurrentUserId(userInfo.id)
+            setSentryUser({
+              id: userInfo.id.toString(),
+              role: userInfo.role,
+            })
+          })
+          .catch(error => {
+            console.error('Erreur récupération user info lors du changement:', error)
+          })
+      } else {
+        setCurrentUserId(null)
+        setSentryUser(null)
       }
 
       // Nettoyer les anciens timers
@@ -163,7 +173,6 @@ export const RoleProvider = ({ children }) => {
   }, [])
 
   const updateUserId = useCallback(id => {
-    localStorage.setItem('userId', id.toString())
     setCurrentUserId(id)
     // Dispatch custom event pour notifier les autres composants
     window.dispatchEvent(new Event('auth-changed'))
@@ -202,6 +211,31 @@ export const RoleProvider = ({ children }) => {
     }),
     [currentRole, currentUserId, updateUserRole, updateUserId, logout]
   )
+
+  // Charger les infos utilisateur depuis l'API au démarrage
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (authService.isAuthenticated()) {
+        try {
+          const userInfo = await api.auth.getMe()
+          setCurrentUserId(userInfo.id)
+          setCurrentRole(userInfo.role)
+
+          // Mettre à jour Sentry
+          setSentryUser({
+            id: userInfo.id.toString(),
+            role: userInfo.role,
+          })
+        } catch (error) {
+          console.error('Erreur récupération user info:', error)
+          // En cas d'erreur, déconnecter l'utilisateur
+          logout()
+        }
+      }
+    }
+
+    fetchUserInfo()
+  }, [logout])
 
   return (
     <RoleContext.Provider value={value}>

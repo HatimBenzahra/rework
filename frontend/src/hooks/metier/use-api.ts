@@ -203,11 +203,8 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
 // Directeur Hooks
 // =============================================================================
 
-export function useDirecteurs(
-  userId?: number,
-  userRole?: string
-): UseApiListState<Directeur> & UseApiActions {
-  return useApiCall(() => api.directeurs.getAll(userId, userRole), [userId, userRole], 'directeurs')
+export function useDirecteurs(): UseApiListState<Directeur> & UseApiActions {
+  return useApiCall(() => api.directeurs.getAll(), [], 'directeurs')
 }
 
 export function useDirecteur(id: number): UseApiState<Directeur> & UseApiActions {
@@ -230,11 +227,8 @@ export function useRemoveDirecteur(): UseApiMutation<number, Directeur> {
 // Manager Hooks
 // =============================================================================
 
-export function useManagers(
-  userId?: number,
-  userRole?: string
-): UseApiListState<Manager> & UseApiActions {
-  return useApiCall(() => api.managers.getAll(userId, userRole), [userId, userRole], 'managers')
+export function useManagers(): UseApiListState<Manager> & UseApiActions {
+  return useApiCall(() => api.managers.getAll(), [], 'managers')
 }
 
 export function useManager(id: number): UseApiState<Manager> & UseApiActions {
@@ -259,8 +253,9 @@ export function useWorkspaceProfile(
 ): //====================================================
 UseApiState<WorkspaceProfile> & UseApiActions {
   const fetchProfile = useCallback(() => {
-    if (Number.isNaN(id)) {
-      return Promise.reject(new Error('Identifiant utilisateur invalide'))
+    // Vérifier si id est valide (pas null, pas NaN, > 0)
+    if (!id || Number.isNaN(id) || id <= 0) {
+      return Promise.resolve(null)
     }
     if (role === ROLES.MANAGER) {
       // Si on est sur la page équipe, charger les données complètes avec les commerciaux
@@ -296,15 +291,8 @@ export function useRemoveManager(): UseApiMutation<number, Manager> {
 // Commercial Hooks
 // =============================================================================
 
-export function useCommercials(
-  userId?: number,
-  userRole?: string
-): UseApiListState<Commercial> & UseApiActions {
-  return useApiCall(
-    () => api.commercials.getAll(userId, userRole),
-    [userId, userRole],
-    'commercials'
-  )
+export function useCommercials(): UseApiListState<Commercial> & UseApiActions {
+  return useApiCall(() => api.commercials.getAll(), [], 'commercials')
 }
 
 export function useCommercial(id: number): UseApiState<Commercial> & UseApiActions {
@@ -352,11 +340,8 @@ export function useUnassignZone(): UseApiMutation<
 // Zone Hooks
 // =============================================================================
 
-export function useZones(
-  userId?: number,
-  userRole?: string
-): UseApiListState<Zone> & UseApiActions {
-  return useApiCall(() => api.zones.getAll(userId, userRole), [userId, userRole], 'zones')
+export function useZones(): UseApiListState<Zone> & UseApiActions {
+  return useApiCall(() => api.zones.getAll(), [], 'zones')
 }
 
 export function useZone(id: number): UseApiState<Zone> & UseApiActions {
@@ -406,26 +391,12 @@ export function useCurrentZoneAssignment(
   )
 }
 
-export function useAllZoneHistory(
-  userId?: number,
-  userRole?: string
-): UseApiListState<any> & UseApiActions {
-  return useApiCall(
-    () => api.zones.getAllZoneHistory(userId, userRole),
-    [userId, userRole],
-    'allZoneHistory'
-  )
+export function useAllZoneHistory(): UseApiListState<any> & UseApiActions {
+  return useApiCall(() => api.zones.getAllZoneHistory(), [], 'allZoneHistory')
 }
 
-export function useAllCurrentAssignments(
-  userId?: number,
-  userRole?: string
-): UseApiListState<any> & UseApiActions {
-  return useApiCall(
-    () => api.zones.getAllCurrentAssignments(userId, userRole),
-    [userId, userRole],
-    'allCurrentAssignments'
-  )
+export function useAllCurrentAssignments(): UseApiListState<any> & UseApiActions {
+  return useApiCall(() => api.zones.getAllCurrentAssignments(), [], 'allCurrentAssignments')
 }
 
 export function useZoneCurrentAssignments(zoneId: number): UseApiListState<any> & UseApiActions {
@@ -441,7 +412,13 @@ export function useCurrentUserAssignment(
   userType: 'COMMERCIAL' | 'MANAGER' | 'DIRECTEUR'
 ): UseApiState<any> & UseApiActions {
   return useApiCall(
-    () => api.zones.getCurrentUserAssignment(userId, userType),
+    () => {
+      // Skip l'appel API si userId est invalide (null, NaN, ou <= 0)
+      if (!userId || isNaN(userId) || userId <= 0) {
+        return Promise.resolve(null)
+      }
+      return api.zones.getCurrentUserAssignment(userId, userType)
+    },
     [userId, userType],
     `current-zone-assignment-${userId}-${userType}`
   )
@@ -451,11 +428,8 @@ export function useCurrentUserAssignment(
 // Immeuble Hooks
 // =============================================================================
 
-export function useImmeubles(
-  userId?: number,
-  userRole?: string
-): UseApiListState<Immeuble> & UseApiActions {
-  return useApiCall(() => api.immeubles.getAll(userId, userRole), [userId, userRole], 'immeubles')
+export function useImmeubles(): UseApiListState<Immeuble> & UseApiActions {
+  return useApiCall(() => api.immeubles.getAll(), [], 'immeubles')
 }
 
 export function useImmeuble(id: number): UseApiState<Immeuble> & UseApiActions {
@@ -506,15 +480,8 @@ export function useRemovePorteFromEtage(): UseApiMutation<
 // Statistic Hooks
 // =============================================================================
 
-export function useStatistics(
-  userId?: number,
-  userRole?: string
-): UseApiListState<Statistic> & UseApiActions {
-  return useApiCall(
-    () => api.statistics.getAll(undefined, userId, userRole),
-    [userId, userRole],
-    'statistics'
-  )
+export function useStatistics(): UseApiListState<Statistic> & UseApiActions {
+  return useApiCall(() => api.statistics.getAll(undefined), [], 'statistics')
 }
 
 export function useStatisticsByCommercial(
@@ -523,16 +490,8 @@ export function useStatisticsByCommercial(
   return useApiCall(() => api.statistics.getAll(commercialId), [commercialId], 'statistics')
 }
 
-export function useStatisticsByZone(
-  zoneId: number,
-  userId?: number,
-  userRole?: string
-): UseApiListState<Statistic> & UseApiActions {
-  const result = useApiCall(
-    () => api.statistics.getAll(undefined, userId, userRole),
-    [userId, userRole],
-    'statistics'
-  )
+export function useStatisticsByZone(zoneId: number): UseApiListState<Statistic> & UseApiActions {
+  const result = useApiCall(() => api.statistics.getAll(undefined), [], 'statistics')
 
   // Filtrer les statistiques par zoneId côté client
   const filteredData = result.data?.filter(stat => stat.zoneId === zoneId) || []
@@ -543,15 +502,8 @@ export function useStatisticsByZone(
   }
 }
 
-export function useZoneStatistics(
-  userId?: number,
-  userRole?: string
-): UseApiListState<ZoneStatistic> & UseApiActions {
-  return useApiCall(
-    () => api.statistics.getZoneStatistics(userId, userRole),
-    [userId, userRole],
-    'zoneStatistics'
-  )
+export function useZoneStatistics(): UseApiListState<ZoneStatistic> & UseApiActions {
+  return useApiCall(() => api.statistics.getZoneStatistics(), [], 'zoneStatistics')
 }
 
 export function useStatistic(id: number): UseApiState<Statistic> & UseApiActions {

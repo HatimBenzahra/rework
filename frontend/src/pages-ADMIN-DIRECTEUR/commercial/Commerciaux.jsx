@@ -10,11 +10,10 @@ import {
 } from '@/services'
 import { useMemo } from 'react'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { calculateRank, RANKS } from '@/share/ranks'
 import { Card } from '@/components/ui/card'
-
+import { useRole } from '@/contexts/userole'
 const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   const baseColumns = [
     {
@@ -66,15 +65,10 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
 }
 
 export default function Commerciaux() {
-  const { isAdmin, isDirecteur, currentRole, currentUserId } = useRole()
-  const {
-    data: commercials,
-    loading,
-    error,
-    refetch,
-  } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { isAdmin, isDirecteur } = useRole()
+  const { data: commercials, loading, error, refetch } = useCommercials()
+  const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
   const { mutate: createCommercial, loading: creating } = useCreateCommercial()
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
   const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()

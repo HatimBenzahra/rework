@@ -60,171 +60,68 @@ export const PERMISSIONS = {
 
 /**
  * Filtre les commerciaux selon le rôle de l'utilisateur
+ * Note: Le filtrage est maintenant géré par le backend via JWT
+ * Cette fonction retourne simplement les données reçues
  */
-export const filterCommercials = (commercials, managers, userRole, userId) => {
-  if (!commercials?.length) return []
-
-  const userIdInt = parseInt(userId, 10)
-  if (isNaN(userIdInt)) return []
-
-  const roleFilters = {
-    [ROLES.ADMIN]: () => commercials,
-    [ROLES.DIRECTEUR]: () => commercials.filter(commercial => commercial.directeurId === userIdInt),
-    [ROLES.MANAGER]: () => commercials.filter(commercial => commercial.managerId === userIdInt),
-    [ROLES.COMMERCIAL]: () => commercials.filter(commercial => commercial.id === userIdInt),
-  }
-
-  return roleFilters[userRole]?.() || []
+export const filterCommercials = commercials => {
+  // Le backend filtre déjà les données selon les permissions JWT
+  // On retourne simplement ce qu'on a reçu
+  return commercials || []
 }
 
 /**
  * Filtre les managers selon le rôle de l'utilisateur
+ * Note: Le filtrage est maintenant géré par le backend via JWT
+ * Cette fonction retourne simplement les données reçues
  */
-export const filterManagers = (managers, userRole, userId) => {
-  if (!managers?.length) return []
-
-  const userIdInt = parseInt(userId, 10)
-  if (isNaN(userIdInt)) return []
-
-  const roleFilters = {
-    [ROLES.ADMIN]: () => managers,
-    [ROLES.DIRECTEUR]: () => managers.filter(manager => manager.directeurId === userIdInt),
-    [ROLES.MANAGER]: () => [],
-    [ROLES.COMMERCIAL]: () => [],
-  }
-
-  return roleFilters[userRole]?.() || []
+export const filterManagers = managers => {
+  // Le backend filtre déjà les données selon les permissions JWT
+  // On retourne simplement ce qu'on a reçu
+  return managers || []
 }
 
 /**
  * Filtre les directeurs selon le rôle de l'utilisateur
+ * Note: Le filtrage est maintenant géré par le backend via JWT
+ * Cette fonction retourne simplement les données reçues
  */
-export const filterDirecteurs = (directeurs, userRole, userId) => {
-  if (!directeurs?.length) return []
-
-  const userIdInt = parseInt(userId, 10)
-  if (isNaN(userIdInt)) return []
-
-  const roleFilters = {
-    [ROLES.ADMIN]: () => directeurs,
-    [ROLES.DIRECTEUR]: () => directeurs.filter(directeur => directeur.id === userIdInt),
-    [ROLES.MANAGER]: () => [],
-    [ROLES.COMMERCIAL]: () => [],
-  }
-
-  return roleFilters[userRole]?.() || []
+export const filterDirecteurs = directeurs => {
+  // Le backend filtre déjà les données selon les permissions JWT
+  // On retourne simplement ce qu'on a reçu
+  return directeurs || []
 }
 
 /**
  * Filtre les zones selon le rôle de l'utilisateur
+ * Note: Le filtrage est maintenant géré par le backend via JWT
+ * Cette fonction retourne simplement les données reçues
  */
-export const filterZones = (zones, commercials, userRole, userId) => {
-  if (!zones?.length || !commercials?.length) return []
-
-  const userIdInt = parseInt(userId, 10)
-  if (isNaN(userIdInt)) return []
-
-  const getCommercialIds = commercialsList => commercialsList.map(c => c.id)
-
-  const isZoneAssignedToCommercials = (zone, commercialIds) =>
-    zone.commercials?.some(czr => commercialIds.includes(czr.commercialId))
-
-  const roleFilters = {
-    [ROLES.ADMIN]: () => zones,
-
-    [ROLES.DIRECTEUR]: () => {
-      const directeurCommercials = commercials.filter(c => c.directeurId === userIdInt)
-      const commercialIds = getCommercialIds(directeurCommercials)
-
-      return zones.filter(
-        zone => zone.directeurId === userIdInt || isZoneAssignedToCommercials(zone, commercialIds)
-      )
-    },
-
-    [ROLES.MANAGER]: () => {
-      const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
-      const managerCommercialIds = getCommercialIds(managerCommercials)
-
-      return zones.filter(
-        zone =>
-          zone.managerId === userIdInt || isZoneAssignedToCommercials(zone, managerCommercialIds)
-      )
-    },
-
-    [ROLES.COMMERCIAL]: () => {
-      return zones.filter(zone => isZoneAssignedToCommercials(zone, [userIdInt]))
-    },
-  }
-
-  return roleFilters[userRole]?.() || []
+export const filterZones = zones => {
+  // Le backend filtre déjà les données selon les permissions JWT
+  // On retourne simplement ce qu'on a reçu
+  return zones || []
 }
 
 /**
  * Filtre les immeubles selon le rôle de l'utilisateur
+ * Note: Le filtrage est maintenant géré par le backend via JWT
+ * Cette fonction retourne simplement les données reçues
  */
-export const filterImmeubles = (immeubles, commercials, userRole, userId) => {
-  if (!immeubles?.length || !commercials?.length) return []
-
-  const userIdInt = parseInt(userId, 10)
-  if (isNaN(userIdInt)) return []
-
-  const getCommercialIds = commercialsList => commercialsList.map(c => c.id)
-
-  const roleFilters = {
-    [ROLES.ADMIN]: () => immeubles,
-
-    [ROLES.DIRECTEUR]: () => {
-      const directeurCommercials = commercials.filter(c => c.directeurId === userIdInt)
-      const commercialIds = getCommercialIds(directeurCommercials)
-      return immeubles.filter(immeuble => commercialIds.includes(immeuble.commercialId))
-    },
-
-    [ROLES.MANAGER]: () => {
-      const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
-      const managerCommercialIds = getCommercialIds(managerCommercials)
-      return immeubles.filter(immeuble => managerCommercialIds.includes(immeuble.commercialId))
-    },
-
-    [ROLES.COMMERCIAL]: () => {
-      return immeubles.filter(immeuble => immeuble.commercialId === userIdInt)
-    },
-  }
-
-  return roleFilters[userRole]?.() || []
+export const filterImmeubles = immeubles => {
+  // Le backend filtre déjà les données selon les permissions JWT
+  // On retourne simplement ce qu'on a reçu
+  return immeubles || []
 }
 
 /**
  * Filtre les statistiques selon le rôle de l'utilisateur
+ * Note: Le filtrage est maintenant géré par le backend via JWT
+ * Cette fonction retourne simplement les données reçues
  */
-export const filterStatistics = (statistics, commercials, userRole, userId) => {
-  if (!statistics?.length || !commercials?.length) return []
-
-  const userIdInt = parseInt(userId, 10)
-  if (isNaN(userIdInt)) return []
-
-  const getCommercialIds = commercialsList => commercialsList.map(c => c.id)
-
-  const roleFilters = {
-    [ROLES.ADMIN]: () => statistics,
-
-    [ROLES.DIRECTEUR]: () => {
-      const directeurCommercials = commercials.filter(c => c.directeurId === userIdInt)
-      const commercialIds = getCommercialIds(directeurCommercials)
-      return statistics.filter(stat => commercialIds.includes(stat.commercialId))
-    },
-
-    [ROLES.MANAGER]: () => {
-      const managerCommercials = commercials.filter(c => c.managerId === userIdInt)
-      const managerCommercialIds = getCommercialIds(managerCommercials)
-      return statistics.filter(stat => managerCommercialIds.includes(stat.commercialId))
-    },
-
-    [ROLES.COMMERCIAL]: () => {
-      return statistics.filter(stat => stat.commercialId === userIdInt)
-    },
-  }
-
-  return roleFilters[userRole]?.() || []
+export const filterStatistics = statistics => {
+  // Le backend filtre déjà les données selon les permissions JWT
+  // On retourne simplement ce qu'on a reçu
+  return statistics || []
 }
 
 /**

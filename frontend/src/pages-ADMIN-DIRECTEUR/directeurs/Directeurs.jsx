@@ -7,7 +7,6 @@ import {
   useRemoveDirecteur,
 } from '@/services'
 import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo } from 'react'
 
@@ -74,15 +73,10 @@ const directeursEditFields = [
 ]
 
 export default function Directeurs() {
-  const { currentRole, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
   // API hooks
-  const {
-    data: directeursApi,
-    loading: directeursLoading,
-    refetch,
-  } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: directeursApi, loading: directeursLoading, refetch } = useDirecteurs()
   const { mutate: createDirecteur } = useCreateDirecteur()
   const { mutate: updateDirecteur } = useUpdateDirecteur()
   const { mutate: removeDirecteur } = useRemoveDirecteur()

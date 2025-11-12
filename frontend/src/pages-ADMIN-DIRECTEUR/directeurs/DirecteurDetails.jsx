@@ -33,21 +33,15 @@ import {
 
 export default function DirecteurDetails() {
   const { id } = useParams()
-  const { isAdmin, currentRole, currentUserId } = useRole()
+  const { isAdmin } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningManager, setAssigningManager] = useState(null)
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
   // API hooks
   const { data: directeur, loading: directeurLoading, error, refetch } = useDirecteur(parseInt(id))
-  const { data: allManagers, refetch: refetchManagers } = useManagers(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
-  const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: allManagers, refetch: refetchManagers } = useManagers()
+  const { data: allCommercials, refetch: refetchCommercials } = useCommercials()
   const { mutate: updateManager, loading: updatingManager } = useUpdateManager()
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
   const { data: currentDirecteurZone } = useCurrentZoneAssignment(parseInt(id), 'DIRECTEUR')

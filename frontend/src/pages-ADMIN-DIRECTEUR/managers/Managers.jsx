@@ -52,15 +52,11 @@ const getManagersColumns = () => {
 }
 
 export default function Managers() {
-  const { isAdmin, currentRole, currentUserId } = useRole()
+  const { isAdmin } = useRole()
   const { showError, showSuccess } = useErrorToast()
   // API hooks
-  const {
-    data: managersApi,
-    loading: managersLoading,
-    refetch,
-  } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: managersApi, loading: managersLoading, refetch } = useManagers()
+  const { data: directeurs } = useDirecteurs()
   const { mutate: createManager } = useCreateManager()
   const { mutate: updateManager } = useUpdateManager()
   const { mutate: removeManager } = useRemoveManager()

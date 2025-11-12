@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useRole } from '@/contexts/userole'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -47,11 +48,11 @@ export default function CommercialRankingTable({
   directeurs = [],
   managers = [],
   statistics = [],
-  currentUserRole = 'admin',
   title = 'Classement des performances',
   description = 'Classement basé sur les performances par rôle',
   limit = 10,
 }) {
+  const { currentRole } = useRole()
   const [selectedType, setSelectedType] = useState('commercials')
 
   // Filtrer les types d'utilisateurs selon le rôle connecté
@@ -82,7 +83,7 @@ export default function CommercialRankingTable({
     },
   ]
 
-  const userTypes = availableUserTypes.filter(type => type.allowedRoles.includes(currentUserRole))
+  const userTypes = availableUserTypes.filter(type => type.allowedRoles.includes(currentRole))
 
   // S'assurer que le type sélectionné est valide pour le rôle actuel
   const validSelectedType = userTypes.find(type => type.key === selectedType)

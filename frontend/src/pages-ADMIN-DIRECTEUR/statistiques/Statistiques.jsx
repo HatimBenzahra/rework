@@ -88,7 +88,7 @@ const MetricCard = ({ title, value, description, icon: Icon }) => {
 }
 
 export default function Statistiques() {
-  const { currentRole, currentUserId } = useRole()
+  const { currentRole } = useRole()
   const [timePeriod, setTimePeriod] = useState('30d')
 
   // Chargement des données depuis les APIs
@@ -96,31 +96,27 @@ export default function Statistiques() {
     data: rawStatistics,
     loading: statisticsLoading,
     error: statisticsError,
-  } = useStatistics(parseInt(currentUserId, 10), currentRole)
+  } = useStatistics()
 
   const {
     data: rawCommercials,
     loading: commercialsLoading,
     error: commercialsError,
-  } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  } = useCommercials()
 
   const {
     data: rawDirecteurs,
     loading: directeursLoading,
     error: directeursError,
-  } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  } = useDirecteurs()
 
-  const {
-    data: rawManagers,
-    loading: managersLoading,
-    error: managersError,
-  } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: rawManagers, loading: managersLoading, error: managersError } = useManagers()
 
   const {
     data: zoneStatisticsData,
     loading: zoneStatsLoading,
     error: zoneStatsError,
-  } = useZoneStatistics(parseInt(currentUserId, 10), currentRole)
+  } = useZoneStatistics()
 
   // États de chargement et d'erreur combinés
   const loading =

@@ -12,7 +12,7 @@ export default function StatusFilters({
   portesCount = {},
   className = '',
 }) {
-  const { base, colors } = useCommercialTheme()
+  const { base } = useCommercialTheme()
 
   const hasActiveFilters = selectedStatuts.length > 0
 

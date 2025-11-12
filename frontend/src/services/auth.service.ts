@@ -208,8 +208,6 @@ export class AuthService {
     localStorage.setItem('access_token', authResponse.access_token)
     localStorage.setItem('refresh_token', authResponse.refresh_token)
 
-    localStorage.setItem('userId', authResponse.userId.toString())
-
     // Stocker l'expiration
     const expiresAt = Date.now() + authResponse.expires_in * 1000
     localStorage.setItem('token_expires_at', expiresAt.toString())
@@ -222,10 +220,9 @@ export class AuthService {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('token_expires_at')
-
+    localStorage.removeItem('userId')
     // Nettoyer aussi les anciennes clés si elles existent (migration)
     localStorage.removeItem('userRole')
-    localStorage.removeItem('userId')
     localStorage.removeItem('userEmail')
     localStorage.removeItem('userGroups')
   }
@@ -247,17 +244,6 @@ export class AuthService {
     } catch (error) {
       throw new Error('Invalid token format')
     }
-  }
-
-  /**
-   * Récupère l'ID utilisateur métier (ID dans notre base de données)
-   * Cet ID vient du backend, pas du JWT Keycloak
-   * Note: Même si stocké dans localStorage, il ne peut pas être exploité
-   * car le backend valide toutes les requêtes via le JWT token
-   */
-  getUserId(): number | null {
-    const storedId = localStorage.getItem('userId')
-    return storedId ? parseInt(storedId, 10) : null
   }
 
   /**

@@ -8,7 +8,6 @@ import {
   useManagers,
 } from '@/services'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo, useState } from 'react'
 import AssignedZoneCard from '@/components/AssignedZoneCard'
@@ -99,17 +98,10 @@ export default function Immeubles() {
   const { showError, showSuccess } = useErrorToast()
   const [viewMode, setViewMode] = useState('list') // 'list' ou 'map'
 
-  // Récupération du rôle de l'utilisateur
-  const { currentRole, currentUserId } = useRole()
-
   // API hooks
-  const {
-    data: immeublesApi,
-    loading: immeublesLoading,
-    refetch,
-  } = useImmeubles(parseInt(currentUserId, 10), currentRole)
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 

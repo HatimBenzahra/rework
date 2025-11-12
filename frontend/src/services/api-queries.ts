@@ -805,3 +805,17 @@ export const GET_PORTES_RDV_TODAY = `
     }
   }
 `
+
+// =============================================================================
+// Email verification methode instead of id so that we
+// =============================================================================
+
+export const GET_ME = `
+  query Me {
+    me {
+      id
+      role
+      email
+    }
+  }
+`

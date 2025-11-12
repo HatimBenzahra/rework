@@ -24,8 +24,8 @@ const GENERATE_MANAGER_TOKEN = `
 `
 
 const START_MONITORING = `
-  mutation StartMonitoring($input: StartMonitoringInput!) {
-    startMonitoring(input: $input) {
+  mutation StartMonitoring($userId: Int!, $userType: String!, $roomName: String) {
+    startMonitoring(input: { userId: $userId, userType: $userType, roomName: $roomName }) {
       serverUrl
       participantToken
       roomName
@@ -104,11 +104,14 @@ export class AudioMonitoringService {
 
   /**
    * Démarre une session de monitoring (superviseur)
+   * Note: supervisorId est automatiquement récupéré du token JWT via @CurrentUser()
    */
-  static async startMonitoring(userId, userType, supervisorId, roomName = null) {
+  static async startMonitoring(userId, userType, roomName = null) {
     try {
       const data = await graphqlClient.request(START_MONITORING, {
-        input: { userId, userType, supervisorId, roomName },
+        userId,
+        userType,
+        roomName,
       })
       return data.startMonitoring
     } catch (error) {

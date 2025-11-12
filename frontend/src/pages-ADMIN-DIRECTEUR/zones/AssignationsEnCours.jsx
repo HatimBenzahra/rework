@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { useRole } from '@/contexts/userole'
 import { useAllCurrentAssignments, useCommercials, useManagers, useDirecteurs } from '@/services'
 import { AdvancedDataTable } from '@/components/tableau'
 import { Badge } from '@/components/ui/badge'
@@ -40,18 +39,16 @@ const fetchLocationName = async (longitude, latitude) => {
 }
 
 export default function AssignationsEnCours() {
-  const { currentRole, currentUserId } = useRole()
-
   // Charger les données
   const {
     data: rawAssignments,
     loading: assignmentsLoading,
     error: assignmentsError,
-  } = useAllCurrentAssignments(parseInt(currentUserId), currentRole)
+  } = useAllCurrentAssignments()
 
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
 
   // Enrichir les données avec les noms des utilisateurs
   const enrichedAssignments = useMemo(() => {

@@ -30,6 +30,7 @@ import {
   GET_PORTES_BY_IMMEUBLE,
   GET_PORTES_MODIFIED_TODAY,
   GET_PORTES_RDV_TODAY,
+  GET_ME,
 } from './api-queries'
 
 import {
@@ -587,7 +588,22 @@ export const porteApi = {
 // Main API Export
 // =============================================================================
 
+// =============================================================================
+// Auth API
+// =============================================================================
+
+const authApi = {
+  /**
+   * Récupère les informations de l'utilisateur connecté depuis le JWT
+   */
+  async getMe() {
+    const data = await gql(GET_ME)
+    return data.me
+  },
+}
+
 export const api = {
+  auth: authApi,
   directeurs: directeurApi,
   managers: managerApi,
   commercials: commercialApi,

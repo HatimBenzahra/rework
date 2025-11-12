@@ -192,12 +192,6 @@ export class AudioMonitoringService {
   ): Promise<LiveKitConnectionDetails> {
     const supervisorId = currentUser.id;
 
-    if (input.supervisorId && input.supervisorId !== supervisorId) {
-      this.logger.warn(
-        `Ignoring mismatched supervisorId ${input.supervisorId} provided in request`,
-      );
-    }
-
     const target = await this.getTargetMeta(input.userId, input.userType);
     this.ensureMonitoringPermission(target, supervisorId, currentUser.role);
 

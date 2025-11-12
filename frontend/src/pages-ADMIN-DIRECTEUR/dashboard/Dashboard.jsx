@@ -30,35 +30,21 @@ import {
   usePortesRdvToday,
 } from '@/hooks/metier/use-api'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useRole } from '@/contexts/userole'
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { currentUserId, currentRole } = useRole()
 
   // État de pagination pour les rendez-vous
   const [currentRdvPage, setCurrentRdvPage] = useState(1)
   const ITEMS_PER_PAGE = 4
 
   // Chargement des données
-  const { data: commercials, loading: loadingCommercials } = useCommercials(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
-  const { data: managers, loading: loadingManagers } = useManagers(+currentUserId, currentRole)
-  const { data: directeurs, loading: loadingDirecteurs } = useDirecteurs(
-    +currentUserId,
-    currentRole
-  )
-  const { data: statistics, loading: loadingStats } = useStatistics(+currentUserId, currentRole)
-  const { data: immeubles, loading: loadingImmeubles } = useImmeubles(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
-  const { data: assignments, loading: loadingAssignments } = useAllCurrentAssignments(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: commercials, loading: loadingCommercials } = useCommercials()
+  const { data: managers, loading: loadingManagers } = useManagers()
+  const { data: directeurs, loading: loadingDirecteurs } = useDirecteurs()
+  const { data: statistics, loading: loadingStats } = useStatistics()
+  const { data: immeubles, loading: loadingImmeubles } = useImmeubles()
+  const { data: assignments, loading: loadingAssignments } = useAllCurrentAssignments()
   const { data: portesModifiedToday, loading: loadingPortesModified } = usePortesModifiedToday()
   const { data: rdvToday, loading: loadingRdvToday } = usePortesRdvToday()
 

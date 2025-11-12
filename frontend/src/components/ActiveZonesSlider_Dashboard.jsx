@@ -6,7 +6,6 @@ import { ChevronLeft, ChevronRight, MapPin, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import AssignedZoneCard from './AssignedZoneCard'
 import { useCommercials, useManagers, useDirecteurs } from '@/hooks/metier/use-api'
-import { useRole } from '@/contexts/userole'
 
 /**
  * Composant slider pour afficher les zones actuellement assignées avec carte Mapbox
@@ -24,12 +23,11 @@ export default function ActiveZonesSlider({
   isSliding = true,
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const { currentRole, currentUserId } = useRole()
 
   // Charger les données utilisateurs pour enrichir les assignations
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
 
   // Enrichir les assignations avec les noms des utilisateurs
   const enrichedAssignments = useMemo(() => {

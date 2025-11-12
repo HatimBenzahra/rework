@@ -68,23 +68,17 @@ export default function Zones() {
   const { currentRole, currentUserId } = useRole()
 
   // API hooks
-  const { data: zonesApi, refetch: refetchZones } = useZones(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: zonesApi, refetch: refetchZones } = useZones()
   const { mutate: createZone } = useCreateZone()
   const { mutate: updateZone } = useUpdateZone()
   const { mutate: removeZone } = useRemoveZone()
   const { mutate: assignZoneToCommercial } = useAssignZone()
   const { mutate: assignZoneToDirecteur } = useAssignZoneToDirecteur()
   const { mutate: assignZoneToManager } = useAssignZoneToManager()
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: allAssignments, refetch: refetchAssignments } = useAllCurrentAssignments(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: directeurs } = useDirecteurs()
+  const { data: managers } = useManagers()
+  const { data: commercials } = useCommercials()
+  const { data: allAssignments, refetch: refetchAssignments } = useAllCurrentAssignments()
 
   // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
   const filteredZones = useMemo(() => zonesApi || [], [zonesApi])

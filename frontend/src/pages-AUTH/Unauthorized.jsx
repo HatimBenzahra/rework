@@ -7,7 +7,6 @@ export default function Unauthorized() {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('userRole')
-    localStorage.removeItem('userId')
     localStorage.removeItem('userGroups')
 
     // Rediriger vers la page de login
