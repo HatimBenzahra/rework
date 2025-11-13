@@ -44,8 +44,6 @@ export default function Historique() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedImmeubleIds = new Set(sortedImmeubleIds.slice(startIndex, endIndex))
 
-  // ancien helpers retirés (vue détaillée déplacée sur une page dédiée)
-
   return (
     <div className="space-y-4 mb-40">
       {/* Filtres temporels */}

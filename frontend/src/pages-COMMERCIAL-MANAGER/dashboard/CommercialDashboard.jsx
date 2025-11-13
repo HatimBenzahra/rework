@@ -1,14 +1,41 @@
 import React, { useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TrendingUp, CheckCircle2, Building2, Award, Trophy, Target, Clock } from 'lucide-react'
+import {
+  TrendingUp,
+  TrendingDown,
+  CheckCircle2,
+  Building2,
+  Award,
+  Trophy,
+  Target,
+  Clock,
+  Users,
+} from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { calculateRank, RANKS } from '@/share/ranks'
+import { useCommercialTeamRanking } from '@/hooks/metier/use-api'
 
 export default function CommercialDashboard() {
   // Récupérer les données du contexte du layout
   const context = useOutletContext()
+  const commercial = context?.commercial
+  const isManager = context?.isManager
+  const isCommercial = !isManager
+
+  // Calculer le nombre total de portes prospectées
+  const totalPortesProspectees = React.useMemo(() => {
+    if (!commercial?.immeubles) return 0
+
+    return commercial.immeubles.reduce((total, immeuble) => {
+      // Compter les portes de cet immeuble qui ne sont pas NON_VISITE
+      const portesProspectees =
+        immeuble.portes?.filter(porte => porte.statut !== 'NON_VISITE').length || 0
+
+      return total + portesProspectees
+    }, 0)
+  }, [commercial?.immeubles])
   const myStats = useMemo(
     () =>
       context?.myStats || {
@@ -19,6 +46,7 @@ export default function CommercialDashboard() {
       },
     [context?.myStats]
   )
+  const { data: teamRanking } = useCommercialTeamRanking(isCommercial ? commercial?.id || 0 : 0)
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base } = useCommercialTheme()
@@ -45,7 +73,7 @@ export default function CommercialDashboard() {
     return { percentage, pointsNeeded, nextRank }
   }, [totalPoints, currentRank])
 
-  const StatCard = ({ title, value, icon, trend }) => {
+  const StatCard = ({ title, value, icon }) => {
     const Icon = icon
     return (
       <Card className={`flex-1 min-w-0 ${base.bg.card} ${base.border.card}`}>
@@ -61,15 +89,6 @@ export default function CommercialDashboard() {
               <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
                 {value}
               </p>
-              {trend && (
-                <div
-                  className={`flex items-center text-[10px] sm:text-xs ${trend > 0 ? colors.success.text : colors.danger.text}`}
-                >
-                  <TrendingUp className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
-                  {trend > 0 ? '+' : ''}
-                  {trend}%
-                </div>
-              )}
             </div>
           </div>
         </CardContent>
@@ -78,25 +97,64 @@ export default function CommercialDashboard() {
   }
 
   return (
-    <div className="flex flex-col space-y-3 sm:space-y-4 max-w-full h-full">
+    <div className="flex flex-col space-y-3 sm:space-y-4 max-w-full pb-6 mb-20">
+      {/* Carte Manager et Classement - uniquement pour les commerciaux */}
+      {/* Carte Manager - seulement si manager existe */}
+      {isCommercial &&
+        teamRanking &&
+        (teamRanking.managerPrenom ||
+          teamRanking.managerNom ||
+          teamRanking.managerEmail ||
+          teamRanking.managerNumTel) && (
+          <Card className={`${base.bg.card} ${base.border.card}`}>
+            <CardHeader className="px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5">
+              <CardTitle
+                className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5`}
+              >
+                <Users className="w-4 h-4" />
+                Mon Manager
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-2.5 sm:pb-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
+                >
+                  <Users className={`w-5 h-5 ${colors.primary.text}`} />
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  <div>
+                    <span
+                      className={`text-sm sm:text-base font-semibold ${base.text.primary} block`}
+                    >
+                      {teamRanking.managerPrenom || 'non défini'}{' '}
+                      {teamRanking.managerNom || 'non défini'}
+                    </span>
+                  </div>
+                  {teamRanking.managerEmail && (
+                    <div className={`text-xs ${base.text.muted}`}>{teamRanking.managerEmail}</div>
+                  )}
+                  {teamRanking.managerNumTel && (
+                    <div className={`text-xs ${base.text.muted}`}>{teamRanking.managerNumTel}</div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
-        <StatCard
-          title="Contrats signés"
-          value={myStats.contratsSignes}
-          icon={CheckCircle2}
-          trend={15}
-        />
-        <StatCard
-          title="Immeubles visités"
-          value={myStats.immeublesVisites}
-          icon={Building2}
-          trend={8}
-        />
-        <StatCard title="Rendez-vous pris" value={myStats.rendezVousPris} icon={Clock} trend={-3} />
+        <StatCard title="Contrats signés" value={myStats.contratsSignes} icon={CheckCircle2} />
+        <StatCard title="Immeubles visités" value={myStats.immeublesVisites} icon={Building2} />
+        <StatCard title="Rendez-vous pris" value={myStats.rendezVousPris} icon={Clock} />
         <StatCard
           title="Taux de refus"
-          value={`${Math.round((myStats.refus / Math.max(myStats.immeublesVisites, 1)) * 100)}%`}
+          value={
+            totalPortesProspectees === 0
+              ? '0%'
+              : `${Math.round((myStats.refus / totalPortesProspectees) * 100)}%`
+          }
           icon={Target}
         />
       </div>
@@ -164,6 +222,50 @@ export default function CommercialDashboard() {
                 <span>Rang maximum atteint !</span>
               </div>
             )}
+
+            {/* Classement dans l'équipe - seulement si équipe existe */}
+            {isCommercial &&
+              teamRanking &&
+              teamRanking.position !== null &&
+              teamRanking.total > 1 && (
+                <div className={`pt-4 border-t ${base.border.default}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-xs sm:text-sm ${base.text.secondary}`}>
+                        Classement dans l'équipe
+                      </span>
+                      <p className={`text-[10px] sm:text-xs ${base.text.muted}`}>
+                        Sur {teamRanking.total} commercial{teamRanking.total > 1 ? 'aux' : ''} dans
+                        l'équipe
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {teamRanking.trend === 'up' && (
+                        <TrendingUp className={`w-4 h-4 ${colors.success.text}`} />
+                      )}
+                      {teamRanking.trend === 'down' && (
+                        <TrendingDown className={`w-4 h-4 ${colors.danger.text}`} />
+                      )}
+                      <Badge
+                        className={`${
+                          teamRanking.position === 1
+                            ? `${colors.success.bgLight} ${colors.success.text} ${colors.success.border}`
+                            : teamRanking.position <= 3
+                              ? `${colors.warning.bgLight} ${colors.warning.text} ${colors.warning.border}`
+                              : `${base.bg.muted} ${base.text.muted} ${base.border.default}`
+                        } border text-sm font-semibold px-3 py-1.5`}
+                      >
+                        {teamRanking.position === 1 && '🥇 '}
+                        {teamRanking.position === 2 && '🥈 '}
+                        {teamRanking.position === 3 && '🥉 '}
+                        {teamRanking.position === 1
+                          ? '1er'
+                          : `${teamRanking.position} / ${teamRanking.total}`}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
         </CardContent>
       </Card>

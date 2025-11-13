@@ -88,6 +88,11 @@ export default function CommercialLayout() {
 
   // Configuration des onglets de navigation
   const navigationItems = React.useMemo(() => {
+    const personalImmeublesCount =
+      isManager && workspaceProfile?.immeubles
+        ? workspaceProfile.immeubles.filter(imm => imm.managerId === userId).length
+        : workspaceProfile?.immeubles?.length || 0
+
     const items = [
       {
         id: 'stats',
@@ -100,7 +105,7 @@ export default function CommercialLayout() {
         id: 'immeubles',
         label: 'Immeubles',
         icon: Building2,
-        badge: workspaceProfile?.immeubles?.length || 0,
+        badge: personalImmeublesCount,
         path: '/immeubles',
       },
       {
@@ -126,8 +131,9 @@ export default function CommercialLayout() {
   }, [
     isManager,
     workspaceProfile?.commercials?.length,
-    workspaceProfile?.immeubles?.length,
+    workspaceProfile?.immeubles,
     workspaceStats.contratsSignes,
+    userId,
   ])
 
   // Déterminer l'onglet actif basé sur le chemin

@@ -148,7 +148,7 @@ export default function PortesTemplate({
   }
 
   return (
-    <div className="space-y-3 mb-6">
+    <div className="space-y-3 mb-40">
       {/* Header sticky (always visible) */}
       <div
         className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}

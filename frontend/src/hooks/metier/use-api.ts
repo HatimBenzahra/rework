@@ -307,6 +307,29 @@ export function useCommercialFull(id: number): UseApiState<Commercial> & UseApiA
   return useApiCall(() => api.commercials.getFullById(id), [id], 'commercials-full')
 }
 
+export function useCommercialTeamRanking(commercialId: number): UseApiState<{
+  position: number
+  total: number
+  points: number
+  trend?: string | null
+  managerNom?: string | null
+  managerPrenom?: string | null
+  managerEmail?: string | null
+  managerNumTel?: string | null
+}> &
+  UseApiActions {
+  return useApiCall(
+    () => {
+      if (!commercialId || commercialId <= 0) {
+        return Promise.resolve(null)
+      }
+      return api.commercials.getTeamRanking(commercialId)
+    },
+    [commercialId],
+    'commercial-team-ranking'
+  )
+}
+
 export function useCreateCommercial(): UseApiMutation<CreateCommercialInput, Commercial> {
   return useApiMutation(api.commercials.create, 'commercials')
 }

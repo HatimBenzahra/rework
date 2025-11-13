@@ -14,6 +14,7 @@ import {
   GET_COMMERCIALS,
   GET_COMMERCIAL,
   GET_COMMERCIAL_FULL,
+  GET_COMMERCIAL_TEAM_RANKING,
   GET_ZONES,
   GET_ZONE,
   GET_IMMEUBLES,
@@ -302,6 +303,34 @@ export const commercialApi = {
       { id }
     )
     return response.removeCommercial
+  },
+
+  async getTeamRanking(commercialId: number): Promise<{
+    position: number
+    total: number
+    points: number
+    trend?: string | null
+    managerNom?: string | null
+    managerPrenom?: string | null
+    managerEmail?: string | null
+    managerNumTel?: string | null
+  }> {
+    const response = await gql<
+      {
+        commercialTeamRanking: {
+          position: number
+          total: number
+          points: number
+          trend?: string | null
+          managerNom?: string | null
+          managerPrenom?: string | null
+          managerEmail?: string | null
+          managerNumTel?: string | null
+        }
+      },
+      { commercialId: number }
+    >(GET_COMMERCIAL_TEAM_RANKING, { commercialId })
+    return response.commercialTeamRanking
   },
 
   async assignZone(commercialId: number, zoneId: number): Promise<boolean> {

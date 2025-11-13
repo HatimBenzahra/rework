@@ -372,6 +372,24 @@ export const GET_COMMERCIAL = `
 `
 
 /**
+ * Requête pour obtenir le classement d'un commercial dans son équipe
+ */
+export const GET_COMMERCIAL_TEAM_RANKING = `
+  query GetCommercialTeamRanking($commercialId: Int!) {
+    commercialTeamRanking(commercialId: $commercialId) {
+      position
+      total
+      points
+      trend
+      managerNom
+      managerPrenom
+      managerEmail
+      managerNumTel
+    }
+  }
+`
+
+/**
  * Requête complète pour les détails d'un commercial
  * Charge toutes les relations : immeubles, zones, statistics
  * Utilisée par : Page détails commercial
