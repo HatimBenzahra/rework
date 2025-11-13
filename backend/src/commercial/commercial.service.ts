@@ -219,4 +219,120 @@ export class CommercialService {
 
     return zoneEnCours?.zone || null;
   }
+
+  /**
+   * Calcule le classement d'un commercial dans son équipe dashboard commerial
+   * Points: 50 par contrat signé, 10 par RDV pris, 5 par immeuble visité
+   */
+  async getTeamRanking(commercialId: number, userId: number, userRole: string) {
+    // Vérifier l'accès
+    const commercial = await this.ensureAccess(commercialId, userId, userRole);
+
+    if (!commercial.managerId) {
+      return {
+        position: 1,
+        total: 1,
+        points: 0,
+        trend: null,
+        managerNom: null,
+        managerPrenom: null,
+        managerEmail: null,
+        managerNumTel: null,
+      };
+    }
+
+    // Récupérer les informations du manager
+    const manager = await this.prisma.manager.findUnique({
+      where: { id: commercial.managerId },
+      select: {
+        nom: true,
+        prenom: true,
+        email: true,
+        numTelephone: true,
+      },
+    });
+
+    // Récupérer tous les commerciaux de l'équipe (même manager)
+    const teamCommercials = await this.prisma.commercial.findMany({
+      where: {
+        managerId: commercial.managerId,
+      },
+      include: {
+        statistics: true,
+      },
+    });
+
+    if (teamCommercials.length === 0) {
+      return {
+        position: 1,
+        total: 1,
+        points: 0,
+        trend: null,
+        managerNom: manager?.nom || null,
+        managerPrenom: manager?.prenom || null,
+        managerEmail: manager?.email || null,
+        managerNumTel: manager?.numTelephone || null,
+      };
+    }
+
+    // Fonction pour calculer les points d'un commercial
+    const calculatePoints = (stats: any[]) => {
+      const totals = stats.reduce(
+        (acc, stat) => ({
+          contratsSignes: acc.contratsSignes + (stat.contratsSignes || 0),
+          rendezVousPris: acc.rendezVousPris + (stat.rendezVousPris || 0),
+          immeublesVisites: acc.immeublesVisites + (stat.immeublesVisites || 0),
+        }),
+        { contratsSignes: 0, rendezVousPris: 0, immeublesVisites: 0 },
+      );
+
+      return (
+        totals.contratsSignes * 50 +
+        totals.rendezVousPris * 10 +
+        totals.immeublesVisites * 5
+      );
+    };
+
+    // Calculer les points de chaque commercial
+    const teamWithPoints = teamCommercials.map((c) => ({
+      id: c.id,
+      points: calculatePoints(c.statistics || []),
+    }));
+
+    // Trier par points décroissants
+    teamWithPoints.sort((a, b) => b.points - a.points);
+
+    // Trouver la position du commercial actuel
+    const currentIndex = teamWithPoints.findIndex((c) => c.id === commercialId);
+    const currentPosition = currentIndex + 1;
+    const currentPoints = teamWithPoints[currentIndex]?.points || 0;
+
+    // Calculer la position médiane pour déterminer la tendance
+    const medianIndex = Math.floor(teamWithPoints.length / 2);
+    const medianPosition = medianIndex + 1;
+    const medianPoints = teamWithPoints[medianIndex]?.points || 0;
+
+    // Déterminer la tendance : 'up' si au-dessus de la médiane, 'down' si en dessous, null si égal
+    let trend: string | null = null;
+    if (currentPosition < medianPosition) {
+      trend = 'up';
+    } else if (currentPosition > medianPosition) {
+      trend = 'down';
+    } else if (currentPoints > medianPoints) {
+      trend = 'up';
+    } else if (currentPoints < medianPoints) {
+      trend = 'down';
+    }
+
+    return {
+      position: currentPosition,
+      total: teamWithPoints.length,
+      points: currentPoints,
+      trend,
+      managerNom: manager?.nom || null,
+      managerPrenom: manager?.prenom || null,
+      managerEmail: manager?.email || null,
+      managerNumTel: manager?.numTelephone || null,
+    };
+  }
 }

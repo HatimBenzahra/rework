@@ -19,7 +19,7 @@ export class RecordingResolver {
   constructor(private readonly svc: RecordingService) {}
 
   @Mutation(() => RecordingResult)
-  @Roles('admin', 'directeur', 'manager')
+  @Roles('admin', 'directeur', 'manager', 'commercial')
   async startRecording(
     @Args('input') input: StartRecordingInput,
     @CurrentUser() user: any,
@@ -28,7 +28,7 @@ export class RecordingResolver {
   }
 
   @Mutation(() => Boolean)
-  @Roles('admin', 'directeur', 'manager')
+  @Roles('admin', 'directeur', 'manager', 'commercial')
   async stopRecording(
     @Args('input') input: StopRecordingInput,
     @CurrentUser() user: any,
@@ -37,7 +37,7 @@ export class RecordingResolver {
   }
 
   @Query(() => [RecordingItem])
-  @Roles('admin', 'directeur', 'manager')
+  @Roles('admin', 'directeur')
   async listRecordings(
     @Args('roomName') roomName: string,
     @CurrentUser() user: any,
@@ -46,7 +46,7 @@ export class RecordingResolver {
   }
 
   @Query(() => EgressState)
-  @Roles('admin', 'directeur', 'manager')
+  @Roles('admin', 'directeur')
   async egressState(
     @Args('egressId') egressId: string,
     @CurrentUser() user: any,

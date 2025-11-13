@@ -13,6 +13,7 @@ import {
   Commercial,
   CreateCommercialInput,
   UpdateCommercialInput,
+  TeamRanking,
 } from './commercial.dto';
 import { Zone } from '../zone/zone.dto';
 import { Immeuble } from '../immeuble/immeuble.dto';
@@ -97,5 +98,18 @@ export class CommercialResolver {
   @ResolveField(() => [Statistic])
   statistics(@Parent() commercial: CommercialWithRelations): Statistic[] {
     return commercial.statistics || [];
+  }
+
+  @Query(() => TeamRanking, { name: 'commercialTeamRanking' })
+  @Roles('commercial')
+  async getTeamRanking(
+    @Args('commercialId', { type: () => Int }) commercialId: number,
+    @CurrentUser() user: any,
+  ) {
+    return this.commercialService.getTeamRanking(
+      commercialId,
+      user.id,
+      user.role,
+    );
   }
 }

@@ -286,6 +286,7 @@ type Query {
   allCurrentAssignments: [ZoneEnCours!]!
   allZoneHistory: [HistoriqueZone!]!
   commercial(id: Int!): Commercial!
+  commercialTeamRanking(commercialId: Int!): TeamRanking!
   commercials: [Commercial!]!
   currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours
   directeur(id: Int!): Directeur!
@@ -377,6 +378,17 @@ input StopMonitoringInput {
 
 input StopRecordingInput {
   egressId: String!
+}
+
+type TeamRanking {
+  managerEmail: String
+  managerNom: String
+  managerNumTel: String
+  managerPrenom: String
+  points: Int!
+  position: Int!
+  total: Int!
+  trend: String
 }
 
 input UpdateCommercialInput {

@@ -138,13 +138,6 @@ export class RecordingService {
       return target;
     }
 
-    // Seuls admin et directeur peuvent accéder aux enregistrements
-    if (userRole !== 'directeur') {
-      throw new ForbiddenException(
-        'Only admins and directeurs can access recordings',
-      );
-    }
-
     if (target.type === 'COMMERCIAL') {
       const commercial = await this.prisma.commercial.findUnique({
         where: { id: target.id },
@@ -155,7 +148,18 @@ export class RecordingService {
         throw new NotFoundException('Commercial not found');
       }
 
-      if (commercial.directeurId === userId) {
+      // Commercial peut accéder à lui-même
+      if (userRole === 'commercial' && commercial.id === userId) {
+        return target;
+      }
+
+      // Directeur peut accéder à ses commerciaux
+      if (userRole === 'directeur' && commercial.directeurId === userId) {
+        return target;
+      }
+
+      // Manager peut accéder à ses commerciaux
+      if (userRole === 'manager' && commercial.managerId === userId) {
         return target;
       }
 
@@ -172,7 +176,13 @@ export class RecordingService {
         throw new NotFoundException('Manager not found');
       }
 
-      if (manager.directeurId === userId) {
+      // Directeur peut accéder à ses managers
+      if (userRole === 'directeur' && manager.directeurId === userId) {
+        return target;
+      }
+
+      // Manager peut accéder à lui-même
+      if (userRole === 'manager' && manager.id === userId) {
         return target;
       }
 
@@ -245,11 +255,7 @@ export class RecordingService {
 
     if (participantIdentity && target) {
       const parsed = this.parseParticipantIdentity(participantIdentity);
-      if (
-        !parsed ||
-        parsed.type !== target.type ||
-        parsed.id !== target.id
-      ) {
+      if (!parsed || parsed.type !== target.type || parsed.id !== target.id) {
         throw new ForbiddenException(
           'Participant identity does not match the room owner',
         );
@@ -388,7 +394,11 @@ export class RecordingService {
     }
 
     if (info.roomName) {
-      await this.ensureRoomAccess(info.roomName, currentUser.id, currentUser.role);
+      await this.ensureRoomAccess(
+        info.roomName,
+        currentUser.id,
+        currentUser.role,
+      );
     } else if (currentUser.role !== 'admin') {
       throw new ForbiddenException('Cannot verify recording ownership');
     }
