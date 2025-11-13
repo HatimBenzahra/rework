@@ -56,204 +56,145 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
         </div>
       )}
 
-      {/* Bottom Navigation Bar - Design moderne avec forme arrondie */}
+      {/* Bottom Navigation Bar - Design moderne et épuré */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 safe-area-inset-bottom"
+        className={`fixed bottom-0 left-0 right-0 ${base.bg.card} border-t ${base.border.light} z-50 safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.08)]`}
         role="navigation"
         aria-label="Navigation principale"
       >
-        {/* Container avec forme arrondie moderne */}
-        <div className="max-w-screen-lg mx-auto px-4 pb-2">
-          <div
-            className={`
-              ${base.bg.card}/98 backdrop-blur-2xl
-              rounded-t-[2rem] sm:rounded-t-[2.5rem]
-              border-t ${base.border.light}
-              shadow-[0_-8px_32px_rgba(0,0,0,0.12)]
-              relative overflow-hidden
-              before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2
-              before:w-24 before:h-1 before:bg-gradient-to-r
-              before:from-transparent before:via-gray-300/60 before:to-transparent
-              before:rounded-full
-            `}
-          >
-            {/* Ligne décorative en haut */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-gray-300/60 to-transparent rounded-full" />
+        {/* Container avec padding responsive */}
+        <div className="max-w-screen-lg mx-auto px-safe">
+          <div className="flex items-stretch justify-around h-20 sm:h-16">
+            {/* Navigation items */}
+            {navigationItems.map(item => {
+              const Icon = item.icon
+              const isActive = activeTab === item.id
+              const showBadge = item.badge > 0
 
-            <div className="flex items-stretch justify-around h-20 sm:h-20 pt-3 pb-4 relative z-10">
-              {/* Navigation items */}
-              {navigationItems.map(item => {
-                const Icon = item.icon
-                const isActive = activeTab === item.id
-                const showBadge = item.badge > 0
-
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onTabChange(item.id)}
-                    className={`
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onTabChange(item.id)}
+                  className={`
                     relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
                     transition-all duration-300 ease-out
                     ${isActive ? 'scale-105' : 'active:scale-95 hover:scale-102'}
                   `}
-                    aria-label={item.label}
-                    aria-current={isActive ? 'page' : undefined}
-                  >
-                    {/* Active indicator - forme moderne avec pill */}
-                    {isActive && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                        <div
-                          className={`w-10 h-1.5 rounded-full ${colors.primary.bg} animate-in slide-in-from-top-1 duration-300 shadow-lg`}
-                          style={{
-                            boxShadow: `0 2px 8px ${colors.primary.bg}40`,
-                          }}
-                        />
-                      </div>
-                    )}
+                  aria-label={item.label}
+                  aria-current={isActive ? 'page' : undefined}
+                >
+                  {/* Active indicator bar */}
+                  {isActive && (
+                    <div
+                      className={`absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full ${colors.primary.bg} animate-in slide-in-from-top-1 duration-300`}
+                    />
+                  )}
 
-                    {/* Icon avec badge - design pill moderne */}
-                    <div className="relative">
-                      <div
-                        className={`
-                      p-3 rounded-2xl transition-all duration-300 ease-out
-                      ${
-                        isActive
-                          ? `${colors.primary.bgLight} ${colors.primary.textLight} shadow-lg`
-                          : `${base.bg.transparent} ${base.text.muted} hover:${base.bg.muted}/60`
-                      }
-                      ${isActive ? 'scale-110' : 'hover:scale-105 active:scale-95'}
-                    `}
-                        style={
+                  {/* Icon avec badge */}
+                  <div className="relative">
+                    <div
+                      className={`
+                        p-2 rounded-2xl transition-all duration-300 ease-out
+                        ${
                           isActive
-                            ? {
-                                boxShadow: `0 6px 20px ${colors.primary.bg}25`,
-                              }
-                            : {}
+                            ? `bg-transparent ${colors.primary.text} shadow-md`
+                            : `${base.bg.transparent} ${base.text.muted} hover:${base.bg.muted}/50`
                         }
-                      >
-                        <Icon
-                          className={`w-5 h-5 sm:w-6 sm:h-6 transition-all duration-300 ${
-                            isActive ? 'scale-110' : ''
-                          }`}
-                          strokeWidth={isActive ? 2.5 : 2}
-                        />
-                      </div>
-
-                      {/* Badge moderne avec glow et forme arrondie */}
-                      {showBadge && (
-                        <Badge
-                          className={`
-                          absolute -top-0.5 -right-0.5 min-w-[22px] h-[22px] px-1.5
-                          flex items-center justify-center text-[10px] font-bold
-                          border-2 border-white rounded-full
-                          ${isActive ? `${colors.primary.bg} ${colors.primary.text}` : 'bg-gradient-to-br from-red-500 to-red-600 text-white'}
-                          ${isActive && item.badge > 0 ? 'animate-pulse' : ''}
-                          transition-all duration-300 hover:scale-110
-                        `}
-                          style={
-                            isActive
-                              ? {
-                                  boxShadow: `0 4px 16px ${colors.primary.bg}50`,
-                                }
-                              : {
-                                  boxShadow: '0 4px 16px rgba(239, 68, 68, 0.4)',
-                                }
-                          }
-                        >
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </Badge>
-                      )}
+                        ${isActive ? 'scale-105' : 'hover:scale-105 active:scale-95'}
+                      `}
+                    >
+                      <Icon
+                        className={`w-5 h-5 sm:w-6 sm:h-6 transition-all duration-300 ${
+                          isActive ? 'scale-110' : ''
+                        }`}
+                        strokeWidth={isActive ? 2.5 : 2}
+                      />
                     </div>
 
-                    {/* Label avec animation */}
-                    <span
-                      className={`
-                    text-[11px] sm:text-xs leading-tight text-center max-w-full truncate px-1 mt-0.5
-                    transition-all duration-300
-                    ${
-                      isActive
-                        ? `${colors.primary.text} font-bold tracking-wide`
-                        : `${base.text.muted} font-medium`
-                    }
-                  `}
-                    >
-                      {item.label}
-                    </span>
-                  </button>
-                )
-              })}
+                    {/* Badge moderne */}
+                    {showBadge && (
+                      <Badge
+                        className={`
+                          absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1
+                          flex items-center justify-center text-[10px] font-bold
+                          border-2 border-white shadow-md
+                          ${isActive ? 'bg-white text-gray-900' : 'bg-red-500 text-white'}
+                          ${isActive && item.badge > 0 ? 'animate-pulse' : ''}
+                          transition-all duration-300
+                        `}
+                      >
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </Badge>
+                    )}
+                  </div>
 
-              {/* Menu button - Design cohérent avec forme moderne */}
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className={`
+                  {/* Label */}
+                  <span
+                    className={`
+                      text-[11px] sm:text-xs leading-tight text-center max-w-full truncate px-1
+                      transition-all duration-300
+                      ${
+                        isActive
+                          ? `${colors.primary.text} font-bold`
+                          : `${base.text.muted} font-medium`
+                      }
+                    `}
+                  >
+                    {item.label}
+                  </span>
+                </button>
+              )
+            })}
+
+            {/* Menu button - Design cohérent */}
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className={`
                 relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
                 transition-all duration-300 ease-out
-                ${showMenu ? 'scale-110' : 'active:scale-95 hover:scale-105'}
+                ${showMenu ? 'scale-105' : 'active:scale-95 hover:scale-102'}
               `}
-                aria-label="Menu"
-                aria-expanded={showMenu}
-              >
-                {/* Active indicator pour le menu avec forme moderne */}
-                {showMenu && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <div
-                      className="w-10 h-1.5 rounded-full bg-gray-700 animate-in slide-in-from-top-1 duration-300 shadow-lg"
-                      style={{
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-                      }}
-                    />
-                  </div>
-                )}
+              aria-label="Menu"
+              aria-expanded={showMenu}
+            >
+              {/* Active indicator pour le menu */}
+              {showMenu && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full bg-gray-700 animate-in slide-in-from-top-1 duration-300" />
+              )}
 
-                <div
-                  className={`
-                  p-3 rounded-2xl transition-all duration-300 ease-out
+              <div
+                className={`
+                  p-2 rounded-2xl transition-all duration-300
                   ${
                     showMenu
-                      ? 'bg-gray-100 text-gray-900 shadow-lg'
-                      : `${base.bg.transparent} ${base.text.muted} hover:${base.bg.muted}/60`
+                      ? 'bg-gray-700 text-white shadow-md'
+                      : `${base.bg.transparent} ${base.text.muted}`
                   }
-                  ${showMenu ? 'scale-110' : 'hover:scale-105 active:scale-95'}
                 `}
-                  style={
-                    showMenu
-                      ? {
-                          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
-                        }
-                      : {}
-                  }
-                >
-                  <div className="flex gap-1 items-center">
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full bg-current transition-all duration-300 ${
-                        showMenu ? 'scale-125 opacity-100' : 'opacity-70'
-                      }`}
-                    />
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full bg-current transition-all duration-300 delay-75 ${
-                        showMenu ? 'scale-125 opacity-100' : 'opacity-70'
-                      }`}
-                    />
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full bg-current transition-all duration-300 delay-150 ${
-                        showMenu ? 'scale-125 opacity-100' : 'opacity-70'
-                      }`}
-                    />
-                  </div>
+              >
+                <div className="flex gap-1">
+                  <div
+                    className={`w-1 h-1 rounded-full bg-current transition-all duration-300 ${showMenu ? 'scale-125' : ''}`}
+                  />
+                  <div
+                    className={`w-1 h-1 rounded-full bg-current transition-all duration-300 ${showMenu ? 'scale-125' : ''}`}
+                  />
+                  <div
+                    className={`w-1 h-1 rounded-full bg-current transition-all duration-300 ${showMenu ? 'scale-125' : ''}`}
+                  />
                 </div>
+              </div>
 
-                <span
-                  className={`
-                  text-[11px] sm:text-xs leading-tight text-center font-medium mt-0.5
+              <span
+                className={`
+                  text-[11px] sm:text-xs leading-tight text-center font-medium
                   transition-all duration-300
-                  ${showMenu ? 'text-gray-900 font-bold tracking-wide' : base.text.muted}
+                  ${showMenu ? 'text-gray-900 font-bold' : base.text.muted}
                 `}
-                >
-                  Plus
-                </span>
-              </button>
-            </div>
+              >
+                Plus
+              </span>
+            </button>
           </div>
         </div>
       </nav>
