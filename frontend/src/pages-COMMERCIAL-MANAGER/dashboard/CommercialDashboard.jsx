@@ -106,7 +106,7 @@ export default function CommercialDashboard() {
     <div className="flex flex-col space-y-2 sm:space-y-2.5 max-w-full pb-2 mb-20">
       {/* Rang et progression */}
       <Card className={`${base.bg.card} ${base.border.card} h-fit gap-1 py-5`}>
-        <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
+        <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
           <CardTitle
             className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1 leading-none`}
           >
