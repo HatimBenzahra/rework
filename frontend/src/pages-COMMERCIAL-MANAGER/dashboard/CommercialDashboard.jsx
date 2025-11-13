@@ -85,18 +85,16 @@ export default function CommercialDashboard() {
     const Icon = icon
     return (
       <Card className={`flex-1 min-w-0 ${base.bg.card} ${base.border.card}`}>
-        <CardContent className="p-2 sm:p-2.5 md:p-3">
-          <div className="flex flex-col gap-1.5">
+        <CardContent className="p-1.5 sm:p-2">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2">
               <p className={`text-[10px] sm:text-xs ${base.text.muted} truncate`}>{title}</p>
-              <div className="p-1 sm:p-1.5 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
-                <Icon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`} />
+              <div className="p-1 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                <Icon className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${base.icon.default}`} />
               </div>
             </div>
-            <div className="space-y-0.5">
-              <p className={`text-base sm:text-lg md:text-xl font-bold ${base.text.primary}`}>
-                {value}
-              </p>
+            <div className="space-y-0">
+              <p className={`text-base sm:text-lg font-bold ${base.text.primary}`}>{value}</p>
             </div>
           </div>
         </CardContent>
@@ -105,10 +103,10 @@ export default function CommercialDashboard() {
   }
 
   return (
-    <div className="flex flex-col space-y-3 sm:space-y-4 max-w-full pb-6 mb-20">
+    <div className="flex flex-col space-y-2 sm:space-y-2.5 max-w-full pb-2 mb-20">
       {/* Rang et progression */}
       <Card className={`${base.bg.card} ${base.border.card} h-fit`}>
-        <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
+        <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
           <CardTitle
             className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1 leading-none`}
           >
@@ -116,8 +114,8 @@ export default function CommercialDashboard() {
             Rang
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-0 -mt-1">
-          <div className="space-y-3 sm:space-y-4">
+        <CardContent className="px-2.5 sm:px-3 md:px-4 pt-1 pb-2 -mt-1">
+          <div className="space-y-2 sm:space-y-2.5">
             {/* Rang actuel */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -137,7 +135,7 @@ export default function CommercialDashboard() {
 
             {/* Progression vers le prochain rang */}
             {rankProgress.nextRank && (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex justify-between items-center gap-2">
                   <span className={`text-xs sm:text-sm ${base.text.secondary}`}>
                     Prochain rang : {rankProgress.nextRank.name}
@@ -146,9 +144,9 @@ export default function CommercialDashboard() {
                     {rankProgress.pointsNeeded} pts restants
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                   <div
-                    className={`h-2.5 rounded-full transition-all duration-500 ${currentRank.bgColor}`}
+                    className={`h-2 rounded-full transition-all duration-500 ${currentRank.bgColor}`}
                     style={{
                       width: `${rankProgress.percentage}%`,
                     }}
@@ -163,9 +161,9 @@ export default function CommercialDashboard() {
             {/* Message si rang max atteint */}
             {!rankProgress.nextRank && (
               <div
-                className={`text-xs sm:text-sm ${colors.success.text} bg-green-50 p-2 rounded-lg flex items-center gap-2`}
+                className={`text-xs sm:text-sm ${colors.success.text} bg-green-50 p-1.5 rounded-lg flex items-center gap-1.5`}
               >
-                <Trophy className="w-4 h-4" />
+                <Trophy className="w-3.5 h-3.5" />
                 <span>Rang maximum atteint !</span>
               </div>
             )}
@@ -175,9 +173,9 @@ export default function CommercialDashboard() {
               teamRanking &&
               teamRanking.position !== null &&
               teamRanking.total > 1 && (
-                <div className={`pt-4 border-t ${base.border.default}`}>
+                <div className={`pt-2.5 border-t ${base.border.default}`}>
                   <div className="flex items-center justify-between gap-2">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-0.5">
                       <span className={`text-xs sm:text-sm ${base.text.secondary}`}>
                         Classement dans l'équipe
                       </span>
@@ -200,7 +198,7 @@ export default function CommercialDashboard() {
                             : teamRanking.position <= 3
                               ? `${colors.warning.bgLight} ${colors.warning.text} ${colors.warning.border}`
                               : `${base.bg.muted} ${base.text.muted} ${base.border.default}`
-                        } border text-sm font-semibold px-3 py-1.5`}
+                        } border text-xs font-semibold px-2.5 py-1`}
                       >
                         {teamRanking.position === 1 && '🥇 '}
                         {teamRanking.position === 2 && '🥈 '}
@@ -225,7 +223,7 @@ export default function CommercialDashboard() {
           teamRanking.managerEmail ||
           teamRanking.managerNumTel) && (
           <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
+            <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
               <CardTitle
                 className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5 leading-none`}
               >
@@ -233,14 +231,14 @@ export default function CommercialDashboard() {
                 Mon Manager
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-2.5 sm:pb-3 -mt-1">
-              <div className="flex items-start gap-3">
+            <CardContent className="px-2.5 sm:px-3 md:px-4 pt-1 pb-2 -mt-1">
+              <div className="flex items-start gap-2.5">
                 <div
-                  className={`p-2 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
+                  className={`p-1.5 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
                 >
-                  <Users className={`w-5 h-5 ${colors.primary.text}`} />
+                  <Users className={`w-4 h-4 ${colors.primary.text}`} />
                 </div>
-                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
                   <div>
                     <span
                       className={`text-sm sm:text-base font-semibold ${base.text.primary} block`}
@@ -264,7 +262,7 @@ export default function CommercialDashboard() {
       {/* Rendez-vous du jour */}
       {!loadingRdvToday && rdvToday && rdvToday.length > 0 && (
         <Card className={`${base.bg.card} ${base.border.card}`}>
-          <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
+          <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
             <CardTitle
               className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5 leading-none`}
             >
@@ -272,24 +270,24 @@ export default function CommercialDashboard() {
               Rendez-vous d'aujourd'hui
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-2.5 sm:pb-3 -mt-1">
-            <div className="space-y-2 mt-3">
+          <CardContent className="px-2.5 sm:px-3 md:px-4 pt-1 pb-2 -mt-1">
+            <div className="space-y-1.5 mt-2">
               {rdvToday.map(porte => {
                 const immeuble = immeublesMap.get(porte.immeubleId)
                 return (
                   <div
                     key={porte.id}
                     onClick={() => navigate(`/portes/${porte.immeubleId}`)}
-                    className={`p-3 rounded-lg border ${base.border.default} ${base.bg.muted} hover:${base.bg.accent} transition cursor-pointer`}
+                    className={`p-2 rounded-lg border ${base.border.default} ${base.bg.muted} hover:${base.bg.accent} transition cursor-pointer`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start gap-2 flex-1 min-w-0">
                         <div
-                          className={`p-2 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
+                          className={`p-1.5 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
                         >
-                          <MapPin className={`w-4 h-4 ${colors.primary.text}`} />
+                          <MapPin className={`w-3.5 h-3.5 ${colors.primary.text}`} />
                         </div>
-                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                           <span className={`text-sm font-semibold ${base.text.primary} truncate`}>
                             {immeuble?.adresse || 'Adresse non disponible'}
                           </span>
@@ -298,13 +296,13 @@ export default function CommercialDashboard() {
                             {porte.nomPersonnalise && ` (${porte.nomPersonnalise})`}
                           </span>
                           {porte.commentaire && (
-                            <span className={`text-xs ${base.text.muted} mt-1 line-clamp-2`}>
+                            <span className={`text-xs ${base.text.muted} mt-0.5 line-clamp-2`}>
                               {porte.commentaire}
                             </span>
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                         <div className="flex items-center gap-1.5">
                           <Clock className={`w-3.5 h-3.5 ${base.text.muted}`} />
                           <span className={`text-sm font-medium ${base.text.primary}`}>
@@ -321,7 +319,7 @@ export default function CommercialDashboard() {
         </Card>
       )}
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
+      <div className="grid grid-cols-2 gap-2 flex-shrink-0">
         <StatCard title="Contrats signés" value={myStats.contratsSignes} icon={CheckCircle2} />
         <StatCard title="Immeubles visités" value={myStats.immeublesVisites} icon={Building2} />
         <StatCard title="Rendez-vous pris" value={myStats.rendezVousPris} icon={Clock} />
