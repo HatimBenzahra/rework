@@ -84,7 +84,7 @@ export default function CommercialDashboard() {
   const StatCard = ({ title, value, icon }) => {
     const Icon = icon
     return (
-      <Card className={`flex-1 min-w-0 ${base.bg.card} ${base.border.card}`}>
+      <Card className={`flex-1 min-w-0 ${base.bg.card} ${base.border.card} gap-0 py-1`}>
         <CardContent className="p-1.5 sm:p-2">
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2">
@@ -105,7 +105,7 @@ export default function CommercialDashboard() {
   return (
     <div className="flex flex-col space-y-2 sm:space-y-2.5 max-w-full pb-2 mb-20">
       {/* Rang et progression */}
-      <Card className={`${base.bg.card} ${base.border.card} h-fit`}>
+      <Card className={`${base.bg.card} ${base.border.card} h-fit gap-1 py-5`}>
         <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
           <CardTitle
             className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1 leading-none`}
@@ -222,7 +222,7 @@ export default function CommercialDashboard() {
           teamRanking.managerNom ||
           teamRanking.managerEmail ||
           teamRanking.managerNumTel) && (
-          <Card className={`${base.bg.card} ${base.border.card}`}>
+          <Card className={`${base.bg.card} ${base.border.card} gap-1 py-4`}>
             <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
               <CardTitle
                 className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5 leading-none`}
@@ -261,7 +261,7 @@ export default function CommercialDashboard() {
 
       {/* Rendez-vous du jour */}
       {!loadingRdvToday && rdvToday && rdvToday.length > 0 && (
-        <Card className={`${base.bg.card} ${base.border.card}`}>
+        <Card className={`${base.bg.card} ${base.border.card} gap-1 py-4`}>
           <CardHeader className="px-2.5 sm:px-3 md:px-4 py-1 space-y-0 mb-0">
             <CardTitle
               className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5 leading-none`}
