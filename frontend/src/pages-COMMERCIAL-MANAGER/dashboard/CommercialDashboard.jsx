@@ -11,19 +11,27 @@ import {
   Target,
   Clock,
   Users,
+  Calendar,
+  MapPin,
 } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { calculateRank, RANKS } from '@/share/ranks'
 import { useCommercialTeamRanking } from '@/hooks/metier/use-api'
-
+import { usePortesRdvToday } from '@/hooks/metier/use-api'
+import { useNavigate } from 'react-router-dom'
 export default function CommercialDashboard() {
   // Récupérer les données du contexte du layout
   const context = useOutletContext()
   const commercial = context?.commercial
   const isManager = context?.isManager
   const isCommercial = !isManager
-
+  const { data: rdvToday, loading: loadingRdvToday } = usePortesRdvToday()
+  const navigate = useNavigate()
+  const immeublesMap = useMemo(() => {
+    if (!commercial?.immeubles) return new Map()
+    return new Map(commercial.immeubles.map(imm => [imm.id, imm]))
+  }, [commercial?.immeubles])
   // Calculer le nombre total de portes prospectées
   const totalPortesProspectees = React.useMemo(() => {
     if (!commercial?.immeubles) return 0
@@ -98,67 +106,6 @@ export default function CommercialDashboard() {
 
   return (
     <div className="flex flex-col space-y-3 sm:space-y-4 max-w-full pb-6 mb-20">
-      {/* Carte Manager et Classement - uniquement pour les commerciaux */}
-      {/* Carte Manager - seulement si manager existe */}
-      {isCommercial &&
-        teamRanking &&
-        (teamRanking.managerPrenom ||
-          teamRanking.managerNom ||
-          teamRanking.managerEmail ||
-          teamRanking.managerNumTel) && (
-          <Card className={`${base.bg.card} ${base.border.card}`}>
-            <CardHeader className="px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5">
-              <CardTitle
-                className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5`}
-              >
-                <Users className="w-4 h-4" />
-                Mon Manager
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-2.5 sm:pb-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`p-2 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
-                >
-                  <Users className={`w-5 h-5 ${colors.primary.text}`} />
-                </div>
-                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
-                  <div>
-                    <span
-                      className={`text-sm sm:text-base font-semibold ${base.text.primary} block`}
-                    >
-                      {teamRanking.managerPrenom || 'non défini'}{' '}
-                      {teamRanking.managerNom || 'non défini'}
-                    </span>
-                  </div>
-                  {teamRanking.managerEmail && (
-                    <div className={`text-xs ${base.text.muted}`}>{teamRanking.managerEmail}</div>
-                  )}
-                  {teamRanking.managerNumTel && (
-                    <div className={`text-xs ${base.text.muted}`}>{teamRanking.managerNumTel}</div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
-        <StatCard title="Contrats signés" value={myStats.contratsSignes} icon={CheckCircle2} />
-        <StatCard title="Immeubles visités" value={myStats.immeublesVisites} icon={Building2} />
-        <StatCard title="Rendez-vous pris" value={myStats.rendezVousPris} icon={Clock} />
-        <StatCard
-          title="Taux de refus"
-          value={
-            totalPortesProspectees === 0
-              ? '0%'
-              : `${Math.round((myStats.refus / totalPortesProspectees) * 100)}%`
-          }
-          icon={Target}
-        />
-      </div>
-
       {/* Rang et progression */}
       <Card className={`${base.bg.card} ${base.border.card} h-fit`}>
         <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
@@ -269,6 +216,125 @@ export default function CommercialDashboard() {
           </div>
         </CardContent>
       </Card>
+      {/* Carte Manager et Classement - uniquement pour les commerciaux */}
+      {/* Carte Manager - seulement si manager existe */}
+      {isCommercial &&
+        teamRanking &&
+        (teamRanking.managerPrenom ||
+          teamRanking.managerNom ||
+          teamRanking.managerEmail ||
+          teamRanking.managerNumTel) && (
+          <Card className={`${base.bg.card} ${base.border.card}`}>
+            <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
+              <CardTitle
+                className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5 leading-none`}
+              >
+                <Users className="w-4 h-4" />
+                Mon Manager
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-2.5 sm:pb-3 -mt-1">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`p-2 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
+                >
+                  <Users className={`w-5 h-5 ${colors.primary.text}`} />
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  <div>
+                    <span
+                      className={`text-sm sm:text-base font-semibold ${base.text.primary} block`}
+                    >
+                      {teamRanking.managerPrenom || 'non défini'}{' '}
+                      {teamRanking.managerNom || 'non défini'}
+                    </span>
+                  </div>
+                  {teamRanking.managerEmail && (
+                    <div className={`text-xs ${base.text.muted}`}>{teamRanking.managerEmail}</div>
+                  )}
+                  {teamRanking.managerNumTel && (
+                    <div className={`text-xs ${base.text.muted}`}>{teamRanking.managerNumTel}</div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+      {/* Rendez-vous du jour */}
+      {!loadingRdvToday && rdvToday && rdvToday.length > 0 && (
+        <Card className={`${base.bg.card} ${base.border.card}`}>
+          <CardHeader className="px-2.5 sm:px-3 md:px-4 py-0 space-y-0 mb-0">
+            <CardTitle
+              className={`text-sm sm:text-base ${base.text.primary} flex items-center gap-1.5 leading-none`}
+            >
+              <Calendar className="w-4 h-4" />
+              Rendez-vous d'aujourd'hui
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-2.5 sm:px-3 md:px-4 pt-0 pb-2.5 sm:pb-3 -mt-1">
+            <div className="space-y-2 mt-3">
+              {rdvToday.map(porte => {
+                const immeuble = immeublesMap.get(porte.immeubleId)
+                return (
+                  <div
+                    key={porte.id}
+                    onClick={() => navigate(`/portes/${porte.immeubleId}`)}
+                    className={`p-3 rounded-lg border ${base.border.default} ${base.bg.muted} hover:${base.bg.accent} transition cursor-pointer`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div
+                          className={`p-2 rounded-lg ${colors.primary.bgLight} ${colors.primary.border} border flex-shrink-0`}
+                        >
+                          <MapPin className={`w-4 h-4 ${colors.primary.text}`} />
+                        </div>
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <span className={`text-sm font-semibold ${base.text.primary} truncate`}>
+                            {immeuble?.adresse || 'Adresse non disponible'}
+                          </span>
+                          <span className={`text-xs ${base.text.muted}`}>
+                            Porte {porte.numero} - Étage {porte.etage}
+                            {porte.nomPersonnalise && ` (${porte.nomPersonnalise})`}
+                          </span>
+                          {porte.commentaire && (
+                            <span className={`text-xs ${base.text.muted} mt-1 line-clamp-2`}>
+                              {porte.commentaire}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className={`w-3.5 h-3.5 ${base.text.muted}`} />
+                          <span className={`text-sm font-medium ${base.text.primary}`}>
+                            {porte.rdvTime || 'Heure non définie'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
+        <StatCard title="Contrats signés" value={myStats.contratsSignes} icon={CheckCircle2} />
+        <StatCard title="Immeubles visités" value={myStats.immeublesVisites} icon={Building2} />
+        <StatCard title="Rendez-vous pris" value={myStats.rendezVousPris} icon={Clock} />
+        <StatCard
+          title="Taux de refus"
+          value={
+            totalPortesProspectees === 0
+              ? '0%'
+              : `${Math.round((myStats.refus / totalPortesProspectees) * 100)}%`
+          }
+          icon={Target}
+        />
+      </div>
     </div>
   )
 }
