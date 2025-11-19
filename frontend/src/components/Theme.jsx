@@ -38,7 +38,9 @@ export default function ThemeSelector() {
   }
 
   const handleThemeSelect = presetName => {
-    applyPreset(presetName, mode)
+    // Lire directement le mode depuis le DOM pour être sûr d'avoir la valeur actuelle
+    const currentMode = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+    applyPreset(presetName, currentMode)
     setSelectedTheme(presetName)
   }
 

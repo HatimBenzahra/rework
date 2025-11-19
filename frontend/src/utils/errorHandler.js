@@ -31,7 +31,10 @@ class ErrorHandler {
       true
     )
 
-    console.log('✅ ErrorHandler initialisé - Toutes les erreurs seront capturées')
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.log('✅ ErrorHandler initialisé - Toutes les erreurs seront capturées')
+    }
   }
 
   /**
@@ -117,8 +120,7 @@ class ErrorHandler {
       console.groupEnd()
     }
 
-    // En production, vous pouvez envoyer l'erreur à un service de monitoring
-    // comme Sentry, LogRocket, etc.
+    // Always send to monitoring in production
     this.sendToMonitoring(error)
   }
 
@@ -126,7 +128,6 @@ class ErrorHandler {
    * Envoyer l'erreur à un service de monitoring externe
    */
   sendToMonitoring(error) {
-    // Importer dynamiquement la configuration Sentry
     import('../config/sentry.js')
       .then(sentryModule => {
         const { captureException } = sentryModule
@@ -139,12 +140,13 @@ class ErrorHandler {
           userAgent: navigator.userAgent,
         })
 
+        // Only log success in development
         if (sent && import.meta.env.DEV) {
           console.log('📤 Erreur envoyée à Sentry')
         }
       })
       .catch(() => {
-        // Sentry non disponible ou non configuré
+        // Silent fail in production
       })
   }
 

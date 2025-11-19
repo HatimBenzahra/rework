@@ -1,12 +1,7 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import {
-  useCommercials,
-  useUpdateCommercial,
-  useManagers,
-  useDirecteurs,
-} from '@/services'
-import { useMemo } from 'react'
+import { useCommercials, useUpdateCommercial, useManagers, useDirecteurs } from '@/services'
+import { useMemo, memo } from 'react'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { calculateRank, RANKS } from '@/share/ranks'
@@ -68,7 +63,7 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   return baseColumns
 }
 
-export default function Commerciaux() {
+export default memo(function Commerciaux() {
   const { isAdmin, isDirecteur } = useRole()
   const { data: commercials, loading, error, refetch } = useCommercials()
   const { data: managers } = useManagers()
@@ -82,7 +77,7 @@ export default function Commerciaux() {
   // Récupération des permissions et description
   const permissions = useEntityPermissions('commerciaux')
   const description = useEntityDescription('commerciaux')
-
+  const columns = useMemo(() => getCommerciauxColumns(isAdmin, isDirecteur), [isAdmin, isDirecteur])
   // Préparer les données pour le tableau
   const tableData = useMemo(() => {
     if (!filteredCommercials) return []
@@ -133,13 +128,14 @@ export default function Commerciaux() {
         ...commercial,
         nom: commercial.nom,
         prenom: commercial.prenom,
+        columns,
         rankBadge,
         managerName,
         directeurName,
         createdAt: new Date(commercial.createdAt).toLocaleDateString('fr-FR'),
       }
     })
-  }, [filteredCommercials, managers, directeurs])
+  }, [filteredCommercials, managers, directeurs, columns])
 
   // Préparer les options pour les formulaires
   const managerOptions = useMemo(() => {
@@ -248,13 +244,6 @@ export default function Commerciaux() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Commerciaux</h1>
-        <p className="text-muted-foreground text-base">
-          Gestion de l'équipe commerciale et suivi des performances
-        </p>
-      </div>
-
       {/* Section d'information sur le système de rangs */}
       <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">
@@ -308,4 +297,4 @@ export default function Commerciaux() {
       />
     </div>
   )
-}
+})

@@ -145,11 +145,11 @@ export const getEntityDescription = (entity, userRole) => {
       [ROLES.DIRECTEUR]: 'Commerciaux de votre division avec leurs informations et performances',
     },
     managers: {
-      [ROLES.ADMIN]: "Tous les managers de l'entreprise avec leurs équipes",
+      [ROLES.ADMIN]: "Tous les managers de l'entreprise avec leurs rangs",
       [ROLES.DIRECTEUR]: 'Managers de votre division avec leurs équipes',
     },
     directeurs: {
-      [ROLES.ADMIN]: "Tous les directeurs de l'entreprise avec leurs divisions",
+      [ROLES.ADMIN]: "Tous les directeurs de l'entreprise",
       [ROLES.DIRECTEUR]: 'Vos informations en tant que directeur',
     },
     zones: {

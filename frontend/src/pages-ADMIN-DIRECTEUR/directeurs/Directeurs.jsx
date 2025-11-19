@@ -1,9 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import {
-  useDirecteurs,
-  useUpdateDirecteur,
-} from '@/services'
+import { useDirecteurs, useUpdateDirecteur } from '@/services'
 import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo } from 'react'
@@ -131,16 +128,10 @@ export default function Directeurs() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Directeurs</h1>
-        <p className="text-muted-foreground text-base">{description}</p>
-      </div>
-
+    <div>
       <AdvancedDataTable
         showStatusColumn={false}
         title="Liste des Directeurs"
-        description={description}
         data={tableData}
         columns={directeursColumns}
         searchKey="nom"

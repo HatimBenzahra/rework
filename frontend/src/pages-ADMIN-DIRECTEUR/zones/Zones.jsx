@@ -459,11 +459,6 @@ export default function Zones() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Zones</h1>
-        <p className="text-muted-foreground text-base">{description}</p>
-      </div>
-
       <AdvancedDataTable
         showStatusColumn={false}
         title="Liste des Zones"

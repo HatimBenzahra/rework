@@ -330,8 +330,6 @@ export const applyPreset = (presetName, mode = 'light') => {
 
   // 💾 Sauvegarde le preset dans localStorage pour persister après rechargement
   localStorage.setItem('theme-preset', presetName)
-
-  console.log(`✅ Thème "${presetName}" (${mode}) appliqué avec succès !`)
 }
 
 /**

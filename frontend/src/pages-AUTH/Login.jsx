@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User2, Lock, Mail, Loader2 } from 'lucide-react'
+import { User2, Lock, Mail, Loader2, Eye, EyeOff } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeSwitchDarklight'
 import ThemeSelector from '@/components/Theme'
 import { authService } from '@/services/auth.service'
 import { useToast } from '@/components/ui/toast'
 import { logger as Logger } from '@/services/graphql-errors'
+import { Input } from '@/components/ui/input'
+
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -102,14 +105,15 @@ export default function Login() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <input
+                <Input
                   id="username"
                   type="text"
+                  autoComplete="username"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="pl-10" // Ajoute juste le padding gauche pour l'icône
                   placeholder="Email ou nom d'utilisateur"
                 />
               </div>
@@ -117,21 +121,42 @@ export default function Login() {
 
             {/* Champ Mot de passe */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-                Mot de passe
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                  Mot de passe
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                  className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none flex items-center gap-1.5 text-xs font-medium"
+                >
+                  {showPassword ? (
+                    <>
+                      <EyeOff className="h-3.5 w-3.5" />
+                      Masquer
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-3.5 w-3.5" />
+                      Afficher
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <input
+                <Input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="block w-full pl-10 pr-3 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="pl-10" // Ajoute juste le padding gauche pour l'icône
                   placeholder="********"
                 />
               </div>

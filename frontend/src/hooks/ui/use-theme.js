@@ -62,8 +62,29 @@ export function useTheme() {
       }
     }
 
+    // Écoute aussi les changements de classe 'dark' sur documentElement
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark')
+      const currentTheme = isDark ? 'dark' : 'light'
+      // Met à jour l'état seulement s'il a changé
+      setThemeState(prev => {
+        if (prev !== currentTheme) {
+          return currentTheme
+        }
+        return prev
+      })
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
     mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange)
+      observer.disconnect()
+    }
   }, [])
 
   return {

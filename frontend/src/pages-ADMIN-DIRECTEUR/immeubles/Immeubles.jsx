@@ -198,12 +198,7 @@ export default function Immeubles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Immeubles</h1>
-          <p className="text-muted-foreground text-base">{description}</p>
-        </div>
-
+      <div className="flex justify-end">
         {/* Toggle entre vue liste et vue carte */}
         <div className="flex gap-2">
           <Button

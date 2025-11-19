@@ -181,10 +181,6 @@ export default function Managers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Managers</h1>
-        <p className="text-muted-foreground text-base">{description}</p>
-      </div>
       {/* Section d'information sur le système de rangs */}
       <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">

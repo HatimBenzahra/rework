@@ -43,8 +43,9 @@ export class RecordingService {
   private readonly awsAccessKey = process.env.AWS_ACCESS_KEY_ID!;
   private readonly awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY!;
 
+  // EgressClient needs HTTP(S) URL, convert if WSS provided
   private readonly egress = new EgressClient(
-    this.lkHost,
+    this.lkHost.replace(/^wss?:\/\//, 'https://'),
     this.lkApiKey,
     this.lkApiSecret,
   );

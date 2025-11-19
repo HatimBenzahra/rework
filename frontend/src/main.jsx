@@ -19,10 +19,10 @@ initTheme()
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes - données considérées fraîches
-      cacheTime: 10 * 60 * 1000, // 10 minutes - garde en cache
-      refetchOnWindowFocus: false, // Ne pas refetch au focus
-      retry: 1, // 1 retry en cas d'erreur
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
     mutations: {
       retry: 1,

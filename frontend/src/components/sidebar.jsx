@@ -21,7 +21,7 @@ import { useRole } from '@/contexts/userole'
 import { hasPermission, ROLES } from '@/hooks/metier/roleFilters'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible'
 import { useDetailsSections } from '@/contexts/DetailsSectionsContext'
-
+import { cn } from '@/lib/utils'
 import {
   Sidebar,
   SidebarContent,
@@ -391,17 +391,28 @@ export function AppSidebar() {
                       asChild={!item.disabled}
                       isActive={isActiveRoute(item.url)}
                       disabled={item.disabled}
-                      className={item.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                      tooltip={item.disabled ? 'Fonctionnalité bientôt disponible' : undefined}
+                      className={cn(
+                        'gap-3 data-[sidebar-collapsed=true]:justify-center data-[sidebar-collapsed=true]:px-0',
+                        item.disabled && 'opacity-50 cursor-not-allowed'
+                      )}
                     >
                       {item.disabled ? (
-                        <div className="flex items-center gap-2 w-full">
-                          <item.icon />
-                          <span>{item.title}</span>
+                        <div
+                          className="flex w-full items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Fonctionnalité bientôt disponible"
+                        >
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate data-[sidebar-collapsed=true]:hidden">
+                            {item.title}
+                          </span>
                         </div>
                       ) : (
-                        <Link to={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
+                        <Link to={item.url} className="flex w-full items-center gap-3">
+                          <item.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate data-[sidebar-collapsed=true]:hidden">
+                            {item.title}
+                          </span>
                         </Link>
                       )}
                     </SidebarMenuButton>
@@ -414,30 +425,35 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          {/* Affichage des informations utilisateur */}
           <SidebarMenuItem>
-            <div className="flex flex-col gap-2 p-2">
-              {/* Affichage des informations utilisateur */}
-              <div className="flex items-center gap-3 px-2 py-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <User2 className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Utilisateur</span>
-                  <span className="truncate text-xs capitalize text-muted-foreground">
-                    {currentRole}
-                  </span>
-                </div>
+            <SidebarMenuButton
+              size="lg"
+              tooltip={`Utilisateur - ${currentRole}`}
+              className="w-full"
+            >
+              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <User2 className="size-4" />
               </div>
-              {/* Bouton de déconnexion */}
-              <SidebarMenuButton
-                onClick={logout}
-                className="w-full bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
-                size="sm"
-              >
-                <ChevronUp className="h-4 w-4 rotate-180" />
-                <span>Se déconnecter</span>
-              </SidebarMenuButton>
-            </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-semibold">Utilisateur</span>
+                <span className="truncate text-xs capitalize text-muted-foreground">
+                  {currentRole}
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {/* Bouton de déconnexion */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={logout}
+              tooltip="Se déconnecter"
+              className="w-full bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground text-destructive font-medium transition-colors"
+              size="sm"
+            >
+              <ChevronUp className="h-4 w-4 rotate-180" />
+              <span>Se déconnecter</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
