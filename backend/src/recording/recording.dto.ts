@@ -31,12 +31,11 @@ export class StartRecordingInput {
   @Field({ nullable: true, defaultValue: true })
   audioOnly?: boolean;
 
-  /**
-   * Optionnel : si tu veux cibler UNIQUEMENT un participant
-   * (ex: "commercial-10"), utilise startParticipantEgress.
-   */
   @Field({ nullable: true })
   participantIdentity?: string;
+
+  @Field({ nullable: true })
+  immeubleId?: number;
 }
 
 @InputType()

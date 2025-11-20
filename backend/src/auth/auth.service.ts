@@ -71,84 +71,7 @@ export class AuthService {
         },
       );
 
-      const tokenData = response.data;
-
-      // Étape 2: Décoder le token pour extraire les groupes
-      const decodedToken = await this.validateTokenWithKeycloak(
-        tokenData.access_token,
-      );
-      // Log pour debug - afficher la structure complète du token
-      Logger.debug(
-        'AuthService',
-        '🔍 Token décodé complet:',
-        JSON.stringify(decodedToken, null, 2),
-      );
-      // Extraire les groupes (on va tester plusieurs emplacements possibles)
-      const groups = this.extractGroups(decodedToken);
-
-      Logger.debug('AuthService', '📋 Groupes extraits:', groups);
-
-      // Étape 3: Valider que l'utilisateur a au moins un groupe autorisé
-      const authorizedGroup = groups.find((group) =>
-        this.ALLOWED_GROUPS.includes(group),
-      );
-
-      if (!authorizedGroup) {
-        Logger.error(
-          'AuthService',
-          "❌ Aucun groupe autorisé trouvé. Groupes de l'utilisateur:",
-          groups,
-        );
-        throw new ForbiddenException('UNAUTHORIZED_GROUP');
-      }
-
-      // Étape 4: Mapper le groupe vers un rôle
-      const role = this.GROUP_TO_ROLE_MAP[authorizedGroup];
-
-      Logger.debug(
-        'AuthService',
-        'Connexion réussie - Groupe:',
-        authorizedGroup,
-        '- Rôle:',
-        role,
-      );
-      if (role === 'admin') {
-        const userInfo = this.extractUserInfo(decodedToken);
-        Logger.debug('AuthService', '✅ Admin authentifié:',userInfo.email);
-
-        return {
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          expires_in: tokenData.expires_in,
-          token_type: tokenData.token_type,
-          groups,
-          role,
-          userId: 0,
-          email: userInfo.email,
-        };
-      }
-      // Étape 5: Créer ou récupérer l'utilisateur dans la BD locale
-      const userInfo = this.extractUserInfo(decodedToken);
-      const userId = await this.findOrCreateUser(userInfo, role);
-
-      Logger.debug(
-        'AuthService',
-        '✅ Utilisateur synchronisé - ID:',
-        userId,
-        '- Email:',
-        userInfo.email,
-      );
-
-      return {
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        expires_in: tokenData.expires_in,
-        token_type: tokenData.token_type,
-        groups,
-        role,
-        userId,
-        email: userInfo.email,
-      };
+      return this.processAuthResponse(response.data);
     } catch (error: any) {
       // Si c'est une erreur de groupe non autorisé, la propager
       if (error instanceof ForbiddenException) {
@@ -168,6 +91,122 @@ export class AuthService {
       );
       throw new UnauthorizedException(message);
     }
+  }
+
+  async refreshToken(refreshToken: string): Promise<AuthResponse> {
+    const params = new URLSearchParams();
+    params.append('client_id', this.CLIENT_ID);
+    params.append('client_secret', this.CLIENT_SECRET);
+    params.append('grant_type', 'refresh_token');
+    params.append('refresh_token', refreshToken);
+
+    try {
+      const response: AxiosResponse<KeycloakTokenResponse> = await axios.post(
+        `${this.KEYCLOAK_BASE_URL}/realms/${this.REALM}/protocol/openid-connect/token`,
+        params.toString(),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        },
+      );
+
+      return this.processAuthResponse(response.data);
+    } catch (error: any) {
+      // Si c'est une erreur de groupe non autorisé, la propager
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+
+      const message =
+        error.response?.data?.error_description ||
+        error.response?.data?.error ||
+        'Token refresh failed';
+
+      Logger.error('AuthService', '❌ Erreur refresh token Keycloak:', message);
+      throw new UnauthorizedException(message);
+    }
+  }
+
+  private async processAuthResponse(
+    tokenData: KeycloakTokenResponse,
+  ): Promise<AuthResponse> {
+    // Étape 2: Décoder le token pour extraire les groupes
+    const decodedToken = await this.validateTokenWithKeycloak(
+      tokenData.access_token,
+    );
+    // Log pour debug - afficher la structure complète du token
+    Logger.debug(
+      'AuthService',
+      '🔍 Token décodé complet:',
+      JSON.stringify(decodedToken, null, 2),
+    );
+    // Extraire les groupes (on va tester plusieurs emplacements possibles)
+    const groups = this.extractGroups(decodedToken);
+
+    Logger.debug('AuthService', '📋 Groupes extraits:', groups);
+
+    // Étape 3: Valider que l'utilisateur a au moins un groupe autorisé
+    const authorizedGroup = groups.find((group) =>
+      this.ALLOWED_GROUPS.includes(group),
+    );
+
+    if (!authorizedGroup) {
+      Logger.error(
+        'AuthService',
+        "❌ Aucun groupe autorisé trouvé. Groupes de l'utilisateur:",
+        groups,
+      );
+      throw new ForbiddenException('UNAUTHORIZED_GROUP');
+    }
+
+    // Étape 4: Mapper le groupe vers un rôle
+    const role = this.GROUP_TO_ROLE_MAP[authorizedGroup];
+
+    Logger.debug(
+      'AuthService',
+      'Connexion réussie - Groupe:',
+      authorizedGroup,
+      '- Rôle:',
+      role,
+    );
+    if (role === 'admin') {
+      const userInfo = this.extractUserInfo(decodedToken);
+      Logger.debug('AuthService', '✅ Admin authentifié:', userInfo.email);
+
+      return {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_in: tokenData.expires_in,
+        token_type: tokenData.token_type,
+        groups,
+        role,
+        userId: 0,
+        email: userInfo.email,
+      };
+    }
+    // Étape 5: Créer ou récupérer l'utilisateur dans la BD locale
+    const userInfo = this.extractUserInfo(decodedToken);
+    const userId = await this.findOrCreateUser(userInfo, role);
+
+    Logger.debug(
+      'AuthService',
+      '✅ Utilisateur synchronisé - ID:',
+      userId,
+      '- Email:',
+      userInfo.email,
+    );
+
+    return {
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_in: tokenData.expires_in,
+      token_type: tokenData.token_type,
+      groups,
+      role,
+      userId,
+      email: userInfo.email,
+    };
   }
 
   /**

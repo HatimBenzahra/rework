@@ -8,6 +8,7 @@ import { AppLoadingProvider } from '@/contexts/AppLoadingProvider'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import NetworkErrorBoundary from '@/components/NetworkErrorBoundary'
 import LoadingScreen from '@/components/LoadingScreen'
+import SessionManager from '@/components/SessionManager'
 
 // Lazy load auth pages
 const Login = lazy(() => import('@/pages-AUTH/Login'))
@@ -211,6 +212,7 @@ function App() {
         <ToastProvider>
           <AppLoadingProvider>
             <RoleProvider>
+              <SessionManager />
               <Suspense fallback={<LoadingScreen />}>
                 <Routes>
                   {/* Routes publiques */}

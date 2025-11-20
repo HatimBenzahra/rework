@@ -6,8 +6,7 @@ export default function Unauthorized() {
     // Nettoyer le localStorage
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userGroups')
+    localStorage.removeItem('token_expires_at (minutes)')
 
     // Rediriger vers la page de login
     window.location.href = '/login'

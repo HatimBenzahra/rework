@@ -240,6 +240,7 @@ type Mutation {
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
+  refreshToken(refreshToken: String!): AuthResponse!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!
   removeEtageFromImmeuble(id: Int!): Immeuble!
@@ -342,6 +343,7 @@ input StartMonitoringInput {
 
 input StartRecordingInput {
   audioOnly: Boolean = true
+  immeubleId: Float
   participantIdentity: String
   roomName: String!
 }

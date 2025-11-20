@@ -1,5 +1,5 @@
 import { graphqlClient } from './graphql-client'
-
+import { logger as Logger } from '@/services/graphql-errors'
 // GraphQL Queries pour les enregistrements
 const LIST_RECORDINGS = `
   query ListRecordings($roomName: String!) {
@@ -97,9 +97,14 @@ export class RecordingService {
   /**
    * Démarre un enregistrement pour un utilisateur (commercial ou manager)
    */
-  static async startRecording(userId, userType, audioOnly = true) {
+  static async startRecording(userId, userType, audioOnly = true, immeubleId = null) {
     try {
-      console.log('🔧 Service startRecording appelé avec:', { userId, userType, audioOnly })
+      Logger.debug('🔧 Service startRecording appelé avec:', {
+        userId,
+        userType,
+        audioOnly,
+        immeubleId,
+      })
 
       const roomName = `room:${userType.toLowerCase()}:${userId}`
 
@@ -113,15 +118,16 @@ export class RecordingService {
         input: {
           roomName,
           audioOnly,
+          immeubleId,
           // Room composite : fonctionne parfaitement
           // participantIdentity non spécifié = room composite
         },
       })
 
-      console.log('✅ Réponse startRecording:', data.startRecording)
+      Logger.debug('✅ Réponse startRecording:', data.startRecording)
       return data.startRecording
     } catch (error) {
-      console.error('❌ Erreur démarrage enregistrement:', error)
+      Logger.debug('❌ Erreur démarrage enregistrement:', error)
       throw error
     }
   }
@@ -131,16 +137,16 @@ export class RecordingService {
    */
   static async stopRecording(egressId) {
     try {
-      console.log('🛑 Arrêt enregistrement, egressId:', egressId)
+      Logger.debug('🛑 Arrêt enregistrement, egressId:', egressId)
 
       const data = await graphqlClient.request(STOP_RECORDING, {
         input: { egressId },
       })
 
-      console.log('✅ Réponse stopRecording:', data.stopRecording)
+      Logger.debug('✅ Réponse stopRecording:', data.stopRecording)
       return data.stopRecording
     } catch (error) {
-      console.error('❌ Erreur arrêt enregistrement:', error)
+      Logger.debug('❌ Erreur arrêt enregistrement:', error)
       throw error
     }
   }
@@ -165,7 +171,7 @@ export class RecordingService {
       const data = await graphqlClient.request(GET_STREAMING_URL, { key })
       return data.getStreamingUrl
     } catch (error) {
-      console.error('Erreur génération URL streaming:', error)
+      Logger.debug('Erreur génération URL streaming:', error)
       throw error
     }
   }

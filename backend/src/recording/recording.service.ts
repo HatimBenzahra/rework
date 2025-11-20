@@ -246,7 +246,12 @@ export class RecordingService {
     input: StartRecordingInput,
     currentUser: { id: number; role: string },
   ): Promise<RecordingResult> {
-    const { roomName, audioOnly = true, participantIdentity } = input;
+    const {
+      roomName,
+      audioOnly = true,
+      participantIdentity,
+      immeubleId,
+    } = input;
 
     const target = await this.ensureRoomAccess(
       roomName,
@@ -266,9 +271,21 @@ export class RecordingService {
     const safe = this.safeRoom(roomName);
     const ts = new Date().toISOString().replace(/[:]/g, '-');
 
+    let addressPart = '';
+    if (immeubleId) {
+      const immeuble = await this.prisma.immeuble.findUnique({
+        where: { id: immeubleId },
+        select: { adresse: true },
+      });
+      if (immeuble?.adresse) {
+        // Nettoyage de l'adresse pour le nom de fichier
+        addressPart = immeuble.adresse.replace(/[^a-z0-9]/gi, '_') + '_';
+      }
+    }
+
     // OGG (léger). Pour compat Safari, remplace par MP4:
     // fileType: EncodedFileType.MP4, fileKey = `${...}.mp4`
-    const fileKey = `${this.prefix}${safe}/${ts}.mp4`;
+    const fileKey = `${this.prefix}${safe}/${addressPart}${ts}.mp4`;
 
     const fileOutput = new EncodedFileOutput({
       fileType: EncodedFileType.MP4,

@@ -71,6 +71,22 @@ const LOGIN_MUTATION = `
   }
 `
 
+const REFRESH_TOKEN_MUTATION = `
+  mutation RefreshToken($refreshToken: String!) {
+    refreshToken(refreshToken: $refreshToken) {
+      access_token
+      refresh_token
+      expires_in
+      token_type
+      scope
+      groups
+      role
+      userId
+      email
+    }
+  }
+`
+
 // =============================================================================
 // Auth Service Class
 // =============================================================================
@@ -116,6 +132,30 @@ export class AuthService {
   }
 
   /**
+   * Rafraîchit le token d'accès
+   */
+  async refreshToken(): Promise<AuthResponse | null> {
+    const refreshToken = this.getRefreshToken()
+    if (!refreshToken) return null
+
+    try {
+      const data = await graphqlClient.request<{ refreshToken: AuthResponse }>(
+        REFRESH_TOKEN_MUTATION,
+        { refreshToken }
+      )
+
+      const authResponse = data.refreshToken
+      this.storeAuthData(authResponse)
+      graphqlClient.setAuthToken(authResponse.access_token)
+      return authResponse
+    } catch (error) {
+      console.error('Refresh token failed:', error)
+      this.logout()
+      return null
+    }
+  }
+
+  /**
    * Déconnexion : nettoie les données d'authentification
    */
   logout(): void {
@@ -137,6 +177,20 @@ export class AuthService {
       return payload.exp > now
     } catch {
       return false
+    }
+  }
+
+  /**
+   * Récupère l'expiration du token (timestamp en secondes)
+   */
+  getTokenExpiration(): number | null {
+    const token = this.getAccessToken()
+    if (!token) return null
+    try {
+      const payload = this.decodeToken(token)
+      return payload.exp
+    } catch {
+      return null
     }
   }
 

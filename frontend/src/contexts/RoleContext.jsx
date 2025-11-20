@@ -84,7 +84,6 @@ export const RoleProvider = ({ children }) => {
     }
   }, [navigate, location, isAppReady])
 
-  // Écouter les changements dans localStorage (pour mise à jour du contexte)
   useEffect(() => {
     let authChangeTimers = []
 
@@ -165,19 +164,6 @@ export const RoleProvider = ({ children }) => {
     }
   }, [])
 
-  const updateUserRole = useCallback(role => {
-    localStorage.setItem('userRole', role)
-    setCurrentRole(role)
-    // Dispatch custom event pour notifier les autres composants
-    window.dispatchEvent(new Event('auth-changed'))
-  }, [])
-
-  const updateUserId = useCallback(id => {
-    setCurrentUserId(id)
-    // Dispatch custom event pour notifier les autres composants
-    window.dispatchEvent(new Event('auth-changed'))
-  }, [])
-
   const logout = useCallback(() => {
     // Nettoyer les tokens et données d'authentification
     authService.logout()
@@ -200,8 +186,7 @@ export const RoleProvider = ({ children }) => {
     () => ({
       currentRole,
       currentUserId,
-      setUserRole: updateUserRole,
-      setUserId: updateUserId,
+
       logout,
       isAuthenticated: authService.isAuthenticated(),
       isAdmin: currentRole === ROLES.ADMIN,
@@ -209,7 +194,7 @@ export const RoleProvider = ({ children }) => {
       isManager: currentRole === ROLES.MANAGER,
       isCommercial: currentRole === ROLES.COMMERCIAL,
     }),
-    [currentRole, currentUserId, updateUserRole, updateUserId, logout]
+    [currentRole, currentUserId, logout]
   )
 
   // Charger les infos utilisateur depuis l'API au démarrage

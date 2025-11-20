@@ -53,7 +53,13 @@ export default function PortesGestion() {
     isRecording: _isRecording,
     isStarting: _isStarting,
     error: _recordingError,
-  } = useRecording(parseInt(currentUserId), userType, true, audioStatus?.audioConnected)
+  } = useRecording(
+    parseInt(currentUserId),
+    userType,
+    true,
+    audioStatus?.audioConnected,
+    parseInt(immeubleId, 10)
+  )
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base, getButtonClasses } = useCommercialTheme()

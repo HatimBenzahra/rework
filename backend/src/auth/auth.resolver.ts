@@ -15,6 +15,13 @@ export class AuthResolver {
   ): Promise<AuthResponse> {
     return this.authService.login(loginInput);
   }
+
+  @Mutation(() => AuthResponse)
+  async refreshToken(
+    @Args('refreshToken') refreshToken: string,
+  ): Promise<AuthResponse> {
+    return this.authService.refreshToken(refreshToken);
+  }
   //Ajout d'une nouvelle methode pour recuperer les informations de l'utilisateur connecte qui ne se base pas sur l'id mais directement sur l'email
   @Query(() => UserInfo)
   @UseGuards(JwtAuthGuard)

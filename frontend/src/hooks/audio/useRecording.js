@@ -15,7 +15,8 @@ export function useRecording(
   userId,
   userType = 'commercial',
   enabled = false,
-  audioConnected = false
+  audioConnected = false,
+  immeubleId = null
 ) {
   const [isRecording, setIsRecording] = useState(false)
   const [isStarting, setIsStarting] = useState(false)
@@ -60,9 +61,10 @@ export function useRecording(
         enabled,
         isRecording,
         isProcessingRef: isProcessingRef.current,
+        immeubleId,
       })
 
-      const result = await RecordingService.startRecording(userId, userType, true)
+      const result = await RecordingService.startRecording(userId, userType, true, immeubleId)
       logger.debug('Recording', '🎯 Result from RecordingService:', result)
 
       logger.info('Recording', '✅ Enregistrement démarré:', result)
@@ -81,7 +83,7 @@ export function useRecording(
       setIsStarting(false)
       isProcessingRef.current = false
     }
-  }, [userId, userType, enabled, audioConnected, isRecording, addCleanup])
+  }, [userId, userType, enabled, audioConnected, isRecording, addCleanup, immeubleId])
 
   /**
    * Arrête l'enregistrement et upload vers S3
