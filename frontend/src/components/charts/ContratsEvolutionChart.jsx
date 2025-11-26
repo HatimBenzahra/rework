@@ -81,7 +81,7 @@ export default function ContratsEvolutionChart({
 
   return (
     <Card>
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+      <CardHeader className="flex items-start gap-2 border-b sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
@@ -100,9 +100,9 @@ export default function ContratsEvolutionChart({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+      <CardContent className="px-2 pt-4 sm:px-4 sm:pt-6">
         <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
-          <AreaChart data={chartData}>
+          <AreaChart data={chartData} margin={{ left: -10, right: 10, top: 10, bottom: 10 }}>
             <defs>
               <linearGradient id="fillContratsSignes" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />
@@ -121,7 +121,7 @@ export default function ContratsEvolutionChart({
               tickMargin={8}
               minTickGap={32}
             />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={4} width={40} />
             <ChartTooltip
               cursor={false}
               content={
