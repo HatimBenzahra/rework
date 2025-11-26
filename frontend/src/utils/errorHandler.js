@@ -1,3 +1,5 @@
+import { captureException } from '../config/sentry.js'
+
 /**
  * Gestionnaire d'erreurs global pour l'application
  * Capture toutes les erreurs non gérées et les log
@@ -128,26 +130,22 @@ class ErrorHandler {
    * Envoyer l'erreur à un service de monitoring externe
    */
   sendToMonitoring(error) {
-    import('../config/sentry.js')
-      .then(sentryModule => {
-        const { captureException } = sentryModule
-
-        // Capturer l'exception dans Sentry (si configuré)
-        const sent = captureException(error.error || error, {
-          type: error.type,
-          url: error.url,
-          timestamp: error.timestamp,
-          userAgent: navigator.userAgent,
-        })
-
-        // Only log success in development
-        if (sent && import.meta.env.DEV) {
-          console.log('📤 Erreur envoyée à Sentry')
-        }
+    try {
+      // Capturer l'exception dans Sentry (si configuré)
+      const sent = captureException(error.error || error, {
+        type: error.type,
+        url: error.url,
+        timestamp: error.timestamp,
+        userAgent: navigator.userAgent,
       })
-      .catch(() => {
-        // Silent fail in production
-      })
+
+      // Only log success in development
+      if (sent && import.meta.env.DEV) {
+        console.log('📤 Erreur envoyée à Sentry')
+      }
+    } catch {
+      // Silent fail in production
+    }
   }
 
   /**

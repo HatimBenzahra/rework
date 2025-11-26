@@ -40,7 +40,7 @@ export default defineConfig({
             '@radix-ui/react-tooltip',
           ],
           'query-vendor': ['@tanstack/react-query'],
-          'mapbox-vendor': ['mapbox-gl', 'react-map-gl', '@mapbox/mapbox-gl-geocoder'],
+          'mapbox-vendor': ['mapbox-gl', 'react-map-gl/mapbox', '@mapbox/mapbox-gl-geocoder'],
           'chart-vendor': ['recharts'],
         },
         // Optimize chunk file names
@@ -50,10 +50,10 @@ export default defineConfig({
       },
     },
     // Increase chunk size warning limit
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 10000,
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
+    include: ['react', 'react-dom', 'react-router-dom', 'react-map-gl/mapbox'],
   },
 })
