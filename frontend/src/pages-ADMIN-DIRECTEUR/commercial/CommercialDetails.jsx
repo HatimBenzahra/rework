@@ -173,6 +173,13 @@ export default function CommercialDetails() {
 
   const statsCards = [
     {
+      title: 'Points totaux',
+      value: commercialData.points,
+      description: 'Score personnel',
+      icon: 'trendingUp',
+      fullWidth: true,
+    },
+    {
       title: 'Contrats signés',
       value: commercialData.totalContratsSignes,
       description: 'Total des contrats signés',
@@ -207,12 +214,6 @@ export default function CommercialDetails() {
       value: commercialData.totalImmeublesProspectes,
       description: 'Total des immeubles prospectés',
       icon: 'building',
-    },
-    {
-      title: 'Points totaux',
-      value: commercialData.points,
-      description: 'Score personnel',
-      icon: 'trendingUp',
     },
     {
       title: 'Taux de conversion par portes prospectées',

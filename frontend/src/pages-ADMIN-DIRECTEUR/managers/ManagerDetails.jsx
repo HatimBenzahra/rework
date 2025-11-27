@@ -443,6 +443,13 @@ export default function ManagerDetails() {
   // Stats personnelles du manager (basées sur ses propres stats)
   const personalStatsCards = [
     {
+      title: 'Points totaux',
+      value: managerData.points,
+      description: 'Score personnel',
+      icon: 'trendingUp',
+      fullWidth: true,
+    },
+    {
       title: 'Contrats signés',
       value: managerData.totalContratsSignes,
       description: 'Total des contrats signés',
@@ -477,12 +484,6 @@ export default function ManagerDetails() {
       value: managerData.totalImmeublesProspectes,
       description: 'Total des immeubles prospectés',
       icon: 'building',
-    },
-    {
-      title: 'Points totaux',
-      value: managerData.points,
-      description: 'Score personnel',
-      icon: 'trendingUp',
     },
     {
       title: 'Taux de conversion par portes prospectées',
