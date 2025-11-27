@@ -218,7 +218,7 @@ export default function ImmeublesList() {
               <p className={`${base.text.muted} mb-4`}>
                 {searchQuery
                   ? 'Aucun immeuble ne correspond à votre recherche'
-                  : "Vous n'avez pas encore d'immeubles assignés"}
+                  : "Vous n'avez pas encore d'immeubles prospectés"}
               </p>
               {!searchQuery && (
                 <Button

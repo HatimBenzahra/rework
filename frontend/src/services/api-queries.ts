@@ -112,6 +112,8 @@ export const GET_MANAGER_PERSONAL = `
         nbPortesParEtage
         ascenseurPresent
         digitalCode
+        latitude
+        longitude
         commercialId
         managerId
         zoneId
@@ -266,21 +268,7 @@ export const GET_MANAGER_FULL = `
         createdAt
         updatedAt
       }
-      statistics {
-        id
-        commercialId
-        managerId
-        immeubleId
-        zoneId
-        contratsSignes
-        immeublesVisites
-        rendezVousPris
-        refus
-        nbImmeublesProspectes
-        nbPortesProspectes
-        createdAt
-        updatedAt
-      }
+      
       personalStatistics {
         id
         commercialId

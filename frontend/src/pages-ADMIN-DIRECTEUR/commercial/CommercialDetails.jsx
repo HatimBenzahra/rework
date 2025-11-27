@@ -87,18 +87,20 @@ export default function CommercialDetails() {
   const assignedZones = useMemo(() => {
     if (!currentZone) return []
 
-    // Compter les immeubles de cette zone assignés au commercial
-    const immeublesCount =
-      commercial?.immeubles?.filter(immeuble => immeuble.zoneId === currentZone.zoneId).length || 0
+    // Filtrer les immeubles de la zone pour ne garder que ceux créés par ce commercial
+    const immeublesCreatedByCommercial = currentZone.zone?.immeubles?.filter(
+      imm => imm.commercialId === commercial?.id
+    ) || []
 
     return [
       {
         ...currentZone.zone,
+        immeubles: immeublesCreatedByCommercial, // Remplacer par les immeubles filtrés
         assignmentDate: currentZone.assignedAt,
-        immeublesCount,
+        immeublesCount: immeublesCreatedByCommercial.length,
       },
     ]
-  }, [currentZone, commercial])
+  }, [currentZone, commercial?.id])
 
   // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date)
   const immeublesTableData = useImmeublesTableData(
@@ -340,7 +342,7 @@ export default function CommercialDetails() {
     },
     {
       title: 'Immeubles prospectés',
-      description: 'Liste des immeubles assignés à ce commercial avec leurs statistiques',
+      description: 'Liste des immeubles prospectés par ce commercial avec leurs statistiques',
       type: 'custom',
       component: 'ImmeublesTable',
       data: {

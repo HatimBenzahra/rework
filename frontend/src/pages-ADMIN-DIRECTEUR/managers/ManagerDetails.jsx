@@ -176,17 +176,18 @@ export default function ManagerDetails() {
   const managerZones = useMemo(() => {
     if (!currentManagerZone) return []
 
-    // Compter les immeubles de cette zone
-    const immeublesCount = currentManagerZone.zone?.immeubles?.length || 0
+    // Utiliser directement les immeubles du manager (qui ont déjà les coordonnées)
+    const managerImmeubles = manager?.immeubles || []
 
     return [
       {
         ...currentManagerZone.zone,
-        immeublesCount,
+        immeubles: managerImmeubles, // Utiliser les immeubles du manager
+        immeublesCount: managerImmeubles.length,
         assignmentDate: currentManagerZone.assignedAt,
       },
     ]
-  }, [currentManagerZone])
+  }, [currentManagerZone, manager?.immeubles])
 
   // Gestion de l'assignation/désassignation
   const handleAssignCommercial = async commercialId => {
@@ -711,7 +712,7 @@ export default function ManagerDetails() {
     // Section des immeubles prospectés
     {
       title: 'Immeubles prospectés',
-      description: 'Liste des immeubles assignés à ce manager avec leurs statistiques',
+      description: 'Liste des immeubles prospectés par ce manager avec leurs statistiques',
       type: 'custom',
       render: () => (
         <AdvancedDataTable
@@ -798,6 +799,7 @@ export default function ManagerDetails() {
       data={managerData}
       personalInfo={personalInfo}
       statsCards={personalStatsCards}
+      assignedZones={managerZones}
       statsFilter={
         <DateRangeFilter
           className="h-fit"
@@ -812,7 +814,6 @@ export default function ManagerDetails() {
           title="Filtres de période"
         />
       }
-      assignedZones={managerData.equipe_taille > 0 ? managerZones : null}
       additionalSections={additionalSections}
     />
   )

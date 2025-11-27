@@ -160,7 +160,7 @@ export const getEntityDescription = (entity, userRole) => {
     immeubles: {
       [ROLES.ADMIN]: "Tous les immeubles gérés par l'entreprise",
       [ROLES.DIRECTEUR]: 'Immeubles gérés par votre division',
-      [ROLES.COMMERCIAL]: 'Vos immeubles assignés',
+      [ROLES.COMMERCIAL]: 'Vos immeubles',
     },
     statistics: {
       [ROLES.ADMIN]: "Statistiques de tous les commerciaux de l'entreprise",
