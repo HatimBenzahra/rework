@@ -3,35 +3,51 @@ import { filterStatisticsByDate, filterPortesByDate } from './useDateFilter'
 
 /**
  * Hook pour calculer les statistiques personnelles filtrées par date
+ * IMPORTANT: Calcule les stats à partir des PORTES filtrées, pas des statistiques
  * @param {Object} user - Utilisateur (manager ou commercial)
  * @param {string} appliedStartDate - Date de début appliquée
  * @param {string} appliedEndDate - Date de fin appliquée
  * @returns {Object} Statistiques personnelles calculées
  */
 export function usePersonalStats(user, appliedStartDate, appliedEndDate) {
-  // Filtrer les statistiques par date
-  const filteredStats = useMemo(() => {
-    if (!user?.statistics) return []
-    return filterStatisticsByDate(user.statistics, appliedStartDate, appliedEndDate)
-  }, [user?.statistics, appliedStartDate, appliedEndDate])
+  // Collecter toutes les portes de l'utilisateur
+  const allPortes = useMemo(() => {
+    if (!user?.immeubles) return []
+    return user.immeubles.reduce((acc, immeuble) => {
+      if (immeuble.portes) {
+        return [...acc, ...immeuble.portes]
+      }
+      return acc
+    }, [])
+  }, [user?.immeubles])
 
-  // Calculer les totaux
+  // Filtrer les portes par date
+  const filteredPortes = useMemo(() => {
+    return filterPortesByDate(allPortes, appliedStartDate, appliedEndDate)
+  }, [allPortes, appliedStartDate, appliedEndDate])
+
+  // Calculer les totaux à partir des portes filtrées
   const personalStats = useMemo(() => {
-    const totalContratsSignes = filteredStats.reduce((sum, stat) => sum + stat.contratsSignes, 0)
-    const totalImmeublesVisites = filteredStats.reduce(
-      (sum, stat) => sum + stat.immeublesVisites,
-      0
+    const totalContratsSignes = filteredPortes.filter(p => p.statut === 'CONTRAT_SIGNE').length
+    const totalRendezVousPris = filteredPortes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
+    const totalRefus = filteredPortes.filter(p => p.statut === 'REFUS').length
+    const totalPortesProspectes = filteredPortes.filter(p => p.statut !== 'NON_VISITE').length
+
+    // Compter les immeubles uniques visités
+    const immeublesVisitesSet = new Set(
+      filteredPortes
+        .filter(p => p.statut !== 'NON_VISITE')
+        .map(p => p.immeubleId)
     )
-    const totalRendezVousPris = filteredStats.reduce((sum, stat) => sum + stat.rendezVousPris, 0)
-    const totalRefus = filteredStats.reduce((sum, stat) => sum + stat.refus, 0)
-    const totalPortesProspectes = filteredStats.reduce(
-      (sum, stat) => sum + (stat.nbPortesProspectes || 0),
-      0
+    const totalImmeublesVisites = immeublesVisitesSet.size
+
+    // Compter les immeubles uniques prospectés
+    const immeublesProspectesSet = new Set(
+      filteredPortes
+        .filter(p => p.statut !== 'NON_VISITE')
+        .map(p => p.immeubleId)
     )
-    const totalImmeublesProspectes = filteredStats.reduce(
-      (sum, stat) => sum + (stat.nbImmeublesProspectes || 0),
-      0
-    )
+    const totalImmeublesProspectes = immeublesProspectesSet.size
 
     // Taux de conversion
     const tauxConversion_portes_prospectes =
@@ -52,9 +68,9 @@ export function usePersonalStats(user, appliedStartDate, appliedEndDate) {
       tauxConversion_portes_prospectes: `${tauxConversion_portes_prospectes}%`,
       tauxConversion_rdv_pris: `${tauxConversion_rdv_pris}%`,
     }
-  }, [filteredStats])
+  }, [filteredPortes])
 
-  return { filteredStats, personalStats }
+  return { filteredStats: filteredPortes, personalStats }
 }
 
 /**
