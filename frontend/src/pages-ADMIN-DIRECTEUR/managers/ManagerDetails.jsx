@@ -490,12 +490,14 @@ export default function ManagerDetails() {
       value: managerData.tauxConversion_portes_prospectes,
       description: 'Contrats / Portes prospectées',
       icon: 'trendingUp',
+      halfWidth: true,
     },
     {
       title: 'Taux de conversion par rendez-vous pris',
       value: managerData.tauxConversion_rdv_pris,
       description: 'Contrats / RDV pris',
       icon: 'trendingUp',
+      halfWidth: true,
     },
   ]
 

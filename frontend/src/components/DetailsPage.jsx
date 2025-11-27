@@ -493,7 +493,7 @@ export default function DetailsPage({
           {/* Cards normales en grille */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {statsCards
-              .filter(stat => !stat.fullWidth)
+              .filter(stat => !stat.fullWidth && !stat.halfWidth)
               .map((stat, index) => (
                 <Card key={index} className="border-2">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -529,6 +529,54 @@ export default function DetailsPage({
                 </Card>
               ))}
           </div>
+
+          {/* Cards demi-largeur (taux de conversion) */}
+          {statsCards.filter(stat => stat.halfWidth).length > 0 && (
+            <div className="grid gap-6 md:grid-cols-2 mt-6">
+              {statsCards
+                .filter(stat => stat.halfWidth)
+                .map((stat, index) => (
+                  <Card
+                    key={index}
+                    className="border-2 relative overflow-hidden"
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(45deg, transparent, transparent 10px, hsl(var(--muted) / 0.05) 10px, hsl(var(--muted) / 0.05) 20px)',
+                    }}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 border-b-2">
+                      <CardTitle className="text-base font-bold">{stat.title}</CardTitle>
+                      {stat.icon && (
+                        <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+                          {getIcon(stat.icon, stat.iconColor || 'text-primary', stat.iconClassName || 'h-4 w-4')}
+                        </div>
+                      )}
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <div className="text-3xl font-bold tracking-tight mb-2">{stat.value}</div>
+
+                      {stat.description && (
+                        <div className="mt-2">
+                          <p className="text-sm text-muted-foreground italic">{stat.description}</p>
+                        </div>
+                      )}
+                      {stat.trend && (
+                        <div className="mt-3 pt-3 border-t">
+                          <div
+                            className={`text-xs font-medium flex items-center gap-1 ${
+                              stat.trend.type === 'positive' ? 'text-green-600' : 'text-red-600'
+                            }`}
+                          >
+                            <TrendingUp className="h-3 w-3" />
+                            {stat.trend.value}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
