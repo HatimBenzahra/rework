@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Map, { Marker, Source, Layer, NavigationControl, useControl } from 'react-map-gl/mapbox'
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -517,7 +517,12 @@ export default function AssignedZoneCard({
                           Zone
                         </p>
                       </div>
-                      <p className="text-xl font-bold">{zone.nom}</p>
+                      <Link
+                        to={`/zones/${zone.id}`}
+                        className="text-xl font-bold hover:text-primary hover:underline transition-colors cursor-pointer"
+                      >
+                        {zone.nom}
+                      </Link>
                     </div>
 
                     <div className="flex flex-col space-y-2">
@@ -632,7 +637,7 @@ export default function AssignedZoneCard({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                        Immeubles géolocalisés
+                        Immeubles
                       </p>
                       <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
                     </div>
@@ -756,7 +761,7 @@ export default function AssignedZoneCard({
                 </div>
                 <div>
                   <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                    Immeubles géolocalisés
+                    Immeubles
                   </p>
                   <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
                 </div>
