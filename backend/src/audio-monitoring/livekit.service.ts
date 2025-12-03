@@ -13,9 +13,9 @@ export class LiveKitService {
   private readonly apiKey = process.env.LK_API_KEY!;
   private readonly apiSecret = process.env.LK_API_SECRET!;
 
-  // RoomServiceClient needs HTTP(S) URL, convert if WSS provided
+  // RoomServiceClient needs HTTP(S) URL, convert if WS(S) provided
   private readonly rsc = new RoomServiceClient(
-    this.host.replace(/^wss?:\/\//, 'https://'),
+    this.host.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://'),
     this.apiKey,
     this.apiSecret,
   );
@@ -43,7 +43,7 @@ export class LiveKitService {
     // Support both http(s) and ws(s) URLs for self-hosted
     const serverUrl = this.host.startsWith('ws')
       ? this.host
-      : this.host.replace(/^http/, 'ws');
+      : this.host.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://');
 
     return {
       serverUrl,
