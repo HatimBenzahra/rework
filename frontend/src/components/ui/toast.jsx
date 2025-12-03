@@ -39,11 +39,14 @@ export function useToast() {
     throw new Error('useToast must be used within ToastProvider')
   }
 
-  // Retourner une fonction toast compatible avec le pattern standard
-  return {
-    toast: context.addToast,
-    dismiss: context.removeToast,
-  }
+  // Mémoïser l'objet retourné pour éviter les re-renders infinis
+  return React.useMemo(
+    () => ({
+      toast: context.addToast,
+      dismiss: context.removeToast,
+    }),
+    [context.addToast, context.removeToast]
+  )
 }
 
 // Hook interne pour le Toaster qui accède directement au contexte

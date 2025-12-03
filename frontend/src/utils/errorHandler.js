@@ -10,28 +10,38 @@ class ErrorHandler {
     this.errors = []
     this.maxErrors = 50 // Garder les 50 dernières erreurs
     this.listeners = []
+    // Sauvegarder les références des handlers bound pour le cleanup
+    this.boundHandleError = null
+    this.boundHandlePromiseRejection = null
+    this.boundHandleResourceError = null
   }
 
   /**
    * Initialiser les listeners d'erreurs globaux
    */
   init() {
+    // Éviter la double initialisation
+    if (this.boundHandleError) {
+      return
+    }
+
+    // Créer et sauvegarder les références bound
+    this.boundHandleError = this.handleError.bind(this)
+    this.boundHandlePromiseRejection = this.handlePromiseRejection.bind(this)
+    this.boundHandleResourceError = event => {
+      if (event.target !== window) {
+        this.handleResourceError(event)
+      }
+    }
+
     // Capturer les erreurs JavaScript non gérées
-    window.addEventListener('error', this.handleError.bind(this))
+    window.addEventListener('error', this.boundHandleError)
 
     // Capturer les promesses rejetées non gérées
-    window.addEventListener('unhandledrejection', this.handlePromiseRejection.bind(this))
+    window.addEventListener('unhandledrejection', this.boundHandlePromiseRejection)
 
     // Capturer les erreurs de chargement de ressources
-    window.addEventListener(
-      'error',
-      event => {
-        if (event.target !== window) {
-          this.handleResourceError(event)
-        }
-      },
-      true
-    )
+    window.addEventListener('error', this.boundHandleResourceError, true)
 
     // Only log in development
     if (import.meta.env.DEV) {
@@ -220,8 +230,18 @@ class ErrorHandler {
    * Nettoyer les listeners
    */
   cleanup() {
-    window.removeEventListener('error', this.handleError)
-    window.removeEventListener('unhandledrejection', this.handlePromiseRejection)
+    if (this.boundHandleError) {
+      window.removeEventListener('error', this.boundHandleError)
+      this.boundHandleError = null
+    }
+    if (this.boundHandlePromiseRejection) {
+      window.removeEventListener('unhandledrejection', this.boundHandlePromiseRejection)
+      this.boundHandlePromiseRejection = null
+    }
+    if (this.boundHandleResourceError) {
+      window.removeEventListener('error', this.boundHandleResourceError, true)
+      this.boundHandleResourceError = null
+    }
     this.listeners = []
   }
 }
