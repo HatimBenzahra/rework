@@ -137,19 +137,7 @@ export default function CommercialRankingTable({
     return map
   }, [commercials])
 
-  // Grouper les commerciaux par manager
-  const commercialsByManager = useMemo(() => {
-    const map = new Map()
-    commercials.forEach(commercial => {
-      if (commercial.managerId) {
-        if (!map.has(commercial.managerId)) {
-          map.set(commercial.managerId, [])
-        }
-        map.get(commercial.managerId).push(commercial)
-      }
-    })
-    return map
-  }, [commercials])
+
 
   // Fonction helper pour obtenir les statistiques d'un utilisateur
   const getStatisticsForUser = (user, userType) => {
@@ -174,15 +162,11 @@ export default function CommercialRankingTable({
       case 'managers':
         if (hasGlobalStats) {
           const managerStats = statisticsByManager.get(user.id) || []
-          const managerCommercials = commercialsByManager.get(user.id) || []
-          const commercialStats = managerCommercials.flatMap(
-            commercial => statisticsByCommercial.get(commercial.id) || []
-          )
-          return [...managerStats, ...commercialStats]
+          // Retourner uniquement les statistiques personnelles (sans commercialId)
+          return managerStats.filter(stat => !stat.commercialId)
         }
-        return (commercialsByManager.get(user.id) || []).flatMap(
-          commercial => commercial.statistics || []
-        )
+        // Retourner les statistiques personnelles du manager
+        return (user.statistics || []).filter(stat => !stat.commercialId)
 
       default:
         return []
@@ -251,7 +235,6 @@ export default function CommercialRankingTable({
     statisticsByCommercial,
     statisticsByManager,
     commercialsByDirecteur,
-    commercialsByManager,
   ])
 
   if (!rankedUsers.length) {
@@ -341,8 +324,8 @@ export default function CommercialRankingTable({
         </div>
       </CardHeader>
       <CardContent>
-          <Table>
-            <TableHeader>
+        <Table>
+          <TableHeader>
             <TableRow>
               <TableHead className="w-16">Pos.</TableHead>
               <TableHead>{currentUserType?.label?.slice(0, -1) || 'Utilisateur'}</TableHead>
@@ -353,7 +336,7 @@ export default function CommercialRankingTable({
               <TableHead className="text-center">Taux Conv.</TableHead>
             </TableRow>
           </TableHeader>
-            <TableBody>
+          <TableBody>
             {rankedUsers.map(user => {
               const userTypeConfig = userTypes.find(t => t.key === user.userType)
               const userColor = userTypeConfig?.color || 'blue'
@@ -370,13 +353,12 @@ export default function CommercialRankingTable({
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                          userColor === 'blue'
-                            ? 'bg-blue-100 text-blue-700'
-                            : userColor === 'purple'
-                              ? 'bg-purple-100 text-purple-700'
-                              : 'bg-green-100 text-green-700'
-                        }`}
+                        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold ${userColor === 'blue'
+                          ? 'bg-blue-100 text-blue-700'
+                          : userColor === 'purple'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-green-100 text-green-700'
+                          }`}
                       >
                         {user.initials}
                       </div>
@@ -415,22 +397,21 @@ export default function CommercialRankingTable({
 
                   <TableCell className="text-center">
                     <span
-                      className={`font-medium ${
-                        user.tauxConversion >= 20
-                          ? 'text-green-600'
-                          : user.tauxConversion >= 10
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
-                      }`}
+                      className={`font-medium ${user.tauxConversion >= 20
+                        ? 'text-green-600'
+                        : user.tauxConversion >= 10
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                        }`}
                     >
                       {user.tauxConversion}%
                     </span>
                   </TableCell>
                 </TableRow>
               )
-              })}
-            </TableBody>
-          </Table>
+            })}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )

@@ -58,26 +58,19 @@ export default function DirecteurDetails() {
         c => c.directeurId === directeur.id || assignedManagers.some(m => m.id === c.managerId)
       ) || []
 
-    // Calculer les statistiques agrégées du directeur depuis toute sa division
-    const totalContratsSignes = allDirecteurCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.contratsSignes, 0)
-    }, 0)
+    // Utiliser les statistiques du directeur depuis la base de données
+    // Ces stats sont calculées automatiquement comme la somme des stats de ses managers et commerciaux directs
+    const directeurStats = directeur.statistics?.[0] || {
+      contratsSignes: 0,
+      immeublesVisites: 0,
+      rendezVousPris: 0,
+      refus: 0,
+    }
 
-    const totalImmeublesVisites = allDirecteurCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.immeublesVisites, 0)
-    }, 0)
-
-    const totalRendezVousPris = allDirecteurCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.rendezVousPris, 0)
-    }, 0)
-
-    const totalRefus = allDirecteurCommercials.reduce((sum, commercial) => {
-      const commercialStats = commercial.statistics || []
-      return sum + commercialStats.reduce((statSum, stat) => statSum + stat.refus, 0)
-    }, 0)
+    const totalContratsSignes = directeurStats.contratsSignes
+    const totalImmeublesVisites = directeurStats.immeublesVisites
+    const totalRendezVousPris = directeurStats.rendezVousPris
+    const totalRefus = directeurStats.refus
 
     // Taux de conversion
     const tauxConversion =

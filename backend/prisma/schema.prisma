@@ -26,6 +26,7 @@ model Directeur {
   managers        Manager[]
   commercials     Commercial[]
   zones           Zone[]
+  statistics      Statistic[]
 }
 
 model Manager {
@@ -108,6 +109,7 @@ model Statistic {
   id                    Int      @id @default(autoincrement())
   commercialId          Int?
   managerId             Int?
+  directeurId           Int?
   immeubleId            Int?
   zoneId                Int?
   contratsSignes        Int      // Nombre de contrats signés
@@ -121,6 +123,7 @@ model Statistic {
 
   commercial            Commercial? @relation(fields: [commercialId], references: [id])
   manager               Manager?    @relation(fields: [managerId], references: [id])
+  directeur             Directeur?  @relation(fields: [directeurId], references: [id])
   immeuble              Immeuble?   @relation(fields: [immeubleId], references: [id])
   zone                  Zone?       @relation(fields: [zoneId], references: [id])
 }

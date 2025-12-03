@@ -42,6 +42,10 @@ export class StatisticSyncService {
         if (immeuble.commercial.managerId) {
           await this.syncManagerStats(immeuble.commercial.managerId);
         }
+        // 4. Si le commercial a un directeur (sans manager), synchroniser aussi les stats du directeur
+        else if (immeuble.commercial.directeurId) {
+          await this.syncDirecteurStats(immeuble.commercial.directeurId);
+        }
       }
 
       // 4. Synchroniser les stats du manager si l'immeuble lui appartient directement
@@ -68,8 +72,37 @@ export class StatisticSyncService {
 
       this.logger.debug(`Stats mises à jour pour manager ${managerId}:`, realStats);
 
+      // Si le manager a un directeur, synchroniser aussi les stats du directeur
+      const manager = await this.prisma.manager.findUnique({
+        where: { id: managerId },
+        select: { directeurId: true }
+      });
+
+      if (manager?.directeurId) {
+        await this.syncDirecteurStats(manager.directeurId);
+      }
+
     } catch (error) {
       this.logger.error(`Erreur sync stats pour manager ${managerId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Met à jour les statistiques d'un directeur après modification
+   */
+  async syncDirecteurStats(directeurId: number): Promise<void> {
+    try {
+      // Calculer les nouvelles statistiques basées sur la somme des stats de ses managers et commerciaux
+      const realStats = await this.calculateDirecteurRealStats(directeurId);
+
+      // Mettre à jour ou créer la statistique
+      await this.upsertDirecteurStatistic(directeurId, realStats);
+
+      this.logger.debug(`Stats mises à jour pour directeur ${directeurId}:`, realStats);
+
+    } catch (error) {
+      this.logger.error(`Erreur sync stats pour directeur ${directeurId}:`, error);
       throw error;
     }
   }
@@ -209,6 +242,57 @@ export class StatisticSyncService {
   }
 
   /**
+   * Calcule les statistiques réelles d'un directeur basées sur la somme des stats de ses managers et commerciaux
+   */
+  private async calculateDirecteurRealStats(directeurId: number) {
+    // 1. Somme des stats de tous les managers du directeur
+    const managerStats = await this.prisma.statistic.aggregate({
+      where: {
+        manager: {
+          directeurId: directeurId
+        }
+      },
+      _sum: {
+        contratsSignes: true,
+        rendezVousPris: true,
+        refus: true,
+        immeublesVisites: true,
+        nbImmeublesProspectes: true,
+        nbPortesProspectes: true,
+      }
+    });
+
+    // 2. Somme des stats de TOUS les commerciaux du directeur (avec ou sans manager)
+    const commercialStats = await this.prisma.statistic.aggregate({
+      where: {
+        commercial: {
+          directeurId: directeurId
+        }
+      },
+      _sum: {
+        contratsSignes: true,
+        rendezVousPris: true,
+        refus: true,
+        immeublesVisites: true,
+        nbImmeublesProspectes: true,
+        nbPortesProspectes: true,
+      }
+    });
+
+    // 3. Fusionner les deux sommes
+    const stats = {
+      contratsSignes: (managerStats._sum.contratsSignes || 0) + (commercialStats._sum.contratsSignes || 0),
+      rendezVousPris: (managerStats._sum.rendezVousPris || 0) + (commercialStats._sum.rendezVousPris || 0),
+      refus: (managerStats._sum.refus || 0) + (commercialStats._sum.refus || 0),
+      immeublesVisites: (managerStats._sum.immeublesVisites || 0) + (commercialStats._sum.immeublesVisites || 0),
+      nbImmeublesProspectes: (managerStats._sum.nbImmeublesProspectes || 0) + (commercialStats._sum.nbImmeublesProspectes || 0),
+      nbPortesProspectes: (managerStats._sum.nbPortesProspectes || 0) + (commercialStats._sum.nbPortesProspectes || 0),
+    };
+
+    return stats;
+  }
+
+  /**
    * Met à jour ou crée une statistique pour un commercial
    */
   private async upsertStatistic(commercialId: number, stats: any) {
@@ -295,6 +379,49 @@ export class StatisticSyncService {
   }
 
   /**
+   * Met à jour ou crée une statistique pour un directeur
+   */
+  private async upsertDirecteurStatistic(directeurId: number, stats: any) {
+    // Récupérer la zone assignée au directeur via ZoneEnCours
+    const zoneEnCours = await this.prisma.zoneEnCours.findUnique({
+      where: {
+        userId_userType: {
+          userId: directeurId,
+          userType: 'DIRECTEUR',
+        },
+      },
+    });
+
+    const zoneId = zoneEnCours?.zoneId || null;
+
+    // Chercher d'abord s'il existe une stat pour ce directeur
+    const existingStat = await this.prisma.statistic.findFirst({
+      where: { directeurId: directeurId }
+    });
+
+    if (existingStat) {
+      // Mettre à jour (incluant zoneId)
+      return this.prisma.statistic.update({
+        where: { id: existingStat.id },
+        data: {
+          ...stats,
+          zoneId, // Synchroniser avec la zone du directeur
+          updatedAt: new Date()
+        }
+      });
+    } else {
+      // Créer (incluant zoneId)
+      return this.prisma.statistic.create({
+        data: {
+          directeurId: directeurId,
+          zoneId, // Assigner automatiquement la zone du directeur
+          ...stats
+        }
+      });
+    }
+  }
+
+  /**
    * Recalcule toutes les statistiques (job de maintenance)
    */
   async recalculateAllStats(): Promise<{ updated: number; errors: number }> {
@@ -330,6 +457,22 @@ export class StatisticSyncService {
           updated++;
         } catch (error) {
           this.logger.error(`Erreur recalcul stats manager ${manager.id}:`, error);
+          errors++;
+        }
+      }
+
+      // Récupérer tous les directeurs
+      const directeurs = await this.prisma.directeur.findMany({
+        select: { id: true }
+      });
+
+      for (const directeur of directeurs) {
+        try {
+          const stats = await this.calculateDirecteurRealStats(directeur.id);
+          await this.upsertDirecteurStatistic(directeur.id, stats);
+          updated++;
+        } catch (error) {
+          this.logger.error(`Erreur recalcul stats directeur ${directeur.id}:`, error);
           errors++;
         }
       }

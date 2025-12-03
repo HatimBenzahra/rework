@@ -18,6 +18,18 @@ export const GET_DIRECTEURS = `
       adresse
       createdAt
       updatedAt
+      statistics {
+        id
+        directeurId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
     }
   }
 `
@@ -33,6 +45,18 @@ export const GET_DIRECTEUR = `
       adresse
       createdAt
       updatedAt
+      statistics {
+        id
+        directeurId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
     }
   }
 `

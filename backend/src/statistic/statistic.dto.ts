@@ -19,6 +19,9 @@ export class Statistic {
   managerId?: number;
 
   @Field(() => Int, { nullable: true })
+  directeurId?: number;
+
+  @Field(() => Int, { nullable: true })
   immeubleId?: number;
 
   @Field(() => Int, { nullable: true })
@@ -56,6 +59,9 @@ export class CreateStatisticInput {
 
   @Field(() => Int, { nullable: true })
   managerId?: number;
+
+  @Field(() => Int, { nullable: true })
+  directeurId?: number;
 
   @Field(() => Int, { nullable: true })
   immeubleId?: number;

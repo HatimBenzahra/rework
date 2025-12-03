@@ -98,6 +98,7 @@ input CreatePorteInput {
 input CreateStatisticInput {
   commercialId: Int
   contratsSignes: Int!
+  directeurId: Int
   immeubleId: Int
   immeublesVisites: Int!
   managerId: Int
@@ -130,6 +131,7 @@ type Directeur {
   nom: String!
   numTelephone: String
   prenom: String!
+  statistics: [Statistic!]
   updatedAt: DateTime!
 }
 
@@ -352,6 +354,7 @@ type Statistic {
   commercialId: Int
   contratsSignes: Int!
   createdAt: DateTime!
+  directeurId: Int
   id: Int!
   immeubleId: Int
   immeublesVisites: Int!
@@ -452,6 +455,7 @@ input UpdatePorteInput {
 input UpdateStatisticInput {
   commercialId: Int
   contratsSignes: Int
+  directeurId: Int
   id: Int!
   immeubleId: Int
   immeublesVisites: Int

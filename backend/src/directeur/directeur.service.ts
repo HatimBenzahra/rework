@@ -22,6 +22,7 @@ export class DirecteurService {
         include: {
           managers: true,
           commercials: true,
+          statistics: true,
         },
       });
     }
@@ -32,6 +33,7 @@ export class DirecteurService {
           include: {
             managers: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -43,6 +45,7 @@ export class DirecteurService {
           include: {
             managers: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -58,6 +61,7 @@ export class DirecteurService {
           include: {
             managers: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -74,6 +78,7 @@ export class DirecteurService {
         include: {
           managers: true,
           commercials: true,
+          statistics: true,
         },
       });
     }
@@ -84,6 +89,7 @@ export class DirecteurService {
       include: {
         managers: true,
         commercials: true,
+        statistics: true,
       },
     });
 
