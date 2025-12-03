@@ -130,21 +130,42 @@ class ErrorHandler {
    * Envoyer l'erreur à un service de monitoring externe
    */
   sendToMonitoring(error) {
+    // Éviter les boucles infinies : ne pas envoyer les erreurs Sentry à Sentry
+    if (error.message?.includes('Sentry') || error.stack?.includes('Sentry')) {
+      return
+    }
+
     try {
+      // Créer une vraie Error si ce n'est pas déjà le cas
+      let errorToSend = error.error
+
+      if (!errorToSend || !(errorToSend instanceof Error)) {
+        errorToSend = new Error(error.message || 'Unknown error')
+        errorToSend.name = error.type || 'UnknownError'
+      }
+
       // Capturer l'exception dans Sentry (si configuré)
-      const sent = captureException(error.error || error, {
-        type: error.type,
-        url: error.url,
-        timestamp: error.timestamp,
-        userAgent: navigator.userAgent,
+      const sent = captureException(errorToSend, {
+        extra: {
+          type: error.type,
+          url: error.url,
+          timestamp: error.timestamp,
+          filename: error.filename,
+          lineno: error.lineno,
+          colno: error.colno,
+        }
       })
 
       // Only log success in development
       if (sent && import.meta.env.DEV) {
         console.log('📤 Erreur envoyée à Sentry')
       }
-    } catch {
-      // Silent fail in production
+    } catch (sentryError) {
+      // Ne surtout PAS logger cette erreur pour éviter la boucle infinie
+      // Silent fail en production
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ Échec envoi Sentry (ignoré):', sentryError.message)
+      }
     }
   }
 
