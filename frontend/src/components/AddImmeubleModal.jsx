@@ -85,6 +85,15 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
     }
   }, [open])
 
+  // Nettoyer les suggestions d'adresse lors du changement d'étape
+  // pour éviter les erreurs de manipulation DOM
+  useEffect(() => {
+    // Toujours nettoyer les suggestions quand on quitte l'étape 0 (adresse)
+    if (currentStep !== 0) {
+      setAddressSuggestions([])
+    }
+  }, [currentStep])
+
   // Debounced address search with Mapbox
   useEffect(() => {
     // Ne pas rechercher si l'adresse vient d'être sélectionnée
@@ -219,11 +228,16 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
+      // Nettoyer les suggestions d'adresse avant de changer d'étape
+      // pour éviter les erreurs DOM lors du démontage
+      setAddressSuggestions([])
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length - 1))
     }
   }
 
   const prevStep = () => {
+    // Nettoyer les suggestions d'adresse avant de changer d'étape
+    setAddressSuggestions([])
     setCurrentStep(prev => Math.max(prev - 1, 0))
   }
 
