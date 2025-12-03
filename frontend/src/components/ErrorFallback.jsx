@@ -34,11 +34,11 @@ export default function ErrorFallback({ error }) {
             Nous nous excusons pour le désagrément.
           </p>
 
-          {/* Message d'erreur technique (en mode développement) */}
-          {import.meta.env.DEV && error && (
+          {/* Message d'erreur technique (visible en prod pour faciliter le debug) */}
+          {error && (
             <div className="bg-muted p-4 rounded-lg border border-border mb-6 text-left">
               <p className="text-sm font-semibold text-foreground mb-2">
-                Détails techniques (visible en développement) :
+                Détails techniques :
               </p>
               <p className="text-xs font-mono text-muted-foreground break-all">
                 {error.toString()}
