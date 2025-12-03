@@ -40,10 +40,13 @@ export class LiveKitService {
 
     // toJwt() est SYNCHRONE → surtout pas de "await" ici
     const token = await at.toJwt();
-    // Support both http(s) and ws(s) URLs for self-hosted
-    const serverUrl = this.host.startsWith('ws')
-      ? this.host
-      : this.host.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://');
+    
+    // ✅ Utilisation du proxy WebSocket via le backend NestJS
+    // Cela permet de convertir WSS (Front) -> WS (LiveKit) et éviter les erreurs Mixed Content
+    // Utilise PUBLIC_URL de l'env ou fallback sur localhost:3000
+    // Si nous sommes en HTTPS (production/dev sécurisé), on utilise wss://
+    const publicHost = process.env.PUBLIC_HOST || 'localhost:3000';
+    const serverUrl = `wss://${publicHost}/livekit-proxy`;
 
     return {
       serverUrl,
