@@ -145,16 +145,26 @@ class ErrorHandler {
       }
 
       // Capturer l'exception dans Sentry (si configuré)
-      const sent = captureException(errorToSend, {
-        extra: {
-          type: error.type,
-          url: error.url,
-          timestamp: error.timestamp,
-          filename: error.filename,
-          lineno: error.lineno,
-          colno: error.colno,
-        }
-      })
+      // Inclure toutes les métadonnées pertinentes selon le type d'erreur
+      const extra = {
+        type: error.type,
+        url: error.url,
+        timestamp: error.timestamp,
+      }
+
+      // Ajouter les données spécifiques selon le type
+      if (error.type === 'javascript') {
+        extra.filename = error.filename
+        extra.lineno = error.lineno
+        extra.colno = error.colno
+      } else if (error.type === 'resource') {
+        extra.resource = error.resource
+        extra.src = error.src
+      } else if (error.type === 'promise') {
+        extra.reason = error.reason
+      }
+
+      const sent = captureException(errorToSend, { extra })
 
       // Only log success in development
       if (sent && import.meta.env.DEV) {
