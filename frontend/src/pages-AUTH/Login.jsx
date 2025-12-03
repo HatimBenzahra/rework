@@ -57,7 +57,7 @@ export default function Login() {
       toast({
         title: 'Erreur de connexion',
         description: errorMessage,
-        variant: 'destructive',
+        variant: 'error',
       })
     } finally {
       setIsLoading(false)

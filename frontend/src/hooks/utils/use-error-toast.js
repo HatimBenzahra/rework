@@ -17,7 +17,7 @@ import {
  * @returns {Object} Fonctions pour gérer les erreurs
  */
 export function useErrorToast() {
-  const { addToast } = useToast()
+  const { toast } = useToast()
 
   /**
    * Affiche un toast d'erreur avec message convivial
@@ -61,7 +61,7 @@ export function useErrorToast() {
       }
 
       // Afficher le toast
-      addToast({
+      toast({
         title,
         description: message,
         variant: 'error',
@@ -69,7 +69,7 @@ export function useErrorToast() {
         ...options,
       })
     },
-    [addToast]
+    [toast]
   )
 
   /**
@@ -77,7 +77,7 @@ export function useErrorToast() {
    */
   const showSuccess = useCallback(
     (message, options = {}) => {
-      addToast({
+      toast({
         title: options.title || 'Succès',
         description: message,
         variant: 'success',
@@ -85,7 +85,7 @@ export function useErrorToast() {
         ...options,
       })
     },
-    [addToast]
+    [toast]
   )
 
   /**
@@ -93,7 +93,7 @@ export function useErrorToast() {
    */
   const showWarning = useCallback(
     (message, options = {}) => {
-      addToast({
+      toast({
         title: options.title || 'Attention',
         description: message,
         variant: 'warning',
@@ -101,7 +101,7 @@ export function useErrorToast() {
         ...options,
       })
     },
-    [addToast]
+    [toast]
   )
 
   /**
@@ -109,7 +109,7 @@ export function useErrorToast() {
    */
   const showInfo = useCallback(
     (message, options = {}) => {
-      addToast({
+      toast({
         title: options.title || 'Information',
         description: message,
         variant: 'info',
@@ -117,7 +117,7 @@ export function useErrorToast() {
         ...options,
       })
     },
-    [addToast]
+    [toast]
   )
 
   return {
