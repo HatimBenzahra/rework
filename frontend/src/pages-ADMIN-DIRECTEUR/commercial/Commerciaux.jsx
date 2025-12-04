@@ -1,25 +1,23 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import {
-  useCommercials,
-  useCreateCommercial,
-  useUpdateCommercial,
-  useRemoveCommercial,
-  useManagers,
-  useDirecteurs,
-} from '@/services'
-import { useMemo } from 'react'
+import { useCommercials, useUpdateCommercial, useManagers, useDirecteurs } from '@/services'
+import { useMemo, memo } from 'react'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { calculateRank, RANKS } from '@/share/ranks'
 import { Card } from '@/components/ui/card'
-
+import { useRole } from '@/contexts/userole'
 const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   const baseColumns = [
     {
-      header: 'Nom Prénom',
-      accessor: 'name',
+      header: 'Nom',
+      accessor: 'nom',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Prénom',
+      accessor: 'prenom',
       sortable: true,
       className: 'font-medium',
     },
@@ -65,19 +63,12 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   return baseColumns
 }
 
-export default function Commerciaux() {
-  const { isAdmin, isDirecteur, currentRole, currentUserId } = useRole()
-  const {
-    data: commercials,
-    loading,
-    error,
-    refetch,
-  } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
-  const { mutate: createCommercial, loading: creating } = useCreateCommercial()
+export default memo(function Commerciaux() {
+  const { isAdmin, isDirecteur } = useRole()
+  const { data: commercials, loading, error, refetch } = useCommercials()
+  const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
-  const { mutate: removeCommercial, loading: deleting } = useRemoveCommercial()
   const { showError, showSuccess } = useErrorToast()
 
   // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
@@ -86,7 +77,7 @@ export default function Commerciaux() {
   // Récupération des permissions et description
   const permissions = useEntityPermissions('commerciaux')
   const description = useEntityDescription('commerciaux')
-
+  const columns = useMemo(() => getCommerciauxColumns(isAdmin, isDirecteur), [isAdmin, isDirecteur])
   // Préparer les données pour le tableau
   const tableData = useMemo(() => {
     if (!filteredCommercials) return []
@@ -135,14 +126,16 @@ export default function Commerciaux() {
 
       return {
         ...commercial,
-        name: `${commercial.prenom} ${commercial.nom}`,
+        nom: commercial.nom,
+        prenom: commercial.prenom,
+        columns,
         rankBadge,
         managerName,
         directeurName,
         createdAt: new Date(commercial.createdAt).toLocaleDateString('fr-FR'),
       }
     })
-  }, [filteredCommercials, managers, directeurs])
+  }, [filteredCommercials, managers, directeurs, columns])
 
   // Préparer les options pour les formulaires
   const managerOptions = useMemo(() => {
@@ -170,18 +163,6 @@ export default function Commerciaux() {
       section: 'Informations personnelles',
     },
     {
-      key: 'email',
-      label: 'Email',
-      type: 'email',
-      required: true,
-      section: 'Informations personnelles',
-      validate: value => {
-        if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          return 'Email invalide'
-        }
-      },
-    },
-    {
       key: 'numTel',
       label: 'Téléphone',
       type: 'tel',
@@ -207,31 +188,12 @@ export default function Commerciaux() {
     },
   ]
 
-  const handleAddCommercial = async formData => {
-    try {
-      await createCommercial({
-        nom: formData.nom,
-        prenom: formData.prenom,
-        email: formData.email,
-        numTel: formData.numTel,
-        age: parseInt(formData.age),
-        managerId: formData.managerId ? parseInt(formData.managerId) : undefined,
-      })
-      await refetch()
-      showSuccess('Commercial créé avec succès')
-    } catch (error) {
-      showError(error, 'Commerciaux.handleAddCommercial')
-      throw error
-    }
-  }
-
   const handleEditCommercial = async editedData => {
     try {
       await updateCommercial({
         id: editedData.id,
         nom: editedData.nom,
         prenom: editedData.prenom,
-        email: editedData.email,
         numTel: editedData.numTel,
         age: editedData.age ? parseInt(editedData.age) : undefined,
         managerId: editedData.managerId ? parseInt(editedData.managerId) : undefined,
@@ -240,17 +202,6 @@ export default function Commerciaux() {
       showSuccess('Commercial modifié avec succès')
     } catch (error) {
       showError(error, 'Commerciaux.handleEditCommercial')
-      throw error
-    }
-  }
-
-  const handleDeleteCommercial = async id => {
-    try {
-      await removeCommercial(id)
-      await refetch()
-      showSuccess('Commercial supprimé avec succès')
-    } catch (error) {
-      showError(error, 'Commerciaux.handleDeleteCommercial')
       throw error
     }
   }
@@ -293,13 +244,6 @@ export default function Commerciaux() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Commerciaux</h1>
-        <p className="text-muted-foreground text-base">
-          Gestion de l'équipe commerciale et suivi des performances
-        </p>
-      </div>
-
       {/* Section d'information sur le système de rangs */}
       <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">
@@ -345,15 +289,12 @@ export default function Commerciaux() {
         description={description}
         data={tableData}
         columns={getCommerciauxColumns(isAdmin, isDirecteur)}
-        searchKey="name"
-        onAdd={permissions.canAdd ? handleAddCommercial : undefined}
-        addButtonText="Nouveau Commercial"
+        searchKey="nom"
         detailsPath="/commerciaux"
         editFields={commerciauxEditFields}
         onEdit={permissions.canEdit ? handleEditCommercial : undefined}
-        onDelete={permissions.canDelete ? handleDeleteCommercial : undefined}
-        loading={creating || updating || deleting}
+        loading={updating}
       />
     </div>
   )
-}
+})

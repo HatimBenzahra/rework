@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { EgressClient } from 'livekit-server-sdk';
 import {
   EncodedFileOutput,
@@ -17,6 +22,12 @@ import {
   EgressState,
   StartRecordingInput,
 } from './recording.dto';
+import { PrismaService } from '../prisma.service';
+
+type RoomTarget = {
+  type: 'COMMERCIAL' | 'MANAGER';
+  id: number;
+};
 
 @Injectable()
 export class RecordingService {
@@ -32,8 +43,9 @@ export class RecordingService {
   private readonly awsAccessKey = process.env.AWS_ACCESS_KEY_ID!;
   private readonly awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY!;
 
+  // EgressClient needs HTTP(S) URL, convert if WSS provided
   private readonly egress = new EgressClient(
-    this.lkHost,
+    this.lkHost.replace(/^wss?:\/\//, 'https://'),
     this.lkApiKey,
     this.lkApiSecret,
   );
@@ -52,6 +64,146 @@ export class RecordingService {
   }
 
   private urlCache = new Map<string, { url: string; expiry: number }>();
+
+  constructor(private prisma: PrismaService) {}
+
+  private normalizeRoomName(roomName: string): string {
+    if (roomName.includes(':')) {
+      return roomName;
+    }
+
+    // Retro-compat: accepter les anciens formats room_type_id
+    const legacy = roomName.split('_');
+    if (legacy.length === 3 && legacy[0] === 'room') {
+      return `room:${legacy[1]}:${legacy[2]}`;
+    }
+
+    return roomName;
+  }
+
+  private parseRoomIdentifier(roomName: string): RoomTarget | null {
+    const normalized = this.normalizeRoomName(roomName);
+    const parts = normalized.split(':');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const type = parts[1].toUpperCase();
+    const id = Number(parts[2]);
+
+    if (!Number.isFinite(id)) {
+      return null;
+    }
+
+    if (type !== 'COMMERCIAL' && type !== 'MANAGER') {
+      return null;
+    }
+
+    return { type: type as RoomTarget['type'], id };
+  }
+
+  private parseParticipantIdentity(identity?: string): RoomTarget | null {
+    if (!identity) {
+      return null;
+    }
+    const [rawType, rawId] = identity.split('-');
+    if (!rawType || !rawId) {
+      return null;
+    }
+    const type = rawType.toUpperCase();
+    const id = Number(rawId);
+    if (!Number.isFinite(id)) {
+      return null;
+    }
+    if (type !== 'COMMERCIAL' && type !== 'MANAGER') {
+      return null;
+    }
+    return { type: type as RoomTarget['type'], id };
+  }
+
+  private async ensureRoomAccess(
+    roomName: string,
+    userId: number,
+    userRole: string,
+  ): Promise<RoomTarget | null> {
+    const target = this.parseRoomIdentifier(roomName);
+
+    if (!target) {
+      if (userRole === 'admin') {
+        return null;
+      }
+      throw new ForbiddenException('Invalid room identifier');
+    }
+
+    if (userRole === 'admin') {
+      return target;
+    }
+
+    if (target.type === 'COMMERCIAL') {
+      const commercial = await this.prisma.commercial.findUnique({
+        where: { id: target.id },
+        select: { id: true, managerId: true, directeurId: true },
+      });
+
+      if (!commercial) {
+        throw new NotFoundException('Commercial not found');
+      }
+
+      // Commercial peut accéder à lui-même
+      if (userRole === 'commercial' && commercial.id === userId) {
+        return target;
+      }
+
+      // Directeur peut accéder à ses commerciaux
+      if (userRole === 'directeur' && commercial.directeurId === userId) {
+        return target;
+      }
+
+      // Manager peut accéder à ses commerciaux
+      if (userRole === 'manager' && commercial.managerId === userId) {
+        return target;
+      }
+
+      throw new ForbiddenException('Access denied to this room');
+    }
+
+    if (target.type === 'MANAGER') {
+      const manager = await this.prisma.manager.findUnique({
+        where: { id: target.id },
+        select: { id: true, directeurId: true },
+      });
+
+      if (!manager) {
+        throw new NotFoundException('Manager not found');
+      }
+
+      // Directeur peut accéder à ses managers
+      if (userRole === 'directeur' && manager.directeurId === userId) {
+        return target;
+      }
+
+      // Manager peut accéder à lui-même
+      if (userRole === 'manager' && manager.id === userId) {
+        return target;
+      }
+
+      throw new ForbiddenException('Access denied to this room');
+    }
+
+    throw new ForbiddenException('Unsupported room target');
+  }
+
+  private extractRoomFromKey(key: string): string | null {
+    if (!key.startsWith(this.prefix)) {
+      return null;
+    }
+    const remainder = key.slice(this.prefix.length);
+    const [safeRoom] = remainder.split('/');
+    if (!safeRoom) {
+      return null;
+    }
+    return safeRoom.replace(/_/g, ':');
+  }
 
   private async signedUrlOrUndefined(key: string): Promise<string | undefined> {
     try {
@@ -90,15 +242,50 @@ export class RecordingService {
    * - Si `participantIdentity` est fourni → Participant Egress (cible unique)
    * - Sinon → Room Composite Egress.
    */
-  async startRecording(input: StartRecordingInput): Promise<RecordingResult> {
-    const { roomName, audioOnly = true, participantIdentity } = input;
+  async startRecording(
+    input: StartRecordingInput,
+    currentUser: { id: number; role: string },
+  ): Promise<RecordingResult> {
+    const {
+      roomName,
+      audioOnly = true,
+      participantIdentity,
+      immeubleId,
+    } = input;
+
+    const target = await this.ensureRoomAccess(
+      roomName,
+      currentUser.id,
+      currentUser.role,
+    );
+
+    if (participantIdentity && target) {
+      const parsed = this.parseParticipantIdentity(participantIdentity);
+      if (!parsed || parsed.type !== target.type || parsed.id !== target.id) {
+        throw new ForbiddenException(
+          'Participant identity does not match the room owner',
+        );
+      }
+    }
 
     const safe = this.safeRoom(roomName);
     const ts = new Date().toISOString().replace(/[:]/g, '-');
 
+    let addressPart = '';
+    if (immeubleId) {
+      const immeuble = await this.prisma.immeuble.findUnique({
+        where: { id: immeubleId },
+        select: { adresse: true },
+      });
+      if (immeuble?.adresse) {
+        // Nettoyage de l'adresse pour le nom de fichier
+        addressPart = immeuble.adresse.replace(/[^a-z0-9]/gi, '_') + '_';
+      }
+    }
+
     // OGG (léger). Pour compat Safari, remplace par MP4:
     // fileType: EncodedFileType.MP4, fileKey = `${...}.mp4`
-    const fileKey = `${this.prefix}${safe}/${ts}.mp4`;
+    const fileKey = `${this.prefix}${safe}/${addressPart}${ts}.mp4`;
 
     const fileOutput = new EncodedFileOutput({
       fileType: EncodedFileType.MP4,
@@ -147,18 +334,42 @@ export class RecordingService {
     };
   }
 
-  async stopRecording(egressId: string): Promise<boolean> {
+  async stopRecording(
+    egressId: string,
+    currentUser: { id: number; role: string },
+  ): Promise<boolean> {
     try {
+      const list = await this.egress.listEgress({ egressId });
+      const info: any = list[0];
+
+      if (info?.roomName) {
+        await this.ensureRoomAccess(
+          info.roomName,
+          currentUser.id,
+          currentUser.role,
+        );
+      } else if (currentUser.role !== 'admin') {
+        throw new ForbiddenException('Cannot verify recording ownership');
+      }
+
       await this.egress.stopEgress(egressId);
       return true;
     } catch (e: any) {
+      if (e instanceof ForbiddenException) {
+        throw e;
+      }
       this.logger.warn(`stopRecording(${egressId}): ${e?.message || e}`);
       // Si déjà FAILED/STOPPED, on considère OK pour l’UI
       return false;
     }
   }
 
-  async listRecordings(roomName: string): Promise<RecordingItem[]> {
+  async listRecordings(
+    roomName: string,
+    currentUser: { id: number; role: string },
+  ): Promise<RecordingItem[]> {
+    await this.ensureRoomAccess(roomName, currentUser.id, currentUser.role);
+
     const safe = this.safeRoom(roomName);
     const prefix = `${this.prefix}${safe}/`;
 
@@ -190,12 +401,26 @@ export class RecordingService {
     return out;
   }
 
-  async egressState(egressId: string): Promise<EgressState> {
+  async egressState(
+    egressId: string,
+    currentUser: { id: number; role: string },
+  ): Promise<EgressState> {
     const list = await this.egress.listEgress({ egressId });
     const info: any = list[0];
     if (!info) {
       return { egressId, status: 'UNKNOWN' };
     }
+
+    if (info.roomName) {
+      await this.ensureRoomAccess(
+        info.roomName,
+        currentUser.id,
+        currentUser.role,
+      );
+    } else if (currentUser.role !== 'admin') {
+      throw new ForbiddenException('Cannot verify recording ownership');
+    }
+
     return {
       egressId: info.egressId || info.id,
       status: String(info.status),
@@ -207,7 +432,17 @@ export class RecordingService {
   /**
    * Génère une URL optimisée pour le streaming audio
    */
-  async getStreamingUrl(key: string): Promise<string> {
+  async getStreamingUrl(
+    key: string,
+    currentUser: { id: number; role: string },
+  ): Promise<string> {
+    const roomName = this.extractRoomFromKey(key);
+    if (roomName) {
+      await this.ensureRoomAccess(roomName, currentUser.id, currentUser.role);
+    } else if (currentUser.role !== 'admin') {
+      throw new ForbiddenException('Unknown recording key');
+    }
+
     try {
       // URL avec headers optimisés pour streaming
       const command = new GetObjectCommand({

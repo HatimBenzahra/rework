@@ -2,18 +2,16 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeuble, useCommercials, useManagers, usePortesByImmeuble } from '@/services'
-import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 
 export default function ImmeubleDetails() {
   const { id } = useParams()
-  const { currentRole, currentUserId } = useRole()
 
   // API hooks
   const { data: immeuble, loading: immeubleLoading, error } = useImmeuble(parseInt(id))
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
   const { data: portes, loading: portesLoading } = usePortesByImmeuble(parseInt(id))
 
   // Transformation des données API vers format UI
@@ -296,7 +294,7 @@ export default function ImmeubleDetails() {
     <DetailsPage
       title={immeubleData.name}
       subtitle={`Immeuble - ${immeubleData.zone}`}
-      status={immeubleData.status}
+      status={'Immeuble'}
       data={immeubleData}
       personalInfo={personalInfo}
       statsCards={statsCards}

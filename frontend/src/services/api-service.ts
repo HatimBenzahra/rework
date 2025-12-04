@@ -14,6 +14,7 @@ import {
   GET_COMMERCIALS,
   GET_COMMERCIAL,
   GET_COMMERCIAL_FULL,
+  GET_COMMERCIAL_TEAM_RANKING,
   GET_ZONES,
   GET_ZONE,
   GET_IMMEUBLES,
@@ -30,6 +31,7 @@ import {
   GET_PORTES_BY_IMMEUBLE,
   GET_PORTES_MODIFIED_TODAY,
   GET_PORTES_RDV_TODAY,
+  GET_ME,
 } from './api-queries'
 
 import {
@@ -147,9 +149,11 @@ import type {
 // =============================================================================
 
 export const directeurApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Directeur[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<QueryDirecteursResponse, QueryDirecteursVariables>(GET_DIRECTEURS, {})
+  async getAll(): Promise<Directeur[]> {
+    const response = await gql<QueryDirecteursResponse, QueryDirecteursVariables>(
+      GET_DIRECTEURS,
+      {}
+    )
     return response.directeurs
   },
 
@@ -190,8 +194,7 @@ export const directeurApi = {
 // =============================================================================
 
 export const managerApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Manager[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
+  async getAll(): Promise<Manager[]> {
     const response = await gql<QueryManagersResponse, QueryManagersVariables>(GET_MANAGERS, {})
     return response.managers
   },
@@ -254,12 +257,8 @@ export const managerApi = {
 // =============================================================================
 
 export const commercialApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Commercial[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<QueryCommercialsResponse, { userId?: number; userRole?: string }>(
-      GET_COMMERCIALS,
-      {}
-    )
+  async getAll(): Promise<Commercial[]> {
+    const response = await gql<QueryCommercialsResponse, {}>(GET_COMMERCIALS, {})
     return response.commercials
   },
 
@@ -306,6 +305,34 @@ export const commercialApi = {
     return response.removeCommercial
   },
 
+  async getTeamRanking(commercialId: number): Promise<{
+    position: number
+    total: number
+    points: number
+    trend?: string | null
+    managerNom?: string | null
+    managerPrenom?: string | null
+    managerEmail?: string | null
+    managerNumTel?: string | null
+  }> {
+    const response = await gql<
+      {
+        commercialTeamRanking: {
+          position: number
+          total: number
+          points: number
+          trend?: string | null
+          managerNom?: string | null
+          managerPrenom?: string | null
+          managerEmail?: string | null
+          managerNumTel?: string | null
+        }
+      },
+      { commercialId: number }
+    >(GET_COMMERCIAL_TEAM_RANKING, { commercialId })
+    return response.commercialTeamRanking
+  },
+
   async assignZone(commercialId: number, zoneId: number): Promise<boolean> {
     const response = await gql<MutationAssignZoneResponse, AssignZoneVariables>(
       ASSIGN_ZONE_TO_COMMERCIAL,
@@ -328,12 +355,8 @@ export const commercialApi = {
 // =============================================================================
 
 export const zoneApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Zone[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<QueryZonesResponse, { userId?: number; userRole?: string }>(
-      GET_ZONES,
-      {}
-    )
+  async getAll(): Promise<Zone[]> {
+    const response = await gql<QueryZonesResponse, {}>(GET_ZONES, {})
     return response.zones
   },
 
@@ -387,18 +410,13 @@ export const zoneApi = {
     return response.currentUserAssignment
   },
 
-  async getAllZoneHistory(userId?: number, userRole?: string): Promise<any[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<any, { userId?: number; userRole?: string }>(GET_ALL_ZONE_HISTORY, {})
+  async getAllZoneHistory(): Promise<any[]> {
+    const response = await gql<any, {}>(GET_ALL_ZONE_HISTORY, {})
     return response.allZoneHistory
   },
 
-  async getAllCurrentAssignments(userId?: number, userRole?: string): Promise<any[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<any, { userId?: number; userRole?: string }>(
-      GET_ALL_CURRENT_ASSIGNMENTS,
-      {}
-    )
+  async getAllCurrentAssignments(): Promise<any[]> {
+    const response = await gql<any, {}>(GET_ALL_CURRENT_ASSIGNMENTS, {})
     return response.allCurrentAssignments
   },
 
@@ -413,12 +431,8 @@ export const zoneApi = {
 // =============================================================================
 
 export const immeubleApi = {
-  async getAll(userId?: number, userRole?: string): Promise<Immeuble[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<QueryImmeublesResponse, { userId?: number; userRole?: string }>(
-      GET_IMMEUBLES,
-      {}
-    )
+  async getAll(): Promise<Immeuble[]> {
+    const response = await gql<QueryImmeublesResponse, {}>(GET_IMMEUBLES, {})
     return response.immeubles
   },
 
@@ -489,12 +503,10 @@ export const immeubleApi = {
 // =============================================================================
 
 export const statisticApi = {
-  async getAll(commercialId?: number, userId?: number, userRole?: string): Promise<Statistic[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<
-      QueryStatisticsResponse,
-      { commercialId?: number; userId?: number; userRole?: string }
-    >(GET_STATISTICS, { commercialId })
+  async getAll(commercialId?: number): Promise<Statistic[]> {
+    const response = await gql<QueryStatisticsResponse, { commercialId?: number }>(GET_STATISTICS, {
+      commercialId,
+    })
     return response.statistics
   },
 
@@ -529,12 +541,8 @@ export const statisticApi = {
     return response.removeStatistic
   },
 
-  async getZoneStatistics(userId?: number, userRole?: string): Promise<ZoneStatistic[]> {
-    // userId et userRole sont ignorés - le backend utilise le JWT
-    const response = await gql<QueryZoneStatisticsResponse, { userId?: number; userRole?: string }>(
-      GET_ZONE_STATISTICS,
-      {}
-    )
+  async getZoneStatistics(): Promise<ZoneStatistic[]> {
+    const response = await gql<QueryZoneStatisticsResponse, {}>(GET_ZONE_STATISTICS, {})
     return response.zoneStatistics
   },
 
@@ -609,7 +617,22 @@ export const porteApi = {
 // Main API Export
 // =============================================================================
 
+// =============================================================================
+// Auth API
+// =============================================================================
+
+const authApi = {
+  /**
+   * Récupère les informations de l'utilisateur connecté depuis le JWT
+   */
+  async getMe() {
+    const data = await gql(GET_ME)
+    return data.me
+  },
+}
+
 export const api = {
+  auth: authApi,
   directeurs: directeurApi,
   managers: managerApi,
   commercials: commercialApi,

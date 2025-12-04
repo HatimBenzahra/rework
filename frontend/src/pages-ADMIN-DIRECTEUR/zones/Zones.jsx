@@ -18,7 +18,7 @@ import {
 } from '@/services'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useState, useMemo } from 'react'
-import { apiCache } from '@/services/api-cache'
+import { mapboxCache } from '@/services/api-cache'
 import { ROLES } from '@/hooks/metier/roleFilters'
 
 // Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
@@ -48,9 +48,9 @@ const fetchLocationName = async (longitude, latitude) => {
     }
   }
 
-  // Utiliser ton système de cache avec namespace et gestion de déduplication
-  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
-  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+  // Utiliser le cache dédié Mapbox avec namespace et gestion de déduplication
+  const cacheKey = mapboxCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return mapboxCache.fetchWithCache(cacheKey, fetchGeocode)
 }
 
 export default function Zones() {
@@ -68,23 +68,17 @@ export default function Zones() {
   const { currentRole, currentUserId } = useRole()
 
   // API hooks
-  const { data: zonesApi, refetch: refetchZones } = useZones(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: zonesApi, refetch: refetchZones } = useZones()
   const { mutate: createZone } = useCreateZone()
   const { mutate: updateZone } = useUpdateZone()
   const { mutate: removeZone } = useRemoveZone()
   const { mutate: assignZoneToCommercial } = useAssignZone()
   const { mutate: assignZoneToDirecteur } = useAssignZoneToDirecteur()
   const { mutate: assignZoneToManager } = useAssignZoneToManager()
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: allAssignments, refetch: refetchAssignments } = useAllCurrentAssignments(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: directeurs } = useDirecteurs()
+  const { data: managers } = useManagers()
+  const { data: commercials } = useCommercials()
+  const { data: allAssignments, refetch: refetchAssignments } = useAllCurrentAssignments()
 
   // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
   const filteredZones = useMemo(() => zonesApi || [], [zonesApi])
@@ -146,7 +140,7 @@ export default function Zones() {
       },
     },
     {
-      header: 'Date de création',
+      header: 'Date de création de la zone:',
       accessor: 'createdAt',
       sortable: true,
       className: 'hidden md:table-cell',
@@ -465,11 +459,6 @@ export default function Zones() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Zones</h1>
-        <p className="text-muted-foreground text-base">{description}</p>
-      </div>
-
       <AdvancedDataTable
         showStatusColumn={false}
         title="Liste des Zones"

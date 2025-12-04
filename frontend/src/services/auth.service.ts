@@ -71,6 +71,22 @@ const LOGIN_MUTATION = `
   }
 `
 
+const REFRESH_TOKEN_MUTATION = `
+  mutation RefreshToken($refreshToken: String!) {
+    refreshToken(refreshToken: $refreshToken) {
+      access_token
+      refresh_token
+      expires_in
+      token_type
+      scope
+      groups
+      role
+      userId
+      email
+    }
+  }
+`
+
 // =============================================================================
 // Auth Service Class
 // =============================================================================
@@ -116,6 +132,30 @@ export class AuthService {
   }
 
   /**
+   * Rafraîchit le token d'accès
+   */
+  async refreshToken(): Promise<AuthResponse | null> {
+    const refreshToken = this.getRefreshToken()
+    if (!refreshToken) return null
+
+    try {
+      const data = await graphqlClient.request<{ refreshToken: AuthResponse }>(
+        REFRESH_TOKEN_MUTATION,
+        { refreshToken }
+      )
+
+      const authResponse = data.refreshToken
+      this.storeAuthData(authResponse)
+      graphqlClient.setAuthToken(authResponse.access_token)
+      return authResponse
+    } catch (error) {
+      console.error('Refresh token failed:', error)
+      this.logout()
+      return null
+    }
+  }
+
+  /**
    * Déconnexion : nettoie les données d'authentification
    */
   logout(): void {
@@ -141,18 +181,55 @@ export class AuthService {
   }
 
   /**
-   * Récupère le rôle de l'utilisateur
+   * Récupère l'expiration du token (timestamp en secondes)
    */
-  getUserRole(): string | null {
-    return localStorage.getItem('userRole')
+  getTokenExpiration(): number | null {
+    const token = this.getAccessToken()
+    if (!token) return null
+    try {
+      const payload = this.decodeToken(token)
+      return payload.exp
+    } catch {
+      return null
+    }
   }
 
   /**
-   * Récupère les groupes de l'utilisateur
+   * Récupère le rôle de l'utilisateur depuis le JWT token
+   */
+  getUserRole(): string | null {
+    const token = this.getAccessToken()
+    if (!token) return null
+
+    try {
+      const payload = this.decodeToken(token)
+      const groups = payload.groups || []
+
+      // Mapper le groupe au rôle
+      for (const group of groups) {
+        if (GROUP_TO_ROLE_MAP[group]) {
+          return GROUP_TO_ROLE_MAP[group]
+        }
+      }
+      return null
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Récupère les groupes de l'utilisateur depuis le JWT token
    */
   getUserGroups(): string[] {
-    const groups = localStorage.getItem('userGroups')
-    return groups ? JSON.parse(groups) : []
+    const token = this.getAccessToken()
+    if (!token) return []
+
+    try {
+      const payload = this.decodeToken(token)
+      return payload.groups || []
+    } catch {
+      return []
+    }
   }
 
   /**
@@ -181,24 +258,11 @@ export class AuthService {
     }
   }
 
-  /**
-   * Stocke les données d'authentification dans le localStorage
-   */
   private storeAuthData(authResponse: AuthResponse): void {
     localStorage.setItem('access_token', authResponse.access_token)
     localStorage.setItem('refresh_token', authResponse.refresh_token)
-    localStorage.setItem('userRole', authResponse.role)
-    localStorage.setItem('userId', authResponse.userId.toString())
-    localStorage.setItem('userGroups', JSON.stringify(authResponse.groups))
-
-    // Stocker l'email si disponible
-    if (authResponse.email) {
-      localStorage.setItem('userEmail', authResponse.email)
-    }
-
-    // Stocker l'expiration
-    const expiresAt = Date.now() + authResponse.expires_in * 1000
-    localStorage.setItem('token_expires_at', expiresAt.toString())
+    const expiresAt = authResponse.expires_in / 60
+    localStorage.setItem('token_expires_at (minutes)', expiresAt.toString())
   }
 
   /**
@@ -207,11 +271,7 @@ export class AuthService {
   private clearAuthData(): void {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
-    localStorage.removeItem('userRole')
-    localStorage.removeItem('userId')
-    localStorage.removeItem('userEmail')
-    localStorage.removeItem('userGroups')
-    localStorage.removeItem('token_expires_at')
+    localStorage.removeItem('token_expires_at (minutes)')
   }
 
   /**
@@ -234,22 +294,7 @@ export class AuthService {
   }
 
   /**
-   * Extrait l'ID utilisateur depuis le token
-   */
-  getUserId(): string | null {
-    const token = this.getAccessToken()
-    if (!token) return null
-
-    try {
-      const payload = this.decodeToken(token)
-      return payload.sub || null
-    } catch {
-      return null
-    }
-  }
-
-  /**
-   * Extrait l'email depuis le token
+   * Extrait l'email depuis le token JWT
    */
   getUserEmail(): string | null {
     const token = this.getAccessToken()

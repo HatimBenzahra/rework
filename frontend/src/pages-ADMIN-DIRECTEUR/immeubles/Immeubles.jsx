@@ -8,7 +8,6 @@ import {
   useManagers,
 } from '@/services'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useMemo, useState } from 'react'
 import AssignedZoneCard from '@/components/AssignedZoneCard'
@@ -29,14 +28,11 @@ const immeublesColumns = [
     cell: row => `${row.floors} étages`,
   },
   {
-    header: 'Portes/Étage',
-    accessor: 'doors_per_floor',
+    header: 'contrats signés',
+    accessor: 'contrats_signes',
+    sortable: true,
     className: 'hidden md:table-cell text-center',
-  },
-  {
-    header: 'Total Portes',
-    accessor: 'total_doors',
-    className: 'hidden lg:table-cell text-center',
+    cell: row => `${row.contrats_signes} contrats`,
   },
   {
     header: 'Couverture',
@@ -99,17 +95,10 @@ export default function Immeubles() {
   const { showError, showSuccess } = useErrorToast()
   const [viewMode, setViewMode] = useState('list') // 'list' ou 'map'
 
-  // Récupération du rôle de l'utilisateur
-  const { currentRole, currentUserId } = useRole()
-
   // API hooks
-  const {
-    data: immeublesApi,
-    loading: immeublesLoading,
-    refetch,
-  } = useImmeubles(parseInt(currentUserId, 10), currentRole)
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 
@@ -119,6 +108,10 @@ export default function Immeubles() {
   // Récupération des permissions et description
   const permissions = useEntityPermissions('immeubles')
   const description = useEntityDescription('immeubles')
+
+  function calculnbcontrats(immeuble) {
+    return (immeuble.portes || []).filter(p => p.statut === 'CONTRAT_SIGNE').length
+  }
 
   // Préparation des données pour le tableau avec mapping API → UI
   const tableData = useMemo(() => {
@@ -130,9 +123,9 @@ export default function Immeubles() {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
       const manager = managers?.find(m => m.id === immeuble.managerId)
       const portesImmeuble = immeuble.portes || []
-      const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
+      const totalDoors = portesImmeuble.length
       const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
-      const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
+      const couverture = parseFloat(((portesProspectees / totalDoors) * 100).toFixed(1))
 
       // Déterminer le nom du responsable
       let responsibleName = 'N/A'
@@ -148,6 +141,7 @@ export default function Immeubles() {
         floors: immeuble.nbEtages,
         doors_per_floor: immeuble.nbPortesParEtage,
         total_doors: totalDoors,
+        contrats_signes: calculnbcontrats(immeuble),
         couverture: couverture,
         commercial_name: responsibleName,
       }
@@ -204,12 +198,7 @@ export default function Immeubles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Immeubles</h1>
-          <p className="text-muted-foreground text-base">{description}</p>
-        </div>
-
+      <div className="flex justify-end">
         {/* Toggle entre vue liste et vue carte */}
         <div className="flex gap-2">
           <Button

@@ -18,6 +18,18 @@ export const GET_DIRECTEURS = `
       adresse
       createdAt
       updatedAt
+      statistics {
+        id
+        directeurId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
     }
   }
 `
@@ -33,6 +45,18 @@ export const GET_DIRECTEUR = `
       adresse
       createdAt
       updatedAt
+      statistics {
+        id
+        directeurId
+        contratsSignes
+        immeublesVisites
+        rendezVousPris
+        refus
+        nbImmeublesProspectes
+        nbPortesProspectes
+        createdAt
+        updatedAt
+      }
     }
   }
 `
@@ -112,6 +136,8 @@ export const GET_MANAGER_PERSONAL = `
         nbPortesParEtage
         ascenseurPresent
         digitalCode
+        latitude
+        longitude
         commercialId
         managerId
         zoneId
@@ -266,21 +292,7 @@ export const GET_MANAGER_FULL = `
         createdAt
         updatedAt
       }
-      statistics {
-        id
-        commercialId
-        managerId
-        immeubleId
-        zoneId
-        contratsSignes
-        immeublesVisites
-        rendezVousPris
-        refus
-        nbImmeublesProspectes
-        nbPortesProspectes
-        createdAt
-        updatedAt
-      }
+      
       personalStatistics {
         id
         commercialId
@@ -367,6 +379,24 @@ export const GET_COMMERCIAL = `
       directeurId
       createdAt
       updatedAt
+    }
+  }
+`
+
+/**
+ * Requête pour obtenir le classement d'un commercial dans son équipe
+ */
+export const GET_COMMERCIAL_TEAM_RANKING = `
+  query GetCommercialTeamRanking($commercialId: Int!) {
+    commercialTeamRanking(commercialId: $commercialId) {
+      position
+      total
+      points
+      trend
+      managerNom
+      managerPrenom
+      managerEmail
+      managerNumTel
     }
   }
 `
@@ -781,6 +811,20 @@ export const GET_PORTES_RDV_TODAY = `
       derniereVisite
       createdAt
       updatedAt
+    }
+  }
+`
+
+// =============================================================================
+// Email verification methode instead of id so that we
+// =============================================================================
+
+export const GET_ME = `
+  query Me {
+    me {
+      id
+      role
+      email
     }
   }
 `

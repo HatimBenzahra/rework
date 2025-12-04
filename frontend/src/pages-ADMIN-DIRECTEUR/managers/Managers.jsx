@@ -1,12 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import {
-  useManagers,
-  useCreateManager,
-  useUpdateManager,
-  useRemoveManager,
-  useDirecteurs,
-} from '@/services'
+import { useManagers, useUpdateManager, useDirecteurs } from '@/services'
 import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
@@ -18,8 +12,14 @@ import { calculateRank } from '@/share/ranks'
 const getManagersColumns = () => {
   const baseColumns = [
     {
-      header: 'Nom Prénom',
-      accessor: 'name',
+      header: 'Nom',
+      accessor: 'nom',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Prénom',
+      accessor: 'prenom',
       sortable: true,
       className: 'font-medium',
     },
@@ -52,18 +52,12 @@ const getManagersColumns = () => {
 }
 
 export default function Managers() {
-  const { isAdmin, currentRole, currentUserId } = useRole()
+  const { isAdmin } = useRole()
   const { showError, showSuccess } = useErrorToast()
   // API hooks
-  const {
-    data: managersApi,
-    loading: managersLoading,
-    refetch,
-  } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
-  const { mutate: createManager } = useCreateManager()
+  const { data: managersApi, loading: managersLoading, refetch } = useManagers()
+  const { data: directeurs } = useDirecteurs()
   const { mutate: updateManager } = useUpdateManager()
-  const { mutate: removeManager } = useRemoveManager()
 
   // Utilisation du système de rôles pour filtrer les données
   const {
@@ -83,7 +77,8 @@ export default function Managers() {
       )
       return {
         ...manager,
-        name: `${manager.prenom} ${manager.nom}`,
+        nom: manager.nom,
+        prenom: manager.prenom,
         email: manager.email || 'Non renseigné',
         numTelephone: manager.numTelephone || 'Non renseigné',
         directeur: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Aucun directeur',
@@ -114,26 +109,21 @@ export default function Managers() {
   const managersEditFields = useMemo(
     () => [
       {
-        key: 'name',
-        label: 'Nom complet',
+        key: 'nom',
+        label: 'Nom',
         type: 'text',
         required: true,
         section: 'Informations personnelles',
       },
       {
-        key: 'email',
-        label: 'Email',
-        type: 'email',
+        key: 'prenom',
+        label: 'Prénom',
+        type: 'text',
         required: true,
         section: 'Informations personnelles',
-        validate: value => {
-          if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-            return 'Email invalide'
-          }
-        },
       },
       {
-        key: 'phone',
+        key: 'numTelephone',
         label: 'Téléphone',
         type: 'tel',
         required: true,
@@ -153,44 +143,13 @@ export default function Managers() {
     [directeurOptions]
   )
 
-  const handleAddManager = async formData => {
-    try {
-      // Conversion des données UI vers format API
-      const [prenom, ...nomParts] = (formData.name || '').split(' ')
-      const nom = nomParts.join(' ')
-
-      const managerInput = {
-        nom: nom || formData.nom || '',
-        prenom: prenom || formData.prenom || '',
-        email: formData.email || null,
-        numTelephone: formData.phone || null,
-        directeurId:
-          formData.directeur && formData.directeur !== 'Aucun directeur'
-            ? directeurs?.find(d => `${d.prenom} ${d.nom}` === formData.directeur)?.id
-            : null,
-      }
-
-      await createManager(managerInput)
-      await refetch()
-      showSuccess('Manager créé avec succès')
-    } catch (error) {
-      showError(error, 'Managers.handleAddManager')
-      throw error
-    }
-  }
-
   const handleEditManager = async editedData => {
     try {
-      // Conversion des données UI vers format API
-      const [prenom, ...nomParts] = (editedData.name || '').split(' ')
-      const nom = nomParts.join(' ')
-
       const updateInput = {
         id: editedData.id,
-        nom: nom || editedData.nom,
-        prenom: prenom || editedData.prenom,
-        email: editedData.email,
-        numTelephone: editedData.phone,
+        nom: editedData.nom,
+        prenom: editedData.prenom,
+        numTelephone: editedData.numTelephone,
         directeurId:
           editedData.directeur && editedData.directeur !== 'Aucun directeur'
             ? directeurs?.find(d => `${d.prenom} ${d.nom}` === editedData.directeur)?.id
@@ -202,18 +161,6 @@ export default function Managers() {
       showSuccess('Manager modifié avec succès')
     } catch (error) {
       showError(error, 'Managers.handleEditManager')
-      throw error
-    }
-  }
-
-  const handleDeleteManager = async idOrRow => {
-    try {
-      const id = typeof idOrRow === 'object' ? idOrRow.id : idOrRow
-      await removeManager(id)
-      await refetch()
-      showSuccess('Manager supprimé avec succès')
-    } catch (error) {
-      showError(error, 'Managers.handleDeleteManager')
       throw error
     }
   }
@@ -234,10 +181,6 @@ export default function Managers() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Managers</h1>
-        <p className="text-muted-foreground text-base">{description}</p>
-      </div>
       {/* Section d'information sur le système de rangs */}
       <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">
@@ -283,13 +226,10 @@ export default function Managers() {
         description={description}
         data={tableData}
         columns={getManagersColumns(isAdmin)}
-        searchKey="name"
-        onAdd={permissions.canAdd ? handleAddManager : undefined}
-        addButtonText="Nouveau Manager"
+        searchKey="nom"
         detailsPath="/managers"
         editFields={managersEditFields}
         onEdit={permissions.canEdit ? handleEditManager : undefined}
-        onDelete={permissions.canDelete ? handleDeleteManager : undefined}
       />
     </div>
   )

@@ -19,20 +19,19 @@ import type {
 // =============================================================================
 
 const queryKeys = {
-  directeurs: (userId?: number, userRole?: string) => ['directeurs', { userId, userRole }] as const,
-  managers: (userId?: number, userRole?: string) => ['managers', { userId, userRole }] as const,
-  commercials: (userId?: number, userRole?: string) =>
-    ['commercials', { userId, userRole }] as const,
+  directeurs: () => ['directeurs'] as const,
+  managers: () => ['managers'] as const,
+  commercials: () => ['commercials'] as const,
 }
 
 // =============================================================================
 // Directeur Hooks
 // =============================================================================
 
-export function useDirecteursQuery(userId?: number, userRole?: string) {
+export function useDirecteursQuery() {
   return useQuery({
-    queryKey: queryKeys.directeurs(userId, userRole),
-    queryFn: () => api.directeurs.getAll(userId, userRole),
+    queryKey: queryKeys.directeurs(),
+    queryFn: () => api.directeurs.getAll(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
@@ -41,10 +40,10 @@ export function useDirecteursQuery(userId?: number, userRole?: string) {
 // Manager Hooks
 // =============================================================================
 
-export function useManagersQuery(userId?: number, userRole?: string) {
+export function useManagersQuery() {
   return useQuery({
-    queryKey: queryKeys.managers(userId, userRole),
-    queryFn: () => api.managers.getAll(userId, userRole),
+    queryKey: queryKeys.managers(),
+    queryFn: () => api.managers.getAll(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
@@ -106,10 +105,10 @@ export function useUpdateManagerMutation() {
 // Commercial Hooks
 // =============================================================================
 
-export function useCommercialsQuery(userId?: number, userRole?: string) {
+export function useCommercialsQuery() {
   return useQuery({
-    queryKey: queryKeys.commercials(userId, userRole),
-    queryFn: () => api.commercials.getAll(userId, userRole),
+    queryKey: queryKeys.commercials(),
+    queryFn: () => api.commercials.getAll(),
     staleTime: 3 * 60 * 1000, // 3 minutes - plus volatile
   })
 }

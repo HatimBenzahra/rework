@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreatePorteInput, UpdatePorteInput, StatutPorte } from './porte.dto';
 import { StatisticSyncService } from '../statistic/statistic-sync.service';
@@ -9,6 +13,137 @@ export class PorteService {
     private prisma: PrismaService,
     private statisticSyncService: StatisticSyncService
   ) {}
+
+  private validateImmeubleOwnership(
+    immeuble: any,
+    userId: number,
+    userRole: string,
+  ) {
+    if (userRole === 'admin') {
+      return;
+    }
+
+    if (userRole === 'commercial' && immeuble.commercialId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager') {
+      const ownsImmeuble =
+        immeuble.managerId === userId ||
+        immeuble.commercial?.managerId === userId ||
+        immeuble.zone?.managerId === userId;
+
+      if (!ownsImmeuble) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    if (userRole === 'directeur') {
+      const ownsImmeuble =
+        immeuble.manager?.directeurId === userId ||
+        immeuble.commercial?.directeurId === userId ||
+        immeuble.zone?.directeurId === userId;
+
+      if (!ownsImmeuble) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+  }
+
+  private async ensureImmeubleAccess(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.prisma.immeuble.findUnique({
+      where: { id: immeubleId },
+      include: {
+        commercial: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+        manager: {
+          select: { id: true, directeurId: true },
+        },
+        zone: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+      },
+    });
+
+    if (!immeuble) {
+      throw new NotFoundException('Immeuble not found');
+    }
+
+    this.validateImmeubleOwnership(immeuble, userId, userRole);
+
+    return immeuble;
+  }
+
+  private async ensurePorteAccess(
+    porteId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const porte = await this.prisma.porte.findUnique({
+      where: { id: porteId },
+      include: {
+        immeuble: {
+          include: {
+            commercial: {
+              select: { id: true, managerId: true, directeurId: true },
+            },
+            manager: {
+              select: { id: true, directeurId: true },
+            },
+            zone: {
+              select: { id: true, managerId: true, directeurId: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!porte) {
+      throw new NotFoundException('Porte not found');
+    }
+
+    this.validateImmeubleOwnership(porte.immeuble, userId, userRole);
+
+    return porte;
+  }
+
+  private buildImmeubleAccessFilter(userId: number, userRole: string) {
+    switch (userRole) {
+      case 'admin':
+        return {};
+
+      case 'directeur':
+        return {
+          OR: [
+            { commercial: { directeurId: userId } },
+            { manager: { directeurId: userId } },
+            { zone: { directeurId: userId } },
+          ],
+        };
+
+      case 'manager':
+        return {
+          OR: [
+            { managerId: userId },
+            { commercial: { managerId: userId } },
+            { zone: { managerId: userId } },
+          ],
+        };
+
+      case 'commercial':
+        return {
+          commercialId: userId,
+        };
+
+      default:
+        return { id: -1 };
+    }
+  }
 
   async create(createPorteInput: CreatePorteInput) {
     return this.prisma.porte.create({
@@ -24,34 +159,32 @@ export class PorteService {
     });
   }
 
-  async findOne(id: number) {
-    return this.prisma.porte.findUnique({
-      where: { id },
-      include: {
-        immeuble: true,
-      },
-    });
+  async findOne(id: number, userId: number, userRole: string) {
+    return this.ensurePorteAccess(id, userId, userRole);
   }
 
-  async findByImmeuble(immeubleId: number) {
+  async findByImmeuble(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    await this.ensureImmeubleAccess(immeubleId, userId, userRole);
+
     return this.prisma.porte.findMany({
       where: { immeubleId },
       orderBy: [{ etage: 'asc' }, { numero: 'asc' }],
     });
   }
 
-  async update(updatePorteInput: UpdatePorteInput) {
+  async update(
+    updatePorteInput: UpdatePorteInput,
+    userId: number,
+    userRole: string,
+  ) {
     const { id, ...data } = updatePorteInput;
 
     // 1. Récupérer l'état actuel pour détecter les changements
-    const currentPorte = await this.prisma.porte.findUnique({
-      where: { id },
-      include: { immeuble: true }
-    });
-
-    if (!currentPorte) {
-      throw new Error(`Porte avec id ${id} non trouvée`);
-    }
+    const currentPorte = await this.ensurePorteAccess(id, userId, userRole);
 
     const oldStatut = currentPorte.statut;
 
@@ -90,7 +223,9 @@ export class PorteService {
     return updatedPorte;
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number, userRole: string) {
+    await this.ensurePorteAccess(id, userId, userRole);
+
     return this.prisma.porte.delete({
       where: { id },
     });
@@ -100,7 +235,11 @@ export class PorteService {
     immeubleId: number,
     nbEtages: number,
     nbPortesParEtage: number,
+    userId: number,
+    userRole: string,
   ) {
+    await this.ensureImmeubleAccess(immeubleId, userId, userRole);
+
     const portes: any[] = [];
 
     for (let etage = 1; etage <= nbEtages; etage++) {
@@ -170,7 +309,15 @@ export class PorteService {
     };
   }
 
-  async findModifiedToday(immeubleId?: number) {
+  async findModifiedToday(
+    immeubleId?: number,
+    userId?: number,
+    userRole?: string,
+  ) {
+    if (userId === undefined || !userRole) {
+      throw new ForbiddenException('Access denied');
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -188,7 +335,23 @@ export class PorteService {
     };
 
     if (immeubleId) {
+      await this.ensureImmeubleAccess(immeubleId, userId, userRole);
       whereClause.immeubleId = immeubleId;
+    } else if (userRole === 'admin') {
+      // Admin peut voir toutes les portes modifiées
+    } else {
+      const accessibleImmeubles = await this.prisma.immeuble.findMany({
+        where: this.buildImmeubleAccessFilter(userId, userRole),
+        select: { id: true },
+      });
+
+      if (!accessibleImmeubles.length) {
+        return [];
+      }
+
+      whereClause.immeubleId = {
+        in: accessibleImmeubles.map((i) => i.id),
+      };
     }
 
     return this.prisma.porte.findMany({
@@ -202,7 +365,23 @@ export class PorteService {
     });
   }
 
-  async findRdvToday() {
+  async findRdvToday(userId: number, userRole: string) {
+    const filter = this.buildImmeubleAccessFilter(userId, userRole);
+    let immeubleIds: number[] | undefined;
+
+    if (userRole !== 'admin') {
+      const accessibleImmeubles = await this.prisma.immeuble.findMany({
+        where: filter,
+        select: { id: true },
+      });
+
+      if (!accessibleImmeubles.length) {
+        return [];
+      }
+
+      immeubleIds = accessibleImmeubles.map((i) => i.id);
+    }
+
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // Format YYYY-MM-DD
 
@@ -213,6 +392,7 @@ export class PorteService {
           gte: new Date(todayStr),
           lt: new Date(new Date(todayStr).getTime() + 24 * 60 * 60 * 1000),
         },
+        ...(immeubleIds && { immeubleId: { in: immeubleIds } }),
       },
       include: {
         immeuble: {

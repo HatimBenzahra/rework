@@ -15,6 +15,7 @@ interface CacheConfig {
   maxSize: number
   enableDebug?: boolean
   persistToStorage?: boolean // NEW: Option pour désactiver sessionStorage
+  storageKey?: string // Optional custom storage key
 }
 
 interface CacheStats {
@@ -68,21 +69,20 @@ function hashDependencies(deps: any[]): string {
  */
 const TTL_BY_NAMESPACE: Record<string, number> = {
   statistics: 30_000, // 30s - données volatiles
-  zones: 10 * 60_000, // 10min - données semi-statiques
-  directeurs: 5 * 60_000, // 5min - default
-  managers: 5 * 60_000, // 5min - default
-  commercials: 3 * 60_000, // 3min - plus volatile
-  immeubles: 10 * 60_000, // 10min - données statiques
+  zones: 3 * 60_000, // 3min - données semi-statiques
+  directeurs: 3 * 60_000, // 3min
+  managers: 3 * 60_000, // 3min
+  commercials: 2 * 60_000, // 2min - plus volatile
+  immeubles: 5 * 60_000, // 5min - données statiques
   portes: 60_000, // 1min - données plus volatiles
-  'mapbox-geocode': 30 * 24 * 60 * 60_000, // 30 jours - géolocalisation très stable
+  // Note: mapbox-geocode TTL is handled by mapboxCache instance (30 days)
 }
 
 class APICache {
   private cache = new Map<string, CacheEntry<any>>()
   private inflight = new Map<string, Promise<any>>()
   private config: CacheConfig
-  private storageKey = 'api-cache-v4' // Changed version
-  private saveScheduled = false
+  private storageKey: string
   private saveDebounceTimer: number | null = null
   private hits = 0
   private misses = 0
@@ -97,14 +97,15 @@ class APICache {
     }
   ) {
     this.config = config
+    this.storageKey = config.storageKey || 'api-cache-v4'
     if (isBrowser()) {
       if (this.config.persistToStorage) {
         this.loadFromSessionStorage()
       }
       this.setupMultiTabSync()
 
-      // Cleanup expired entries every 5 minutes
-      setInterval(() => this.cleanupExpired(), 5 * 60_000)
+      // Cleanup expired entries every 1 minute (more aggressive cleanup)
+      setInterval(() => this.cleanupExpired(), 60_000)
     }
   }
 
@@ -379,6 +380,24 @@ class APICache {
   }
 
   /**
+   * Lightweight existence check that respects TTL
+   */
+  has(key: string): boolean {
+    const entry = this.cache.get(key)
+    if (!entry) return false
+
+    const valid = this.isValid(entry)
+    if (!valid) {
+      this.cache.delete(key)
+      return false
+    }
+
+    // Maintain LRU order even on presence check
+    this.markAsRecent(key)
+    return true
+  }
+
+  /**
    * Store data in cache
    */
   set<T>(key: string, data: T, customTTL?: number): void {
@@ -549,24 +568,36 @@ class APICache {
   }
 }
 
-// Global cache instance
+// Global cache instance for business data
 export const apiCache = new APICache({
-  defaultTTL: 5 * 60 * 1000, // 5 minutes
-  maxSize: 500, // Increased
-  enableDebug: import.meta.env.DEV, // Use Vite env
+  defaultTTL: 3 * 60 * 1000, // 3 minutes
+  maxSize: 150, // Optimized for business API calls
+  enableDebug: import.meta.env.DEV,
   persistToStorage: true,
+})
+
+// Dedicated cache instance for Mapbox geocoding
+// Separate cache to avoid evicting business data
+export const mapboxCache = new APICache({
+  defaultTTL: 30 * 24 * 60 * 60_000, // 30 days - geocoding data never changes
+  maxSize: 500, // Large cache for coordinates (can have many unique locations)
+  enableDebug: import.meta.env.DEV,
+  persistToStorage: true,
+  storageKey: 'mapbox-cache-v1', // Separate storage key for Mapbox cache
 })
 
 // Clean up on page unload
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     apiCache.destroy()
+    mapboxCache.destroy()
   })
 }
 
 /**
  * Cache invalidation mappings - OPTIMIZED
  * When an entity is modified, invalidate related caches by namespace
+ * Note: Mapbox cache is never invalidated (geocoding data is immutable)
  */
 export const CACHE_INVALIDATION_MAP: Record<string, string[]> = {
   directeurs: ['directeurs', 'managers'],

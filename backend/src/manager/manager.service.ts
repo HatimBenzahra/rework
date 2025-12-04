@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateManagerInput, UpdateManagerInput } from './manager.dto';
 
@@ -18,7 +18,7 @@ export class ManagerService {
 
   async findAll(userId?: number, userRole?: string) {
     // Si pas de filtrage explicite, retourner tous les managers
-    if (userId === undefined || userId === null || !userRole) {
+    if (userId === undefined || !userRole) {
       return this.prisma.manager.findMany({
         include: {
           directeur: true,
@@ -65,8 +65,21 @@ export class ManagerService {
     }
   }
 
-  async findOne(id: number) {
-    return this.prisma.manager.findUnique({
+  async findOne(id: number, userId: number, userRole: string) {
+    // Admin can access all managers
+    if (userRole === 'admin') {
+      return this.prisma.manager.findUnique({
+        where: { id },
+        include: {
+          directeur: true,
+          commercials: true,
+          zones: true,
+        },
+      });
+    }
+
+    // Get the manager
+    const manager = await this.prisma.manager.findUnique({
       where: { id },
       include: {
         directeur: true,
@@ -74,13 +87,71 @@ export class ManagerService {
         zones: true,
       },
     });
+
+    if (!manager) {
+      throw new NotFoundException('Manager not found');
+    }
+
+    // Directeur can only access their own managers
+    if (userRole === 'directeur' && manager.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Manager can only access themselves
+    if (userRole === 'manager' && manager.id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    return manager;
   }
 
   /**
    * Récupère les données personnelles du manager (pour son espace commercial personnel)
    * Retourne UNIQUEMENT ses propres immeubles et statistiques
    */
-  async findPersonal(id: number) {
+  async findPersonal(id: number, userId: number, userRole: string) {
+    // Admin can access all
+    if (userRole === 'admin') {
+      const manager = await this.prisma.manager.findUnique({
+        where: { id },
+        include: {
+          directeur: true,
+        },
+      });
+
+      if (!manager) {
+        return null;
+      }
+
+      // Récupérer UNIQUEMENT les propres immeubles du manager
+      const immeubles = await this.prisma.immeuble.findMany({
+        where: { managerId: id },
+        include: {
+          portes: true,
+        },
+      });
+
+      // Récupérer UNIQUEMENT les propres statistiques du manager
+      const statistics = await this.prisma.statistic.findMany({
+        where: { managerId: id },
+      });
+
+      // Récupérer les zones assignées au manager
+      const zones = await this.prisma.zone.findMany({
+        where: { managerId: id },
+        include: {
+          immeubles: true,
+        },
+      });
+
+      return {
+        ...manager,
+        immeubles,
+        statistics,
+        zones,
+      };
+    }
+
     const manager = await this.prisma.manager.findUnique({
       where: { id },
       include: {
@@ -90,6 +161,16 @@ export class ManagerService {
 
     if (!manager) {
       return null;
+    }
+
+    // Directeur can only access their own managers
+    if (userRole === 'directeur' && manager.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Manager can only access themselves
+    if (userRole === 'manager' && manager.id !== userId) {
+      throw new ForbiddenException('Access denied');
     }
 
     // Récupérer UNIQUEMENT les propres immeubles du manager
@@ -126,7 +207,7 @@ export class ManagerService {
    * Retourne ses commerciaux avec leurs immeubles et statistiques
    * SÉPARATION: personalStatistics (manager seul) vs teamStatistics (commerciaux) vs statistics (total)
    */
-  async findFull(id: number) {
+  async findFull(id: number, userId: number, userRole: string) {
     // Récupérer le manager avec ses relations
     const managerData = await this.prisma.manager.findUnique({
       where: { id },
@@ -157,6 +238,25 @@ export class ManagerService {
 
     if (!managerData) {
       return null;
+    }
+
+    // Authorization check (not for admin)
+    if (userRole !== 'admin') {
+      // Get full manager with directeur info for authorization
+      const managerForAuth = await this.prisma.manager.findUnique({
+        where: { id },
+        select: { directeurId: true },
+      });
+
+      // Directeur can only access their own managers
+      if (userRole === 'directeur' && managerForAuth?.directeurId !== userId) {
+        throw new ForbiddenException('Access denied');
+      }
+
+      // Manager can only access themselves
+      if (userRole === 'manager' && id !== userId) {
+        throw new ForbiddenException('Access denied');
+      }
     }
 
     // Récupérer les propres immeubles et statistiques du manager séparément
@@ -199,8 +299,36 @@ export class ManagerService {
     };
   }
 
-  async update(data: UpdateManagerInput) {
+  async update(data: UpdateManagerInput, userId: number, userRole: string) {
     const { id, ...updateData } = data;
+
+    // Admin can update any manager
+    if (userRole === 'admin') {
+      return this.prisma.manager.update({
+        where: { id },
+        data: updateData,
+        include: {
+          directeur: true,
+          commercials: true,
+        },
+      });
+    }
+
+    // Get the manager to validate ownership
+    const manager = await this.prisma.manager.findUnique({
+      where: { id },
+      select: { directeurId: true },
+    });
+
+    if (!manager) {
+      throw new NotFoundException('Manager not found');
+    }
+
+    // Directeur can only update their own managers
+    if (userRole === 'directeur' && manager.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
     return this.prisma.manager.update({
       where: { id },
       data: updateData,
@@ -211,7 +339,33 @@ export class ManagerService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number, userRole: string) {
+    // Admin can delete any manager
+    if (userRole === 'admin') {
+      return this.prisma.manager.delete({
+        where: { id },
+        include: {
+          directeur: true,
+          commercials: true,
+        },
+      });
+    }
+
+    // Get the manager to validate ownership
+    const manager = await this.prisma.manager.findUnique({
+      where: { id },
+      select: { directeurId: true },
+    });
+
+    if (!manager) {
+      throw new NotFoundException('Manager not found');
+    }
+
+    // Directeur can only delete their own managers
+    if (userRole === 'directeur' && manager.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
     return this.prisma.manager.delete({
       where: { id },
       include: {

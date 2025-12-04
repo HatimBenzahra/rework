@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateDirecteurInput, UpdateDirecteurInput } from './directeur.dto';
 
@@ -17,11 +17,12 @@ export class DirecteurService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    if (userId === undefined || userId === null || !userRole) {
+    if (userId === undefined || !userRole) {
       return this.prisma.directeur.findMany({
         include: {
           managers: true,
           commercials: true,
+          statistics: true,
         },
       });
     }
@@ -32,6 +33,7 @@ export class DirecteurService {
           include: {
             managers: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -43,6 +45,7 @@ export class DirecteurService {
           include: {
             managers: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -58,6 +61,7 @@ export class DirecteurService {
           include: {
             managers: true,
             commercials: true,
+            statistics: true,
           },
         });
 
@@ -66,18 +70,58 @@ export class DirecteurService {
     }
   }
 
-  async findOne(id: number) {
-    return this.prisma.directeur.findUnique({
+  async findOne(id: number, userId: number, userRole: string) {
+    // Admin can access all directeurs
+    if (userRole === 'admin') {
+      return this.prisma.directeur.findUnique({
+        where: { id },
+        include: {
+          managers: true,
+          commercials: true,
+          statistics: true,
+        },
+      });
+    }
+
+    // Get the directeur
+    const directeur = await this.prisma.directeur.findUnique({
       where: { id },
       include: {
         managers: true,
         commercials: true,
+        statistics: true,
       },
     });
+
+    if (!directeur) {
+      throw new NotFoundException('Directeur not found');
+    }
+
+    // Directeur can only access themselves
+    if (userRole === 'directeur' && directeur.id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    return directeur;
   }
 
-  async update(data: UpdateDirecteurInput) {
+  async update(data: UpdateDirecteurInput, userId: number, userRole: string) {
     const { id, ...updateData } = data;
+
+    // Only admin can update directeurs
+    if (userRole !== 'admin') {
+      throw new ForbiddenException('Only admin can update directeurs');
+    }
+
+    // Verify directeur exists
+    const directeur = await this.prisma.directeur.findUnique({
+      where: { id },
+    });
+
+    if (!directeur) {
+      throw new NotFoundException('Directeur not found');
+    }
+
     return this.prisma.directeur.update({
       where: { id },
       data: updateData,
@@ -88,7 +132,21 @@ export class DirecteurService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number, userRole: string) {
+    // Only admin can delete directeurs
+    if (userRole !== 'admin') {
+      throw new ForbiddenException('Only admin can delete directeurs');
+    }
+
+    // Verify directeur exists
+    const directeur = await this.prisma.directeur.findUnique({
+      where: { id },
+    });
+
+    if (!directeur) {
+      throw new NotFoundException('Directeur not found');
+    }
+
     return this.prisma.directeur.delete({
       where: { id },
       include: {

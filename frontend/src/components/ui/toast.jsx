@@ -38,11 +38,24 @@ export function useToast() {
   if (!context) {
     throw new Error('useToast must be used within ToastProvider')
   }
-  return context
+
+  // Mémoïser l'objet retourné pour éviter les re-renders infinis
+  return React.useMemo(
+    () => ({
+      toast: context.addToast,
+      dismiss: context.removeToast,
+    }),
+    [context.addToast, context.removeToast]
+  )
+}
+
+// Hook interne pour le Toaster qui accède directement au contexte
+function useToastContext() {
+  return React.useContext(ToastContext)
 }
 
 function Toaster() {
-  const { toasts, removeToast } = useToast()
+  const { toasts, removeToast } = useToastContext()
 
   return (
     <div className="fixed top-0 right-0 z-50 flex max-h-screen w-full flex-col gap-2 p-4 sm:top-auto sm:bottom-0 sm:right-0 sm:flex-col md:max-w-[420px]">

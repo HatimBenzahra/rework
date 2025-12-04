@@ -31,7 +31,7 @@ import UnassignedPanel from './components/UnassignedPanel'
  * Utilise le drag and drop pour réorganiser la hiérarchie
  */
 export default function Gestion() {
-  const { currentRole, currentUserId, isAdmin, isDirecteur } = useRole()
+  const { isAdmin, isDirecteur, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
   // Récupérer les données avec React Query
@@ -40,21 +40,21 @@ export default function Gestion() {
     isLoading: loadingDirecteurs,
     error: errorDirecteurs,
     refetch: refetchDirecteurs,
-  } = useDirecteursQuery(parseInt(currentUserId, 10), currentRole)
+  } = useDirecteursQuery()
 
   const {
     data: managers = [],
     isLoading: loadingManagers,
     error: errorManagers,
     refetch: refetchManagers,
-  } = useManagersQuery(parseInt(currentUserId, 10), currentRole)
+  } = useManagersQuery()
 
   const {
     data: commercials = [],
     isLoading: loadingCommercials,
     error: errorCommercials,
     refetch: refetchCommercials,
-  } = useCommercialsQuery(parseInt(currentUserId, 10), currentRole)
+  } = useCommercialsQuery()
 
   // Mutations avec optimistic updates
   const { mutate: updateManager } = useUpdateManagerMutation()

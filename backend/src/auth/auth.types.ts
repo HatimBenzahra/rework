@@ -1,4 +1,4 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, Int } from '@nestjs/graphql';
 
 @ObjectType()
 export class AuthResponse {
@@ -43,4 +43,16 @@ export class TokenPayload {
 
   @Field(() => [String])
   groups: string[];
+}
+//Ajout de l'objet pour la methode me
+@ObjectType()
+export class UserInfo {
+  @Field(() => Int)
+  id: number;
+
+  @Field()
+  role: string;
+
+  @Field()
+  email: string;
 }

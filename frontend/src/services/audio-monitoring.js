@@ -1,9 +1,20 @@
 import { graphqlClient } from './graphql-client'
 
 // GraphQL Mutations et Queries
-const GENERATE_USER_TOKEN = `
-  mutation GenerateUserToken($roomName: String) {
-    generateUserToken(roomName: $roomName) {
+const GENERATE_COMMERCIAL_TOKEN = `
+  mutation GenerateCommercialToken($roomName: String) {
+    generateCommercialToken(roomName: $roomName) {
+      serverUrl
+      participantToken
+      roomName
+      participantName
+    }
+  }
+`
+
+const GENERATE_MANAGER_TOKEN = `
+  mutation GenerateManagerToken($roomName: String) {
+    generateManagerToken(roomName: $roomName) {
       serverUrl
       participantToken
       roomName
@@ -13,8 +24,8 @@ const GENERATE_USER_TOKEN = `
 `
 
 const START_MONITORING = `
-  mutation StartMonitoring($input: StartMonitoringInput!) {
-    startMonitoring(input: $input) {
+  mutation StartMonitoring($userId: Int!, $userType: String!, $roomName: String) {
+    startMonitoring(input: { userId: $userId, userType: $userType, roomName: $roomName }) {
       serverUrl
       participantToken
       roomName
@@ -75,26 +86,48 @@ export class AudioMonitoringService {
   /**
    * @deprecated Utiliser generateUserToken() à la place
    */
-  static async generateCommercialToken(commercialId, roomName = null) {
-    console.warn('⚠️ generateCommercialToken est déprécié, utiliser generateUserToken()')
-    return this.generateUserToken(roomName)
+  static async generateCommercialToken(roomName = null) {
+    try {
+      const data = await graphqlClient.request(GENERATE_COMMERCIAL_TOKEN, { roomName })
+      return data.generateCommercialToken
+    } catch (error) {
+      console.error('Erreur génération token commercial:', error)
+      throw error
+    }
   }
 
   /**
    * @deprecated Utiliser generateUserToken() à la place
    */
-  static async generateManagerToken(managerId, roomName = null) {
-    console.warn('⚠️ generateManagerToken est déprécié, utiliser generateUserToken()')
-    return this.generateUserToken(roomName)
+  static async generateManagerToken(roomName = null) {
+    try {
+      const data = await graphqlClient.request(GENERATE_MANAGER_TOKEN, { roomName })
+      return data.generateManagerToken
+    } catch (error) {
+      console.error('Erreur génération token manager:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Génère un token universel (commercial ou manager)
+   */
+  static async generateUserToken(userType, roomName = null) {
+    return userType === 'manager'
+      ? this.generateManagerToken(roomName)
+      : this.generateCommercialToken(roomName)
   }
 
   /**
    * Démarre une session de monitoring (superviseur)
+   * Note: supervisorId est automatiquement récupéré du token JWT via @CurrentUser()
    */
-  static async startMonitoring(userId, userType, supervisorId, roomName = null) {
+  static async startMonitoring(userId, userType, roomName = null) {
     try {
       const data = await graphqlClient.request(START_MONITORING, {
-        input: { userId, userType, supervisorId, roomName },
+        userId,
+        userType,
+        roomName,
       })
       return data.startMonitoring
     } catch (error) {

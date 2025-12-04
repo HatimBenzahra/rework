@@ -1,3 +1,5 @@
+import { captureException } from '../config/sentry.js'
+
 /**
  * Gestionnaire d'erreurs global pour l'application
  * Capture toutes les erreurs non gérées et les log
@@ -8,30 +10,43 @@ class ErrorHandler {
     this.errors = []
     this.maxErrors = 50 // Garder les 50 dernières erreurs
     this.listeners = []
+    // Sauvegarder les références des handlers bound pour le cleanup
+    this.boundHandleError = null
+    this.boundHandlePromiseRejection = null
+    this.boundHandleResourceError = null
   }
 
   /**
    * Initialiser les listeners d'erreurs globaux
    */
   init() {
+    // Éviter la double initialisation
+    if (this.boundHandleError) {
+      return
+    }
+
+    // Créer et sauvegarder les références bound
+    this.boundHandleError = this.handleError.bind(this)
+    this.boundHandlePromiseRejection = this.handlePromiseRejection.bind(this)
+    this.boundHandleResourceError = event => {
+      if (event.target !== window) {
+        this.handleResourceError(event)
+      }
+    }
+
     // Capturer les erreurs JavaScript non gérées
-    window.addEventListener('error', this.handleError.bind(this))
+    window.addEventListener('error', this.boundHandleError)
 
     // Capturer les promesses rejetées non gérées
-    window.addEventListener('unhandledrejection', this.handlePromiseRejection.bind(this))
+    window.addEventListener('unhandledrejection', this.boundHandlePromiseRejection)
 
     // Capturer les erreurs de chargement de ressources
-    window.addEventListener(
-      'error',
-      event => {
-        if (event.target !== window) {
-          this.handleResourceError(event)
-        }
-      },
-      true
-    )
+    window.addEventListener('error', this.boundHandleResourceError, true)
 
-    console.log('✅ ErrorHandler initialisé - Toutes les erreurs seront capturées')
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.log('✅ ErrorHandler initialisé - Toutes les erreurs seront capturées')
+    }
   }
 
   /**
@@ -117,8 +132,7 @@ class ErrorHandler {
       console.groupEnd()
     }
 
-    // En production, vous pouvez envoyer l'erreur à un service de monitoring
-    // comme Sentry, LogRocket, etc.
+    // Always send to monitoring in production
     this.sendToMonitoring(error)
   }
 
@@ -126,26 +140,63 @@ class ErrorHandler {
    * Envoyer l'erreur à un service de monitoring externe
    */
   sendToMonitoring(error) {
-    // Importer dynamiquement la configuration Sentry
-    import('../config/sentry.js')
-      .then(sentryModule => {
-        const { captureException } = sentryModule
+    // Éviter les boucles infinies : ne pas envoyer les erreurs Sentry à Sentry
+    if (error.message?.includes('Sentry') || error.stack?.includes('Sentry')) {
+      return
+    }
 
-        // Capturer l'exception dans Sentry (si configuré)
-        const sent = captureException(error.error || error, {
-          type: error.type,
-          url: error.url,
-          timestamp: error.timestamp,
-          userAgent: navigator.userAgent,
-        })
+    // Ignorer les erreurs de ressources non critiques (images, fonts, etc.)
+    if (error.type === 'resource') {
+      // Ne pas polluer Sentry avec des erreurs de ressources externes
+      return
+    }
 
-        if (sent && import.meta.env.DEV) {
-          console.log('📤 Erreur envoyée à Sentry')
+    try {
+      // Créer une vraie Error si ce n'est pas déjà le cas
+      let errorToSend = error.error
+
+      if (!errorToSend || !(errorToSend instanceof Error)) {
+        errorToSend = new Error(error.message || 'Unknown error')
+        errorToSend.name = error.type || 'UnknownError'
+        // Copier la stack si elle existe
+        if (error.stack && typeof error.stack === 'string') {
+          errorToSend.stack = error.stack
         }
-      })
-      .catch(() => {
-        // Sentry non disponible ou non configuré
-      })
+      }
+
+      // Capturer l'exception dans Sentry (si configuré)
+      // Inclure toutes les métadonnées pertinentes selon le type d'erreur
+      const extra = {
+        type: error.type,
+        url: error.url,
+        timestamp: error.timestamp,
+      }
+
+      // Ajouter les données spécifiques selon le type
+      if (error.type === 'javascript') {
+        extra.filename = error.filename
+        extra.lineno = error.lineno
+        extra.colno = error.colno
+      } else if (error.type === 'promise') {
+        // Convertir reason en string pour éviter les objets circulaires
+        extra.reason = typeof error.reason === 'object'
+          ? JSON.stringify(error.reason, null, 2)
+          : String(error.reason)
+      }
+
+      captureException(errorToSend, { extra })
+
+      // Only log success in development
+      if (import.meta.env.DEV) {
+        console.log('📤 Erreur envoyée à Sentry')
+      }
+    } catch (sentryError) {
+      // Ne surtout PAS logger cette erreur pour éviter la boucle infinie
+      // Silent fail en production
+      if (import.meta.env.DEV) {
+        console.warn('⚠️ Échec envoi Sentry (ignoré):', sentryError.message)
+      }
+    }
   }
 
   /**
@@ -189,8 +240,18 @@ class ErrorHandler {
    * Nettoyer les listeners
    */
   cleanup() {
-    window.removeEventListener('error', this.handleError)
-    window.removeEventListener('unhandledrejection', this.handlePromiseRejection)
+    if (this.boundHandleError) {
+      window.removeEventListener('error', this.boundHandleError)
+      this.boundHandleError = null
+    }
+    if (this.boundHandlePromiseRejection) {
+      window.removeEventListener('unhandledrejection', this.boundHandlePromiseRejection)
+      this.boundHandlePromiseRejection = null
+    }
+    if (this.boundHandleResourceError) {
+      window.removeEventListener('error', this.boundHandleResourceError, true)
+      this.boundHandleResourceError = null
+    }
     this.listeners = []
   }
 }

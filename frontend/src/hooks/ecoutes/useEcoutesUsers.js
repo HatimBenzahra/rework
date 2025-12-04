@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { useRole } from '@/contexts/userole'
 import { useCommercials, useManagers } from '@/services'
 
 /**
@@ -8,21 +7,19 @@ import { useCommercials, useManagers } from '@/services'
  * C concernant la page d'ecoute live
  */
 export function useEcoutesUsers() {
-  const { currentRole, currentUserId } = useRole()
-
   const {
     data: commercials,
     loading: commercialsLoading,
     error: commercialsError,
     refetch: refetchCommercials,
-  } = useCommercials(parseInt(currentUserId, 10), currentRole)
+  } = useCommercials()
 
   const {
     data: managers,
     loading: managersLoading,
     error: managersError,
     refetch: refetchManagers,
-  } = useManagers(parseInt(currentUserId, 10), currentRole)
+  } = useManagers()
 
   // Combiner commerciaux et managers avec type
   const allUsers = useMemo(() => {

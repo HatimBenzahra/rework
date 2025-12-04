@@ -1,3 +1,5 @@
+import { applyPreset } from './theme-presets.js'
+
 /**
  * Configuration des couleurs de l'application
  *
@@ -165,11 +167,8 @@ export const initTheme = () => {
   const savedPreset = localStorage.getItem('theme-preset')
 
   if (savedPreset) {
-    // Si un preset est sauvegardé, on l'applique dynamiquement
-    // Import dynamique pour éviter les dépendances circulaires
-    import('./theme-presets.js').then(({ applyPreset }) => {
-      applyPreset(savedPreset, theme)
-    })
+    // Si un preset est sauvegardé, on l'applique
+    applyPreset(savedPreset, theme)
   } else {
     // Sinon on applique le thème par défaut
     applyTheme(theme)
@@ -188,7 +187,7 @@ export const initTheme = () => {
 /**
  * Bascule entre le mode clair et sombre
  */
-export const toggleTheme = async () => {
+export const toggleTheme = () => {
   const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light'
   const newTheme = currentTheme === 'dark' ? 'light' : 'dark'
 
@@ -200,7 +199,6 @@ export const toggleTheme = async () => {
 
   if (savedPreset) {
     // Si un preset est sauvegardé, on l'applique avec le nouveau mode
-    const { applyPreset } = await import('./theme-presets.js')
     applyPreset(savedPreset, newTheme)
   } else {
     // Sinon on applique le thème par défaut

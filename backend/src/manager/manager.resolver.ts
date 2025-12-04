@@ -23,39 +23,39 @@ export class ManagerResolver {
   @Query(() => [Manager], { name: 'managers' })
   @Roles('admin', 'directeur', 'manager')
   findAll(@CurrentUser() user: any) {
-    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
     return this.managerService.findAll(user.id, user.role);
   }
 
   @Query(() => Manager, { name: 'manager' })
   @Roles('admin', 'directeur', 'manager')
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.managerService.findOne(id);
+  findOne(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.managerService.findOne(id, user.id, user.role);
   }
 
   @Query(() => Manager, { name: 'managerPersonal', nullable: true })
   @Roles('admin', 'directeur', 'manager')
-  findPersonal(@Args('id', { type: () => Int }) id: number) {
-    return this.managerService.findPersonal(id);
+  findPersonal(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.managerService.findPersonal(id, user.id, user.role);
   }
 
   @Query(() => Manager, { name: 'managerFull', nullable: true })
   @Roles('admin', 'directeur', 'manager')
-  findFull(@Args('id', { type: () => Int }) id: number) {
-    return this.managerService.findFull(id);
+  findFull(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.managerService.findFull(id, user.id, user.role);
   }
 
   @Mutation(() => Manager)
   @Roles('admin', 'directeur')
   updateManager(
     @Args('updateManagerInput') updateManagerInput: UpdateManagerInput,
+    @CurrentUser() user: any,
   ) {
-    return this.managerService.update(updateManagerInput);
+    return this.managerService.update(updateManagerInput, user.id, user.role);
   }
 
   @Mutation(() => Manager)
   @Roles('admin', 'directeur')
-  removeManager(@Args('id', { type: () => Int }) id: number) {
-    return this.managerService.remove(id);
+  removeManager(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.managerService.remove(id, user.id, user.role);
   }
 }

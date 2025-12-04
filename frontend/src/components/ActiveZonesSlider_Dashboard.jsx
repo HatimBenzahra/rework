@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, MapPin, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import AssignedZoneCard from './AssignedZoneCard'
 import { useCommercials, useManagers, useDirecteurs } from '@/hooks/metier/use-api'
-import { useRole } from '@/contexts/userole'
+import { Link } from "react-router-dom";
 
 /**
  * Composant slider pour afficher les zones actuellement assignées avec carte Mapbox
@@ -24,12 +24,11 @@ export default function ActiveZonesSlider({
   isSliding = true,
 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const { currentRole, currentUserId } = useRole()
 
   // Charger les données utilisateurs pour enrichir les assignations
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
 
   // Enrichir les assignations avec les noms des utilisateurs
   const enrichedAssignments = useMemo(() => {
@@ -133,7 +132,20 @@ export default function ActiveZonesSlider({
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Assigné à</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="font-semibold">{userName}</p>
+                  <Link
+                    to={
+                      currentAssignment?.userType === 'COMMERCIAL'
+                        ? `/commerciaux/${currentAssignment?.userId}`
+                        : currentAssignment?.userType === 'MANAGER'
+                          ? `/managers/${currentAssignment?.userId}`
+                          : currentAssignment?.userType === 'DIRECTEUR'
+                            ? `/directeurs/${currentAssignment?.userId}`
+                            : '#'
+                    }
+                    className="font-semibold hover:text-primary hover:underline transition-colors cursor-pointer"
+                  >
+                    {userName}
+                  </Link>
                   <Badge variant="secondary">{userType}</Badge>
                 </div>
               </div>

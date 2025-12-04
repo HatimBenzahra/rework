@@ -100,9 +100,25 @@ export function useCleanup(options = {}) {
   // Cleanup automatique au démontage
   useEffect(() => {
     return () => {
-      cleanupAll()
+      // Cleanup synchrone - pas d'async dans useEffect cleanup
+      const fns = [...cleanupFunctionsRef.current]
+
+      cleanupFunctionsRef.current = []
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      resourcesRef.current.clear()
+
+      // Exécuter les cleanups en dehors du cycle React
+      Promise.allSettled(
+        fns.map(async cleanupFn => {
+          try {
+            await cleanupFn()
+          } catch (error) {
+            console.error(`${namespace} cleanup error:`, error)
+          }
+        })
+      ).catch(err => console.error(`${namespace} cleanup failed:`, err))
     }
-  }, [cleanupAll])
+  }, [namespace]) // Dépendance stable
 
   return {
     addCleanup,

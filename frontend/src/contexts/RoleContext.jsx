@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ROLES } from '../hooks/metier/roleFilters'
 import { RoleContext } from './userole'
 import { authService } from '../services/auth.service'
+import { api } from '../services/api-service'
 import { apiCache } from '../services/api-cache'
 import LoadingScreen from '../components/LoadingScreen'
 import { useAppLoading } from './AppLoadingContext'
@@ -20,12 +21,9 @@ export const RoleProvider = ({ children }) => {
   // État de chargement initial
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
-  // Utiliser des states pour rendre le contexte réactif
-  const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('userRole'))
-  const [currentUserId, setCurrentUserId] = useState(() => {
-    const storedId = localStorage.getItem('userId')
-    return storedId ? parseInt(storedId, 10) : null
-  })
+  // userId sera chargé depuis l'API via api.auth.getMe()
+  const [currentRole, setCurrentRole] = useState(() => authService.getUserRole())
+  const [currentUserId, setCurrentUserId] = useState(null)
 
   // Envoyer les infos utilisateur à Sentry au montage initial (si authentifié)
   useEffect(() => {
@@ -86,23 +84,33 @@ export const RoleProvider = ({ children }) => {
     }
   }, [navigate, location, isAppReady])
 
-  // Écouter les changements dans localStorage (pour mise à jour du contexte)
   useEffect(() => {
     let authChangeTimers = []
 
     const handleAuthChange = () => {
-      const newRole = localStorage.getItem('userRole')
-      const newId = localStorage.getItem('userId')
+      const newRole = authService.getUserRole()
 
       setCurrentRole(newRole)
-      setCurrentUserId(newId ? parseInt(newId, 10) : null)
+      // userId sera rechargé via api.auth.getMe() dans le useEffect séparé
+      // Ne pas essayer de le récupérer depuis le JWT car il n'y est pas
 
-      // Envoyer les infos utilisateur à Sentry (si configuré)
-      if (newId && newRole) {
-        setSentryUser({
-          id: newId,
-          role: newRole,
-        })
+      // Recharger les infos utilisateur depuis l'API
+      if (authService.isAuthenticated()) {
+        api.auth
+          .getMe()
+          .then(userInfo => {
+            setCurrentUserId(userInfo.id)
+            setSentryUser({
+              id: userInfo.id.toString(),
+              role: userInfo.role,
+            })
+          })
+          .catch(error => {
+            console.error('Erreur récupération user info lors du changement:', error)
+          })
+      } else {
+        setCurrentUserId(null)
+        setSentryUser(null)
       }
 
       // Nettoyer les anciens timers
@@ -156,20 +164,6 @@ export const RoleProvider = ({ children }) => {
     }
   }, [])
 
-  const updateUserRole = useCallback(role => {
-    localStorage.setItem('userRole', role)
-    setCurrentRole(role)
-    // Dispatch custom event pour notifier les autres composants
-    window.dispatchEvent(new Event('auth-changed'))
-  }, [])
-
-  const updateUserId = useCallback(id => {
-    localStorage.setItem('userId', id.toString())
-    setCurrentUserId(id)
-    // Dispatch custom event pour notifier les autres composants
-    window.dispatchEvent(new Event('auth-changed'))
-  }, [])
-
   const logout = useCallback(() => {
     // Nettoyer les tokens et données d'authentification
     authService.logout()
@@ -192,8 +186,7 @@ export const RoleProvider = ({ children }) => {
     () => ({
       currentRole,
       currentUserId,
-      setUserRole: updateUserRole,
-      setUserId: updateUserId,
+
       logout,
       isAuthenticated: authService.isAuthenticated(),
       isAdmin: currentRole === ROLES.ADMIN,
@@ -201,8 +194,33 @@ export const RoleProvider = ({ children }) => {
       isManager: currentRole === ROLES.MANAGER,
       isCommercial: currentRole === ROLES.COMMERCIAL,
     }),
-    [currentRole, currentUserId, updateUserRole, updateUserId, logout]
+    [currentRole, currentUserId, logout]
   )
+
+  // Charger les infos utilisateur depuis l'API au démarrage
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (authService.isAuthenticated()) {
+        try {
+          const userInfo = await api.auth.getMe()
+          setCurrentUserId(userInfo.id)
+          setCurrentRole(userInfo.role)
+
+          // Mettre à jour Sentry
+          setSentryUser({
+            id: userInfo.id.toString(),
+            role: userInfo.role,
+          })
+        } catch (error) {
+          console.error('Erreur récupération user info:', error)
+          // En cas d'erreur, déconnecter l'utilisateur
+          logout()
+        }
+      }
+    }
+
+    fetchUserInfo()
+  }, [logout])
 
   return (
     <RoleContext.Provider value={value}>

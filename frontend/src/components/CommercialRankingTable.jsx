@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useRole } from '@/contexts/userole'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Table,
@@ -47,11 +48,11 @@ export default function CommercialRankingTable({
   directeurs = [],
   managers = [],
   statistics = [],
-  currentUserRole = 'admin',
   title = 'Classement des performances',
   description = 'Classement basé sur les performances par rôle',
   limit = 10,
 }) {
+  const { currentRole } = useRole()
   const [selectedType, setSelectedType] = useState('commercials')
 
   // Filtrer les types d'utilisateurs selon le rôle connecté
@@ -82,7 +83,7 @@ export default function CommercialRankingTable({
     },
   ]
 
-  const userTypes = availableUserTypes.filter(type => type.allowedRoles.includes(currentUserRole))
+  const userTypes = availableUserTypes.filter(type => type.allowedRoles.includes(currentRole))
 
   // S'assurer que le type sélectionné est valide pour le rôle actuel
   const validSelectedType = userTypes.find(type => type.key === selectedType)
@@ -90,30 +91,95 @@ export default function CommercialRankingTable({
     : userTypes[0]?.key || 'commercials'
 
   const currentUserType = userTypes.find(type => type.key === validSelectedType)
+
+  // Vérifier si les statistiques globales sont disponibles
+  const hasGlobalStats = useMemo(() => Boolean(statistics?.length), [statistics])
+
+  // Grouper les statistiques par commercial pour éviter les filtres répétés
+  const statisticsByCommercial = useMemo(() => {
+    const map = new Map()
+    statistics.forEach(stat => {
+      if (stat.commercialId) {
+        if (!map.has(stat.commercialId)) {
+          map.set(stat.commercialId, [])
+        }
+        map.get(stat.commercialId).push(stat)
+      }
+    })
+    return map
+  }, [statistics])
+
+  // Grouper les statistiques par manager
+  const statisticsByManager = useMemo(() => {
+    const map = new Map()
+    statistics.forEach(stat => {
+      if (stat.managerId) {
+        if (!map.has(stat.managerId)) {
+          map.set(stat.managerId, [])
+        }
+        map.get(stat.managerId).push(stat)
+      }
+    })
+    return map
+  }, [statistics])
+
+  // Grouper les commerciaux par directeur
+  const commercialsByDirecteur = useMemo(() => {
+    const map = new Map()
+    commercials.forEach(commercial => {
+      if (commercial.directeurId) {
+        if (!map.has(commercial.directeurId)) {
+          map.set(commercial.directeurId, [])
+        }
+        map.get(commercial.directeurId).push(commercial)
+      }
+    })
+    return map
+  }, [commercials])
+
+
+
+  // Fonction helper pour obtenir les statistiques d'un utilisateur
+  const getStatisticsForUser = (user, userType) => {
+    switch (userType) {
+      case 'commercials':
+        if (hasGlobalStats) {
+          return statisticsByCommercial.get(user.id) || []
+        }
+        return user.statistics || []
+
+      case 'directeurs':
+        if (hasGlobalStats) {
+          const directeurCommercials = commercialsByDirecteur.get(user.id) || []
+          return directeurCommercials.flatMap(
+            commercial => statisticsByCommercial.get(commercial.id) || []
+          )
+        }
+        return (commercialsByDirecteur.get(user.id) || []).flatMap(
+          commercial => commercial.statistics || []
+        )
+
+      case 'managers':
+        if (hasGlobalStats) {
+          const managerStats = statisticsByManager.get(user.id) || []
+          // Retourner uniquement les statistiques personnelles (sans commercialId)
+          return managerStats.filter(stat => !stat.commercialId)
+        }
+        // Retourner les statistiques personnelles du manager
+        return (user.statistics || []).filter(stat => !stat.commercialId)
+
+      default:
+        return []
+    }
+  }
+
   const rankedUsers = useMemo(() => {
     const currentData = currentUserType?.data || []
-    if (!currentData?.length || !statistics?.length) return []
+    if (!currentData?.length) return []
 
-    // Calculer les performances selon le type d'utilisateur
+    // Calculer les performances pour chaque utilisateur
     const userStats = currentData.map(user => {
-      let userStatistics = []
-
-      // Filtrer les statistiques selon le type d'utilisateur
-      if (validSelectedType === 'commercials') {
-        userStatistics = statistics.filter(stat => stat.commercialId === user.id)
-      } else if (validSelectedType === 'directeurs') {
-        // Pour les directeurs : agréger les stats de tous leurs commerciaux
-        userStatistics = statistics.filter(stat => {
-          const commercial = commercials.find(c => c.id === stat.commercialId)
-          return commercial && commercial.directeurId === user.id
-        })
-      } else if (validSelectedType === 'managers') {
-        // Pour les managers : agréger les stats de tous leurs commerciaux
-        userStatistics = statistics.filter(stat => {
-          const commercial = commercials.find(c => c.id === stat.commercialId)
-          return commercial && commercial.managerId === user.id
-        })
-      }
+      const userStatistics = getStatisticsForUser(user, validSelectedType)
 
       // Calculer les totaux
       const totals = userStatistics.reduce(
@@ -161,7 +227,15 @@ export default function CommercialRankingTable({
         ...user,
         position: index + 1,
       }))
-  }, [currentUserType, statistics, limit, validSelectedType, commercials])
+  }, [
+    currentUserType,
+    validSelectedType,
+    limit,
+    hasGlobalStats,
+    statisticsByCommercial,
+    statisticsByManager,
+    commercialsByDirecteur,
+  ])
 
   if (!rankedUsers.length) {
     return (
@@ -174,7 +248,7 @@ export default function CommercialRankingTable({
           <CardDescription>{description}</CardDescription>
 
           {/* Sélecteur de type d'utilisateur */}
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-nowrap sm:flex-wrap gap-2 mt-4 ">
             {userTypes.map(type => {
               const Icon = type.icon
               const isActive = validSelectedType === type.key
@@ -222,7 +296,7 @@ export default function CommercialRankingTable({
         <CardDescription>{description}</CardDescription>
 
         {/* Sélecteur de type d'utilisateur */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-2 gap-2 mt-4">
           {userTypes.map(type => {
             const Icon = type.icon
             const isActive = validSelectedType === type.key
@@ -235,7 +309,7 @@ export default function CommercialRankingTable({
                 size="sm"
                 disabled={!hasData}
                 onClick={() => setSelectedType(type.key)}
-                className={`flex items-center gap-2 ${!hasData ? 'opacity-50' : ''}`}
+                className={`flex items-center justify-center gap-2 w-full p-2 ${!hasData ? 'opacity-50' : ''}`}
               >
                 <Icon className="h-4 w-4" />
                 {type.label}
@@ -279,7 +353,12 @@ export default function CommercialRankingTable({
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div
-                        className={`h-8 w-8 rounded-full bg-${userColor}-100 text-${userColor}-700 flex items-center justify-center text-xs font-semibold`}
+                        className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold ${userColor === 'blue'
+                          ? 'bg-blue-100 text-blue-700'
+                          : userColor === 'purple'
+                            ? 'bg-purple-100 text-purple-700'
+                            : 'bg-green-100 text-green-700'
+                          }`}
                       >
                         {user.initials}
                       </div>
@@ -318,13 +397,12 @@ export default function CommercialRankingTable({
 
                   <TableCell className="text-center">
                     <span
-                      className={`font-medium ${
-                        user.tauxConversion >= 20
-                          ? 'text-green-600'
-                          : user.tauxConversion >= 10
-                            ? 'text-yellow-600'
-                            : 'text-red-600'
-                      }`}
+                      className={`font-medium ${user.tauxConversion >= 20
+                        ? 'text-green-600'
+                        : user.tauxConversion >= 10
+                          ? 'text-yellow-600'
+                          : 'text-red-600'
+                        }`}
                     >
                       {user.tauxConversion}%
                     </span>

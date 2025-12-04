@@ -2,7 +2,6 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercialFull, useManagers, useCurrentZoneAssignment } from '@/services'
-import { useRole } from '@/contexts/userole'
 import { useMemo } from 'react'
 import { calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
@@ -16,9 +15,8 @@ import {
 
 export default function CommercialDetails() {
   const { id } = useParams()
-  const { currentRole, currentUserId } = useRole()
   const { data: commercial, loading, error } = useCommercialFull(parseInt(id))
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: managers } = useManagers()
   const { data: currentZone } = useCurrentZoneAssignment(parseInt(id), 'COMMERCIAL')
 
   // Hook pour gérer les filtres de date
@@ -89,18 +87,20 @@ export default function CommercialDetails() {
   const assignedZones = useMemo(() => {
     if (!currentZone) return []
 
-    // Compter les immeubles de cette zone assignés au commercial
-    const immeublesCount =
-      commercial?.immeubles?.filter(immeuble => immeuble.zoneId === currentZone.zoneId).length || 0
+    // Filtrer les immeubles de la zone pour ne garder que ceux créés par ce commercial
+    const immeublesCreatedByCommercial = currentZone.zone?.immeubles?.filter(
+      imm => imm.commercialId === commercial?.id
+    ) || []
 
     return [
       {
         ...currentZone.zone,
+        immeubles: immeublesCreatedByCommercial, // Remplacer par les immeubles filtrés
         assignmentDate: currentZone.assignedAt,
-        immeublesCount,
+        immeublesCount: immeublesCreatedByCommercial.length,
       },
     ]
-  }, [currentZone, commercial])
+  }, [currentZone, commercial?.id])
 
   // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date)
   const immeublesTableData = useImmeublesTableData(
@@ -165,13 +165,20 @@ export default function CommercialDetails() {
       icon: 'award',
     },
     {
-      label: 'Date de création',
+      label: 'Date de création de compte',
       value: new Date(commercialData.createdAt).toLocaleDateString('fr-FR'),
       icon: 'calendar',
     },
   ]
 
   const statsCards = [
+    {
+      title: 'Points totaux',
+      value: commercialData.points,
+      description: 'Score personnel',
+      icon: 'trendingUp',
+      fullWidth: true,
+    },
     {
       title: 'Contrats signés',
       value: commercialData.totalContratsSignes,
@@ -209,22 +216,18 @@ export default function CommercialDetails() {
       icon: 'building',
     },
     {
-      title: 'Points totaux',
-      value: commercialData.points,
-      description: 'Score personnel',
-      icon: 'trendingUp',
-    },
-    {
       title: 'Taux de conversion par portes prospectées',
       value: commercialData.tauxConversion_portes_prospectes,
       description: 'Contrats / Portes prospectées',
       icon: 'trendingUp',
+      halfWidth: true,
     },
     {
       title: 'Taux de conversion par rendez-vous pris',
       value: commercialData.tauxConversion_rdv_pris,
       description: 'Contrats / RDV pris',
       icon: 'trendingUp',
+      halfWidth: true,
     },
   ]
 
@@ -342,7 +345,7 @@ export default function CommercialDetails() {
     },
     {
       title: 'Immeubles prospectés',
-      description: 'Liste des immeubles assignés à ce commercial avec leurs statistiques',
+      description: 'Liste des immeubles prospectés par ce commercial avec leurs statistiques',
       type: 'custom',
       component: 'ImmeublesTable',
       data: {
@@ -360,7 +363,7 @@ export default function CommercialDetails() {
     <DetailsPage
       title={commercialData.name}
       subtitle={`Commercial - ID: ${commercialData.id}`}
-      status={'COMMERCIAL'}
+      status={'Commercial'}
       data={commercialData}
       personalInfo={personalInfo}
       statsCards={statsCards}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Map, { Marker, Source, Layer, NavigationControl, useControl } from 'react-map-gl/mapbox'
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Calendar, Maximize2, X, Lock, Unlock, Building2 } from 'lucide-react'
 import { MapSkeleton } from '@/components/LoadingSkeletons'
-import { apiCache } from '@/services/api-cache'
+import { mapboxCache } from '@/services/api-cache'
 import { logError } from '@/services/graphql-errors'
 
 // Set Mapbox access token
@@ -81,7 +81,7 @@ const fetchLocationName = async (longitude, latitude) => {
     try {
       const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,reg  ion,country&language=fr`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${token}&types=place,region,country&language=fr`
       )
 
       if (!response.ok) {
@@ -106,8 +106,9 @@ const fetchLocationName = async (longitude, latitude) => {
     }
   }
 
-  const cacheKey = apiCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
-  return apiCache.fetchWithCache(cacheKey, fetchGeocode)
+  // Utiliser le cache dédié Mapbox
+  const cacheKey = mapboxCache.getKey(fetchGeocode, [roundedLng, roundedLat], 'mapbox-geocode')
+  return mapboxCache.fetchWithCache(cacheKey, fetchGeocode)
 }
 
 /**
@@ -516,7 +517,12 @@ export default function AssignedZoneCard({
                           Zone
                         </p>
                       </div>
-                      <p className="text-xl font-bold">{zone.nom}</p>
+                      <Link
+                        to={`/zones/${zone.id}`}
+                        className="text-xl font-bold hover:text-primary hover:underline transition-colors cursor-pointer"
+                      >
+                        {zone.nom}
+                      </Link>
                     </div>
 
                     <div className="flex flex-col space-y-2">
@@ -631,7 +637,7 @@ export default function AssignedZoneCard({
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
-                        Immeubles géolocalisés
+                        Immeubles
                       </p>
                       <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
                     </div>
@@ -755,7 +761,7 @@ export default function AssignedZoneCard({
                 </div>
                 <div>
                   <p className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-                    Immeubles géolocalisés
+                    Immeubles
                   </p>
                   <p className="font-semibold text-lg">{immeublesWithCoordinates.length}</p>
                 </div>

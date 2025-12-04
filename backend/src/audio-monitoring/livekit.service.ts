@@ -13,8 +13,9 @@ export class LiveKitService {
   private readonly apiKey = process.env.LK_API_KEY!;
   private readonly apiSecret = process.env.LK_API_SECRET!;
 
+  // RoomServiceClient needs HTTP(S) URL, convert if WS(S) provided
   private readonly rsc = new RoomServiceClient(
-    this.host,
+    this.host.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://'),
     this.apiKey,
     this.apiSecret,
   );
@@ -39,7 +40,13 @@ export class LiveKitService {
 
     // toJwt() est SYNCHRONE → surtout pas de "await" ici
     const token = await at.toJwt();
-    const serverUrl = this.host.replace(/^http/, 'ws'); // wss://...
+    
+    // ✅ Utilisation du proxy WebSocket via le backend NestJS
+    // Cela permet de convertir WSS (Front) -> WS (LiveKit) et éviter les erreurs Mixed Content
+    // Utilise PUBLIC_URL de l'env ou fallback sur localhost:3000
+    // Si nous sommes en HTTPS (production/dev sécurisé), on utilise wss://
+    const publicHost = process.env.PUBLIC_HOST || 'localhost:3000';
+    const serverUrl = `wss://${publicHost}/livekit-proxy`;
 
     return {
       serverUrl,

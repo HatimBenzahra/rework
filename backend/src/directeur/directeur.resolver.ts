@@ -27,27 +27,27 @@ export class DirecteurResolver {
   @Query(() => [Directeur], { name: 'directeurs' })
   @Roles('admin', 'directeur')
   findAll(@CurrentUser() user: any) {
-    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
     return this.directeurService.findAll(user.id, user.role);
   }
 
   @Query(() => Directeur, { name: 'directeur' })
   @Roles('admin', 'directeur')
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.directeurService.findOne(id);
+  findOne(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.directeurService.findOne(id, user.id, user.role);
   }
 
   @Mutation(() => Directeur)
   @Roles('admin')
   updateDirecteur(
     @Args('updateDirecteurInput') updateDirecteurInput: UpdateDirecteurInput,
+    @CurrentUser() user: any,
   ) {
-    return this.directeurService.update(updateDirecteurInput);
+    return this.directeurService.update(updateDirecteurInput, user.id, user.role);
   }
 
   @Mutation(() => Directeur)
   @Roles('admin')
-  removeDirecteur(@Args('id', { type: () => Int }) id: number) {
-    return this.directeurService.remove(id);
+  removeDirecteur(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.directeurService.remove(id, user.id, user.role);
   }
 }

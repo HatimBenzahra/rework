@@ -29,14 +29,13 @@ export class ZoneResolver {
   @Query(() => [Zone], { name: 'zones' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
   findAll(@CurrentUser() user: any) {
-    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
     return this.zoneService.findAll(user.id, user.role);
   }
 
   @Query(() => Zone, { name: 'zone' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.zoneService.findOne(id);
+  findOne(@Args('id', { type: () => Int }) id: number, @CurrentUser() user: any) {
+    return this.zoneService.findOne(id, user.id, user.role);
   }
 
   @Mutation(() => Zone)
@@ -56,9 +55,10 @@ export class ZoneResolver {
   assignZoneToCommercial(
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('commercialId', { type: () => Int }) commercialId: number,
+    @CurrentUser() user: any,
   ) {
     return this.zoneService
-      .assignToCommercial(zoneId, commercialId)
+      .assignToCommercial(zoneId, commercialId, user.id, user.role)
       .then(() => true);
   }
 
@@ -67,9 +67,10 @@ export class ZoneResolver {
   assignZoneToDirecteur(
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('directeurId', { type: () => Int }) directeurId: number,
+    @CurrentUser() user: any,
   ) {
     return this.zoneService
-      .assignToDirecteur(zoneId, directeurId)
+      .assignToDirecteur(zoneId, directeurId, user.id, user.role)
       .then(() => true);
   }
 
@@ -78,8 +79,9 @@ export class ZoneResolver {
   assignZoneToManager(
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('managerId', { type: () => Int }) managerId: number,
+    @CurrentUser() user: any,
   ) {
-    return this.zoneService.assignToManager(zoneId, managerId).then(() => true);
+    return this.zoneService.assignToManager(zoneId, managerId, user.id, user.role).then(() => true);
   }
 
   @Mutation(() => Boolean)
@@ -87,9 +89,10 @@ export class ZoneResolver {
   unassignZoneFromCommercial(
     @Args('zoneId', { type: () => Int }) zoneId: number,
     @Args('commercialId', { type: () => Int }) commercialId: number,
+    @CurrentUser() user: any,
   ) {
     return this.zoneService
-      .unassignFromCommercial(zoneId, commercialId)
+      .unassignFromCommercial(zoneId, commercialId, user.id, user.role)
       .then(() => true);
   }
 
@@ -99,11 +102,13 @@ export class ZoneResolver {
 
   @Mutation(() => ZoneEnCours, { name: 'assignZoneToUser' })
   @Roles('admin', 'directeur', 'manager')
-  assignZoneToUser(@Args('input') input: AssignZoneInput) {
+  assignZoneToUser(@Args('input') input: AssignZoneInput, @CurrentUser() user: any) {
     return this.zoneService.assignZoneToUser(
       input.zoneId,
       input.userId,
       input.userType,
+      user.id,
+      user.role,
     );
   }
 
@@ -112,8 +117,9 @@ export class ZoneResolver {
   unassignUser(
     @Args('userId', { type: () => Int }) userId: number,
     @Args('userType', { type: () => UserType }) userType: UserType,
+    @CurrentUser() user: any,
   ) {
-    return this.zoneService.unassignUser(userId, userType).then(() => true);
+    return this.zoneService.unassignUser(userId, userType, user.id, user.role).then(() => true);
   }
 
   @Query(() => ZoneEnCours, { name: 'currentUserAssignment', nullable: true })
@@ -121,8 +127,9 @@ export class ZoneResolver {
   getCurrentAssignment(
     @Args('userId', { type: () => Int }) userId: number,
     @Args('userType', { type: () => UserType }) userType: UserType,
+    @CurrentUser() user: any,
   ) {
-    return this.zoneService.getCurrentAssignment(userId, userType);
+    return this.zoneService.getCurrentAssignment(userId, userType, user.id, user.role);
   }
 
   @Query(() => [HistoriqueZone], { name: 'userZoneHistory' })
@@ -130,8 +137,9 @@ export class ZoneResolver {
   getUserZoneHistory(
     @Args('userId', { type: () => Int }) userId: number,
     @Args('userType', { type: () => UserType }) userType: UserType,
+    @CurrentUser() user: any,
   ) {
-    return this.zoneService.getUserZoneHistory(userId, userType);
+    return this.zoneService.getUserZoneHistory(userId, userType, user.id, user.role);
   }
 
   @Query(() => [HistoriqueZone], { name: 'zoneHistory' })
@@ -144,21 +152,20 @@ export class ZoneResolver {
   @Roles('admin', 'directeur', 'manager')
   getZoneCurrentAssignments(
     @Args('zoneId', { type: () => Int }) zoneId: number,
+    @CurrentUser() user: any,
   ) {
-    return this.zoneService.getZoneCurrentAssignments(zoneId);
+    return this.zoneService.getZoneCurrentAssignments(zoneId, user.id, user.role);
   }
 
   @Query(() => [HistoriqueZone], { name: 'allZoneHistory' })
   @Roles('admin', 'directeur', 'manager')
   getAllZoneHistory(@CurrentUser() user: any) {
-    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
     return this.zoneService.getAllZoneHistory(user.id, user.role);
   }
 
   @Query(() => [ZoneEnCours], { name: 'allCurrentAssignments' })
   @Roles('admin', 'directeur', 'manager', 'commercial')
   getAllCurrentAssignments(@CurrentUser() user: any) {
-    // Utiliser UNIQUEMENT les informations du JWT (sécurisé via Keycloak)
     return this.zoneService.getAllCurrentAssignments(user.id, user.role);
   }
 }

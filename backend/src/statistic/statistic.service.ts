@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import {
   CreateStatisticInput,
@@ -9,6 +13,114 @@ import {
 @Injectable()
 export class StatisticService {
   constructor(private prisma: PrismaService) {}
+
+  private async assertStatisticAccess(
+    statisticId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const statistic = await this.prisma.statistic.findUnique({
+      where: { id: statisticId },
+      include: {
+        commercial: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+        manager: {
+          select: { id: true, directeurId: true },
+        },
+      },
+    });
+
+    if (!statistic) {
+      throw new NotFoundException('Statistic not found');
+    }
+
+    if (userRole === 'admin') {
+      return statistic;
+    }
+
+    if (
+      userRole === 'commercial' &&
+      statistic.commercialId !== userId
+    ) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager') {
+      const ownsStatistic =
+        statistic.managerId === userId ||
+        statistic.commercial?.managerId === userId;
+
+      if (!ownsStatistic) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    if (userRole === 'directeur') {
+      const ownsStatistic =
+        statistic.manager?.directeurId === userId ||
+        statistic.commercial?.directeurId === userId;
+
+      if (!ownsStatistic) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    return statistic;
+  }
+
+  private async ensureImmeubleAccess(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.prisma.immeuble.findUnique({
+      where: { id: immeubleId },
+      include: {
+        commercial: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+        manager: {
+          select: { id: true, directeurId: true },
+        },
+        zone: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+      },
+    });
+
+    if (!immeuble) {
+      throw new NotFoundException('Immeuble not found');
+    }
+
+    if (userRole === 'admin') {
+      return;
+    }
+
+    if (userRole === 'commercial' && immeuble.commercialId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager') {
+      const ownsImmeuble =
+        immeuble.managerId === userId ||
+        immeuble.commercial?.managerId === userId ||
+        immeuble.zone?.managerId === userId;
+      if (!ownsImmeuble) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    if (userRole === 'directeur') {
+      const ownsImmeuble =
+        immeuble.manager?.directeurId === userId ||
+        immeuble.commercial?.directeurId === userId ||
+        immeuble.zone?.directeurId === userId;
+      if (!ownsImmeuble) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+  }
 
   async create(data: CreateStatisticInput) {
     return this.prisma.statistic.create({
@@ -76,7 +188,9 @@ export class StatisticService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId: number, userRole: string) {
+    await this.assertStatisticAccess(id, userId, userRole);
+
     return this.prisma.statistic.findUnique({
       where: { id },
       include: {
@@ -86,8 +200,31 @@ export class StatisticService {
     });
   }
 
-  async update(data: UpdateStatisticInput) {
+  async update(
+    data: UpdateStatisticInput,
+    userId: number,
+    userRole: string,
+  ) {
     const { id, ...updateData } = data;
+
+    const statistic = await this.assertStatisticAccess(id, userId, userRole);
+
+    if (userRole !== 'admin') {
+      if (
+        updateData.commercialId &&
+        updateData.commercialId !== statistic.commercialId
+      ) {
+        throw new ForbiddenException('Cannot reassign statistic owner');
+      }
+
+      if (
+        updateData.managerId &&
+        updateData.managerId !== statistic.managerId
+      ) {
+        throw new ForbiddenException('Cannot reassign statistic owner');
+      }
+    }
+
     return this.prisma.statistic.update({
       where: { id },
       data: updateData,
@@ -98,7 +235,9 @@ export class StatisticService {
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number, userRole: string) {
+    await this.assertStatisticAccess(id, userId, userRole);
+
     return this.prisma.statistic.delete({
       where: { id },
       include: {
@@ -391,5 +530,40 @@ export class StatisticService {
     return zoneStatistics.sort(
       (a, b) => b.performanceGlobale - a.performanceGlobale,
     );
+  }
+
+  async ensureCanSyncCommercialStats(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    await this.ensureImmeubleAccess(immeubleId, userId, userRole);
+  }
+
+  async ensureCanSyncManagerStats(
+    managerId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const manager = await this.prisma.manager.findUnique({
+      where: { id: managerId },
+      select: { id: true, directeurId: true },
+    });
+
+    if (!manager) {
+      throw new NotFoundException('Manager not found');
+    }
+
+    if (userRole === 'admin') {
+      return;
+    }
+
+    if (userRole === 'directeur' && manager.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager' && manager.id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
   }
 }

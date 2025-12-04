@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { MapSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercials, useManagers } from '@/services'
 import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
-import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import {
   MapPin,
@@ -156,13 +155,8 @@ const CommercialListItem = React.memo(function CommercialListItem({
 })
 
 export default function GPSTracking() {
-  const { currentRole, currentUserId } = useRole()
-  const {
-    data: commercials,
-    loading,
-    error,
-  } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials, loading, error } = useCommercials()
+  const { data: managers } = useManagers()
   const { showError, showInfo } = useErrorToast()
 
   // Utilisation du système de rôles

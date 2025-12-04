@@ -21,7 +21,11 @@ export default function CommercialLayout() {
   // Ref pour le scroll container (utilisée par PortesGestion)
   const scrollContainerRef = React.useRef(null)
 
-  const userId = React.useMemo(() => parseInt(currentUserId, 10), [currentUserId])
+  const userId = React.useMemo(() => {
+    if (!currentUserId) return null
+    const parsed = parseInt(currentUserId, 10)
+    return isNaN(parsed) ? null : parsed
+  }, [currentUserId])
   const workspaceRole = isManager ? 'manager' : 'commercial'
 
   // Détecter si on est sur la page équipe pour charger les données complètes avec les commerciaux
@@ -84,6 +88,11 @@ export default function CommercialLayout() {
 
   // Configuration des onglets de navigation
   const navigationItems = React.useMemo(() => {
+    const personalImmeublesCount =
+      isManager && workspaceProfile?.immeubles
+        ? workspaceProfile.immeubles.filter(imm => imm.managerId === userId).length
+        : workspaceProfile?.immeubles?.length || 0
+
     const items = [
       {
         id: 'stats',
@@ -96,7 +105,7 @@ export default function CommercialLayout() {
         id: 'immeubles',
         label: 'Immeubles',
         icon: Building2,
-        badge: workspaceProfile?.immeubles?.length || 0,
+        badge: personalImmeublesCount,
         path: '/immeubles',
       },
       {
@@ -122,8 +131,9 @@ export default function CommercialLayout() {
   }, [
     isManager,
     workspaceProfile?.commercials?.length,
-    workspaceProfile?.immeubles?.length,
+    workspaceProfile?.immeubles,
     workspaceStats.contratsSignes,
+    userId,
   ])
 
   // Déterminer l'onglet actif basé sur le chemin
@@ -205,7 +215,7 @@ export default function CommercialLayout() {
 
       <div
         ref={scrollContainerRef}
-        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-4 sm:py-6 pb-24 ${
+        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-2 sm:py-3 pb-20 ${
           location.pathname.startsWith('/portes/')
             ? 'portes-scroll-container'
             : 'commercial-scroll-container'

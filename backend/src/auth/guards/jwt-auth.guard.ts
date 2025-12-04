@@ -42,6 +42,12 @@ export class JwtAuthGuard implements CanActivate {
       // Extraire les groupes/rôles
       const groups = this.extractGroups(decodedToken);
       const role = this.mapGroupToRole(groups);
+      const email = decodedToken.email || decodedToken.preferred_username;
+      const userRecord = await this.resolveUserRecord(email, role);
+
+      if (!userRecord) {
+        throw new UnauthorizedException('User not provisioned');
+      }
 
       // Récupérer l'ID de la base de données selon le rôle
       const userId = await this.getUserIdByEmailAndRole(
@@ -52,10 +58,11 @@ export class JwtAuthGuard implements CanActivate {
       // Attacher les informations utilisateur au contexte
       request.user = {
         sub: decodedToken.sub,
-        email: decodedToken.email,
+        email,
         groups,
         role,
-        id: userId, // ID de la base de données
+        id: userRecord.id,
+        userId: userRecord.id,
       };
 
       this.logger.debug(
@@ -120,66 +127,36 @@ export class JwtAuthGuard implements CanActivate {
     throw new UnauthorizedException('Aucun rôle autorisé');
   }
 
-  /**
-   * Récupère l'ID de la base de données selon l'email et le rôle
-   */
-  private async getUserIdByEmailAndRole(
-    email: string,
+  private async resolveUserRecord(
+    email: string | undefined,
     role: string,
-  ): Promise<number> {
-    try {
-      switch (role) {
-        case 'commercial': {
-          const commercial = await this.prisma.commercial.findUnique({
-            where: { email },
-            select: { id: true },
-          });
-          if (!commercial) {
-            throw new UnauthorizedException(
-              'Commercial introuvable dans la base',
-            );
-          }
-          return commercial.id;
-        }
+  ): Promise<{ id: number } | null> {
+    if (!email) {
+      this.logger.warn('JWT payload missing email, cannot resolve user record');
+      return null;
+    }
 
-        case 'manager': {
-          const manager = await this.prisma.manager.findUnique({
-            where: { email },
-            select: { id: true },
-          });
-          if (!manager) {
-            throw new UnauthorizedException('Manager introuvable dans la base');
-          }
-          return manager.id;
-        }
-
-        case 'directeur': {
-          const directeur = await this.prisma.directeur.findUnique({
-            where: { email },
-            select: { id: true },
-          });
-          if (!directeur) {
-            throw new UnauthorizedException(
-              'Directeur introuvable dans la base',
-            );
-          }
-          return directeur.id;
-        }
-
-        case 'admin': {
-          // Pour les admins, on retourne 0 (pas d'ID spécifique)
-          return 0;
-        }
-
-        default:
-          throw new UnauthorizedException('Rôle non reconnu');
-      }
-    } catch (error) {
-      this.logger.error(
-        `❌ Erreur lors de la récupération de l'ID utilisateur:`,
-        error,
-      );
-      throw error;
+    switch (role) {
+      case 'commercial':
+        return this.prisma.commercial.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+      case 'manager':
+        return this.prisma.manager.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+      case 'admin':
+        this.logger.debug(`Admin authentifié: ${email}`);
+        return { id: 0 };
+      case 'directeur':
+        return this.prisma.directeur.findUnique({
+          where: { email },
+          select: { id: true },
+        });
+      default:
+        return null;
     }
   }
 }

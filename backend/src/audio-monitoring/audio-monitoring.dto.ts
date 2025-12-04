@@ -68,9 +68,6 @@ export class StartMonitoringInput {
   @Field()
   userType: string;
 
-  @Field(() => Int)
-  supervisorId: number;
-
   @Field({ nullable: true })
   roomName?: string;
 }

@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { apiCache } from '@/services/api-cache'
+import { apiCache, mapboxCache } from '@/services/api-cache'
 
 /**
  * Configuration pour un loader de données spécifique
@@ -49,15 +49,18 @@ export function useLazyDataLoader(loaderConfigs = []) {
         setLoadingStates(prev => ({ ...prev, [identifier]: true }))
         activeRequestsRef.current.add(requestKey)
 
+        // Sélectionner le bon cache selon le namespace
+        const cache = namespace === 'mapbox-geocode' ? mapboxCache : apiCache
+
         // Générer la clé de cache
-        const cacheKey = apiCache.getKey(
+        const cacheKey = cache.getKey(
           fetcher,
           getCacheKey ? getCacheKey(item) : [identifier],
           namespace
         )
 
-        // Utiliser ton système de cache avec déduplication
-        const result = await apiCache.fetchWithCache(cacheKey, () => fetcher(item))
+        // Utiliser le système de cache avec déduplication
+        const result = await cache.fetchWithCache(cacheKey, () => fetcher(item))
 
         // Sauvegarder le résultat
         setLoadedData(prev => ({

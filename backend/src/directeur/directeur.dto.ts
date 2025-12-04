@@ -1,5 +1,6 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
 import { IsEmail, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { Statistic } from '../statistic/statistic.dto';
 
 @ObjectType()
 export class Directeur {
@@ -26,6 +27,9 @@ export class Directeur {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => [Statistic], { nullable: true })
+  statistics?: Statistic[];
 }
 
 @InputType()

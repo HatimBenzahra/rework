@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/Pagination'
-import { useRole } from '@/contexts/userole'
 import { useEcoutesUsers } from '@/hooks/ecoutes/useEcoutesUsers'
 import { usePagination } from '@/hooks/utils/usePagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
@@ -23,7 +22,6 @@ import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitorin
 import { Play, Square, User, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 
 export default function EcouteLive() {
-  const { currentUserId } = useRole()
   const { allUsers, loading, error, refetch } = useEcoutesUsers()
   const { showSuccess, showError } = useErrorToast()
 
@@ -75,11 +73,7 @@ export default function EcouteLive() {
         await handleStopListening(userKey)
       }
 
-      const connectionDetails = await AudioMonitoringService.startMonitoring(
-        user.id,
-        user.userType,
-        parseInt(currentUserId)
-      )
+      const connectionDetails = await AudioMonitoringService.startMonitoring(user.id, user.userType)
 
       // Utiliser une clé unique combinant type et id
       const userKey = `${user.userType}-${user.id}`

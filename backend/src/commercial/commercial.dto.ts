@@ -135,3 +135,31 @@ export class UpdateCommercialInput {
   @IsInt()
   directeurId?: number;
 }
+
+@ObjectType()
+export class TeamRanking {
+  @Field(() => Int)
+  position: number;
+
+  @Field(() => Int)
+  total: number;
+
+  @Field(() => Int)
+  points: number;
+
+  @Field(() => String, { nullable: true })
+  trend?: string; // 'up', 'down', ou null si pas de changement
+
+  // Informations du manager
+  @Field({ nullable: true })
+  managerNom?: string;
+
+  @Field({ nullable: true })
+  managerPrenom?: string;
+
+  @Field({ nullable: true })
+  managerEmail?: string;
+
+  @Field({ nullable: true })
+  managerNumTel?: string;
+}

@@ -1,10 +1,71 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { CreateImmeubleInput, UpdateImmeubleInput } from './immeuble.dto';
 
 @Injectable()
 export class ImmeubleService {
   constructor(private prisma: PrismaService) {}
+
+  private async ensureImmeubleAccess(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.prisma.immeuble.findUnique({
+      where: { id: immeubleId },
+      include: {
+        commercial: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+        manager: {
+          select: { id: true, directeurId: true },
+        },
+        zone: {
+          select: { id: true, managerId: true, directeurId: true },
+        },
+      },
+    });
+
+    if (!immeuble) {
+      throw new NotFoundException('Immeuble not found');
+    }
+
+    if (userRole === 'admin') {
+      return immeuble;
+    }
+
+    if (userRole === 'commercial' && immeuble.commercialId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager') {
+      const ownsImmeuble =
+        immeuble.managerId === userId ||
+        immeuble.commercial?.managerId === userId ||
+        immeuble.zone?.managerId === userId;
+
+      if (!ownsImmeuble) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    if (userRole === 'directeur') {
+      const ownsImmeuble =
+        immeuble.manager?.directeurId === userId ||
+        immeuble.commercial?.directeurId === userId ||
+        immeuble.zone?.directeurId === userId;
+
+      if (!ownsImmeuble) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    return immeuble;
+  }
 
   async create(data: CreateImmeubleInput) {
     // Si un commercialId ou managerId est fourni, récupérer sa zone assignée
@@ -83,8 +144,8 @@ export class ImmeubleService {
   }
 
   async findAll(userId?: number, userRole?: string) {
-    // Si pas de paramètres de filtrage, retourner tous les immeubles
-    if (userId === undefined || userId === null || !userRole) {
+    // Vérifier que les paramètres sont définis (userId peut être 0 pour les admins)
+    if (userId === undefined || !userRole) {
       throw new ForbiddenException('UNAUTHORIZED');
     }
 
@@ -147,7 +208,9 @@ export class ImmeubleService {
     }
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, userId: number, userRole: string) {
+    await this.ensureImmeubleAccess(id, userId, userRole);
+
     return this.prisma.immeuble.findUnique({
       where: { id },
       include: {
@@ -169,30 +232,41 @@ export class ImmeubleService {
     });
   }
 
-  async update(data: UpdateImmeubleInput) {
+  async update(
+    data: UpdateImmeubleInput,
+    userId: number,
+    userRole: string,
+  ) {
     const { id, ...updateData } = data;
+
+    await this.ensureImmeubleAccess(id, userId, userRole);
+
     return this.prisma.immeuble.update({
       where: { id },
       data: updateData,
     });
   }
 
-  async remove(id: number) {
+  async remove(id: number, userId: number, userRole: string) {
+    await this.ensureImmeubleAccess(id, userId, userRole);
+
     return this.prisma.immeuble.delete({
       where: { id },
     });
   }
 
 
-  async addPorteToEtage(immeubleId: number, etage: number) {
-    // Récupérer l'immeuble pour validation
-    const immeuble = await this.prisma.immeuble.findUnique({
-      where: { id: immeubleId },
-    });
-
-    if (!immeuble) {
-      throw new Error('Immeuble not found');
-    }
+  async addPorteToEtage(
+    immeubleId: number,
+    etage: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.ensureImmeubleAccess(
+      immeubleId,
+      userId,
+      userRole,
+    );
 
     if (etage < 1 || etage > immeuble.nbEtages) {
       throw new Error('Invalid floor number');
@@ -235,15 +309,17 @@ export class ImmeubleService {
     return immeuble;
   }
 
-  async removePorteFromEtage(immeubleId: number, etage: number) {
-    // Récupérer l'immeuble pour validation
-    const immeuble = await this.prisma.immeuble.findUnique({
-      where: { id: immeubleId },
-    });
-
-    if (!immeuble) {
-      throw new Error('Immeuble not found');
-    }
+  async removePorteFromEtage(
+    immeubleId: number,
+    etage: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.ensureImmeubleAccess(
+      immeubleId,
+      userId,
+      userRole,
+    );
 
     if (etage < 1 || etage > immeuble.nbEtages) {
       throw new Error('Invalid floor number');
@@ -288,15 +364,16 @@ export class ImmeubleService {
   }
 
 
-  async addEtage(immeubleId: number) {
-    // Récupérer l'immeuble pour connaître sa configuration
-    const immeuble = await this.prisma.immeuble.findUnique({
-      where: { id: immeubleId },
-    });
-
-    if (!immeuble) {
-      throw new Error('Immeuble not found');
-    }
+  async addEtage(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.ensureImmeubleAccess(
+      immeubleId,
+      userId,
+      userRole,
+    );
 
     const nouvelEtage = immeuble.nbEtages + 1;
 
@@ -330,15 +407,16 @@ export class ImmeubleService {
     return updatedImmeuble;
   }
 
-  async removeEtage(immeubleId: number) {
-    // Récupérer l'immeuble pour connaître sa configuration
-    const immeuble = await this.prisma.immeuble.findUnique({
-      where: { id: immeubleId },
-    });
-
-    if (!immeuble) {
-      throw new Error('Immeuble not found');
-    }
+  async removeEtage(
+    immeubleId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const immeuble = await this.ensureImmeubleAccess(
+      immeubleId,
+      userId,
+      userRole,
+    );
 
     if (immeuble.nbEtages <= 1) {
       throw new Error('Cannot remove the last floor');

@@ -39,7 +39,7 @@ export function useErrorHandler() {
         toast({
           title,
           description,
-          variant: 'destructive',
+          variant: 'error',
         })
       }
 
@@ -91,7 +91,7 @@ export function useErrorHandler() {
         toast({
           title: 'Erreur détectée',
           description: "Une erreur inattendue s'est produite. L'équipe technique a été notifiée.",
-          variant: 'destructive',
+          variant: 'error',
         })
       }
     })

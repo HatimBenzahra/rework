@@ -230,10 +230,10 @@ enum LogLevel {
 
 class Logger {
   private level: LogLevel
-  
+
   constructor() {
     // En production : WARN, en développement : DEBUG
-    this.level = process.env.NODE_ENV === 'production' ? LogLevel.WARN : LogLevel.DEBUG
+    this.level = import.meta.env.PROD ? LogLevel.WARN : LogLevel.DEBUG
   }
 
   private formatMessage(level: string, namespace: string, args: any[]) {

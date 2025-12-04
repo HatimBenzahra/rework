@@ -27,7 +27,7 @@ import { Award, TrendingUp, FileText, Building2, Calendar, X, Users, BookX } fro
 
 export default function ManagerDetails() {
   const { id } = useParams()
-  const { isAdmin, currentRole, currentUserId } = useRole()
+  const { isAdmin } = useRole()
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
@@ -50,13 +50,10 @@ export default function ManagerDetails() {
     error,
     refetch,
   } = useManagerPersonal(parseInt(id))
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: directeurs } = useDirecteurs()
   // useCommercials récupère TOUS les commerciaux avec leurs statistiques incluses
   // via la requête GET_COMMERCIALS qui inclut le champ 'statistics' pour chaque commercial
-  const { data: allCommercials, refetch: refetchCommercials } = useCommercials(
-    parseInt(currentUserId, 10),
-    currentRole
-  )
+  const { data: allCommercials, refetch: refetchCommercials } = useCommercials()
   const { mutate: updateCommercial, loading: updatingCommercial } = useUpdateCommercial()
   const { data: currentManagerZone } = useCurrentZoneAssignment(parseInt(id), 'MANAGER')
 
@@ -179,17 +176,18 @@ export default function ManagerDetails() {
   const managerZones = useMemo(() => {
     if (!currentManagerZone) return []
 
-    // Compter les immeubles de cette zone
-    const immeublesCount = currentManagerZone.zone?.immeubles?.length || 0
+    // Utiliser directement les immeubles du manager (qui ont déjà les coordonnées)
+    const managerImmeubles = manager?.immeubles || []
 
     return [
       {
         ...currentManagerZone.zone,
-        immeublesCount,
+        immeubles: managerImmeubles, // Utiliser les immeubles du manager
+        immeublesCount: managerImmeubles.length,
         assignmentDate: currentManagerZone.assignedAt,
       },
     ]
-  }, [currentManagerZone])
+  }, [currentManagerZone, manager?.immeubles])
 
   // Gestion de l'assignation/désassignation
   const handleAssignCommercial = async commercialId => {
@@ -421,7 +419,7 @@ export default function ManagerDetails() {
       icon: 'award',
     },
     {
-      label: 'Date de création :',
+      label: 'Date de création de compte:',
       value: managerData.date_promotion,
       icon: 'calendar',
     },
@@ -444,6 +442,13 @@ export default function ManagerDetails() {
 
   // Stats personnelles du manager (basées sur ses propres stats)
   const personalStatsCards = [
+    {
+      title: 'Points totaux',
+      value: managerData.points,
+      description: 'Score personnel',
+      icon: 'trendingUp',
+      fullWidth: true,
+    },
     {
       title: 'Contrats signés',
       value: managerData.totalContratsSignes,
@@ -481,22 +486,18 @@ export default function ManagerDetails() {
       icon: 'building',
     },
     {
-      title: 'Points totaux',
-      value: managerData.points,
-      description: 'Score personnel',
-      icon: 'trendingUp',
-    },
-    {
       title: 'Taux de conversion par portes prospectées',
       value: managerData.tauxConversion_portes_prospectes,
       description: 'Contrats / Portes prospectées',
       icon: 'trendingUp',
+      halfWidth: true,
     },
     {
       title: 'Taux de conversion par rendez-vous pris',
       value: managerData.tauxConversion_rdv_pris,
       description: 'Contrats / RDV pris',
       icon: 'trendingUp',
+      halfWidth: true,
     },
   ]
 
@@ -714,7 +715,7 @@ export default function ManagerDetails() {
     // Section des immeubles prospectés
     {
       title: 'Immeubles prospectés',
-      description: 'Liste des immeubles assignés à ce manager avec leurs statistiques',
+      description: 'Liste des immeubles prospectés par ce manager avec leurs statistiques',
       type: 'custom',
       render: () => (
         <AdvancedDataTable
@@ -801,6 +802,7 @@ export default function ManagerDetails() {
       data={managerData}
       personalInfo={personalInfo}
       statsCards={personalStatsCards}
+      assignedZones={managerZones}
       statsFilter={
         <DateRangeFilter
           className="h-fit"
@@ -815,7 +817,6 @@ export default function ManagerDetails() {
           title="Filtres de période"
         />
       }
-      assignedZones={managerData.equipe_taille > 0 ? managerZones : null}
       additionalSections={additionalSections}
     />
   )

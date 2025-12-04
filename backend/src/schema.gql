@@ -98,6 +98,7 @@ input CreatePorteInput {
 input CreateStatisticInput {
   commercialId: Int
   contratsSignes: Int!
+  directeurId: Int
   immeubleId: Int
   immeublesVisites: Int!
   managerId: Int
@@ -130,6 +131,7 @@ type Directeur {
   nom: String!
   numTelephone: String
   prenom: String!
+  statistics: [Statistic!]
   updatedAt: DateTime!
 }
 
@@ -236,9 +238,11 @@ type Mutation {
   createPortesForImmeuble(immeubleId: Int!, nbEtages: Int!, nbPortesParEtage: Int!): Boolean!
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
-  generateUserToken(roomName: String): LiveKitConnectionDetails!
+  generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
+  generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
+  refreshToken(refreshToken: String!): AuthResponse!
   removeCommercial(id: Int!): Commercial!
   removeDirecteur(id: Int!): Directeur!
   removeEtageFromImmeuble(id: Int!): Immeuble!
@@ -285,6 +289,7 @@ type Query {
   allCurrentAssignments: [ZoneEnCours!]!
   allZoneHistory: [HistoriqueZone!]!
   commercial(id: Int!): Commercial!
+  commercialTeamRanking(commercialId: Int!): TeamRanking!
   commercials: [Commercial!]!
   currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours
   directeur(id: Int!): Directeur!
@@ -300,6 +305,7 @@ type Query {
   managerFull(id: Int!): Manager
   managerPersonal(id: Int!): Manager
   managers: [Manager!]!
+  me: UserInfo!
   porte(id: Int!): Porte!
   portes: [Porte!]!
   portesByImmeuble(immeubleId: Int!): [Porte!]!
@@ -333,13 +339,13 @@ type RecordingResult {
 
 input StartMonitoringInput {
   roomName: String
-  supervisorId: Int!
   userId: Int!
   userType: String!
 }
 
 input StartRecordingInput {
   audioOnly: Boolean = true
+  immeubleId: Float
   participantIdentity: String
   roomName: String!
 }
@@ -348,6 +354,7 @@ type Statistic {
   commercialId: Int
   contratsSignes: Int!
   createdAt: DateTime!
+  directeurId: Int
   id: Int!
   immeubleId: Int
   immeublesVisites: Int!
@@ -376,6 +383,17 @@ input StopMonitoringInput {
 
 input StopRecordingInput {
   egressId: String!
+}
+
+type TeamRanking {
+  managerEmail: String
+  managerNom: String
+  managerNumTel: String
+  managerPrenom: String
+  points: Int!
+  position: Int!
+  total: Int!
+  trend: String
 }
 
 input UpdateCommercialInput {
@@ -437,6 +455,7 @@ input UpdatePorteInput {
 input UpdateStatisticInput {
   commercialId: Int
   contratsSignes: Int
+  directeurId: Int
   id: Int!
   immeubleId: Int
   immeublesVisites: Int
@@ -456,6 +475,12 @@ input UpdateZoneInput {
   rayon: Float
   xOrigin: Float
   yOrigin: Float
+}
+
+type UserInfo {
+  email: String!
+  id: Int!
+  role: String!
 }
 
 """Type d'utilisateur pouvant être assigné à une zone"""

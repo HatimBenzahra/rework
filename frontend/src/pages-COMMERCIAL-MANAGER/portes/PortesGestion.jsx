@@ -53,7 +53,13 @@ export default function PortesGestion() {
     isRecording: _isRecording,
     isStarting: _isStarting,
     error: _recordingError,
-  } = useRecording(parseInt(currentUserId), userType, true, audioStatus?.audioConnected)
+  } = useRecording(
+    parseInt(currentUserId),
+    userType,
+    true,
+    audioStatus?.audioConnected,
+    parseInt(immeubleId, 10)
+  )
 
   // Hook pour le thème commercial - centralise TOUS les styles
   const { colors, base, getButtonClasses } = useCommercialTheme()
@@ -97,7 +103,11 @@ export default function PortesGestion() {
   const etageSelecteurRef = useRef(null)
 
   // Données
-  const { data: immeuble, loading: immeubleLoading } = useImmeuble(parseInt(immeubleId, 10))
+  const {
+    data: immeuble,
+    loading: immeubleLoading,
+    refetch: refetchImmeuble,
+  } = useImmeuble(parseInt(immeubleId, 10))
   const { data: portesData, loading, refetch } = usePortesByImmeuble(parseInt(immeubleId, 10))
   const portes = useMemo(() => portesData || [], [portesData])
 
@@ -281,7 +291,7 @@ export default function PortesGestion() {
     try {
       await withScrollRestore(async () => {
         await addEtage(parseInt(immeubleId, 10))
-        await refetch()
+        await Promise.all([refetch(), refetchImmeuble()])
       })
       showSuccess('Étage ajouté avec succès !')
     } catch (error) {
@@ -290,7 +300,16 @@ export default function PortesGestion() {
     } finally {
       setAddingEtage(false)
     }
-  }, [immeubleId, addingEtage, addEtage, refetch, withScrollRestore, showSuccess, showError])
+  }, [
+    immeubleId,
+    addingEtage,
+    addEtage,
+    refetch,
+    withScrollRestore,
+    showSuccess,
+    showError,
+    refetchImmeuble,
+  ])
 
   // Ajout d'une porte sur un étage donné
   const handleAddPorteToEtage = useCallback(
@@ -300,7 +319,7 @@ export default function PortesGestion() {
       try {
         await withScrollRestore(async () => {
           await addPorteToEtage({ immeubleId: parseInt(immeubleId, 10), etage })
-          await refetch()
+          await await Promise.all([refetch(), refetchImmeuble()])
         })
         showSuccess('Porte ajoutée avec succès !')
       } catch (error) {
@@ -318,6 +337,7 @@ export default function PortesGestion() {
       withScrollRestore,
       showSuccess,
       showError,
+      refetchImmeuble,
     ]
   )
 

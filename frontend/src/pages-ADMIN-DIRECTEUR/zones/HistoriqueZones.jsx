@@ -1,23 +1,16 @@
 import { useMemo } from 'react'
-import { useRole } from '@/contexts/userole'
 import { useAllZoneHistory, useCommercials, useManagers, useDirecteurs } from '@/services'
 import { AdvancedDataTable } from '@/components/tableau'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function HistoriqueZones() {
-  const { currentRole, currentUserId } = useRole()
-
   // implemented useAllZoneHistory hook as a filter by current user role and id
-  const {
-    data: rawHistory,
-    loading: historyLoading,
-    error: historyError,
-  } = useAllZoneHistory(parseInt(currentUserId), currentRole)
+  const { data: rawHistory, loading: historyLoading, error: historyError } = useAllZoneHistory()
 
-  const { data: commercials } = useCommercials(parseInt(currentUserId, 10), currentRole)
-  const { data: managers } = useManagers(parseInt(currentUserId, 10), currentRole)
-  const { data: directeurs } = useDirecteurs(parseInt(currentUserId, 10), currentRole)
+  const { data: commercials } = useCommercials()
+  const { data: managers } = useManagers()
+  const { data: directeurs } = useDirecteurs()
 
   // Enrichir les données avec les noms des utilisateurs
   const enrichedHistory = useMemo(() => {
