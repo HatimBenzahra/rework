@@ -145,6 +145,12 @@ class ErrorHandler {
       return
     }
 
+    // Ignorer les erreurs de ressources non critiques (images, fonts, etc.)
+    if (error.type === 'resource') {
+      // Ne pas polluer Sentry avec des erreurs de ressources externes
+      return
+    }
+
     try {
       // Créer une vraie Error si ce n'est pas déjà le cas
       let errorToSend = error.error
@@ -152,6 +158,10 @@ class ErrorHandler {
       if (!errorToSend || !(errorToSend instanceof Error)) {
         errorToSend = new Error(error.message || 'Unknown error')
         errorToSend.name = error.type || 'UnknownError'
+        // Copier la stack si elle existe
+        if (error.stack && typeof error.stack === 'string') {
+          errorToSend.stack = error.stack
+        }
       }
 
       // Capturer l'exception dans Sentry (si configuré)
@@ -167,17 +177,17 @@ class ErrorHandler {
         extra.filename = error.filename
         extra.lineno = error.lineno
         extra.colno = error.colno
-      } else if (error.type === 'resource') {
-        extra.resource = error.resource
-        extra.src = error.src
       } else if (error.type === 'promise') {
-        extra.reason = error.reason
+        // Convertir reason en string pour éviter les objets circulaires
+        extra.reason = typeof error.reason === 'object'
+          ? JSON.stringify(error.reason, null, 2)
+          : String(error.reason)
       }
 
-      const sent = captureException(errorToSend, { extra })
+      captureException(errorToSend, { extra })
 
       // Only log success in development
-      if (sent && import.meta.env.DEV) {
+      if (import.meta.env.DEV) {
         console.log('📤 Erreur envoyée à Sentry')
       }
     } catch (sentryError) {
