@@ -496,6 +496,27 @@ export const GET_ZONES = `
   }
 `
 
+export const GET_ZONES_WITH_COMMERCIALS = `
+  query GetZonesWithCommercials {
+    commercials {
+      id
+      nom
+      prenom
+      zones {
+        id
+        nom
+        xOrigin
+        yOrigin
+        rayon
+        directeurId
+        managerId
+        createdAt
+        updatedAt
+      }
+    }
+  }
+`
+
 export const GET_ZONE = `
   query GetZone($id: Int!) {
     zone(id: $id) {

@@ -68,23 +68,7 @@ const GET_ACTIVE_ROOMS = `
 // Service pour l'audio monitoring
 export class AudioMonitoringService {
   /**
-   * Génère un token pour l'utilisateur actuel (commercial ou manager)
-   * L'ID utilisateur est automatiquement récupéré depuis le JWT
-   */
-  static async generateUserToken(roomName = null) {
-    try {
-      const data = await graphqlClient.request(GENERATE_USER_TOKEN, {
-        roomName,
-      })
-      return data.generateUserToken
-    } catch (error) {
-      console.error('Erreur génération token utilisateur:', error)
-      throw error
-    }
-  }
-
-  /**
-   * @deprecated Utiliser generateUserToken() à la place
+   * Génère un token commercial pour publisher
    */
   static async generateCommercialToken(roomName = null) {
     try {
@@ -97,7 +81,7 @@ export class AudioMonitoringService {
   }
 
   /**
-   * @deprecated Utiliser generateUserToken() à la place
+   * Génère un token manager pour publisher
    */
   static async generateManagerToken(roomName = null) {
     try {

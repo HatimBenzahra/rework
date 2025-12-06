@@ -409,10 +409,6 @@ export class AuthService {
           return directeur.id;
         }
 
-        case 'admin': {
-          return 0;
-        }
-
         default:
           throw new UnauthorizedException('Rôle non reconnu');
       }

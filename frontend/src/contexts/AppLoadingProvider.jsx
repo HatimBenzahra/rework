@@ -10,12 +10,8 @@ export function AppLoadingProvider({ children }) {
   useEffect(() => {
     const checkCache = () => {
       // Vérifier si les données critiques sont en cache
-      // Note: On cherche des clés avec namespace, pas juste le nom simple
-      const stats = apiCache.getStats()
-      const hasCachedData = stats.keys.some(
-        key =>
-          key.includes('commercials') || key.includes('managers') || key.includes('directeurs')
-      )
+      const hasCachedData =
+        apiCache.has('commercials') || apiCache.has('managers') || apiCache.has('directeurs')
 
       if (hasCachedData) {
         // Si des données sont en cache, l'app peut être considérée comme prête plus rapidement

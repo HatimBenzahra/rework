@@ -6,8 +6,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
-import { PrismaService } from '../../prisma.service';
 import axios from 'axios';
+import { PrismaService } from '../../prisma.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -49,12 +49,6 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('User not provisioned');
       }
 
-      // Récupérer l'ID de la base de données selon le rôle
-      const userId = await this.getUserIdByEmailAndRole(
-        decodedToken.email,
-        role,
-      );
-
       // Attacher les informations utilisateur au contexte
       request.user = {
         sub: decodedToken.sub,
@@ -66,7 +60,7 @@ export class JwtAuthGuard implements CanActivate {
       };
 
       this.logger.debug(
-        `✅ Utilisateur authentifié: ${request.user.email} (${request.user.role}) - ID: ${userId}`,
+        `✅ Utilisateur authentifié: ${request.user.email} (${request.user.role})`,
       );
 
       return true;
