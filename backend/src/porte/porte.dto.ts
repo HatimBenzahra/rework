@@ -14,15 +14,11 @@ import {
   IsEnum,
   IsDateString,
 } from 'class-validator';
+// Import centralisé de l'enum et des helpers
+import { StatutPorte } from './porte-status.constants';
 
-export enum StatutPorte {
-  NON_VISITE = 'NON_VISITE',
-  CONTRAT_SIGNE = 'CONTRAT_SIGNE',
-  REFUS = 'REFUS',
-  RENDEZ_VOUS_PRIS = 'RENDEZ_VOUS_PRIS',
-  CURIEUX = 'CURIEUX',
-  NECESSITE_REPASSAGE = 'NECESSITE_REPASSAGE',
-}
+// Re-export pour compatibilité avec les imports existants
+export { StatutPorte } from './porte-status.constants';
 
 registerEnumType(StatutPorte, {
   name: 'StatutPorte',

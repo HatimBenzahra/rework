@@ -112,6 +112,13 @@ export interface ZoneStatistic {
   performanceGlobale: number
 }
 
+/**
+ * Enum des statuts de porte (TypeScript)
+ * IMPORTANT: Doit être synchronisé avec :
+ * - @/constants/porte-status.constants (configuration UI)
+ * - backend/src/porte/porte-status.constants.ts (backend)
+ * - backend/prisma/schema.prisma (database)
+ */
 export enum StatutPorte {
   NON_VISITE = 'NON_VISITE',
   CONTRAT_SIGNE = 'CONTRAT_SIGNE',
