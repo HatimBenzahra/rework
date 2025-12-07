@@ -81,7 +81,7 @@
  * - backend/src/porte/porte-status.constants.ts (backend)
  * - backend/prisma/schema.prisma (database)
  *
- * @typedef {'NON_VISITE'|'CONTRAT_SIGNE'|'REFUS'|'RENDEZ_VOUS_PRIS'|'CURIEUX'|'NECESSITE_REPASSAGE'} StatutPorte
+ * @typedef {'NON_VISITE'|'CONTRAT_SIGNE'|'REFUS'|'RENDEZ_VOUS_PRIS'|'ABSENT'|'ARGUMENTE'|'NECESSITE_REPASSAGE'} StatutPorte
  */
 
 /**

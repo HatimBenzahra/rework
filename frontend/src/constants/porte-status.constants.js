@@ -21,7 +21,8 @@ import {
   CheckCircle2,
   XCircle,
   Calendar,
-  MessageSquare,
+  UserX,
+  MessageCircle,
   RotateCcw,
 } from 'lucide-react'
 
@@ -34,7 +35,8 @@ export const StatutPorte = {
   CONTRAT_SIGNE: 'CONTRAT_SIGNE',
   REFUS: 'REFUS',
   RENDEZ_VOUS_PRIS: 'RENDEZ_VOUS_PRIS',
-  CURIEUX: 'CURIEUX',
+  ABSENT: 'ABSENT',
+  ARGUMENTE: 'ARGUMENTE',
   NECESSITE_REPASSAGE: 'NECESSITE_REPASSAGE',
 }
 
@@ -91,12 +93,21 @@ export const STATUS_CONFIG = {
     requiresRdvDateTime: true,
   },
 
-  [StatutPorte.CURIEUX]: {
-    value: StatutPorte.CURIEUX,
-    label: 'Curieux',
-    description: 'Prospect intéressé mais sans engagement',
+  [StatutPorte.ABSENT]: {
+    value: StatutPorte.ABSENT,
+    label: 'Absent',
+    description: 'Personne absente - pas de réponse à la porte',
     themeColor: 'info',
-    icon: MessageSquare,
+    icon: UserX,
+    requiresRdvDateTime: false,
+  },
+
+  [StatutPorte.ARGUMENTE]: {
+    value: StatutPorte.ARGUMENTE,
+    label: 'Argumenté',
+    description: 'Refus après discussion et argumentation commerciale',
+    themeColor: 'warning',
+    icon: MessageCircle,
     requiresRdvDateTime: false,
   },
 
@@ -104,7 +115,7 @@ export const STATUS_CONFIG = {
     value: StatutPorte.NECESSITE_REPASSAGE,
     label: 'Nécessite repassage',
     description: 'Nécessite un repassage ultérieur',
-    themeColor: 'warning',
+    themeColor: 'neutral',
     icon: RotateCcw,
     requiresRdvDateTime: false,
   },

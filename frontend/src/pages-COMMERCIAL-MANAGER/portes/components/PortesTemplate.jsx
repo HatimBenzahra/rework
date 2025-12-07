@@ -94,11 +94,12 @@ export default function PortesTemplate({
     const nonVisitees = portes.filter(p => p.statut === 'NON_VISITE').length
     const contratsSigne = portes.filter(p => p.statut === 'CONTRAT_SIGNE').length
     const rdvPris = portes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
-    const curieux = portes.filter(p => p.statut === 'CURIEUX').length
+    const absent = portes.filter(p => p.statut === 'ABSENT').length
+    const argumente = portes.filter(p => p.statut === 'ARGUMENTE').length
     const refus = portes.filter(p => p.statut === 'REFUS').length
     const repassages = portes.filter(p => p.statut === 'NECESSITE_REPASSAGE').length
     const tauxVisite = total > 0 ? (((total - nonVisitees) / total) * 100).toFixed(1) : '0'
-    return { total, nonVisitees, contratsSigne, rdvPris, curieux, refus, repassages, tauxVisite }
+    return { total, nonVisitees, contratsSigne, rdvPris, absent, argumente, refus, repassages, tauxVisite }
   }, [portes])
 
   // Compteurs par statut pour les filtres

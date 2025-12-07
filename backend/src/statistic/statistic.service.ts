@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { calculateStatsForStatus } from '../porte/porte-status.constants';
 import {
   CreateStatisticInput,
   UpdateStatisticInput,
@@ -426,27 +427,15 @@ export class StatisticService {
           portesProspectes: 0,
         };
 
+        // Utilisation du helper centralisé pour calculer les stats
         portesGroupedByStatut.forEach((group) => {
           const count = group._count.statut;
+          const statusStats = calculateStatsForStatus(group.statut, count);
 
-          switch (group.statut) {
-            case 'CONTRAT_SIGNE':
-              totalStats.contratsSignes += count;
-              totalStats.portesProspectes += count;
-              break;
-            case 'RENDEZ_VOUS_PRIS':
-              totalStats.rendezVousPris += count;
-              totalStats.portesProspectes += count;
-              break;
-            case 'REFUS':
-              totalStats.refus += count;
-              totalStats.portesProspectes += count;
-              break;
-            case 'CURIEUX':
-            case 'NECESSITE_REPASSAGE':
-              totalStats.portesProspectes += count;
-              break;
-          }
+          totalStats.contratsSignes += statusStats.contratsSignes;
+          totalStats.rendezVousPris += statusStats.rendezVousPris;
+          totalStats.refus += statusStats.refus;
+          totalStats.portesProspectes += statusStats.nbPortesProspectes;
         });
 
         // Compter les immeubles visités (au moins une porte non NON_VISITE)

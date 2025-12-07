@@ -369,8 +369,9 @@ type Statistic {
 
 """Statut possible pour une porte"""
 enum StatutPorte {
+  ABSENT
+  ARGUMENTE
   CONTRAT_SIGNE
-  CURIEUX
   NECESSITE_REPASSAGE
   NON_VISITE
   REFUS

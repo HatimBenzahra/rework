@@ -586,7 +586,7 @@ export default function PortesGestion() {
               )}
 
               {/* Gestion des repassages dans le modal */}
-              {(editForm.statut === 'CURIEUX' || editForm.statut === 'NECESSITE_REPASSAGE') && (
+              {(editForm.statut === 'NECESSITE_REPASSAGE' || editForm.statut === 'ABSENT') && (
                 <div
                   className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
                 >

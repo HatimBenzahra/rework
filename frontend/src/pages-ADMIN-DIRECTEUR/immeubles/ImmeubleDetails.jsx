@@ -127,13 +127,22 @@ export default function ImmeubleDetails() {
       icon: 'calendar',
     },
     {
-      title: 'Prospects curieux',
+      title: 'Absents',
       value: immeubleData.floorDetails.reduce(
-        (acc, floor) => acc + floor.doors.filter(door => door.status === 'curieux').length,
+        (acc, floor) => acc + floor.doors.filter(door => door.status === 'ABSENT').length,
         0
       ),
-      description: 'Intérêt manifesté',
+      description: 'Personne absente',
       icon: 'users',
+    },
+    {
+      title: 'Argumentés',
+      value: immeubleData.floorDetails.reduce(
+        (acc, floor) => acc + floor.doors.filter(door => door.status === 'ARGUMENTE').length,
+        0
+      ),
+      description: 'Refus après argumentation',
+      icon: 'message-square',
     },
     {
       title: 'Repassages nécessaires',
@@ -178,15 +187,21 @@ export default function ImmeubleDetails() {
         const getStatusColor = status => {
           switch (status) {
             case 'contrat_signe':
+            case 'CONTRAT_SIGNE':
               return 'bg-green-100 text-green-800'
             case 'rendez_vous_pris':
+            case 'RENDEZ_VOUS_PRIS':
               return 'bg-blue-100 text-blue-800'
-            case 'curieux':
-              return 'bg-yellow-100 text-yellow-800'
+            case 'ABSENT':
+              return 'bg-blue-100 text-blue-800'
+            case 'ARGUMENTE':
+              return 'bg-orange-100 text-orange-800'
             case 'refus':
+            case 'REFUS':
               return 'bg-red-100 text-red-800'
             case 'necessite_repassage':
-              return 'bg-orange-100 text-orange-800'
+            case 'NECESSITE_REPASSAGE':
+              return 'bg-gray-100 text-gray-800'
             default:
               return 'bg-gray-100 text-gray-800'
           }
@@ -195,11 +210,15 @@ export default function ImmeubleDetails() {
         const getStatusLabel = status => {
           switch (status) {
             case 'contrat_signe':
+            case 'CONTRAT_SIGNE':
               return 'Contrat signé'
             case 'rendez_vous_pris':
+            case 'RENDEZ_VOUS_PRIS':
               return 'RDV programmé'
-            case 'curieux':
-              return 'Curieux'
+            case 'ABSENT':
+              return 'Absent'
+            case 'ARGUMENTE':
+              return 'Argumenté'
             case 'refus':
               return 'Refus'
             case 'non_visite':
@@ -279,12 +298,13 @@ export default function ImmeubleDetails() {
         columns,
         customFilters: [
           { value: 'all', label: 'Tous les statuts' },
-          { value: 'contrat_signe', label: 'Contrats signés' },
-          { value: 'rendez_vous_pris', label: 'RDV programmés' },
-          { value: 'curieux', label: 'Curieux' },
-          { value: 'necessite_repassage', label: 'Repassages nécessaires' },
-          { value: 'refus', label: 'Refus' },
-          { value: 'non_visite', label: 'Non visités' },
+          { value: 'CONTRAT_SIGNE', label: 'Contrats signés' },
+          { value: 'RENDEZ_VOUS_PRIS', label: 'RDV programmés' },
+          { value: 'ABSENT', label: 'Absents' },
+          { value: 'ARGUMENTE', label: 'Argumentés' },
+          { value: 'REFUS', label: 'Refus' },
+          { value: 'NECESSITE_REPASSAGE', label: 'Repassages nécessaires' },
+          { value: 'NON_VISITE', label: 'Non visités' },
         ],
       },
     },

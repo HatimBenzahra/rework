@@ -21,7 +21,8 @@ export enum StatutPorte {
   CONTRAT_SIGNE = 'CONTRAT_SIGNE',
   REFUS = 'REFUS',
   RENDEZ_VOUS_PRIS = 'RENDEZ_VOUS_PRIS',
-  CURIEUX = 'CURIEUX',
+  ABSENT = 'ABSENT',
+  ARGUMENTE = 'ARGUMENTE',
   NECESSITE_REPASSAGE = 'NECESSITE_REPASSAGE',
 }
 
@@ -98,13 +99,23 @@ export const STATUS_CONFIG: Record<StatutPorte, StatusMetadata> = {
     requiresRdvDateTime: true,
   },
 
-  [StatutPorte.CURIEUX]: {
-    value: StatutPorte.CURIEUX,
-    description: 'Prospect intéressé mais sans engagement',
+  [StatutPorte.ABSENT]: {
+    value: StatutPorte.ABSENT,
+    description: 'Personne absente - pas de réponse à la porte',
     countAsProspected: true,
     incrementContratsSignes: false,
     incrementRendezVousPris: false,
     incrementRefus: false,
+    requiresRdvDateTime: false,
+  },
+
+  [StatutPorte.ARGUMENTE]: {
+    value: StatutPorte.ARGUMENTE,
+    description: 'Refus après discussion et argumentation commerciale',
+    countAsProspected: true,
+    incrementContratsSignes: false,
+    incrementRendezVousPris: false,
+    incrementRefus: true,
     requiresRdvDateTime: false,
   },
 

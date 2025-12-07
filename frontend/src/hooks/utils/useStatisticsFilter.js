@@ -104,7 +104,8 @@ export function useImmeublesTableData(immeubles, appliedStartDate, appliedEndDat
       const contratsSignes = portesImmeuble.filter(p => p.statut === 'CONTRAT_SIGNE').length
       const rdvPris = portesImmeuble.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
       const refus = portesImmeuble.filter(p => p.statut === 'REFUS').length
-      const curieux = portesImmeuble.filter(p => p.statut === 'CURIEUX').length
+      const absent = portesImmeuble.filter(p => p.statut === 'ABSENT').length
+      const argumente = portesImmeuble.filter(p => p.statut === 'ARGUMENTE').length
       const repassages = portesImmeuble.reduce((sum, p) => sum + (p.nbRepassages || 0), 0)
       const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
       const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
@@ -119,7 +120,8 @@ export function useImmeublesTableData(immeubles, appliedStartDate, appliedEndDat
         contrats_signes: contratsSignes,
         rdv_pris: rdvPris,
         refus: refus,
-        curieux: curieux,
+        absent: absent,
+        argumente: argumente,
         repassages: repassages,
         portes_prospectees: portesProspectees,
         createdAt: immeuble.createdAt,
