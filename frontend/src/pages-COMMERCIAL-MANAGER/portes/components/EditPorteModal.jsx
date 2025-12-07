@@ -85,7 +85,9 @@ export default function EditPorteModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="!bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200">
-                  {statutOptions.map(option => (
+                  {statutOptions
+                    .filter(option => option.value !== 'NECESSITE_REPASSAGE')
+                    .map(option => (
                     <SelectItem
                       key={option.value}
                       value={option.value}
@@ -144,39 +146,61 @@ export default function EditPorteModal({
 
             {(editForm.statut === 'NECESSITE_REPASSAGE' || editForm.statut === 'ABSENT') && (
               <div
-                className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
+                className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border} space-y-[1vh]`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RotateCcw className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.warning.text}`} />
-                    <span className={`font-bold text-sm sm:text-base ${colors.warning.text}`}>
-                      Repassages : {selectedPorte?.nbRepassages || 0}
-                    </span>
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1.5 rounded-lg ${colors.warning.bg} bg-opacity-20`}>
+                        <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
+                      </div>
+                      <span className={`font-bold text-sm sm:text-base ${colors.warning.text}`}>
+                        Suivi de passage
+                      </span>
+                    </div>
+                    <div className={`text-xs px-2 py-0.5 rounded-full ${colors.warning.border} border ${colors.warning.text} bg-white/50`}>
+                      {selectedPorte?.nbRepassages || 0} visite{(selectedPorte?.nbRepassages || 0) > 1 ? 's' : ''}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRepassageChange(selectedPorte, -1)}
-                      disabled={!selectedPorte || selectedPorte.nbRepassages === 0}
-                      className={`h-9 w-9 sm:h-10 sm:w-10 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
+
+                  {/* Segmented Control */}
+                  <div className="bg-slate-900/5 dark:bg-white/5 p-1 rounded-lg flex relative">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const diff = 1 - (selectedPorte?.nbRepassages || 0)
+                        if (diff !== 0) onRepassageChange(selectedPorte, diff)
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                        (selectedPorte?.nbRepassages || 0) <= 1
+                          ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                      }`}
                     >
-                      <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onRepassageChange(selectedPorte, 1)}
-                      disabled={!selectedPorte}
-                      className={`h-9 w-9 sm:h-10 sm:w-10 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
+                      <span className={ (selectedPorte?.nbRepassages || 0) <= 1 ? "opacity-100" : "opacity-70" }>1er Passage</span>
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        const diff = 2 - (selectedPorte?.nbRepassages || 0)
+                        if (diff !== 0) onRepassageChange(selectedPorte, diff)
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                        (selectedPorte?.nbRepassages || 0) >= 2
+                          ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
+                          : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                      }`}
                     >
-                      <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                    </Button>
+                      <span className={ (selectedPorte?.nbRepassages || 0) >= 2 ? "opacity-100" : "opacity-70" }>2ème Passage</span>
+                    </button>
                   </div>
-                </div>
-                <p className={`text-xs ${colors.warning.text} opacity-80 mt-1.5`}>
-                  Utilisez les boutons pour ajuster le nombre de repassages
-                </p>
+                  
+                  <p className={`text-[10px] sm:text-xs text-center ${colors.warning.text} opacity-70 font-medium`}>
+                    {(selectedPorte?.nbRepassages || 0) <= 1 
+                      ? " Passage initial (Matin)" 
+                      : " Repassage effectué (Soir)"}
+                  </p>
               </div>
             )}
 

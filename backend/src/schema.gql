@@ -285,6 +285,19 @@ type Porte {
   updatedAt: DateTime!
 }
 
+type PorteStatistics {
+  absent: Int!
+  argumente: Int!
+  contratsSigne: Int!
+  necessiteRepassage: Int!
+  nonVisitees: Int!
+  portesVisitees: Int!
+  rdvPris: Int!
+  refus: Int!
+  tauxConversion: String!
+  totalPortes: Int!
+}
+
 type Query {
   allCurrentAssignments: [ZoneEnCours!]!
   allZoneHistory: [HistoriqueZone!]!
@@ -307,8 +320,9 @@ type Query {
   managers: [Manager!]!
   me: UserInfo!
   porte(id: Int!): Porte!
+  porteStatistics(immeubleId: Int!): PorteStatistics!
   portes: [Porte!]!
-  portesByImmeuble(immeubleId: Int!): [Porte!]!
+  portesByImmeuble(immeubleId: Int!, skip: Int, take: Int): [Porte!]!
   portesModifiedToday(immeubleId: Int): [Porte!]!
   portesRdvToday: [Porte!]!
   statistic(id: Int!): Statistic!

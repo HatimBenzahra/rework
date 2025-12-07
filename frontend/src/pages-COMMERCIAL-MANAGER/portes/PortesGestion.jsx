@@ -12,19 +12,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Building2, Clock, RotateCcw, Calendar, Plus, Minus } from 'lucide-react'
-import {
-  usePortesByImmeuble,
-  useUpdatePorte,
-  useImmeuble,
-  useAddEtageToImmeuble,
-  useAddPorteToEtage,
-} from '@/hooks/metier/use-api'
+
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useRecording } from '@/hooks/audio/useRecording'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useRole } from '@/contexts/userole'
+import {
+  useInfinitePortesByImmeuble,
+  useImmeuble,
+  useUpdatePorte,
+  useAddEtageToImmeuble,
+  useAddPorteToEtage,
+  usePorteStatistics,
+} from '@/hooks/metier/use-api'
 import { STATUT_OPTIONS } from './Statut_options'
 import PortesTemplate from './components/PortesTemplate'
+import EditPorteModal from './components/EditPorteModal'
 import {
   Select,
   SelectContent,
@@ -104,12 +107,64 @@ export default function PortesGestion() {
 
   // Données
   const {
-    data: immeuble,
-    loading: immeubleLoading,
-    refetch: refetchImmeuble,
-  } = useImmeuble(parseInt(immeubleId, 10))
-  const { data: portesData, loading, refetch } = usePortesByImmeuble(parseInt(immeubleId, 10))
-  const portes = useMemo(() => portesData || [], [portesData])
+    data: portes,
+    loading: portesLoading,
+    error: portesError,
+    refetch,
+    loadMore,
+    hasMore
+  } = useInfinitePortesByImmeuble(parseInt(immeubleId, 10))
+
+  const { data: statsData, refetch: refetchStats } = usePorteStatistics(parseInt(immeubleId, 10))
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Priorité 1: Ref du container principal (passé via contexte)
+      // Priorité 2: Fallback sur window (si pas de layout complexe)
+      const container = scrollContainerRef?.current
+      
+      if (container) {
+          const { scrollTop, scrollHeight, clientHeight } = container
+          if (
+            scrollTop + clientHeight >= scrollHeight - 500 &&
+            !portesLoading &&
+            hasMore
+          ) {
+            loadMore()
+          }
+      } else {
+        // Fallback window
+        if (
+          window.innerHeight + window.scrollY >= document.documentElement.offsetHeight - 500 &&
+          !portesLoading &&
+          hasMore
+        ) {
+          loadMore()
+        }
+      }
+    }
+
+    const container = scrollContainerRef?.current
+    if (container) {
+        container.addEventListener('scroll', handleScroll)
+        // Check initial load automatically (if screen large enough)
+        handleScroll()
+    } else {
+        window.addEventListener('scroll', handleScroll)
+    }
+    
+    return () => {
+        if (container) {
+            container.removeEventListener('scroll', handleScroll)
+        } else {
+            window.removeEventListener('scroll', handleScroll)
+        }
+    }
+  }, [loadMore, portesLoading, hasMore, scrollContainerRef])
+
+  const { data: immeuble, loading: immeubleLoading, refetch: refetchImmeuble } = useImmeuble(
+    parseInt(immeubleId, 10)
+  )
 
   // Mutations
   const { mutate: updatePorte } = useUpdatePorte()
@@ -147,6 +202,18 @@ export default function PortesGestion() {
 
   // Comptes par statut mémoïsés (évite filter répétés par bouton)
   const statusCounts = useMemo(() => {
+    if (statsData) {
+        const m = new Map()
+        m.set('NON_VISITE', statsData.nonVisitees)
+        m.set('CONTRAT_SIGNE', statsData.contratsSigne)
+        m.set('RENDEZ_VOUS_PRIS', statsData.rdvPris)
+        m.set('ABSENT', statsData.absent)
+        m.set('ARGUMENTE', statsData.argumente)
+        m.set('REFUS', statsData.refus)
+        return { byStatus: m, totalSansContrat: statsData.totalPortes - statsData.contratsSigne }
+    }
+    
+    // Fallback local (loading state)
     const m = new Map()
     let totalSansContrat = 0
     for (const p of portes) {
@@ -154,7 +221,7 @@ export default function PortesGestion() {
       if (p.statut !== 'CONTRAT_SIGNE') totalSansContrat++
     }
     return { byStatus: m, totalSansContrat }
-  }, [portes])
+  }, [portes, statsData])
 
   // Filtrage des portes selon les critères locaux
   const filteredPortes = useMemo(() => {
@@ -167,6 +234,11 @@ export default function PortesGestion() {
       return activeFilters.includes(porte.statut)
     })
   }, [portes, activeFilters])
+
+  // ... (handleEditPorte code omitted, assuming it's unchanged if not in range, but I must be careful with replace)
+  // Actually, I should only replace the statusCounts part and the customFilters part. 
+  // Let me do statusCounts first separately or include customFilters if they are close.
+  // They are somewhat far apart. Let's do statusCounts first.
 
   const handleEditPorte = useCallback(porte => {
     setSelectedPorte(porte)
@@ -248,6 +320,7 @@ export default function PortesGestion() {
         await withScrollRestore(async () => {
           await updatePorte(updateData)
           await refetch()
+          if (refetchStats) await refetchStats()
         })
         showSuccess('Statut mis à jour avec succès !')
       } catch (error) {
@@ -255,26 +328,32 @@ export default function PortesGestion() {
         showError(error, 'Mise à jour statut')
       }
     },
-    [updatePorte, refetch, withScrollRestore, showSuccess, showError]
+    [updatePorte, refetch, refetchStats, withScrollRestore, showSuccess, showError]
   )
 
   // Repassages +/-
   const handleRepassageChange = useCallback(
     async (porte, increment) => {
-      const newNbRepassages = Math.max(0, porte.nbRepassages + increment)
+      const newNbRepassages = Math.max(0, (porte.nbRepassages || 0) + increment)
       const updateData = { id: porte.id, nbRepassages: newNbRepassages }
+
+      // Optimistic update pour le modal
+      if (selectedPorte && selectedPorte.id === porte.id) {
+          setSelectedPorte(prev => ({ ...prev, nbRepassages: newNbRepassages }))
+      }
 
       try {
         await withScrollRestore(async () => {
           await updatePorte(updateData)
           await refetch()
+          if (refetchStats) await refetchStats()
         })
       } catch (error) {
         console.error('Error updating repassages:', error)
         showError(error, 'Mise à jour repassages')
       }
     },
-    [updatePorte, refetch, withScrollRestore, showError]
+    [updatePorte, refetch, refetchStats, withScrollRestore, showError, selectedPorte]
   )
 
   // Navigation avec arrêt automatique de l'enregistrement
@@ -340,104 +419,105 @@ export default function PortesGestion() {
       refetchImmeuble,
     ]
   )
-
-  // Composant personnalisé pour les filtres supplémentaires
+  
+  // Composant personnalisé pour les filtres supplémentaires - DESIGN PREMIUM AMÉLIORÉ
   const customFilters = useMemo(
     () => (
       <div
         ref={etageSelecteurRef}
-        className={`${base.bg.card} border ${base.border.default} rounded-xl p-3 mb-4 shadow-lg`}
+        className="mb-6 space-y-4"
       >
-        {/* Gestion de l'immeuble */}
-        <div className="space-y-3 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-700">Gestion de l'immeuble</h3>
-              {/* Indicateur d'enregistrement */}
-            </div>
-            {immeuble && (
-              <div className="text-xs text-gray-500">
-                {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage
-              </div>
-            )}
-          </div>
-
-          {/* Message d'info ou d'erreur */}
+        {/* Info Immeuble - Carte épurée */}
+        <div className={`${base.bg.card} border ${base.border.default} rounded-xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4`}>
+             <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${colors.primary.bgLight}`}>
+                  <Building2 className={`h-5 w-5 ${colors.primary.text}`} />
+                </div>
+                <div>
+                   <h3 className={`text-sm font-bold ${base.text.primary}`}>Vue d'ensemble</h3>
+                   {immeuble && (
+                      <p className={`text-xs ${base.text.muted}`}>
+                        {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage • Total: {statsData ? statsData.totalPortes : portes.length} portes
+                      </p>
+                    )}
+                </div>
+             </div>
+             
+             {/* Filtre global */}
+             {activeFilters.length > 0 && (
+               <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+                >
+                  Effacer les filtres
+                </Button>
+             )}
         </div>
 
-        {/* Filtres par statut */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">Filtres par statut</h3>
-            {activeFilters.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAllFilters}
-                className="text-xs text-gray-500 hover:text-gray-700"
-              >
-                Effacer tout
-              </Button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            {/* Bouton "Toutes" */}
-            <Button
-              variant="ghost"
-              size="sm"
+        {/* Filtres par statut - Design pills horizontal scrollable */}
+        <div className="space-y-2">
+           <h3 className={`text-xs font-bold uppercase tracking-wider ${base.text.muted} ml-1`}>Filtrer par statut</h3>
+           <div className="flex flex-wrap gap-2">
+            {/* Bouton "Tout voir" */}
+            <button
               onClick={clearAllFilters}
-              className={`${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
                 activeFilters.length === 0
-                  ? `${colors.primary.bgLight} ${colors.primary.textLight} border ${colors.primary.border}`
-                  : `${base.bg.muted} ${base.text.muted}`
-              } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+                  ? `${colors.primary.bg} text-white border-transparent shadow-md`
+                  : `${base.bg.card} ${base.text.muted} ${base.border.default} hover:border-gray-300`
+              }`}
             >
-              <Building2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-              Toutes ({statusCounts.totalSansContrat})
-            </Button>
+              <span>Tout voir</span>
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeFilters.length === 0 ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                {statusCounts.totalSansContrat}
+              </span>
+            </button>
 
-            {/* Filtres par statut */}
             {statutOptions
-              .filter(option => option.value !== 'CONTRAT_SIGNE')
+              .filter(option => option.value !== 'CONTRAT_SIGNE' && option.value !== 'NECESSITE_REPASSAGE')
               .map(option => {
                 const count = statusCounts.byStatus.get(option.value) || 0
                 const isActive = activeFilters.includes(option.value)
                 const IconComponent = option.icon
+                
+                // Extraction de la classe couleur text pour l'état inactif
+                const colorClass = option.color.split(' ')[1] || 'text-gray-500'
+
                 return (
-                  <Button
+                  <button
                     key={option.value}
-                    variant="ghost"
-                    size="sm"
                     onClick={() => toggleFilter(option.value)}
-                    className={`${
-                      isActive ? option.color + ' border' : `${base.bg.muted} ${base.text.muted}`
-                    } px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+                      isActive
+                        ? `${option.color} border-transparent shadow-sm ring-1 ring-offset-1 ring-gray-200 dark:ring-gray-800`
+                        : `${base.bg.card} ${base.text.muted} ${base.border.default} hover:border-gray-300 opacity-70 hover:opacity-100`
+                    }`}
                   >
-                    <IconComponent className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-                    {option.label} ({count})
-                  </Button>
+                    <IconComponent className="h-3.5 w-3.5" />
+                    <span>{option.label}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${isActive ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
+                      {count}
+                    </span>
+                  </button>
                 )
               })}
-          </div>
+           </div>
         </div>
       </div>
     ),
     [
       activeFilters,
-      base.bg.card,
-      base.border.default,
-      base.bg.muted,
-      base.text.muted,
+      base,
       clearAllFilters,
-      colors.primary.bgLight,
-      colors.primary.border,
-      colors.primary.textLight,
+      colors.primary,
       immeuble,
       statutOptions,
-      statusCounts.byStatus,
-      statusCounts.totalSansContrat,
+      statusCounts,
       toggleFilter,
+      portes.length, 
+      statsData 
     ]
   )
 
@@ -446,7 +526,9 @@ export default function PortesGestion() {
       {/* Utilisation du template avec les configurations spécifiques à la gestion */}
       <PortesTemplate
         portes={filteredPortes}
-        loading={loading || immeubleLoading}
+        statsData={statsData}
+        loading={(portesLoading && portes.length === 0) || immeubleLoading}
+        isFetchingMore={portesLoading && portes.length > 0}
         readOnly={false}
         showStatusFilters={false}
         onPorteEdit={handleEditPorte}
@@ -463,229 +545,22 @@ export default function PortesGestion() {
         addingEtage={addingEtage}
       />
 
-      {/* Modal d'édition - Optimisé mobile */}
-      <Dialog
+      {/* Modal d'édition */}
+      <EditPorteModal
         open={showEditModal}
-        onOpenChange={open => {
+        onOpenChange={(open) => {
           setShowEditModal(open)
-          if (!open) setIsSaving(false) // Réinitialiser lors de la fermeture
+          if (!open) setIsSaving(false)
         }}
-      >
-        <DialogContent className="w-[95vw] sm:w-[90vw] max-w-lg mx-auto !bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200 h-[90vh] overflow-hidden flex flex-col p-0">
-          {/* Header fixe */}
-          <DialogHeader className="px-[2vh] py-[1.5vh] border-b !border-gray-200 dark:!border-gray-200 flex-shrink-0">
-            <DialogTitle className="text-base sm:text-lg font-bold !text-gray-900 dark:!text-gray-900 line-clamp-1">
-              {selectedPorte?.nomPersonnalise || `Porte ${selectedPorte?.numero}`}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm !text-gray-600 dark:!text-gray-600 line-clamp-1 mt-1">
-              Étage {selectedPorte?.etage} • {immeuble?.adresse}
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Contenu scrollable */}
-          <div className="flex-1 overflow-y-auto px-[2vh] py-[1.5vh] min-h-0">
-            <div className="space-y-[1.5vh]">
-              {/* Nom personnalisé */}
-              <div className="space-y-[0.5vh]">
-                <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 flex items-center gap-2">
-                  Nom personnalisé (optionnel)
-                </label>
-                <Input
-                  placeholder={`Porte ${selectedPorte?.numero}`}
-                  value={editForm.nomPersonnalise}
-                  onChange={e =>
-                    setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))
-                  }
-                  className="h-11 sm:h-12 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900"
-                />
-                <p className="text-xs !text-gray-500 dark:!text-gray-500 leading-relaxed">
-                  Ex: "Porte à droite", "Appt A", etc.
-                </p>
-                {editForm.nomPersonnalise && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditForm(prev => ({ ...prev, nomPersonnalise: '' }))}
-                    className={`text-xs h-8 ${base.text.muted} hover:${base.text.primary}`}
-                  >
-                    Réinitialiser
-                  </Button>
-                )}
-              </div>
-
-              {/* Statut */}
-              <div className="space-y-[0.5vh]">
-                <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 block">
-                  Statut *
-                </label>
-                <Select
-                  value={editForm.statut}
-                  onValueChange={value => setEditForm(prev => ({ ...prev, statut: value }))}
-                >
-                  <SelectTrigger className="h-11 sm:h-12 !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 text-sm sm:text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="!bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200">
-                    {statutOptions.map(option => (
-                      <SelectItem
-                        key={option.value}
-                        value={option.value}
-                        className="!text-gray-900 dark:!text-gray-900 focus:!bg-blue-50 dark:focus:!bg-blue-50"
-                      >
-                        <div className="flex items-center gap-2 py-0.5">
-                          <option.icon className="h-4 w-4 sm:h-5 sm:w-5 !text-gray-700 dark:!text-gray-700" />
-                          <span className="text-sm sm:text-base !text-gray-900 dark:!text-gray-900">
-                            {option.label}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* RDV si nécessaire */}
-              {editForm.statut === 'RENDEZ_VOUS_PRIS' && (
-                <div
-                  className={`p-[1.5vh] ${colors.primary.bgLight} rounded-lg border ${colors.primary.border} space-y-[1vh]`}
-                >
-                  <p
-                    className={`text-sm font-semibold ${colors.primary.text} flex items-center gap-2`}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Informations du rendez-vous
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1vh]">
-                    <div className="space-y-[0.5vh]">
-                      <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 block">
-                        Date *
-                      </label>
-                      <input
-                        type="date"
-                        value={editForm.rdvDate}
-                        onChange={e => setEditForm(prev => ({ ...prev, rdvDate: e.target.value }))}
-                        className="w-fit px-3 py-2.5 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
-                        min={new Date().toISOString().split('T')[0]}
-                      />
-                    </div>
-                    <div className="space-y-[0.5vh]">
-                      <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 flex items-center gap-1.5">
-                        <Clock className="h-3.5 w-3.5 !text-gray-700 dark:!text-gray-700" />
-                        Heure
-                      </label>
-                      <input
-                        type="time"
-                        value={editForm.rdvTime}
-                        onChange={e => setEditForm(prev => ({ ...prev, rdvTime: e.target.value }))}
-                        className="w-fit px-3 py-2.5 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Gestion des repassages dans le modal */}
-              {(editForm.statut === 'NECESSITE_REPASSAGE' || editForm.statut === 'ABSENT') && (
-                <div
-                  className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <RotateCcw className={`h-4 w-4 sm:h-5 sm:w-5 ${colors.warning.text}`} />
-                      <span className={`font-bold text-sm sm:text-base ${colors.warning.text}`}>
-                        Repassages : {selectedPorte?.nbRepassages || 0}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRepassageChange(selectedPorte, -1)}
-                        disabled={!selectedPorte || selectedPorte.nbRepassages === 0}
-                        className={`h-9 w-9 sm:h-10 sm:w-10 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
-                      >
-                        <Minus className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRepassageChange(selectedPorte, 1)}
-                        disabled={!selectedPorte}
-                        className={`h-9 w-9 sm:h-10 sm:w-10 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
-                      >
-                        <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className={`text-xs ${colors.warning.text} opacity-80 mt-1.5`}>
-                    Utilisez les boutons pour ajuster le nombre de repassages
-                  </p>
-                </div>
-              )}
-
-              {/* Commentaire */}
-              <div className="space-y-[0.5vh]">
-                <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 block">
-                  Commentaire
-                </label>
-                <Textarea
-                  placeholder="Ajouter un commentaire..."
-                  value={editForm.commentaire}
-                  onChange={e => setEditForm(prev => ({ ...prev, commentaire: e.target.value }))}
-                  rows={2}
-                  className="text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 resize-none min-h-[8vh] max-h-[12vh] focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!ring-offset-0 focus-visible:!border-gray-300"
-                />
-              </div>
-
-              {/* Info repassages */}
-              {selectedPorte?.nbRepassages > 0 && (
-                <div
-                  className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border}`}
-                >
-                  <div className={`flex items-start gap-2.5 ${colors.warning.text}`}>
-                    <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold">
-                        {selectedPorte.nbRepassages} repassage
-                        {selectedPorte.nbRepassages > 1 ? 's' : ''}
-                      </p>
-                      <p className="text-xs opacity-80 mt-0.5">
-                        Cette porte a nécessité plusieurs visites
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer fixe */}
-          <DialogFooter className="px-[2vh] py-[1.5vh] border-t !border-gray-200 dark:!border-gray-200 flex-shrink-0">
-            <div className="flex flex-col-reverse sm:flex-row gap-[1vh] w-full">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setShowEditModal(false)
-                  setIsSaving(false)
-                }}
-                disabled={isSaving}
-                className={`w-full sm:flex-1 h-10 sm:h-11 text-sm sm:text-base ${getButtonClasses('outline')}`}
-              >
-                Annuler
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSavePorte}
-                disabled={isSaving}
-                className={`w-full sm:flex-1 h-10 sm:h-11 text-sm sm:text-base ${getButtonClasses('primary')}`}
-              >
-                {isSaving ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        selectedPorte={selectedPorte}
+        immeubleAdresse={immeuble?.adresse}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        statutOptions={statutOptions}
+        isSaving={isSaving}
+        onSave={handleSavePorte}
+        onRepassageChange={handleRepassageChange}
+      />
     </div>
   )
 }

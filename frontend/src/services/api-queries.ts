@@ -775,8 +775,8 @@ export const GET_PORTE = `
 `
 
 export const GET_PORTES_BY_IMMEUBLE = `
-  query GetPortesByImmeuble($immeubleId: Int!) {
-    portesByImmeuble(immeubleId: $immeubleId) {
+  query GetPortesByImmeuble($immeubleId: Int!, $skip: Int, $take: Int) {
+    portesByImmeuble(immeubleId: $immeubleId, skip: $skip, take: $take) {
       id
       numero
       nomPersonnalise
@@ -812,6 +812,23 @@ export const GET_PORTES_MODIFIED_TODAY = `
       derniereVisite
       createdAt
       updatedAt
+    }
+  }
+`
+
+export const GET_PORTE_STATISTICS = `
+  query GetPorteStatistics($immeubleId: Int!) {
+    porteStatistics(immeubleId: $immeubleId) {
+      totalPortes
+      contratsSigne
+      rdvPris
+      absent
+      argumente
+      refus
+      nonVisitees
+      necessiteRepassage
+      portesVisitees
+      tauxConversion
     }
   }
 `

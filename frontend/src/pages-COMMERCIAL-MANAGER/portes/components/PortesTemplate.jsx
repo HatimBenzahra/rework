@@ -48,6 +48,8 @@ export default function PortesTemplate({
   onAddEtage,
   addingPorteToEtage = false,
   addingEtage = false,
+  isFetchingMore = false,
+  statsData = null,
 }) {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
@@ -88,8 +90,21 @@ export default function PortesTemplate({
       }, {})
   }, [filteredPortes])
 
-  // Statistiques des portes
+  // Statistiques des portes (Backend ou calculé)
   const stats = useMemo(() => {
+    if (statsData) {
+        return {
+           total: statsData.totalPortes,
+           nonVisitees: statsData.nonVisitees,
+           contratsSigne: statsData.contratsSigne,
+           rdvPris: statsData.rdvPris,
+           absent: statsData.absent,
+           argumente: statsData.argumente,
+           refus: statsData.refus,
+           repassages: statsData.necessiteRepassage,
+           tauxVisite: statsData.tauxConversion || '0' // Note: Backend returns 'tauxConversion', might want separate filed for visite rate
+        }
+    }
     const total = portes.length
     const nonVisitees = portes.filter(p => p.statut === 'NON_VISITE').length
     const contratsSigne = portes.filter(p => p.statut === 'CONTRAT_SIGNE').length
@@ -100,16 +115,27 @@ export default function PortesTemplate({
     const repassages = portes.filter(p => p.statut === 'NECESSITE_REPASSAGE').length
     const tauxVisite = total > 0 ? (((total - nonVisitees) / total) * 100).toFixed(1) : '0'
     return { total, nonVisitees, contratsSigne, rdvPris, absent, argumente, refus, repassages, tauxVisite }
-  }, [portes])
+  }, [portes, statsData])
 
   // Compteurs par statut pour les filtres
   const portesCountByStatus = useMemo(() => {
     const counts = {}
+    if (statsData) {
+       counts['NON_VISITE'] = statsData.nonVisitees
+       counts['CONTRAT_SIGNE'] = statsData.contratsSigne
+       counts['RENDEZ_VOUS_PRIS'] = statsData.rdvPris
+       counts['ABSENT'] = statsData.absent
+       counts['ARGUMENTE'] = statsData.argumente
+       counts['REFUS'] = statsData.refus
+       counts['NECESSITE_REPASSAGE'] = statsData.necessiteRepassage
+       return counts
+    }
+    
     statutOptions.forEach(option => {
       counts[option.value] = portes.filter(p => p.statut === option.value).length
     })
     return counts
-  }, [portes, statutOptions])
+  }, [portes, statutOptions, statsData])
 
   // Stats des portes filtrées pour l'affichage
   const filteredStats = useMemo(() => {
@@ -404,6 +430,14 @@ export default function PortesTemplate({
           </div>
         )}
       </div>
+
+      {/* Loader de pagination */}
+      {isFetchingMore && (
+         <div className="py-4 text-center">
+            <div className={`${components.loading.spinner} mx-auto mb-2 !h-6 !w-6`}></div>
+            <p className="text-xs text-muted-foreground">Chargement de la suite...</p>
+         </div>
+      )}
 
       {/* Message quand aucune porte ne correspond aux filtres */}
       {Object.keys(portesByEtage).length === 0 && (

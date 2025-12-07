@@ -586,3 +586,119 @@ export function usePortesModifiedToday(
 export function usePortesRdvToday(): UseApiListState<Porte> & UseApiActions {
   return useApiCall(() => api.portes.getRdvToday(), [], 'portes-rdv-today')
 }
+
+export function usePorteStatistics(immeubleId: number): UseApiState<any> & UseApiActions {
+  return useApiCall(
+    () => api.portes.getStatistics(immeubleId),
+    [immeubleId],
+    'porte-statistics'
+  )
+}
+
+interface UseInfiniteApiListState<T> {
+  data: T[]
+  loading: boolean
+  error: string | null
+  hasMore: boolean
+  loadMore: () => Promise<void>
+  reset: () => void
+}
+
+export function useInfinitePortesByImmeuble(
+  immeubleId: number | null,
+  pageSize = 20
+): UseInfiniteApiListState<Porte> & UseApiActions {
+  const [state, setState] = useState<{
+    data: Porte[]
+    loading: boolean
+    error: string | null
+    hasMore: boolean
+    page: number
+  }>({
+    data: [],
+    loading: false,
+    error: null,
+    hasMore: true,
+    page: 0,
+  })
+
+  // Réinitialiser quand l'immeuble change
+  useEffect(() => {
+     if (immeubleId) {
+        setState({
+            data: [],
+            loading: true, // Start loading immediately for the first fetch
+            error: null,
+            hasMore: true,
+            page: 0
+        })
+        fetchPage(0, true)
+     }
+  }, [immeubleId])
+
+  const fetchPage = useCallback(
+    async (pageToFetch: number, isReset: boolean = false) => {
+      if (!immeubleId) return
+
+      setState(prev => ({ ...prev, loading: true, error: null }))
+
+      try {
+        const skip = pageToFetch * pageSize
+        const newPortes = await api.portes.getByImmeuble(immeubleId, skip, pageSize)
+
+        setState(prev => {
+           // Si reset, on remplace tout. Sinon on ajoute.
+           // On vérifie les doublons par sécurité (bien que skip/take devrait gérer ça)
+           const existingIds = isReset ? new Set() : new Set(prev.data.map(p => p.id))
+           const uniqueNewPortes = newPortes.filter(p => !existingIds.has(p.id))
+           
+           return {
+            data: isReset ? newPortes : [...prev.data, ...uniqueNewPortes],
+            loading: false,
+            error: null,
+            hasMore: newPortes.length === pageSize, // Si on a reçu moins que demandé, c'est la fin
+            page: pageToFetch,
+          }
+        })
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }))
+      }
+    },
+    [immeubleId, pageSize]
+  )
+
+
+  const loadMore = useCallback(async () => {
+    if (state.loading || !state.hasMore) return
+    await fetchPage(state.page + 1)
+  }, [state.loading, state.hasMore, state.page, fetchPage])
+
+  const refetch = useCallback(async () => {
+     // Recharger la premiere page et reinitialiser
+     await fetchPage(0, true)
+  }, [fetchPage])
+  
+  const reset = useCallback(() => {
+      setState({
+        data: [],
+        loading: false,
+        error: null,
+        hasMore: true,
+        page: 0,
+      })
+  }, [])
+
+  return {
+    data: state.data,
+    loading: state.loading,
+    error: state.error,
+    hasMore: state.hasMore,
+    loadMore,
+    refetch, // Compatible with UseApiActions
+    reset
+  }
+}

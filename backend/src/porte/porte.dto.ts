@@ -67,6 +67,39 @@ export class Porte {
   updatedAt: Date;
 }
 
+@ObjectType()
+export class PorteStatistics {
+  @Field(() => Int)
+  totalPortes: number;
+
+  @Field(() => Int)
+  contratsSigne: number;
+
+  @Field(() => Int)
+  rdvPris: number;
+
+  @Field(() => Int)
+  absent: number;
+
+  @Field(() => Int)
+  argumente: number;
+
+  @Field(() => Int)
+  refus: number;
+
+  @Field(() => Int)
+  nonVisitees: number;
+
+  @Field(() => Int)
+  necessiteRepassage: number;
+
+  @Field(() => Int)
+  portesVisitees: number;
+
+  @Field()
+  tauxConversion: string;
+}
+
 @InputType()
 export class CreatePorteInput {
   @Field()

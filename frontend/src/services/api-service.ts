@@ -30,6 +30,7 @@ import {
   GET_PORTE,
   GET_PORTES_BY_IMMEUBLE,
   GET_PORTES_MODIFIED_TODAY,
+  GET_PORTE_STATISTICS,
   GET_PORTES_RDV_TODAY,
   GET_ME,
 } from './api-queries'
@@ -570,10 +571,10 @@ export const porteApi = {
     return response.porte
   },
 
-  async getByImmeuble(immeubleId: number): Promise<Porte[]> {
+  async getByImmeuble(immeubleId: number, skip?: number, take?: number): Promise<Porte[]> {
     const response = await gql<QueryPortesByImmeubleResponse, GetPortesByImmeubleVariables>(
       GET_PORTES_BY_IMMEUBLE,
-      { immeubleId }
+      { immeubleId, skip, take }
     )
     return response.portesByImmeuble
   },
@@ -610,6 +611,11 @@ export const porteApi = {
   async getRdvToday(): Promise<Porte[]> {
     const response = await gql<QueryPortesRdvTodayResponse>(GET_PORTES_RDV_TODAY)
     return response.portesRdvToday
+  },
+
+  async getStatistics(immeubleId: number): Promise<any> {
+    const response = await gql<any, { immeubleId: number }>(GET_PORTE_STATISTICS, { immeubleId })
+    return response.porteStatistics
   },
 }
 

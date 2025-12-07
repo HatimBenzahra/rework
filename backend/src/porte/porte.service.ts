@@ -168,12 +168,16 @@ export class PorteService {
     immeubleId: number,
     userId: number,
     userRole: string,
+    skip?: number,
+    take?: number,
   ) {
     await this.ensureImmeubleAccess(immeubleId, userId, userRole);
 
     return this.prisma.porte.findMany({
       where: { immeubleId },
       orderBy: [{ etage: 'asc' }, { numero: 'asc' }],
+      skip,
+      take,
     });
   }
 

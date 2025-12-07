@@ -7,6 +7,7 @@ import {
   Minus,
   MessageSquare,
   RotateCcw,
+  Calendar,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/porte-status.constants'
@@ -165,38 +166,67 @@ export default function PorteCardOriginal({
             </div>
           </div>
 
-          {/* GESTION DES REPASSAGES avec +/- */}
+{/* GESTION DES REPASSAGES - NOUVEAU UI */}
           {needsRepassage && (
             <div
-              className={`${colors.warning.bgLight} border ${colors.warning.border} rounded-lg p-2 sm:p-2.5`}
+              className={`mt-2 ${colors.warning.bgLight} border ${colors.warning.border} rounded-xl p-3 overflow-hidden relative`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <RotateCcw className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${colors.warning.text}`} />
-                  <span className={`font-bold text-xs sm:text-sm ${colors.warning.text}`}>
-                    Repassages : {porte.nbRepassages}
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg ${colors.warning.bg} bg-opacity-20`}>
+                     <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
+                  </div>
+                  <span className={`font-bold text-sm ${colors.warning.text}`}>
+                    Suivi de passage
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRepassageChange(porte, -1)}
-                    disabled={porte.nbRepassages === 0}
-                    className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
-                  >
-                    <Minus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRepassageChange(porte, 1)}
-                    className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
-                  >
-                    <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                  </Button>
-                </div>
+                <Badge 
+                  variant="outline" 
+                  className={`${colors.warning.border} ${colors.warning.text} bg-white/50 backdrop-blur-sm shadow-sm`}
+                >
+                  {porte.nbRepassages || 0} visite{(porte.nbRepassages || 0) > 1 ? 's' : ''}
+                </Badge>
               </div>
+
+              {/* Segmented Control / Switch */}
+              <div className="bg-slate-900/5 dark:bg-white/5 p-1 rounded-lg flex relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const diff = 1 - (porte.nbRepassages || 0)
+                    if (diff !== 0) onRepassageChange(porte, diff)
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                    (porte.nbRepassages || 0) <= 1
+                      ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                  }`}
+                >
+                  <span className={ (porte.nbRepassages || 0) <= 1 ? "opacity-100" : "opacity-70" }>1er Passage</span>
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const diff = 2 - (porte.nbRepassages || 0)
+                    if (diff !== 0) onRepassageChange(porte, diff)
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                    (porte.nbRepassages || 0) >= 2
+                      ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                  }`}
+                >
+                  <span className={ (porte.nbRepassages || 0) >= 2 ? "opacity-100" : "opacity-70" }>2ème Passage</span>
+                </button>
+              </div>
+              
+              <p className={`text-[10px] text-center mt-2 ${colors.warning.text} opacity-70 font-medium`}>
+                {(porte.nbRepassages || 0) <= 1 
+                  ? " Passage initial (Matin)" 
+                  : " Repassage effectué (Soir)"}
+              </p>
             </div>
           )}
 
