@@ -36,9 +36,10 @@ export class PorteResolver {
     @Args('immeubleId', { type: () => Int }) immeubleId: number,
     @Args('skip', { type: () => Int, nullable: true }) skip: number,
     @Args('take', { type: () => Int, nullable: true }) take: number,
+    @Args('etage', { type: () => Int, nullable: true }) etage: number,
     @CurrentUser() user: any,
   ) {
-    return this.porteService.findByImmeuble(immeubleId, user.id, user.role, skip, take);
+    return this.porteService.findByImmeuble(immeubleId, user.id, user.role, skip, take, etage);
   }
 
   @Query(() => PorteStatistics, { name: 'porteStatistics' })

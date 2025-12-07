@@ -68,6 +68,15 @@ export class Porte {
 }
 
 @ObjectType()
+export class EtageInStatistics {
+  @Field(() => Int)
+  etage: number;
+
+  @Field(() => Int)
+  count: number;
+}
+
+@ObjectType()
 export class PorteStatistics {
   @Field(() => Int)
   totalPortes: number;
@@ -98,6 +107,9 @@ export class PorteStatistics {
 
   @Field()
   tauxConversion: string;
+
+  @Field(() => [EtageInStatistics])
+  portesParEtage: EtageInStatistics[];
 }
 
 @InputType()

@@ -571,10 +571,10 @@ export const porteApi = {
     return response.porte
   },
 
-  async getByImmeuble(immeubleId: number, skip?: number, take?: number): Promise<Porte[]> {
-    const response = await gql<QueryPortesByImmeubleResponse, GetPortesByImmeubleVariables>(
+  async getByImmeuble(immeubleId: number, skip = 0, take = 20, etage?: number): Promise<Porte[]> {
+    const response = await gql<QueryPortesByImmeubleResponse, any>(
       GET_PORTES_BY_IMMEUBLE,
-      { immeubleId, skip, take }
+      { immeubleId, skip, take, etage }
     )
     return response.portesByImmeuble
   },

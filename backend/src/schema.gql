@@ -142,6 +142,11 @@ type EgressState {
   status: String!
 }
 
+type EtageInStatistics {
+  count: Int!
+  etage: Int!
+}
+
 type HistoriqueZone {
   assignedAt: DateTime!
   id: Int!
@@ -291,6 +296,7 @@ type PorteStatistics {
   contratsSigne: Int!
   necessiteRepassage: Int!
   nonVisitees: Int!
+  portesParEtage: [EtageInStatistics!]!
   portesVisitees: Int!
   rdvPris: Int!
   refus: Int!
@@ -322,7 +328,7 @@ type Query {
   porte(id: Int!): Porte!
   porteStatistics(immeubleId: Int!): PorteStatistics!
   portes: [Porte!]!
-  portesByImmeuble(immeubleId: Int!, skip: Int, take: Int): [Porte!]!
+  portesByImmeuble(etage: Int, immeubleId: Int!, skip: Int, take: Int): [Porte!]!
   portesModifiedToday(immeubleId: Int): [Porte!]!
   portesRdvToday: [Porte!]!
   statistic(id: Int!): Statistic!

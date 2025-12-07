@@ -775,8 +775,8 @@ export const GET_PORTE = `
 `
 
 export const GET_PORTES_BY_IMMEUBLE = `
-  query GetPortesByImmeuble($immeubleId: Int!, $skip: Int, $take: Int) {
-    portesByImmeuble(immeubleId: $immeubleId, skip: $skip, take: $take) {
+  query GetPortesByImmeuble($immeubleId: Int!, $skip: Int, $take: Int, $etage: Int) {
+    portesByImmeuble(immeubleId: $immeubleId, skip: $skip, take: $take, etage: $etage) {
       id
       numero
       nomPersonnalise
@@ -829,6 +829,10 @@ export const GET_PORTE_STATISTICS = `
       necessiteRepassage
       portesVisitees
       tauxConversion
+      portesParEtage {
+        etage
+        count
+      }
     }
   }
 `

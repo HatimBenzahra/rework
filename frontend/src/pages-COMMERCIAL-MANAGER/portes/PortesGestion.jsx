@@ -106,14 +106,20 @@ export default function PortesGestion() {
   const etageSelecteurRef = useRef(null)
 
   // Données
+  // Filters
+  const [selectedFloor, setSelectedFloor] = useState(null)
+
+  // Données
   const {
     data: portes,
     loading: portesLoading,
     error: portesError,
     refetch,
     loadMore,
-    hasMore
-  } = useInfinitePortesByImmeuble(parseInt(immeubleId, 10))
+    hasMore,
+    isFetchingMore,
+    updateLocalData // NEW: Optimistic support
+  } = useInfinitePortesByImmeuble(parseInt(immeubleId, 10), 20, selectedFloor)
 
   const { data: statsData, refetch: refetchStats } = usePorteStatistics(parseInt(immeubleId, 10))
 
@@ -122,7 +128,7 @@ export default function PortesGestion() {
       // Priorité 1: Ref du container principal (passé via contexte)
       // Priorité 2: Fallback sur window (si pas de layout complexe)
       const container = scrollContainerRef?.current
-      
+
       if (container) {
           const { scrollTop, scrollHeight, clientHeight } = container
           if (
@@ -130,7 +136,17 @@ export default function PortesGestion() {
             !portesLoading &&
             hasMore
           ) {
-            loadMore()
+            // Sauvegarder la position avant le chargement
+            const savedScrollTop = container.scrollTop
+
+            loadMore().then(() => {
+              // Restaurer la position après le chargement
+              requestAnimationFrame(() => {
+                if (container.scrollTop < savedScrollTop) {
+                  container.scrollTop = savedScrollTop
+                }
+              })
+            })
           }
       } else {
         // Fallback window
@@ -152,7 +168,7 @@ export default function PortesGestion() {
     } else {
         window.addEventListener('scroll', handleScroll)
     }
-    
+
     return () => {
         if (container) {
             container.removeEventListener('scroll', handleScroll)
@@ -160,7 +176,15 @@ export default function PortesGestion() {
             window.removeEventListener('scroll', handleScroll)
         }
     }
-  }, [loadMore, portesLoading, hasMore, scrollContainerRef])
+  }, [
+    scrollContainerRef, 
+    loadMore, 
+    portesLoading, 
+    hasMore,
+    selectedFloor // Stop infinite scroll if we are filtered on a precise floor? 
+    // Actually current hook implementation will loadMore PAGES of that floor if floor has many doors (e.g. >20)
+    // So logic remains valid.
+  ])
 
   const { data: immeuble, loading: immeubleLoading, refetch: refetchImmeuble } = useImmeuble(
     parseInt(immeubleId, 10)
@@ -198,7 +222,7 @@ export default function PortesGestion() {
     )
   }, [])
 
-  const clearAllFilters = useCallback(() => setActiveFilters([]), [])
+
 
   // Comptes par statut mémoïsés (évite filter répétés par bouton)
   const statusCounts = useMemo(() => {
@@ -223,16 +247,35 @@ export default function PortesGestion() {
     return { byStatus: m, totalSansContrat }
   }, [portes, statsData])
 
-  // Filtrage des portes selon les critères locaux
+  const clearAllFilters = useCallback(() => {
+    setActiveFilters([])
+    setSelectedFloor(null)
+  }, [])
+
+  // Callbacks
+  const handleFloorSelect = useCallback((etage) => {
+    // If clicking same floor, toggle off
+    if (selectedFloor === etage) {
+        setSelectedFloor(null)
+    } else {
+        setSelectedFloor(etage)
+    }
+  }, [selectedFloor])
+
   const filteredPortes = useMemo(() => {
-    return portes.filter(porte => {
-      // Si aucun filtre n'est actif, afficher toutes les portes sauf les contrats signés
-      if (activeFilters.length === 0) {
-        return porte.statut
-      }
-      // Si des filtres sont actifs, afficher seulement les portes correspondantes
-      return activeFilters.includes(porte.statut)
-    })
+    let result = portes
+    
+    // Si on a un étage sélectionné, le hook filtre déjà les données (serveur)
+    // Mais si on avait des données en cache pour d'autres étages, on pourrait vouloir filtrer ici aussi
+    // Dans notre cas, le hook reset les données quand l'étage change, donc 'portes' contient déjà
+    // uniquement l'étage voulu (ou tous si null).
+    
+    // Filtrage local par statut
+    if (activeFilters.length > 0) {
+      result = result.filter(porte => activeFilters.includes(porte.statut))
+    }
+
+    return result
   }, [portes, activeFilters])
 
   // ... (handleEditPorte code omitted, assuming it's unchanged if not in range, but I must be careful with replace)
@@ -297,6 +340,9 @@ export default function PortesGestion() {
   // Changement rapide de statut
   const handleQuickStatusChange = useCallback(
     async (porte, newStatut) => {
+      // 1. Optimistic UI Update (Immediate)
+      updateLocalData(porte.id, { statut: newStatut, derniereVisite: new Date().toISOString() })
+
       if (newStatut === 'RENDEZ_VOUS_PRIS') {
         setSelectedPorte(porte)
         setEditForm({
@@ -317,12 +363,16 @@ export default function PortesGestion() {
       }
 
       try {
+        // 2. Call API (Offline-ready mutation will queue if needed)
         await withScrollRestore(async () => {
           await updatePorte(updateData)
-          await refetch()
-          if (refetchStats) await refetchStats()
+          // Note: refetch() might fail offline, but local data is already updated!
+          if (navigator.onLine) {
+              await refetch()
+              if (refetchStats) await refetchStats()
+          }
         })
-        showSuccess('Statut mis à jour avec succès !')
+        showSuccess('Statut mis à jour !')
       } catch (error) {
         console.error('Error updating porte status:', error)
         showError(error, 'Mise à jour statut')
@@ -337,7 +387,8 @@ export default function PortesGestion() {
       const newNbRepassages = Math.max(0, (porte.nbRepassages || 0) + increment)
       const updateData = { id: porte.id, nbRepassages: newNbRepassages }
 
-      // Optimistic update pour le modal
+      // 1. Optimistic UI Update
+      updateLocalData(porte.id, { nbRepassages: newNbRepassages })
       if (selectedPorte && selectedPorte.id === porte.id) {
           setSelectedPorte(prev => ({ ...prev, nbRepassages: newNbRepassages }))
       }
@@ -345,8 +396,10 @@ export default function PortesGestion() {
       try {
         await withScrollRestore(async () => {
           await updatePorte(updateData)
-          await refetch()
-          if (refetchStats) await refetchStats()
+          if (navigator.onLine) {
+             await refetch()
+             if (refetchStats) await refetchStats()
+          }
         })
       } catch (error) {
         console.error('Error updating repassages:', error)
@@ -437,6 +490,7 @@ export default function PortesGestion() {
                    <h3 className={`text-sm font-bold ${base.text.primary}`}>Vue d'ensemble</h3>
                    {immeuble && (
                       <p className={`text-xs ${base.text.muted}`}>
+                        {selectedFloor ? `Étage ${selectedFloor} • ` : ''}
                         {immeuble.nbEtages} étages • {immeuble.nbPortesParEtage} portes/étage • Total: {statsData ? statsData.totalPortes : portes.length} portes
                       </p>
                     )}
@@ -528,7 +582,7 @@ export default function PortesGestion() {
         portes={filteredPortes}
         statsData={statsData}
         loading={(portesLoading && portes.length === 0) || immeubleLoading}
-        isFetchingMore={portesLoading && portes.length > 0}
+        isFetchingMore={isFetchingMore}
         readOnly={false}
         showStatusFilters={false}
         onPorteEdit={handleEditPorte}
@@ -543,6 +597,8 @@ export default function PortesGestion() {
         onAddEtage={handleAddEtage}
         addingPorteToEtage={addingPorteToEtage}
         addingEtage={addingEtage}
+        onFloorSelect={handleFloorSelect} // NEW
+        selectedFloor={selectedFloor} // NEW
       />
 
       {/* Modal d'édition */}

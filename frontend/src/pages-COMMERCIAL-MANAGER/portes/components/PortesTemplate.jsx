@@ -48,6 +48,9 @@ export default function PortesTemplate({
   onAddEtage,
   addingPorteToEtage = false,
   addingEtage = false,
+  
+  // Floor Filtering  onFloorSelect,
+  selectedFloor,
   isFetchingMore = false,
   statsData = null,
 }) {
@@ -151,15 +154,27 @@ export default function PortesTemplate({
     }
   }, [filteredPortes, stats, selectedStatuts, showStatusFilters])
 
-  const etagesDisponibles = useMemo(
-    () => Object.keys(portesByEtage).sort((a, b) => Number(b) - Number(a)),
-    [portesByEtage]
-  )
+  // Use server stats if available, otherwise fallback to local data (which might be incomplete)
+  const etagesDisponibles = useMemo(() => {
+    if (statsData && statsData.portesParEtage) {
+        return [...statsData.portesParEtage].sort((a, b) => b.etage - a.etage)
+    }
+    return Object.keys(portesByEtage)
+        .sort((a, b) => Number(b) - Number(a))
+        .map(e => ({ etage: Number(e), count: portesByEtage[e].length }))
+  }, [statsData, portesByEtage])
 
-  const scrollToEtage = etage => {
-    const target = etageRefs.current[etage]
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  // Scroll or Filter
+  const handleEtageClick = etage => {
+    if (onFloorSelect) {
+        onFloorSelect(etage)
+    } else {
+        // Fallback implementation (old behavior)
+        const target = etageRefs.current[etage]
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
     }
   }
 
@@ -199,20 +214,23 @@ export default function PortesTemplate({
               <span className={`text-xs ${base.text.muted}`}>Accès rapide aux étages</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 sm:gap-2">
-              {etagesDisponibles.map(etage => (
+              {etagesDisponibles.map(item => {
+                const etage = item.etage
+                const isSelected = selectedFloor === etage
+                return (
                 <Button
                   key={etage}
-                  variant="ghost"
+                  variant={isSelected ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => scrollToEtage(etage)}
-                  className={`h-9 ${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default} font-semibold`}
+                  onClick={() => handleEtageClick(etage)}
+                  className={`h-9 ${isSelected ? '' : `${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default}`} font-semibold`}
                 >
-                  {etage}
-                  <span className={`ml-1 text-[10px] ${base.text.muted}`}>
-                    ({portesByEtage[etage]?.length || 0})
+                  {etage} 
+                  <span className={`ml-1 text-[10px] ${isSelected ? 'text-white/80' : base.text.muted}`}>
+                    ({item.count})
                   </span>
                 </Button>
-              ))}
+              )})}
             </div>
           </div>
         )}

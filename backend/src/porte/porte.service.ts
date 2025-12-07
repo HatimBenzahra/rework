@@ -170,11 +170,17 @@ export class PorteService {
     userRole: string,
     skip?: number,
     take?: number,
+    etage?: number,
   ) {
     await this.ensureImmeubleAccess(immeubleId, userId, userRole);
 
+    const where: any = { immeubleId };
+    if (etage) {
+      where.etage = etage;
+    }
+
     return this.prisma.porte.findMany({
-      where: { immeubleId },
+      where,
       orderBy: [{ etage: 'asc' }, { numero: 'asc' }],
       skip,
       take,
@@ -290,6 +296,23 @@ export class PorteService {
       statusCounts[group.statut] = group._count.statut;
     });
 
+    // Statistiques par étage
+    const etagesGrouped = await this.prisma.porte.groupBy({
+      by: ['etage'],
+      where: whereClause,
+      _count: {
+        _all: true,
+      },
+      orderBy: {
+        etage: 'asc',
+      },
+    });
+
+    const portesParEtage = etagesGrouped.map(group => ({
+      etage: group.etage,
+      count: group._count._all,
+    }));
+
     return {
       totalPortes,
       contratsSigne: statusCounts[StatutPorte.CONTRAT_SIGNE],
@@ -304,6 +327,7 @@ export class PorteService {
         totalPortes > 0
           ? ((statusCounts[StatutPorte.CONTRAT_SIGNE] / totalPortes) * 100).toFixed(2)
           : '0',
+      portesParEtage, // NEW
     };
   }
 
