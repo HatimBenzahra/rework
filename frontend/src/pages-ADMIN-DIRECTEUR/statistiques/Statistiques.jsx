@@ -144,7 +144,7 @@ export default function Statistiques() {
     return filterStatisticsByPeriod(filteredStatistics, timePeriod)
   }, [filteredStatistics, timePeriod])
 
-  // Calculs des métriques
+  // Calculs des métriques - IMPORTANT: filtrer correctement pour éviter les doublons
   const metrics = useMemo(() => {
     if (!timeFilteredStatistics?.length) {
       return {
@@ -157,20 +157,24 @@ export default function Statistiques() {
       }
     }
 
-    const contratsSignes = timeFilteredStatistics.reduce(
+    // Filtrer uniquement les statistiques des commerciaux (éviter les doublons manager/commercial)
+    // Les stats avec commercialId sont les vraies stats des commerciaux
+    const commercialStats = timeFilteredStatistics.filter(stat => stat.commercialId)
+
+    const contratsSignes = commercialStats.reduce(
       (sum, stat) => sum + (stat.contratsSignes || 0),
       0
     )
-    const rendezVousPris = timeFilteredStatistics.reduce(
+    const rendezVousPris = commercialStats.reduce(
       (sum, stat) => sum + (stat.rendezVousPris || 0),
       0
     )
-    const refus = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.refus || 0), 0)
-    const nbRepassages = timeFilteredStatistics.reduce(
+    const refus = commercialStats.reduce((sum, stat) => sum + (stat.refus || 0), 0)
+    const nbRepassages = commercialStats.reduce(
       (sum, stat) => sum + (stat.nbRepassages || 0),
       0
     )
-    const nbImmeubles = timeFilteredStatistics.reduce(
+    const nbImmeubles = commercialStats.reduce(
       (sum, stat) => sum + (stat.immeublesVisites || 0),
       0
     )

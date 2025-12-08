@@ -77,21 +77,33 @@ class ErrorHandler {
    * Gérer les promesses rejetées non gérées
    */
   handlePromiseRejection(event) {
-    // S'assurer que message est toujours une string
+    // S'assurer que message est toujours une string utile
     let message = 'Promise rejection'
+
     if (event.reason) {
       if (typeof event.reason === 'string') {
         message = event.reason
-      } else if (event.reason.message) {
-        message = String(event.reason.message)
-      } else if (event.reason.toString && event.reason.toString() !== '[object Object]') {
-        message = event.reason.toString()
+      } else if (event.reason instanceof Error) {
+        // Si c'est une Error, utiliser son message
+        message = event.reason.message || event.reason.toString()
+      } else if (event.reason instanceof Event) {
+        // Si c'est un Event DOM, décrire l'événement
+        message = `Event: ${event.reason.type || 'unknown'} on ${event.reason.target?.tagName || 'unknown'}`
+      } else if (event.reason.message && typeof event.reason.message === 'string') {
+        // Si l'objet a une propriété message string
+        message = event.reason.message
       } else {
-        // Pour les objets complexes, convertir en JSON
+        // Pour les autres objets, essayer de les sérialiser de manière utile
         try {
-          message = JSON.stringify(event.reason)
+          const stringified = JSON.stringify(event.reason)
+          // Éviter les "[object Object]" inutiles
+          if (stringified && stringified !== '{}' && stringified !== '[object Object]') {
+            message = stringified
+          } else {
+            message = `Promise rejection (${typeof event.reason})`
+          }
         } catch {
-          message = 'Promise rejection (complex object)'
+          message = `Promise rejection (non-serializable ${typeof event.reason})`
         }
       }
     }
@@ -182,6 +194,8 @@ class ErrorHandler {
       'datachannel',
       'connection state changed',
       'ICE connection',
+      'event: error on websocket',
+      'event: close on websocket',
     ]
 
     if (liveKitNormalErrors.some(pattern =>
@@ -189,6 +203,12 @@ class ErrorHandler {
       stackStr.toLowerCase().includes(pattern.toLowerCase())
     )) {
       // Ces erreurs sont normales avec LiveKit (déconnexions réseau, fermeture page, etc.)
+      return
+    }
+
+    // Ignorer les promise rejections de type Event (souvent liées à LiveKit)
+    if (error.type === 'promise' && error.reason instanceof Event) {
+      // Ces Event objects sont généralement des déconnexions WebSocket/WebRTC normales
       return
     }
 
