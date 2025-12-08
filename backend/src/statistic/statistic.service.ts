@@ -150,10 +150,19 @@ export class StatisticService {
           break;
 
         case 'directeur':
-          // Statistiques des commerciaux du directeur
-          whereConditions.commercial = {
-            directeurId: userId,
-          };
+          // Statistiques des commerciaux ET managers du directeur
+          whereConditions.OR = [
+            {
+              commercial: {
+                directeurId: userId,
+              },
+            },
+            {
+              manager: {
+                directeurId: userId,
+              },
+            },
+          ];
           break;
 
         case 'manager':
