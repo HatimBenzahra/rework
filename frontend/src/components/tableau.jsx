@@ -301,7 +301,7 @@ export function AdvancedDataTable({
                         </TableCell>
                       ))}
                       <TableCell>
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
@@ -311,7 +311,7 @@ export function AdvancedDataTable({
                               <span className="sr-only">Ouvrir le menu</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuContent align="end" className="w-48" avoidCollisions={false}>
                             {detailsPath && (
                               <DropdownMenuItem onClick={() => handleViewDetails(row)}>
                                 <Eye />
