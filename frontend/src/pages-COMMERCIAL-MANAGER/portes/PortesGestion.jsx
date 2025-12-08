@@ -364,21 +364,21 @@ export default function PortesGestion() {
 
       try {
         // 2. Call API (Offline-ready mutation will queue if needed)
-        await withScrollRestore(async () => {
-          await updatePorte(updateData)
-          // Note: refetch() might fail offline, but local data is already updated!
-          if (navigator.onLine) {
-              await refetch()
-              if (refetchStats) await refetchStats()
-          }
-        })
-        showSuccess('Statut mis à jour !')
+        await updatePorte(updateData)
+        // Only refetch stats, not the full porte list (already updated optimistically)
+        if (navigator.onLine && refetchStats) {
+          await refetchStats()
+        }
       } catch (error) {
         console.error('Error updating porte status:', error)
         showError(error, 'Mise à jour statut')
+        // En cas d'erreur, on refetch pour revenir à l'état serveur
+        if (navigator.onLine) {
+          await refetch()
+        }
       }
     },
-    [updatePorte, refetch, refetchStats, withScrollRestore, showSuccess, showError]
+    [updatePorte, refetch, refetchStats, updateLocalData, showSuccess, showError]
   )
 
   // Repassages +/-
@@ -394,16 +394,18 @@ export default function PortesGestion() {
       }
 
       try {
-        await withScrollRestore(async () => {
-          await updatePorte(updateData)
-          if (navigator.onLine) {
-             await refetch()
-             if (refetchStats) await refetchStats()
-          }
-        })
+        await updatePorte(updateData)
+        // Only refetch stats, not the full porte list (already updated optimistically)
+        if (navigator.onLine && refetchStats) {
+          await refetchStats()
+        }
       } catch (error) {
         console.error('Error updating repassages:', error)
         showError(error, 'Mise à jour repassages')
+        // En cas d'erreur, on refetch pour revenir à l'état serveur
+        if (navigator.onLine) {
+          await refetch()
+        }
       }
     },
     [updatePorte, refetch, refetchStats, withScrollRestore, showError, selectedPorte]
