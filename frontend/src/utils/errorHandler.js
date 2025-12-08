@@ -77,9 +77,28 @@ class ErrorHandler {
    * Gérer les promesses rejetées non gérées
    */
   handlePromiseRejection(event) {
+    // S'assurer que message est toujours une string
+    let message = 'Promise rejection'
+    if (event.reason) {
+      if (typeof event.reason === 'string') {
+        message = event.reason
+      } else if (event.reason.message) {
+        message = String(event.reason.message)
+      } else if (event.reason.toString && event.reason.toString() !== '[object Object]') {
+        message = event.reason.toString()
+      } else {
+        // Pour les objets complexes, convertir en JSON
+        try {
+          message = JSON.stringify(event.reason)
+        } catch {
+          message = 'Promise rejection (complex object)'
+        }
+      }
+    }
+
     const error = {
       type: 'promise',
-      message: event.reason?.message || event.reason || 'Promise rejection',
+      message,
       reason: event.reason,
       stack: event.reason?.stack,
       timestamp: new Date().toISOString(),
@@ -140,14 +159,36 @@ class ErrorHandler {
    * Envoyer l'erreur à un service de monitoring externe
    */
   sendToMonitoring(error) {
+    // Convertir message et stack en string pour éviter les erreurs .includes()
+    const messageStr = typeof error.message === 'string' ? error.message : String(error.message || '')
+    const stackStr = typeof error.stack === 'string' ? error.stack : ''
+
     // Éviter les boucles infinies : ne pas envoyer les erreurs Sentry à Sentry
-    if (error.message?.includes('Sentry') || error.stack?.includes('Sentry')) {
+    if (messageStr.includes('Sentry') || stackStr.includes('Sentry')) {
       return
     }
 
     // Ignorer les erreurs de ressources non critiques (images, fonts, etc.)
     if (error.type === 'resource') {
       // Ne pas polluer Sentry avec des erreurs de ressources externes
+      return
+    }
+
+    // Ignorer les erreurs LiveKit non critiques (déconnexions normales)
+    const liveKitNormalErrors = [
+      'websocket closed',
+      'peerconnection failed',
+      'signal disconnected',
+      'datachannel',
+      'connection state changed',
+      'ICE connection',
+    ]
+
+    if (liveKitNormalErrors.some(pattern =>
+      messageStr.toLowerCase().includes(pattern.toLowerCase()) ||
+      stackStr.toLowerCase().includes(pattern.toLowerCase())
+    )) {
+      // Ces erreurs sont normales avec LiveKit (déconnexions réseau, fermeture page, etc.)
       return
     }
 
