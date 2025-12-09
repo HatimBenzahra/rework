@@ -14,15 +14,11 @@ import {
   IsEnum,
   IsDateString,
 } from 'class-validator';
+// Import centralisé de l'enum et des helpers
+import { StatutPorte } from './porte-status.constants';
 
-export enum StatutPorte {
-  NON_VISITE = 'NON_VISITE',
-  CONTRAT_SIGNE = 'CONTRAT_SIGNE',
-  REFUS = 'REFUS',
-  RENDEZ_VOUS_PRIS = 'RENDEZ_VOUS_PRIS',
-  CURIEUX = 'CURIEUX',
-  NECESSITE_REPASSAGE = 'NECESSITE_REPASSAGE',
-}
+// Re-export pour compatibilité avec les imports existants
+export { StatutPorte } from './porte-status.constants';
 
 registerEnumType(StatutPorte, {
   name: 'StatutPorte',
@@ -69,6 +65,51 @@ export class Porte {
 
   @Field()
   updatedAt: Date;
+}
+
+@ObjectType()
+export class EtageInStatistics {
+  @Field(() => Int)
+  etage: number;
+
+  @Field(() => Int)
+  count: number;
+}
+
+@ObjectType()
+export class PorteStatistics {
+  @Field(() => Int)
+  totalPortes: number;
+
+  @Field(() => Int)
+  contratsSigne: number;
+
+  @Field(() => Int)
+  rdvPris: number;
+
+  @Field(() => Int)
+  absent: number;
+
+  @Field(() => Int)
+  argumente: number;
+
+  @Field(() => Int)
+  refus: number;
+
+  @Field(() => Int)
+  nonVisitees: number;
+
+  @Field(() => Int)
+  necessiteRepassage: number;
+
+  @Field(() => Int)
+  portesVisitees: number;
+
+  @Field()
+  tauxConversion: string;
+
+  @Field(() => [EtageInStatistics])
+  portesParEtage: EtageInStatistics[];
 }
 
 @InputType()

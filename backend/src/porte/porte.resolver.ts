@@ -1,7 +1,7 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { PorteService } from './porte.service';
-import { Porte, CreatePorteInput, UpdatePorteInput } from './porte.dto';
+import { Porte, CreatePorteInput, UpdatePorteInput, PorteStatistics } from './porte.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -34,9 +34,20 @@ export class PorteResolver {
   @Roles('admin', 'directeur', 'manager', 'commercial')
   findByImmeuble(
     @Args('immeubleId', { type: () => Int }) immeubleId: number,
+    @Args('skip', { type: () => Int, nullable: true }) skip: number,
+    @Args('take', { type: () => Int, nullable: true }) take: number,
+    @Args('etage', { type: () => Int, nullable: true }) etage: number,
     @CurrentUser() user: any,
   ) {
-    return this.porteService.findByImmeuble(immeubleId, user.id, user.role);
+    return this.porteService.findByImmeuble(immeubleId, user.id, user.role, skip, take, etage);
+  }
+
+  @Query(() => PorteStatistics, { name: 'porteStatistics' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
+  getStatistics(
+    @Args('immeubleId', { type: () => Int }) immeubleId: number,
+  ) {
+    return this.porteService.getStatistiquesPortes(immeubleId);
   }
 
   @Mutation(() => Porte)

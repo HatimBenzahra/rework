@@ -284,6 +284,8 @@ export interface UpdatePorteVariables {
 
 export interface GetPortesByImmeubleVariables {
   immeubleId: number
+  skip?: number
+  take?: number
 }
 
 export interface GetPortesModifiedTodayVariables {

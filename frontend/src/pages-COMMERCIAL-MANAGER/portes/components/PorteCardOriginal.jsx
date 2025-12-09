@@ -3,15 +3,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
-  CheckCircle2,
-  XCircle,
-  Calendar,
-  MessageSquare,
   Plus,
   Minus,
+  MessageSquare,
   RotateCcw,
+  Calendar,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
+import { StatutPorte } from '@/constants/porte-status.constants'
 
 export default function PorteCardOriginal({
   porte,
@@ -30,7 +29,7 @@ export default function PorteCardOriginal({
   const statutInfo = getStatutInfo(porte.statut)
   const IconComponent = statutInfo.icon
 
-  const needsRepassage = porte.statut === 'CURIEUX' || porte.statut === 'NECESSITE_REPASSAGE'
+  const needsRepassage = porte.statut === 'NECESSITE_REPASSAGE' || porte.statut === 'ABSENT'
 
   if (readOnly) {
     // Version simple pour le mode lecture
@@ -140,100 +139,94 @@ export default function PorteCardOriginal({
               Action rapide :
             </p>
             <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
-              {/* Contrat signé */}
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={() => onQuickStatusChange(porte, 'CONTRAT_SIGNE')}
-                className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                  porte.statut === 'CONTRAT_SIGNE'
-                    ? `${colors.success.bg} ${colors.success.text} border-2 ${colors.success.border} shadow-lg`
-                    : `${base.bg.muted} ${base.text.primary} hover:${colors.success.bgLight} border ${base.border.default}`
-                } font-bold transition-all duration-200`}
-              >
-                <CheckCircle2 className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                <span className="text-[10px] sm:text-xs">Contrat</span>
-              </Button>
+              {/* Génération dynamique des boutons basée sur statutOptions (centralisé) */}
+              {statutOptions
+                .filter(option => option.value !== StatutPorte.NON_VISITE && option.value !== StatutPorte.NECESSITE_REPASSAGE)
+                .map(option => {
+                  const Icon = option.icon
+                  const isActive = porte.statut === option.value
 
-              {/* RDV */}
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={() => onQuickStatusChange(porte, 'RENDEZ_VOUS_PRIS')}
-                className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                  porte.statut === 'RENDEZ_VOUS_PRIS'
-                    ? `${colors.primary.bg} ${colors.primary.text} border-2 ${colors.primary.border} shadow-lg`
-                    : `${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default}`
-                } font-bold transition-all duration-200`}
-              >
-                <Calendar className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                <span className="text-[10px] sm:text-xs">RDV</span>
-              </Button>
-
-              {/* Refus */}
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={() => onQuickStatusChange(porte, 'REFUS')}
-                className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                  porte.statut === 'REFUS'
-                    ? `${colors.danger.bg} ${colors.danger.text} border-2 ${colors.danger.border} shadow-lg`
-                    : `${base.bg.muted} ${base.text.primary} hover:${colors.danger.bgLight} border ${base.border.default}`
-                } font-bold transition-all duration-200`}
-              >
-                <XCircle className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                <span className="text-[10px] sm:text-xs">Refus</span>
-              </Button>
-
-              {/* Curieux */}
-              <Button
-                variant="ghost"
-                size="lg"
-                onClick={() => onQuickStatusChange(porte, 'CURIEUX')}
-                className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
-                  porte.statut === 'CURIEUX'
-                    ? `${colors.info.bg} ${colors.info.text} border-2 ${colors.info.border} shadow-lg`
-                    : `${base.bg.muted} ${base.text.primary} hover:${colors.info.bgLight} border ${base.border.default}`
-                } font-bold transition-all duration-200`}
-              >
-                <MessageSquare className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
-                <span className="text-[10px] sm:text-xs">Curieux</span>
-              </Button>
+                  return (
+                    <Button
+                      key={option.value}
+                      variant="ghost"
+                      size="lg"
+                      onClick={() => onQuickStatusChange(porte, option.value)}
+                      className={`h-14 sm:h-16 flex flex-col items-center justify-center gap-1 sm:gap-1.5 ${
+                        isActive
+                          ? `${option.color} border-2 shadow-lg`
+                          : `${base.bg.muted} ${base.text.primary} hover:${option.color.split(' ')[0]} border ${base.border.default}`
+                      } font-bold transition-all duration-200`}
+                    >
+                      <Icon className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                      <span className="text-[10px] sm:text-xs">{option.label}</span>
+                    </Button>
+                  )
+                })}
             </div>
           </div>
 
-          {/* GESTION DES REPASSAGES avec +/- */}
+{/* GESTION DES REPASSAGES - NOUVEAU UI */}
           {needsRepassage && (
             <div
-              className={`${colors.warning.bgLight} border ${colors.warning.border} rounded-lg p-2 sm:p-2.5`}
+              className={`mt-2 ${colors.warning.bgLight} border ${colors.warning.border} rounded-xl p-3 overflow-hidden relative`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <RotateCcw className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${colors.warning.text}`} />
-                  <span className={`font-bold text-xs sm:text-sm ${colors.warning.text}`}>
-                    Repassages : {porte.nbRepassages}
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className={`p-1.5 rounded-lg ${colors.warning.bg} bg-opacity-20`}>
+                     <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
+                  </div>
+                  <span className={`font-bold text-sm ${colors.warning.text}`}>
+                    Suivi de passage
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRepassageChange(porte, -1)}
-                    disabled={porte.nbRepassages === 0}
-                    className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.danger.bgLight} ${colors.danger.text} hover:${colors.danger.bg} border ${colors.danger.border}`}
-                  >
-                    <Minus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRepassageChange(porte, 1)}
-                    className={`h-8 w-8 sm:h-9 sm:w-9 p-0 ${colors.success.bgLight} ${colors.success.text} hover:${colors.success.bg} border ${colors.success.border}`}
-                  >
-                    <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5" />
-                  </Button>
-                </div>
+                <Badge 
+                  variant="outline" 
+                  className={`${colors.warning.border} ${colors.warning.text} bg-white/50 backdrop-blur-sm shadow-sm`}
+                >
+                  {porte.nbRepassages || 0} visite{(porte.nbRepassages || 0) > 1 ? 's' : ''}
+                </Badge>
               </div>
+
+              {/* Segmented Control / Switch */}
+              <div className="bg-slate-900/5 dark:bg-white/5 p-1 rounded-lg flex relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const diff = 1 - (porte.nbRepassages || 0)
+                    if (diff !== 0) onRepassageChange(porte, diff)
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                    (porte.nbRepassages || 0) <= 1
+                      ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                  }`}
+                >
+                  <span className={ (porte.nbRepassages || 0) <= 1 ? "opacity-100" : "opacity-70" }>1er Passage</span>
+                </button>
+                
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    const diff = 2 - (porte.nbRepassages || 0)
+                    if (diff !== 0) onRepassageChange(porte, diff)
+                  }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                    (porte.nbRepassages || 0) >= 2
+                      ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                  }`}
+                >
+                  <span className={ (porte.nbRepassages || 0) >= 2 ? "opacity-100" : "opacity-70" }>2ème Passage</span>
+                </button>
+              </div>
+              
+              <p className={`text-[10px] text-center mt-2 ${colors.warning.text} opacity-70 font-medium`}>
+                {(porte.nbRepassages || 0) <= 1 
+                  ? " Passage initial (Matin)" 
+                  : " Repassage effectué (Soir)"}
+              </p>
             </div>
           )}
 

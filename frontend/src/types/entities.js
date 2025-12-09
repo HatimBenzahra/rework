@@ -75,7 +75,13 @@
  */
 
 /**
- * @typedef {'NON_VISITE'|'CONTRAT_SIGNE'|'REFUS'|'RENDEZ_VOUS_PRIS'|'CURIEUX'|'NECESSITE_REPASSAGE'} StatutPorte
+ * Type des statuts de porte
+ * IMPORTANT: Doit être synchronisé avec :
+ * - @/constants/porte-status.constants (configuration UI - source de vérité frontend)
+ * - backend/src/porte/porte-status.constants.ts (backend)
+ * - backend/prisma/schema.prisma (database)
+ *
+ * @typedef {'NON_VISITE'|'CONTRAT_SIGNE'|'REFUS'|'RENDEZ_VOUS_PRIS'|'ABSENT'|'ARGUMENTE'|'NECESSITE_REPASSAGE'} StatutPorte
  */
 
 /**

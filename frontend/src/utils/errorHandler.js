@@ -77,9 +77,40 @@ class ErrorHandler {
    * Gérer les promesses rejetées non gérées
    */
   handlePromiseRejection(event) {
+    // S'assurer que message est toujours une string utile
+    let message = 'Promise rejection'
+
+    if (event.reason) {
+      if (typeof event.reason === 'string') {
+        message = event.reason
+      } else if (event.reason instanceof Error) {
+        // Si c'est une Error, utiliser son message
+        message = event.reason.message || event.reason.toString()
+      } else if (event.reason instanceof Event) {
+        // Si c'est un Event DOM, décrire l'événement
+        message = `Event: ${event.reason.type || 'unknown'} on ${event.reason.target?.tagName || 'unknown'}`
+      } else if (event.reason.message && typeof event.reason.message === 'string') {
+        // Si l'objet a une propriété message string
+        message = event.reason.message
+      } else {
+        // Pour les autres objets, essayer de les sérialiser de manière utile
+        try {
+          const stringified = JSON.stringify(event.reason)
+          // Éviter les "[object Object]" inutiles
+          if (stringified && stringified !== '{}' && stringified !== '[object Object]') {
+            message = stringified
+          } else {
+            message = `Promise rejection (${typeof event.reason})`
+          }
+        } catch {
+          message = `Promise rejection (non-serializable ${typeof event.reason})`
+        }
+      }
+    }
+
     const error = {
       type: 'promise',
-      message: event.reason?.message || event.reason || 'Promise rejection',
+      message,
       reason: event.reason,
       stack: event.reason?.stack,
       timestamp: new Date().toISOString(),
@@ -140,14 +171,44 @@ class ErrorHandler {
    * Envoyer l'erreur à un service de monitoring externe
    */
   sendToMonitoring(error) {
+    // Convertir message et stack en string pour éviter les erreurs .includes()
+    const messageStr = typeof error.message === 'string' ? error.message : String(error.message || '')
+    const stackStr = typeof error.stack === 'string' ? error.stack : ''
+
     // Éviter les boucles infinies : ne pas envoyer les erreurs Sentry à Sentry
-    if (error.message?.includes('Sentry') || error.stack?.includes('Sentry')) {
+    if (messageStr.includes('Sentry') || stackStr.includes('Sentry')) {
       return
     }
 
     // Ignorer les erreurs de ressources non critiques (images, fonts, etc.)
     if (error.type === 'resource') {
       // Ne pas polluer Sentry avec des erreurs de ressources externes
+      return
+    }
+
+    // Ignorer les erreurs LiveKit non critiques (déconnexions normales)
+    const liveKitNormalErrors = [
+      'websocket closed',
+      'peerconnection failed',
+      'signal disconnected',
+      'datachannel',
+      'connection state changed',
+      'ICE connection',
+      'event: error on websocket',
+      'event: close on websocket',
+    ]
+
+    if (liveKitNormalErrors.some(pattern =>
+      messageStr.toLowerCase().includes(pattern.toLowerCase()) ||
+      stackStr.toLowerCase().includes(pattern.toLowerCase())
+    )) {
+      // Ces erreurs sont normales avec LiveKit (déconnexions réseau, fermeture page, etc.)
+      return
+    }
+
+    // Ignorer les promise rejections de type Event (souvent liées à LiveKit)
+    if (error.type === 'promise' && error.reason instanceof Event) {
+      // Ces Event objects sont généralement des déconnexions WebSocket/WebRTC normales
       return
     }
 

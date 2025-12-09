@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { calculateStatsForStatus } from '../porte/porte-status.constants';
 import { CreateZoneInput, UpdateZoneInput, UserType } from './zone.dto';
 
 @Injectable()
@@ -112,27 +113,15 @@ export class ZoneService {
       totalPortesProspectes: 0,
     };
 
+    // Utilisation du helper centralisé pour calculer les stats
     portesGrouped.forEach((group) => {
       const count = group._count.statut;
+      const statusStats = calculateStatsForStatus(group.statut, count);
 
-      switch (group.statut) {
-        case 'CONTRAT_SIGNE':
-          stats.totalContratsSignes += count;
-          stats.totalPortesProspectes += count;
-          break;
-        case 'RENDEZ_VOUS_PRIS':
-          stats.totalRendezVousPris += count;
-          stats.totalPortesProspectes += count;
-          break;
-        case 'REFUS':
-          stats.totalRefus += count;
-          stats.totalPortesProspectes += count;
-          break;
-        case 'CURIEUX':
-        case 'NECESSITE_REPASSAGE':
-          stats.totalPortesProspectes += count;
-          break;
-      }
+      stats.totalContratsSignes += statusStats.contratsSignes;
+      stats.totalRendezVousPris += statusStats.rendezVousPris;
+      stats.totalRefus += statusStats.refus;
+      stats.totalPortesProspectes += statusStats.nbPortesProspectes;
     });
 
     return stats;

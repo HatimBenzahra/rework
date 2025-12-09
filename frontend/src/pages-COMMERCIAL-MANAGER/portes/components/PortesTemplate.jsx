@@ -48,6 +48,11 @@ export default function PortesTemplate({
   onAddEtage,
   addingPorteToEtage = false,
   addingEtage = false,
+  
+  // Floor Filtering  onFloorSelect,
+  selectedFloor,
+  isFetchingMore = false,
+  statsData = null,
 }) {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
@@ -88,27 +93,52 @@ export default function PortesTemplate({
       }, {})
   }, [filteredPortes])
 
-  // Statistiques des portes
+  // Statistiques des portes (Backend ou calculé)
   const stats = useMemo(() => {
+    if (statsData) {
+        return {
+           total: statsData.totalPortes,
+           nonVisitees: statsData.nonVisitees,
+           contratsSigne: statsData.contratsSigne,
+           rdvPris: statsData.rdvPris,
+           absent: statsData.absent,
+           argumente: statsData.argumente,
+           refus: statsData.refus,
+           repassages: statsData.necessiteRepassage,
+           tauxVisite: statsData.tauxConversion || '0' // Note: Backend returns 'tauxConversion', might want separate filed for visite rate
+        }
+    }
     const total = portes.length
     const nonVisitees = portes.filter(p => p.statut === 'NON_VISITE').length
     const contratsSigne = portes.filter(p => p.statut === 'CONTRAT_SIGNE').length
     const rdvPris = portes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
-    const curieux = portes.filter(p => p.statut === 'CURIEUX').length
+    const absent = portes.filter(p => p.statut === 'ABSENT').length
+    const argumente = portes.filter(p => p.statut === 'ARGUMENTE').length
     const refus = portes.filter(p => p.statut === 'REFUS').length
     const repassages = portes.filter(p => p.statut === 'NECESSITE_REPASSAGE').length
     const tauxVisite = total > 0 ? (((total - nonVisitees) / total) * 100).toFixed(1) : '0'
-    return { total, nonVisitees, contratsSigne, rdvPris, curieux, refus, repassages, tauxVisite }
-  }, [portes])
+    return { total, nonVisitees, contratsSigne, rdvPris, absent, argumente, refus, repassages, tauxVisite }
+  }, [portes, statsData])
 
   // Compteurs par statut pour les filtres
   const portesCountByStatus = useMemo(() => {
     const counts = {}
+    if (statsData) {
+       counts['NON_VISITE'] = statsData.nonVisitees
+       counts['CONTRAT_SIGNE'] = statsData.contratsSigne
+       counts['RENDEZ_VOUS_PRIS'] = statsData.rdvPris
+       counts['ABSENT'] = statsData.absent
+       counts['ARGUMENTE'] = statsData.argumente
+       counts['REFUS'] = statsData.refus
+       counts['NECESSITE_REPASSAGE'] = statsData.necessiteRepassage
+       return counts
+    }
+    
     statutOptions.forEach(option => {
       counts[option.value] = portes.filter(p => p.statut === option.value).length
     })
     return counts
-  }, [portes, statutOptions])
+  }, [portes, statutOptions, statsData])
 
   // Stats des portes filtrées pour l'affichage
   const filteredStats = useMemo(() => {
@@ -124,15 +154,27 @@ export default function PortesTemplate({
     }
   }, [filteredPortes, stats, selectedStatuts, showStatusFilters])
 
-  const etagesDisponibles = useMemo(
-    () => Object.keys(portesByEtage).sort((a, b) => Number(b) - Number(a)),
-    [portesByEtage]
-  )
+  // Use server stats if available, otherwise fallback to local data (which might be incomplete)
+  const etagesDisponibles = useMemo(() => {
+    if (statsData && statsData.portesParEtage) {
+        return [...statsData.portesParEtage].sort((a, b) => b.etage - a.etage)
+    }
+    return Object.keys(portesByEtage)
+        .sort((a, b) => Number(b) - Number(a))
+        .map(e => ({ etage: Number(e), count: portesByEtage[e].length }))
+  }, [statsData, portesByEtage])
 
-  const scrollToEtage = etage => {
-    const target = etageRefs.current[etage]
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  // Scroll or Filter
+  const handleEtageClick = etage => {
+    if (onFloorSelect) {
+        onFloorSelect(etage)
+    } else {
+        // Fallback implementation (old behavior)
+        const target = etageRefs.current[etage]
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
     }
   }
 
@@ -172,20 +214,23 @@ export default function PortesTemplate({
               <span className={`text-xs ${base.text.muted}`}>Accès rapide aux étages</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6 sm:gap-2">
-              {etagesDisponibles.map(etage => (
+              {etagesDisponibles.map(item => {
+                const etage = item.etage
+                const isSelected = selectedFloor === etage
+                return (
                 <Button
                   key={etage}
-                  variant="ghost"
+                  variant={isSelected ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => scrollToEtage(etage)}
-                  className={`h-9 ${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default} font-semibold`}
+                  onClick={() => handleEtageClick(etage)}
+                  className={`h-9 ${isSelected ? '' : `${base.bg.muted} ${base.text.primary} hover:${colors.primary.bgLight} border ${base.border.default}`} font-semibold`}
                 >
-                  {etage}
-                  <span className={`ml-1 text-[10px] ${base.text.muted}`}>
-                    ({portesByEtage[etage]?.length || 0})
+                  {etage} 
+                  <span className={`ml-1 text-[10px] ${isSelected ? 'text-white/80' : base.text.muted}`}>
+                    ({item.count})
                   </span>
                 </Button>
-              ))}
+              )})}
             </div>
           </div>
         )}
@@ -403,6 +448,14 @@ export default function PortesTemplate({
           </div>
         )}
       </div>
+
+      {/* Loader de pagination */}
+      {isFetchingMore && (
+         <div className="py-4 text-center">
+            <div className={`${components.loading.spinner} mx-auto mb-2 !h-6 !w-6`}></div>
+            <p className="text-xs text-muted-foreground">Chargement de la suite...</p>
+         </div>
+      )}
 
       {/* Message quand aucune porte ne correspond aux filtres */}
       {Object.keys(portesByEtage).length === 0 && (

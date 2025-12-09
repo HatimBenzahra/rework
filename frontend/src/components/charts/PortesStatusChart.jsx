@@ -21,10 +21,15 @@ const statusConfig = {
     color: 'var(--chart-1)', // Orange
     fill: 'var(--chart-1)',
   },
-  CURIEUX: {
-    label: 'Curieux',
+  ABSENT: {
+    label: 'Absent',
     color: 'var(--chart-4)', // Jaune-vert
     fill: 'var(--chart-4)',
+  },
+  ARGUMENTE: {
+    label: 'Argumenté',
+    color: 'var(--chart-6)', // Orange-warning
+    fill: 'var(--chart-6)',
   },
   REFUS: {
     label: 'Refus',
@@ -52,9 +57,13 @@ const chartConfig = {
     label: 'RDV pris',
     color: 'var(--chart-1)',
   },
-  curieux: {
-    label: 'Curieux',
+  absent: {
+    label: 'Absent',
     color: 'var(--chart-4)',
+  },
+  argumente: {
+    label: 'Argumenté',
+    color: 'var(--chart-6)',
   },
   refus: {
     label: 'Refus',
@@ -94,7 +103,8 @@ export default function PortesStatusChart({
     const statusCounts = {
       CONTRAT_SIGNE: 0,
       RENDEZ_VOUS_PRIS: 0,
-      CURIEUX: 0,
+      ABSENT: 0,
+      ARGUMENTE: 0,
       REFUS: 0,
       NECESSITE_REPASSAGE: 0,
       NON_VISITE: 0,

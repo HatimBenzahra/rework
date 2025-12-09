@@ -6,9 +6,9 @@ import { useRole } from '@/contexts/userole'
 import { DetailsSectionsProvider } from '@/contexts/DetailsSectionsProvider'
 import { AppLoadingProvider } from '@/contexts/AppLoadingProvider'
 import ErrorBoundary from '@/components/ErrorBoundary'
-import NetworkErrorBoundary from '@/components/NetworkErrorBoundary'
 import LoadingScreen from '@/components/LoadingScreen'
 import SessionManager from '@/components/SessionManager'
+import { OfflineSyncProvider } from '@/components/OfflineSyncProvider'
 
 // Lazy load auth pages
 const Login = lazy(() => import('@/pages-AUTH/Login'))
@@ -208,11 +208,11 @@ function AppRouter() {
 function App() {
   return (
     <ErrorBoundary>
-      <NetworkErrorBoundary>
-        <ToastProvider>
-          <AppLoadingProvider>
-            <RoleProvider>
-              <SessionManager />
+      <ToastProvider>
+        <AppLoadingProvider>
+          <RoleProvider>
+            <SessionManager />
+            <OfflineSyncProvider>
               <Suspense fallback={<LoadingScreen />}>
                 <Routes>
                   {/* Routes publiques */}
@@ -223,10 +223,10 @@ function App() {
                   <Route path="/*" element={<AppRouter />} />
                 </Routes>
               </Suspense>
-            </RoleProvider>
-          </AppLoadingProvider>
-        </ToastProvider>
-      </NetworkErrorBoundary>
+            </OfflineSyncProvider>
+          </RoleProvider>
+        </AppLoadingProvider>
+      </ToastProvider>
     </ErrorBoundary>
   )
 }

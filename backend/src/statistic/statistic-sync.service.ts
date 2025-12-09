@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { StatutPorte } from '../porte/porte.dto';
+import {
+  StatutPorte,
+  calculateStatsForStatus
+} from '../porte/porte-status.constants';
 
 /**
  * Service de synchronisation automatique des statistiques
@@ -148,27 +151,15 @@ export class StatisticSyncService {
       nbPortesProspectes: 0
     };
 
+    // Utilisation du helper centralisé pour calculer les stats
     result.forEach(group => {
       const count = group._count.statut;
-      
-      switch (group.statut) {
-        case StatutPorte.CONTRAT_SIGNE:
-          stats.contratsSignes += count;
-          stats.nbPortesProspectes += count;
-          break;
-        case StatutPorte.RENDEZ_VOUS_PRIS:
-          stats.rendezVousPris += count;
-          stats.nbPortesProspectes += count;
-          break;
-        case StatutPorte.REFUS:
-          stats.refus += count;
-          stats.nbPortesProspectes += count;
-          break;
-        case StatutPorte.CURIEUX:
-        case StatutPorte.NECESSITE_REPASSAGE:
-          stats.nbPortesProspectes += count;
-          break;
-      }
+      const statusStats = calculateStatsForStatus(group.statut, count);
+
+      stats.contratsSignes += statusStats.contratsSignes;
+      stats.rendezVousPris += statusStats.rendezVousPris;
+      stats.refus += statusStats.refus;
+      stats.nbPortesProspectes += statusStats.nbPortesProspectes;
     });
 
     return stats;
@@ -215,27 +206,15 @@ export class StatisticSyncService {
       nbPortesProspectes: 0
     };
 
+    // Utilisation du helper centralisé pour calculer les stats
     result.forEach(group => {
       const count = group._count.statut;
+      const statusStats = calculateStatsForStatus(group.statut, count);
 
-      switch (group.statut) {
-        case StatutPorte.CONTRAT_SIGNE:
-          stats.contratsSignes += count;
-          stats.nbPortesProspectes += count;
-          break;
-        case StatutPorte.RENDEZ_VOUS_PRIS:
-          stats.rendezVousPris += count;
-          stats.nbPortesProspectes += count;
-          break;
-        case StatutPorte.REFUS:
-          stats.refus += count;
-          stats.nbPortesProspectes += count;
-          break;
-        case StatutPorte.CURIEUX:
-        case StatutPorte.NECESSITE_REPASSAGE:
-          stats.nbPortesProspectes += count;
-          break;
-      }
+      stats.contratsSignes += statusStats.contratsSignes;
+      stats.rendezVousPris += statusStats.rendezVousPris;
+      stats.refus += statusStats.refus;
+      stats.nbPortesProspectes += statusStats.nbPortesProspectes;
     });
 
     return stats;

@@ -701,8 +701,11 @@ export default function DetailsPage({
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
                             {floor.doors.filter(d => d.status === 'rdv_pris').length} RDV
                           </span>
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
-                            {floor.doors.filter(d => d.status === 'curieux').length} curieux
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                            {floor.doors.filter(d => d.status === 'absent').length} absents
+                          </span>
+                          <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded">
+                            {floor.doors.filter(d => d.status === 'argumente').length} argumentés
                           </span>
                           <span className="px-2 py-1 bg-red-100 text-red-800 rounded">
                             {floor.doors.filter(d => d.status === 'refus').length} refus
@@ -720,8 +723,10 @@ export default function DetailsPage({
                                   return 'bg-green-50 border-green-200 text-green-800'
                                 case 'rdv_pris':
                                   return 'bg-blue-50 border-blue-200 text-blue-800'
-                                case 'curieux':
-                                  return 'bg-yellow-50 border-yellow-200 text-yellow-800'
+                                case 'absent':
+                                  return 'bg-blue-50 border-blue-200 text-blue-800'
+                                case 'argumente':
+                                  return 'bg-orange-50 border-orange-200 text-orange-800'
                                 case 'refus':
                                   return 'bg-red-50 border-red-200 text-red-800'
                                 default:
@@ -735,8 +740,10 @@ export default function DetailsPage({
                                   return 'Contrat signé'
                                 case 'rdv_pris':
                                   return 'RDV programmé'
-                                case 'curieux':
-                                  return 'Curieux'
+                                case 'absent':
+                                  return 'Absent'
+                                case 'argumente':
+                                  return 'Argumenté'
                                 case 'refus':
                                   return 'Refus'
                                 case 'non_visite':

@@ -125,9 +125,13 @@ type MutateOptions<TOutput, TOptimistic> = {
   optimisticUpdate?: (draft?: TOptimistic) => () => void // renvoie un rollback
 }
 
+// NEW IMPORT
+import { offlineQueue } from '../../services/offline-queue' // adjust path if needed
+
 export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
   mutationFn: (input: TInput, signal?: AbortSignal) => Promise<TOutput>,
-  entityType?: string
+  entityType?: string,
+  offlineType?: string // NEW: Type for offline queue
 ) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -152,6 +156,25 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
 
       setLoading(true)
       setError(null)
+
+      // OFFLINE CHECK
+      if (offlineType && !navigator.onLine) {
+         console.log('[useApiMutation] Offline detected, queuing action:', offlineType)
+         offlineQueue.enqueue(offlineType, input)
+         
+         // Simulate artificial delay for UX feel
+         await new Promise(r => setTimeout(r, 300))
+         
+         if (opts?.onSuccess) {
+            // We can't provide real TOutput, so we cast pending input or partial as Output if possible
+            // Or just undefined (casting needed)
+            opts.onSuccess(input as unknown as TOutput)
+         }
+         
+         setLoading(false)
+         // Return input as output (best guess) to resolve promise
+         return input as unknown as TOutput
+      }
 
       let rollback: (() => void) | undefined
       try {
@@ -193,7 +216,7 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
         }
       }
     },
-    [mutationFn, entityType]
+    [mutationFn, entityType, offlineType]
   )
 
   return { mutate, loading, error }
@@ -566,7 +589,7 @@ export function useCreatePorte(): UseApiMutation<CreatePorteInput, Porte> {
 }
 
 export function useUpdatePorte(): UseApiMutation<UpdatePorteInput, Porte> {
-  return useApiMutation(api.portes.update, 'portes')
+  return useApiMutation(api.portes.update, 'portes', 'UPDATE_PORTE')
 }
 
 export function useRemovePorte(): UseApiMutation<number, Porte> {
@@ -585,4 +608,147 @@ export function usePortesModifiedToday(
 
 export function usePortesRdvToday(): UseApiListState<Porte> & UseApiActions {
   return useApiCall(() => api.portes.getRdvToday(), [], 'portes-rdv-today')
+}
+
+export function usePorteStatistics(immeubleId: number): UseApiState<any> & UseApiActions {
+  return useApiCall(
+    () => api.portes.getStatistics(immeubleId),
+    [immeubleId],
+    'porte-statistics'
+  )
+}
+
+interface UseInfiniteApiListState<T> {
+  data: T[]
+  loading: boolean
+  error: string | null
+  hasMore: boolean
+  isFetchingMore: boolean // NEW: Separate state for pagination loading
+  loadMore: () => Promise<void>
+  reset: () => void
+  updateLocalData: (id: number, changes: Partial<T>) => void
+}
+
+export function useInfinitePortesByImmeuble(
+  immeubleId: number | null,
+  pageSize = 20,
+  etage?: number | null
+): UseInfiniteApiListState<Porte> & UseApiActions {
+  const [state, setState] = useState<{
+    data: Porte[]
+    loading: boolean
+    error: string | null
+    hasMore: boolean
+    page: number
+    isFetchingMore: boolean // NEW
+  }>({
+    data: [],
+    loading: false,
+    error: null,
+    hasMore: true,
+    page: 0,
+    isFetchingMore: false,
+  })
+
+  // Réinitialiser quand l'immeuble ou l'étage change
+  useEffect(() => {
+     if (immeubleId) {
+        setState({
+            data: [],
+            loading: true,
+            error: null,
+            hasMore: true,
+            page: 0,
+            isFetchingMore: false
+        })
+        fetchPage(0, true)
+     }
+  }, [immeubleId, etage]) // Add etage dependency
+
+  const fetchPage = useCallback(
+    async (pageToFetch: number, isReset: boolean = false) => {
+      if (!immeubleId) return
+
+      // Si chargement initial, mettre loading. Si pagination, mettre isFetchingMore
+      const isInitialLoad = isReset || state.data.length === 0
+      setState(prev => ({
+        ...prev,
+        loading: isInitialLoad,
+        isFetchingMore: !isInitialLoad,
+        error: null
+      }))
+
+      try {
+        const skip = pageToFetch * pageSize
+        // Pass etage to API call
+        const newPortes = await api.portes.getByImmeuble(immeubleId, skip, pageSize, etage || undefined)
+
+        setState(prev => {
+           // Si reset, on remplace tout. Sinon on ajoute.
+           // On vérifie les doublons par sécurité (bien que skip/take devrait gérer ça)
+           const existingIds = isReset ? new Set() : new Set(prev.data.map(p => p.id))
+           const uniqueNewPortes = newPortes.filter(p => !existingIds.has(p.id))
+
+           return {
+            data: isReset ? newPortes : [...prev.data, ...uniqueNewPortes],
+            loading: false,
+            isFetchingMore: false,
+            error: null,
+            hasMore: newPortes.length === pageSize, // Si on a reçu moins que demandé, c'est la fin
+            page: pageToFetch,
+          }
+        })
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          isFetchingMore: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }))
+      }
+    },
+    [immeubleId, pageSize, etage, state.data.length]
+  )
+
+
+  const loadMore = useCallback(async () => {
+    if (state.loading || !state.hasMore) return
+    await fetchPage(state.page + 1)
+  }, [state.loading, state.hasMore, state.page, fetchPage])
+
+  const refetch = useCallback(async () => {
+     // Recharger la premiere page et reinitialiser
+     await fetchPage(0, true)
+  }, [fetchPage])
+  
+  const reset = useCallback(() => {
+    setState({
+        data: [],
+        loading: false,
+        error: null,
+        hasMore: true,
+        page: 0,
+        isFetchingMore: false
+    })
+    // fetchPage(0, true) // Optional: auto reload on reset
+  }, [])
+
+  const updateLocalData = useCallback((id: number, changes: Partial<Porte>) => {
+     setState(prev => ({
+        ...prev,
+        data: prev.data.map(p => p.id === id ? { ...p, ...changes } : p)
+     }))
+  }, [])
+
+  return {
+    data: state.data,
+    loading: state.loading,
+    error: state.error,
+    hasMore: state.hasMore,
+    isFetchingMore: state.isFetchingMore,
+    loadMore,
+    refetch,
+    reset,
+    updateLocalData
+  }
 }
