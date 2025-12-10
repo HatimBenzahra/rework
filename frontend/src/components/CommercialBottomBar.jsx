@@ -77,8 +77,8 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
                   onClick={() => onTabChange(item.id)}
                   className={`
                     relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
-                    transition-all duration-300 ease-out
-                    ${isActive ? 'scale-105' : 'active:scale-95 hover:scale-102'}
+                    transition-all duration-300 ease-out px-2 py-2 rounded-2xl
+                    ${isActive ? 'scale-105' : 'active:scale-95 hover:scale-102 hover:bg-gray-100/50'}
                   `}
                   aria-label={item.label}
                   aria-current={isActive ? 'page' : undefined}
@@ -151,8 +151,8 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
               onClick={() => setShowMenu(!showMenu)}
               className={`
                 relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
-                transition-all duration-300 ease-out
-                ${showMenu ? 'scale-105' : 'active:scale-95 hover:scale-102'}
+                transition-all duration-300 ease-out px-2 py-2 rounded-2xl
+                ${showMenu ? 'scale-105' : 'active:scale-95 hover:scale-102 hover:bg-gray-100/50'}
               `}
               aria-label="Menu"
               aria-expanded={showMenu}
