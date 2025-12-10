@@ -64,7 +64,7 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
       >
         {/* Container avec padding responsive */}
         <div className="max-w-screen-lg mx-auto px-safe">
-          <div className="flex items-stretch justify-around h-20 sm:h-16">
+          <div className="flex items-stretch justify-around h-24 sm:h-20">
             {/* Navigation items */}
             {navigationItems.map(item => {
               const Icon = item.icon
