@@ -72,10 +72,6 @@ export default function DirecteurDetails() {
     const totalRendezVousPris = directeurStats.rendezVousPris
     const totalRefus = directeurStats.refus
 
-    // Taux de conversion
-    const tauxConversion =
-      totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
-
     // Trouver le meilleur manager
     let meilleurManager = 'Aucun manager'
     let meilleurManagerBadge = 'Aucun'
@@ -164,7 +160,6 @@ export default function DirecteurDetails() {
       totalImmeublesVisites,
       totalRendezVousPris,
       totalRefus,
-      tauxConversion: `${tauxConversion}%`,
       // Indicateurs de la division
       meilleurManager,
       meilleurManagerBadge,
@@ -564,12 +559,6 @@ export default function DirecteurDetails() {
       value: directeurData.totalRefus,
       description: 'Total de la division',
       icon: 'x',
-    },
-    {
-      title: 'Taux de conversion',
-      value: directeurData.tauxConversion,
-      description: 'Contrats / RDV pris',
-      icon: 'trendingUp',
     },
     {
       title: 'Meilleur manager',

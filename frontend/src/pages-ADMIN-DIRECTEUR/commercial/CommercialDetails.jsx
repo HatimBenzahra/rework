@@ -71,10 +71,10 @@ export default function CommercialDetails() {
       totalImmeublesVisites: personalStats.totalImmeublesVisites,
       totalRendezVousPris: personalStats.totalRendezVousPris,
       totalRefus: personalStats.totalRefus,
+      totalAbsents: personalStats.totalAbsents,
+      totalArgumentes: personalStats.totalArgumentes,
       totalPortesProspectes: personalStats.totalPortesProspectes,
       totalImmeublesProspectes: personalStats.totalImmeublesProspectes,
-      tauxConversion_rdv_pris: personalStats.tauxConversion_rdv_pris,
-      tauxConversion_portes_prospectes: personalStats.tauxConversion_portes_prospectes,
       zonesCount: currentZone ? 1 : 0,
       immeublesCount: commercial.immeubles?.length || 0,
       // Utiliser le rang permanent (basé sur toutes les stats)
@@ -204,6 +204,18 @@ export default function CommercialDetails() {
       icon: 'x',
     },
     {
+      title: 'Absents',
+      value: commercialData.totalAbsents,
+      description: 'Portes où personne n\'était présent',
+      icon: 'userX',
+    },
+    {
+      title: 'Argumentés',
+      value: commercialData.totalArgumentes,
+      description: 'Refus après argumentation',
+      icon: 'messageCircle',
+    },
+    {
       title: 'Portes prospectées',
       value: commercialData.totalPortesProspectes,
       description: 'Total des portes prospectées',
@@ -214,20 +226,6 @@ export default function CommercialDetails() {
       value: commercialData.totalImmeublesProspectes,
       description: 'Total des immeubles prospectés',
       icon: 'building',
-    },
-    {
-      title: 'Taux de conversion par portes prospectées',
-      value: commercialData.tauxConversion_portes_prospectes,
-      description: 'Contrats / Portes prospectées',
-      icon: 'trendingUp',
-      halfWidth: true,
-    },
-    {
-      title: 'Taux de conversion par rendez-vous pris',
-      value: commercialData.tauxConversion_rdv_pris,
-      description: 'Contrats / RDV pris',
-      icon: 'trendingUp',
-      halfWidth: true,
     },
   ]
 
@@ -290,18 +288,18 @@ export default function CommercialDetails() {
       cell: row => <Badge className="bg-red-100 text-red-800">{row.refus || 0}</Badge>,
     },
     {
-      header: 'Repassages',
-      accessor: 'repassages',
+      header: 'Absents',
+      accessor: 'absent',
       sortable: true,
       className: 'hidden xl:table-cell text-center',
-      cell: row => {
-        const count = row.repassages || 0
-        return count > 0 ? (
-          <Badge className="bg-orange-100 text-orange-800">{count}</Badge>
-        ) : (
-          <span className="text-muted-foreground">0</span>
-        )
-      },
+      cell: row => <Badge className="bg-blue-100 text-blue-800">{row.absent || 0}</Badge>,
+    },
+    {
+      header: 'Argumentés',
+      accessor: 'argumente',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => <Badge className="bg-orange-100 text-orange-800">{row.argumente || 0}</Badge>,
     },
   ]
 

@@ -31,6 +31,8 @@ export function usePersonalStats(user, appliedStartDate, appliedEndDate) {
     const totalContratsSignes = filteredPortes.filter(p => p.statut === 'CONTRAT_SIGNE').length
     const totalRendezVousPris = filteredPortes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
     const totalRefus = filteredPortes.filter(p => p.statut === 'REFUS').length
+    const totalAbsents = filteredPortes.filter(p => p.statut === 'ABSENT').length
+    const totalArgumentes = filteredPortes.filter(p => p.statut === 'ARGUMENTE').length
     const totalPortesProspectes = filteredPortes.filter(p => p.statut !== 'NON_VISITE').length
 
     // Compter les immeubles uniques visités
@@ -49,24 +51,15 @@ export function usePersonalStats(user, appliedStartDate, appliedEndDate) {
     )
     const totalImmeublesProspectes = immeublesProspectesSet.size
 
-    // Taux de conversion
-    const tauxConversion_portes_prospectes =
-      totalPortesProspectes > 0
-        ? ((totalContratsSignes / totalPortesProspectes) * 100).toFixed(1)
-        : '0'
-
-    const tauxConversion_rdv_pris =
-      totalRendezVousPris > 0 ? ((totalContratsSignes / totalRendezVousPris) * 100).toFixed(1) : '0'
-
     return {
       totalContratsSignes,
       totalImmeublesVisites,
       totalRendezVousPris,
       totalRefus,
+      totalAbsents,
+      totalArgumentes,
       totalPortesProspectes,
       totalImmeublesProspectes,
-      tauxConversion_portes_prospectes: `${tauxConversion_portes_prospectes}%`,
-      tauxConversion_rdv_pris: `${tauxConversion_rdv_pris}%`,
     }
   }, [filteredPortes])
 

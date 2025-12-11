@@ -4,6 +4,7 @@ import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeuble, useCommercials, useManagers, usePortesByImmeuble } from '@/services'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { getStatusLabel } from '@/constants/porte-status.constants'
 
 export default function ImmeubleDetails() {
   const { id } = useParams()
@@ -185,52 +186,34 @@ export default function ImmeubleDetails() {
       sortable: true,
       cell: row => {
         const getStatusColor = status => {
-          switch (status) {
-            case 'contrat_signe':
+          // Normaliser le statut en majuscules pour la comparaison
+          const normalizedStatus = status?.toUpperCase()
+
+          switch (normalizedStatus) {
             case 'CONTRAT_SIGNE':
               return 'bg-green-100 text-green-800'
-            case 'rendez_vous_pris':
             case 'RENDEZ_VOUS_PRIS':
               return 'bg-blue-100 text-blue-800'
             case 'ABSENT':
               return 'bg-blue-100 text-blue-800'
             case 'ARGUMENTE':
               return 'bg-orange-100 text-orange-800'
-            case 'refus':
             case 'REFUS':
               return 'bg-red-100 text-red-800'
-            case 'necessite_repassage':
             case 'NECESSITE_REPASSAGE':
+              return 'bg-yellow-100 text-yellow-800'
+            case 'NON_VISITE':
               return 'bg-gray-100 text-gray-800'
             default:
               return 'bg-gray-100 text-gray-800'
           }
         }
 
-        const getStatusLabel = status => {
-          switch (status) {
-            case 'contrat_signe':
-            case 'CONTRAT_SIGNE':
-              return 'Contrat signé'
-            case 'rendez_vous_pris':
-            case 'RENDEZ_VOUS_PRIS':
-              return 'RDV programmé'
-            case 'ABSENT':
-              return 'Absent'
-            case 'ARGUMENTE':
-              return 'Argumenté'
-            case 'refus':
-              return 'Refus'
-            case 'non_visite':
-              return 'Non visité'
-            case 'necessite_repassage':
-              return 'Repassage nécessaire'
-            default:
-              return status
-          }
-        }
+        // Normaliser le statut et utiliser le helper du fichier constants
+        const normalizedStatus = row.status?.toUpperCase()
+        const label = getStatusLabel(normalizedStatus)
 
-        return <Badge className={getStatusColor(row.status)}>{getStatusLabel(row.status)}</Badge>
+        return <Badge className={getStatusColor(row.status)}>{label}</Badge>
       },
     },
     {
@@ -277,7 +260,7 @@ export default function ImmeubleDetails() {
       cell: row => {
         if (row.comment) {
           return (
-            <div className="max-w-xs truncate text-sm" title={row.comment}>
+            <div className="max-w-xs text-sm break-words whitespace-normal">
               {row.comment}
             </div>
           )

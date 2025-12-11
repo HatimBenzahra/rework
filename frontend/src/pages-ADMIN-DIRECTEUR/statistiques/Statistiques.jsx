@@ -151,6 +151,8 @@ export default function Statistiques() {
         contratsSignes: 0,
         rendezVousPris: 0,
         refus: 0,
+        absents: 0,
+        argumentes: 0,
         nbRepassages: 0,
         nbImmeubles: 0,
         nbCommerciaux: filteredCommercials?.length || 0,
@@ -196,19 +198,34 @@ export default function Statistiques() {
     }
     const nbCommerciaux = filteredCommercials?.length || 0
 
-    const repassagesConvertis =
-      refus + rendezVousPris + contratsSignes > 0
-        ? (contratsSignes / (refus + rendezVousPris + contratsSignes)) * 100
-        : 0
+    // Calculer absents et argumentés depuis les portes des commerciaux (non disponible dans Statistic)
+    let absents = 0
+    let argumentes = 0
+
+    if (filteredCommercials?.length) {
+      filteredCommercials.forEach(commercial => {
+        if (commercial.immeubles) {
+          commercial.immeubles.forEach(immeuble => {
+            if (immeuble.portes) {
+              immeuble.portes.forEach(porte => {
+                if (porte.statut === 'ABSENT') absents++
+                if (porte.statut === 'ARGUMENTE') argumentes++
+              })
+            }
+          })
+        }
+      })
+    }
 
     return {
       contratsSignes,
       rendezVousPris,
       refus,
+      absents,
+      argumentes,
       nbRepassages,
       nbImmeubles,
       nbCommerciaux,
-      repassagesConvertis,
     }
   }, [timeFilteredStatistics, filteredCommercials])
 
@@ -300,11 +317,19 @@ export default function Statistiques() {
         />
 
         <MetricCard
-          title="Repassages convertis"
-          value={`${(metrics.repassagesConvertis || 0).toFixed(2)}%`}
-          description="En contrats signés"
-          icon={RefreshCw}
-          color="purple"
+          title="Absents"
+          value={metrics.absents}
+          description="Portes où personne n'était présent"
+          icon={Users}
+          color="blue"
+        />
+
+        <MetricCard
+          title="Argumentés"
+          value={metrics.argumentes}
+          description="Refus après argumentation"
+          icon={FileText}
+          color="orange"
         />
 
         <MetricCard

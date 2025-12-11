@@ -152,8 +152,8 @@ export default function ManagerDetails() {
       totalImmeublesVisites: personalStats.totalImmeublesVisites,
       totalRendezVousPris: personalStats.totalRendezVousPris,
       totalRefus: personalStats.totalRefus,
-      tauxConversion_portes_prospectes: personalStats.tauxConversion_portes_prospectes,
-      tauxConversion_rdv_pris: personalStats.tauxConversion_rdv_pris,
+      totalAbsents: personalStats.totalAbsents,
+      totalArgumentes: personalStats.totalArgumentes,
       // Utiliser le rang permanent (basé sur toutes les stats)
       rank: memoizedManagerRank?.rank,
       points: memoizedManagerRank?.points,
@@ -435,6 +435,8 @@ export default function ManagerDetails() {
       calendar: Calendar,
       x: X,
       users: Users,
+      userX: Users,
+      messageCircle: FileText,
     }
     const Icon = icons[iconName] || FileText
     return <Icon className="h-4 w-4 text-primary" />
@@ -471,7 +473,19 @@ export default function ManagerDetails() {
       title: 'Refus',
       value: managerData.totalRefus,
       description: 'Total des refus',
-      icon: 'BookX',
+      icon: 'x',
+    },
+    {
+      title: 'Absents',
+      value: managerData.totalAbsents,
+      description: 'Portes où personne n\'était présent',
+      icon: 'userX',
+    },
+    {
+      title: 'Argumentés',
+      value: managerData.totalArgumentes,
+      description: 'Refus après argumentation',
+      icon: 'messageCircle',
     },
     {
       title: 'Portes prospectées',
@@ -484,20 +498,6 @@ export default function ManagerDetails() {
       value: managerData.totalImmeublesProspectes,
       description: 'Total des immeubles prospectés',
       icon: 'building',
-    },
-    {
-      title: 'Taux de conversion par portes prospectées',
-      value: managerData.tauxConversion_portes_prospectes,
-      description: 'Contrats / Portes prospectées',
-      icon: 'trendingUp',
-      halfWidth: true,
-    },
-    {
-      title: 'Taux de conversion par rendez-vous pris',
-      value: managerData.tauxConversion_rdv_pris,
-      description: 'Contrats / RDV pris',
-      icon: 'trendingUp',
-      halfWidth: true,
     },
   ]
 
@@ -658,18 +658,18 @@ export default function ManagerDetails() {
       cell: row => <Badge className="bg-red-100 text-red-800">{row.refus || 0}</Badge>,
     },
     {
-      header: 'Repassages',
-      accessor: 'repassages',
+      header: 'Absents',
+      accessor: 'absent',
       sortable: true,
       className: 'hidden xl:table-cell text-center',
-      cell: row => {
-        const count = row.repassages || 0
-        return count > 0 ? (
-          <Badge className="bg-orange-100 text-orange-800">{count}</Badge>
-        ) : (
-          <span className="text-muted-foreground">0</span>
-        )
-      },
+      cell: row => <Badge className="bg-blue-100 text-blue-800">{row.absent || 0}</Badge>,
+    },
+    {
+      header: 'Argumentés',
+      accessor: 'argumente',
+      sortable: true,
+      className: 'hidden xl:table-cell text-center',
+      cell: row => <Badge className="bg-orange-100 text-orange-800">{row.argumente || 0}</Badge>,
     },
   ]
 
