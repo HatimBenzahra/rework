@@ -48,8 +48,9 @@ export default function PortesTemplate({
   onAddEtage,
   addingPorteToEtage = false,
   addingEtage = false,
-  
-  // Floor Filtering  onFloorSelect,
+
+  // Floor Filtering
+  onFloorSelect,
   selectedFloor,
   isFetchingMore = false,
   statsData = null,

@@ -64,7 +64,7 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
       >
         {/* Container avec padding responsive */}
         <div className="max-w-screen-lg mx-auto px-safe">
-          <div className="flex items-stretch justify-around h-20 sm:h-16">
+          <div className="flex items-stretch justify-around h-24 sm:h-20">
             {/* Navigation items */}
             {navigationItems.map(item => {
               const Icon = item.icon
@@ -79,6 +79,8 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
                     relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
                     transition-all duration-300 ease-out
                     ${isActive ? 'scale-105' : 'active:scale-95 hover:scale-102'}
+                    before:absolute before:inset-0 before:content-[''] before:rounded-2xl
+                    ${!isActive && 'hover:before:bg-gray-100/50'}
                   `}
                   aria-label={item.label}
                   aria-current={isActive ? 'page' : undefined}
@@ -153,6 +155,8 @@ export default function CommercialBottomBar({ navigationItems, activeTab, onTabC
                 relative flex flex-col items-center justify-center gap-1 flex-1 min-w-0
                 transition-all duration-300 ease-out
                 ${showMenu ? 'scale-105' : 'active:scale-95 hover:scale-102'}
+                before:absolute before:inset-0 before:content-[''] before:rounded-2xl
+                ${!showMenu && 'hover:before:bg-gray-100/50'}
               `}
               aria-label="Menu"
               aria-expanded={showMenu}
