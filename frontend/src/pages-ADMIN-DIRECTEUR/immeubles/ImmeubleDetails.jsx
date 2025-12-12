@@ -4,7 +4,7 @@ import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useImmeuble, useCommercials, useManagers, usePortesByImmeuble } from '@/services'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { getStatusLabel } from '@/constants/porte-status.constants'
+import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
 
 export default function ImmeubleDetails() {
   const { id } = useParams()
@@ -176,35 +176,12 @@ export default function ImmeubleDetails() {
       accessor: 'status',
       sortable: true,
       cell: row => {
-        const getStatusColor = status => {
-          // Normaliser le statut en majuscules pour la comparaison
-          const normalizedStatus = status?.toUpperCase()
-
-          switch (normalizedStatus) {
-            case 'CONTRAT_SIGNE':
-              return 'bg-green-100 text-green-800'
-            case 'RENDEZ_VOUS_PRIS':
-              return 'bg-blue-100 text-blue-800'
-            case 'ABSENT':
-              return 'bg-blue-100 text-blue-800'
-            case 'ARGUMENTE':
-              return 'bg-orange-100 text-orange-800'
-            case 'REFUS':
-              return 'bg-red-100 text-red-800'
-            case 'NECESSITE_REPASSAGE':
-              return 'bg-yellow-100 text-yellow-800'
-            case 'NON_VISITE':
-              return 'bg-gray-100 text-gray-800'
-            default:
-              return 'bg-gray-100 text-gray-800'
-          }
-        }
-
-        // Normaliser le statut et utiliser le helper du fichier constants
+        // Normaliser le statut et utiliser les helpers du fichier constants
         const normalizedStatus = row.status?.toUpperCase()
         const label = getStatusLabel(normalizedStatus)
+        const colorClasses = getStatusColor(normalizedStatus)
 
-        return <Badge className={getStatusColor(row.status)}>{label}</Badge>
+        return <Badge className={colorClasses}>{label}</Badge>
       },
     },
     {
@@ -228,22 +205,6 @@ export default function ImmeubleDetails() {
       accessor: 'lastVisit',
       sortable: true,
       cell: row => row.lastVisit || <span className="text-muted-foreground">-</span>,
-    },
-    {
-      header: 'Repassages',
-      accessor: 'nbRepassages',
-      sortable: true,
-      cell: row => {
-        const count = row.nbRepassages || 0
-        if (count > 0) {
-          return (
-            <Badge className="bg-orange-100 text-orange-800">
-              {count} repassage{count > 1 ? 's' : ''}
-            </Badge>
-          )
-        }
-        return <span className="text-muted-foreground">-</span>
-      },
     },
     {
       header: 'Commentaire',

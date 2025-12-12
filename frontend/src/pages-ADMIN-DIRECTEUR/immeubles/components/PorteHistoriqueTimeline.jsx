@@ -11,7 +11,7 @@ export default function PorteHistoriqueTimeline({ porteId, porteNumero }) {
   const timelineItems = useMemo(() => {
     if (!historique || historique.length === 0) return []
 
-    return historique.map((entry) => {
+    return historique.map((entry, index) => {
       const date = new Date(entry.createdAt)
       const dateStr = date.toLocaleDateString('fr-FR', {
         day: '2-digit',
@@ -29,6 +29,14 @@ export default function PorteHistoriqueTimeline({ porteId, porteNumero }) {
         ? `${entry.manager.prenom} ${entry.manager.nom} (Manager)`
         : 'Système'
 
+      // Calculer le numéro de passage pour les absents (en parcourant de la fin vers le début)
+      let passageNumber = null
+      if (entry.statut === 'ABSENT') {
+        // Compter combien de fois ABSENT apparaît depuis la fin jusqu'à cette entrée
+        const reversedIndex = historique.length - 1 - index
+        passageNumber = historique.slice(reversedIndex).filter(e => e.statut === 'ABSENT').length
+      }
+
       return {
         id: entry.id,
         statut: entry.statut,
@@ -44,6 +52,7 @@ export default function PorteHistoriqueTimeline({ porteId, porteNumero }) {
             })
           : null,
         rdvTime: entry.rdvTime,
+        passageNumber,
       }
     })
   }, [historique])
@@ -122,6 +131,18 @@ export default function PorteHistoriqueTimeline({ porteId, porteNumero }) {
                       <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                       <span className="font-medium">
                         RDV: {item.rdvDate} à {item.rdvTime}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Passage Number for ABSENT status */}
+                  {item.passageNumber && (
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground bg-muted/50 p-2 rounded mb-2 border border-muted">
+                      <User className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-medium">
+                        {item.passageNumber === 1 ? '1er passage' :
+                         item.passageNumber === 2 ? '2ème passage' :
+                         `${item.passageNumber}ème passage`}
                       </span>
                     </div>
                   )}
