@@ -175,6 +175,37 @@ export function requiresRdvDateTime(status) {
 }
 
 /**
+ * Helper: Obtenir les classes CSS de couleur pour un statut (version simple)
+ * Retourne directement les classes Tailwind sans utiliser le thème
+ *
+ * @param {string} status - Le statut
+ * @returns {string} Les classes CSS Tailwind
+ */
+export function getStatusColor(status) {
+  // Normaliser le statut en majuscules
+  const normalizedStatus = status?.toUpperCase()
+
+  switch (normalizedStatus) {
+    case StatutPorte.CONTRAT_SIGNE:
+      return 'bg-green-100 text-green-800'
+    case StatutPorte.REFUS:
+      return 'bg-red-100 text-red-800'
+    case StatutPorte.RENDEZ_VOUS_PRIS:
+      return 'bg-blue-100 text-blue-800'
+    case StatutPorte.ABSENT:
+      return 'bg-blue-100 text-blue-800'
+    case StatutPorte.ARGUMENTE:
+      return 'bg-orange-100 text-orange-800'
+    case StatutPorte.NECESSITE_REPASSAGE:
+      return 'bg-yellow-100 text-yellow-800'
+    case StatutPorte.NON_VISITE:
+      return 'bg-gray-100 text-gray-800'
+    default:
+      return 'bg-gray-100 text-gray-800'
+  }
+}
+
+/**
  * Helper: Obtenir les classes CSS de couleur pour un statut
  * Utilisé pour générer les classes Tailwind avec les couleurs du thème
  *

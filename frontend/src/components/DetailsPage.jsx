@@ -15,6 +15,7 @@ import {
   Search,
   Filter,
   ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 import { useDetailsSections } from '@/contexts/DetailsSectionsContext'
 import {
@@ -50,6 +51,7 @@ import { useState, useMemo, useEffect } from 'react'
 import PortesProspectionChart from './charts/PortesProspectionChart'
 import PortesWeeklyChart from './charts/PortesWeeklyChart'
 import PortesStatusChart from './charts/PortesStatusChart'
+import PorteHistoriqueTimeline from '@/pages-ADMIN-DIRECTEUR/immeubles/components/PorteHistoriqueTimeline'
 
 /**
  * Composant de tableau sans Card wrapper pour éviter les doubles cards
@@ -65,6 +67,7 @@ function DoorsTableContent({
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [currentPage, setCurrentPage] = useState(1)
+  const [expandedRows, setExpandedRows] = useState(new Set())
   const itemsPerPage = 20
 
   // Filtrage et tri des données
@@ -110,6 +113,18 @@ function DoorsTableContent({
     }))
   }
 
+  const toggleRow = (rowId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId)
+      } else {
+        newSet.add(rowId)
+      }
+      return newSet
+    })
+  }
+
   return (
     <div className="space-y-4">
       {/* Barre de filtres */}
@@ -150,6 +165,7 @@ function DoorsTableContent({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]"></TableHead>
                 {columns.map((column, index) => (
                   <TableHead
                     key={index}
@@ -169,20 +185,48 @@ function DoorsTableContent({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <TableCell colSpan={columns.length + 1} className="h-24 text-center">
                     Aucun résultat trouvé
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedData.map((row, rowIndex) => (
-                  <TableRow key={rowIndex} className="hover:bg-muted/50">
-                    {columns.map((column, colIndex) => (
-                      <TableCell key={colIndex} className={column.className}>
-                        {column.cell ? column.cell(row) : row[column.accessor]}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                paginatedData.map((row, rowIndex) => {
+                  const rowKey = row.tableId || row.id
+                  const porteId = row.porteId || row.id
+                  const isExpanded = expandedRows.has(rowKey)
+                  return (
+                    <>
+                      <TableRow key={rowKey} className="hover:bg-muted/50">
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleRow(rowKey)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronRight
+                              className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            />
+                          </Button>
+                        </TableCell>
+                        {columns.map((column, colIndex) => (
+                          <TableCell key={colIndex} className={column.className}>
+                            {column.cell ? column.cell(row) : row[column.accessor]}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow key={`${rowKey}-expanded`}>
+                          <TableCell colSpan={columns.length + 1} className="p-0 bg-muted/20">
+                            <div className="p-2 sm:p-4">
+                              <PorteHistoriqueTimeline porteId={porteId} porteNumero={row.number} />
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  )
+                })
               )}
             </TableBody>
           </Table>

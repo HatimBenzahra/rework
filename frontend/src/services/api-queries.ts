@@ -858,6 +858,63 @@ export const GET_PORTES_RDV_TODAY = `
 `
 
 // =============================================================================
+// Status Historique Queries
+// =============================================================================
+
+export const GET_STATUS_HISTORIQUE_BY_PORTE = `
+  query StatusHistoriqueByPorte($porteId: Int!) {
+    statusHistoriqueByPorte(porteId: $porteId) {
+      id
+      porteId
+      statut
+      commentaire
+      rdvDate
+      rdvTime
+      createdAt
+      commercial {
+        id
+        nom
+        prenom
+      }
+      manager {
+        id
+        nom
+        prenom
+      }
+    }
+  }
+`
+
+export const GET_STATUS_HISTORIQUE_BY_IMMEUBLE = `
+  query StatusHistoriqueByImmeuble($immeubleId: Int!) {
+    statusHistoriqueByImmeuble(immeubleId: $immeubleId) {
+      id
+      porteId
+      statut
+      commentaire
+      rdvDate
+      rdvTime
+      createdAt
+      porte {
+        id
+        numero
+        etage
+      }
+      commercial {
+        id
+        nom
+        prenom
+      }
+      manager {
+        id
+        nom
+        prenom
+      }
+    }
+  }
+`
+
+// =============================================================================
 // Email verification methode instead of id so that we
 // =============================================================================
 

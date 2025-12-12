@@ -33,6 +33,8 @@ import {
   GET_PORTE_STATISTICS,
   GET_PORTES_RDV_TODAY,
   GET_ME,
+  GET_STATUS_HISTORIQUE_BY_PORTE,
+  GET_STATUS_HISTORIQUE_BY_IMMEUBLE,
 } from './api-queries'
 
 import {
@@ -616,6 +618,16 @@ export const porteApi = {
   async getStatistics(immeubleId: number): Promise<any> {
     const response = await gql<any, { immeubleId: number }>(GET_PORTE_STATISTICS, { immeubleId })
     return response.porteStatistics
+  },
+
+  async getStatusHistorique(porteId: number): Promise<any[]> {
+    const response = await gql<any, { porteId: number }>(GET_STATUS_HISTORIQUE_BY_PORTE, { porteId })
+    return response.statusHistoriqueByPorte
+  },
+
+  async getStatusHistoriqueByImmeuble(immeubleId: number): Promise<any[]> {
+    const response = await gql<any, { immeubleId: number }>(GET_STATUS_HISTORIQUE_BY_IMMEUBLE, { immeubleId })
+    return response.statusHistoriqueByImmeuble
   },
 }
 

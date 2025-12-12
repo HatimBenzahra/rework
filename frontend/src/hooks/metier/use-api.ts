@@ -752,3 +752,79 @@ export function useInfinitePortesByImmeuble(
     updateLocalData
   }
 }
+
+// =============================================================================
+// Status Historique Hooks
+// =============================================================================
+
+export function useStatusHistoriqueByPorte(porteId: number | null): UseApiState<any[]> & UseApiActions {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    if (!porteId) {
+      setData([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await api.portes.getStatusHistorique(porteId)
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors du chargement de l\'historique')
+    } finally {
+      setLoading(false)
+    }
+  }, [porteId])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  return {
+    data,
+    loading,
+    error,
+    refetch: fetchData
+  }
+}
+
+export function useStatusHistoriqueByImmeuble(immeubleId: number | null): UseApiState<any[]> & UseApiActions {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchData = useCallback(async () => {
+    if (!immeubleId) {
+      setData([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await api.portes.getStatusHistoriqueByImmeuble(immeubleId)
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors du chargement de l\'historique')
+    } finally {
+      setLoading(false)
+    }
+  }, [immeubleId])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
+
+  return {
+    data,
+    loading,
+    error,
+    refetch: fetchData
+  }
+}

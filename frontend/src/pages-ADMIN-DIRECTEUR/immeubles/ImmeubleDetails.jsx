@@ -86,7 +86,8 @@ export default function ImmeubleDetails() {
         allDoors.push({
           ...door,
           floor: floor.floor,
-          id: `${floor.floor}-${door.number}`, // Clé unique pour le tableau
+          porteId: door.id, // ID de la base de données pour l'historique
+          tableId: `${floor.floor}-${door.number}`, // Clé unique pour le tableau React
           etage: `Étage ${floor.floor}`,
         })
       })
@@ -144,16 +145,6 @@ export default function ImmeubleDetails() {
       ),
       description: 'Refus après argumentation',
       icon: 'message-square',
-    },
-    {
-      title: 'Repassages nécessaires',
-      value: immeubleData.floorDetails.reduce(
-        (acc, floor) =>
-          acc + floor.doors.filter(door => door.status === 'necessite_repassage').length,
-        0
-      ),
-      description: 'Portes à revoir',
-      icon: 'refresh',
     },
     {
       title: 'Refus',
