@@ -146,6 +146,8 @@ export class StatisticSyncService {
       contratsSignes: 0,
       rendezVousPris: 0,
       refus: 0,
+      absents: 0,
+      argumentes: 0,
       immeublesVisites: immeublesVisites,
       nbImmeublesProspectes: immeublesVisites, // Pour l'instant identique
       nbPortesProspectes: 0
@@ -159,6 +161,8 @@ export class StatisticSyncService {
       stats.contratsSignes += statusStats.contratsSignes;
       stats.rendezVousPris += statusStats.rendezVousPris;
       stats.refus += statusStats.refus;
+      stats.absents += statusStats.absents;
+      stats.argumentes += statusStats.argumentes;
       stats.nbPortesProspectes += statusStats.nbPortesProspectes;
     });
 
@@ -201,6 +205,8 @@ export class StatisticSyncService {
       contratsSignes: 0,
       rendezVousPris: 0,
       refus: 0,
+      absents: 0,
+      argumentes: 0,
       immeublesVisites: immeublesVisites,
       nbImmeublesProspectes: immeublesVisites, // Pour l'instant identique
       nbPortesProspectes: 0
@@ -214,6 +220,8 @@ export class StatisticSyncService {
       stats.contratsSignes += statusStats.contratsSignes;
       stats.rendezVousPris += statusStats.rendezVousPris;
       stats.refus += statusStats.refus;
+      stats.absents += statusStats.absents;
+      stats.argumentes += statusStats.argumentes;
       stats.nbPortesProspectes += statusStats.nbPortesProspectes;
     });
 
@@ -235,6 +243,8 @@ export class StatisticSyncService {
         contratsSignes: true,
         rendezVousPris: true,
         refus: true,
+        absents: true,
+        argumentes: true,
         immeublesVisites: true,
         nbImmeublesProspectes: true,
         nbPortesProspectes: true,
@@ -252,6 +262,8 @@ export class StatisticSyncService {
         contratsSignes: true,
         rendezVousPris: true,
         refus: true,
+        absents: true,
+        argumentes: true,
         immeublesVisites: true,
         nbImmeublesProspectes: true,
         nbPortesProspectes: true,
@@ -263,6 +275,8 @@ export class StatisticSyncService {
       contratsSignes: (managerStats._sum.contratsSignes || 0) + (commercialStats._sum.contratsSignes || 0),
       rendezVousPris: (managerStats._sum.rendezVousPris || 0) + (commercialStats._sum.rendezVousPris || 0),
       refus: (managerStats._sum.refus || 0) + (commercialStats._sum.refus || 0),
+      absents: (managerStats._sum.absents || 0) + (commercialStats._sum.absents || 0),
+      argumentes: (managerStats._sum.argumentes || 0) + (commercialStats._sum.argumentes || 0),
       immeublesVisites: (managerStats._sum.immeublesVisites || 0) + (commercialStats._sum.immeublesVisites || 0),
       nbImmeublesProspectes: (managerStats._sum.nbImmeublesProspectes || 0) + (commercialStats._sum.nbImmeublesProspectes || 0),
       nbPortesProspectes: (managerStats._sum.nbPortesProspectes || 0) + (commercialStats._sum.nbPortesProspectes || 0),

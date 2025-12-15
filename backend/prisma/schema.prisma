@@ -118,6 +118,8 @@ model Statistic {
   immeublesVisites      Int      // Nombre d'immeubles visités
   rendezVousPris        Int      // Nombre de rendez-vous pris
   refus                 Int      // Nombre de refus
+  absents               Int      @default(0) // Nombre de portes où personne n'était présent
+  argumentes            Int      @default(0) // Nombre de refus après argumentation
   nbImmeublesProspectes Int      // Nombre d'immeubles prospectés
   nbPortesProspectes    Int      // Nombre de portes prospectées
   createdAt             DateTime @default(now())

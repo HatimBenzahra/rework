@@ -175,6 +175,8 @@ export interface StatusStats {
   contratsSignes: number;
   rendezVousPris: number;
   refus: number;
+  absents: number;
+  argumentes: number;
   nbPortesProspectes: number;
 }
 
@@ -192,6 +194,8 @@ export function calculateStatsForStatus(
       contratsSignes: 0,
       rendezVousPris: 0,
       refus: 0,
+      absents: 0,
+      argumentes: 0,
       nbPortesProspectes: 0,
     };
   }
@@ -200,6 +204,8 @@ export function calculateStatsForStatus(
     contratsSignes: config.incrementContratsSignes ? count : 0,
     rendezVousPris: config.incrementRendezVousPris ? count : 0,
     refus: config.incrementRefus ? count : 0,
+    absents: statusKey === StatutPorte.ABSENT ? count : 0,
+    argumentes: statusKey === StatutPorte.ARGUMENTE ? count : 0,
     nbPortesProspectes: config.countAsProspected ? count : 0,
   };
 }

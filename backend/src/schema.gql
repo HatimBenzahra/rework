@@ -102,6 +102,8 @@ input CreatePorteInput {
 }
 
 input CreateStatisticInput {
+  absents: Int!
+  argumentes: Int!
   commercialId: Int
   contratsSignes: Int!
   directeurId: Int
@@ -391,6 +393,8 @@ input StartRecordingInput {
 }
 
 type Statistic {
+  absents: Int!
+  argumentes: Int!
   commercialId: Int
   contratsSignes: Int!
   createdAt: DateTime!
@@ -509,6 +513,8 @@ input UpdatePorteInput {
 }
 
 input UpdateStatisticInput {
+  absents: Int
+  argumentes: Int
   commercialId: Int
   contratsSignes: Int
   directeurId: Int
