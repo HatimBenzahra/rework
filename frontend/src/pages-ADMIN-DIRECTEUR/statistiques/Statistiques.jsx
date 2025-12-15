@@ -150,7 +150,7 @@ export default function Statistiques() {
     return timeFilteredStatistics.filter(stat => stat.commercialId || stat.managerId)
   }, [timeFilteredStatistics])
 
-  // Calculs des métriques - IMPORTANT: utiliser les stats globales pour éviter les doublons
+  // Calculs des métriques - Calculer automatiquement la somme des stats des commerciaux et managers
   const metrics = useMemo(() => {
     if (!timeFilteredStatistics?.length) {
       return {
@@ -165,47 +165,31 @@ export default function Statistiques() {
       }
     }
 
-    // Chercher la statistique globale (sans commercialId ni managerId)
-    // Cette stat est créée automatiquement par le backend et contient le total agrégé
-    const globalStat = timeFilteredStatistics.find(
-      stat => !stat.commercialId && !stat.managerId
+    // Filtrer uniquement les stats des commerciaux et managers (exclure les stats orphelines ou de directeur)
+    const productionStats = timeFilteredStatistics.filter(
+      stat => stat.commercialId || stat.managerId
     )
 
-    // Si on a une stat globale, l'utiliser directement (déjà calculée côté backend)
-    // Sinon, fallback: additionner toutes les stats disponibles
-    let contratsSignes, rendezVousPris, refus, absents, argumentes, nbRepassages, nbImmeubles
-
-    if (globalStat) {
-      // Utiliser directement les valeurs de la stat globale
-      contratsSignes = globalStat.contratsSignes || 0
-      rendezVousPris = globalStat.rendezVousPris || 0
-      refus = globalStat.refus || 0
-      absents = globalStat.absents || 0
-      argumentes = globalStat.argumentes || 0
-      nbRepassages = globalStat.nbRepassages || 0
-      nbImmeubles = globalStat.immeublesVisites || 0
-    } else {
-      // Fallback: calculer manuellement (si pas de stat globale)
-      contratsSignes = timeFilteredStatistics.reduce(
-        (sum, stat) => sum + (stat.contratsSignes || 0),
-        0
-      )
-      rendezVousPris = timeFilteredStatistics.reduce(
-        (sum, stat) => sum + (stat.rendezVousPris || 0),
-        0
-      )
-      refus = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.refus || 0), 0)
-      absents = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.absents || 0), 0)
-      argumentes = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.argumentes || 0), 0)
-      nbRepassages = timeFilteredStatistics.reduce(
-        (sum, stat) => sum + (stat.nbRepassages || 0),
-        0
-      )
-      nbImmeubles = timeFilteredStatistics.reduce(
-        (sum, stat) => sum + (stat.immeublesVisites || 0),
-        0
-      )
-    }
+    // Calculer la somme de toutes les stats de production réelles
+    const contratsSignes = productionStats.reduce(
+      (sum, stat) => sum + (stat.contratsSignes || 0),
+      0
+    )
+    const rendezVousPris = productionStats.reduce(
+      (sum, stat) => sum + (stat.rendezVousPris || 0),
+      0
+    )
+    const refus = productionStats.reduce((sum, stat) => sum + (stat.refus || 0), 0)
+    const absents = productionStats.reduce((sum, stat) => sum + (stat.absents || 0), 0)
+    const argumentes = productionStats.reduce((sum, stat) => sum + (stat.argumentes || 0), 0)
+    const nbRepassages = productionStats.reduce(
+      (sum, stat) => sum + (stat.nbRepassages || 0),
+      0
+    )
+    const nbImmeubles = productionStats.reduce(
+      (sum, stat) => sum + (stat.immeublesVisites || 0),
+      0
+    )
     const nbCommerciaux = filteredCommercials?.length || 0
 
     return {
