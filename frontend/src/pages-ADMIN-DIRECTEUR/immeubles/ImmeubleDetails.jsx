@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
-import { useImmeuble, useCommercials, useManagers, usePortesByImmeuble } from '@/services'
+import { useImmeuble, useCommercials, useManagers, useInfinitePortesByImmeuble } from '@/services'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
@@ -13,7 +13,13 @@ export default function ImmeubleDetails() {
   const { data: immeuble, loading: immeubleLoading, error } = useImmeuble(parseInt(id))
   const { data: commercials } = useCommercials()
   const { data: managers } = useManagers()
-  const { data: portes, loading: portesLoading } = usePortesByImmeuble(parseInt(id))
+
+  // Utiliser useInfinitePortesByImmeuble avec une grande pageSize pour charger toutes les portes
+  // pageSize=10000 devrait couvrir même les très grands immeubles
+  const {
+    data: portes,
+    loading: portesLoading
+  } = useInfinitePortesByImmeuble(parseInt(id), 10000, null)
 
   // Transformation des données API vers format UI
   const immeubleData = useMemo(() => {
@@ -131,7 +137,7 @@ export default function ImmeubleDetails() {
     {
       title: 'Absents',
       value: immeubleData.floorDetails.reduce(
-        (acc, floor) => acc + floor.doors.filter(door => door.status === 'ABSENT').length,
+        (acc, floor) => acc + floor.doors.filter(door => door.status === 'absent').length,
         0
       ),
       description: 'Personne absente',
@@ -140,7 +146,7 @@ export default function ImmeubleDetails() {
     {
       title: 'Argumentés',
       value: immeubleData.floorDetails.reduce(
-        (acc, floor) => acc + floor.doors.filter(door => door.status === 'ARGUMENTE').length,
+        (acc, floor) => acc + floor.doors.filter(door => door.status === 'argumente').length,
         0
       ),
       description: 'Refus après argumentation',
