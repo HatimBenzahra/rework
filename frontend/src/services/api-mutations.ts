@@ -441,3 +441,15 @@ export const ASSIGN_ZONE_TO_MANAGER = `
     assignZoneToManager(managerId: $managerId, zoneId: $zoneId)
   }
 `
+
+export const RECALCULATE_ALL_STATS = `
+  mutation RecalculateAllStats {
+    recalculateAllStats
+  }
+`
+
+export const VALIDATE_STATS_COHERENCE = `
+  query ValidateStatsCoherence {
+    validateStatsCoherence
+  }
+`

@@ -603,6 +603,8 @@ export const GET_STATISTICS = `
       zoneId
       contratsSignes
       immeublesVisites
+      absents
+      argumentes
       rendezVousPris
       refus
       nbImmeublesProspectes

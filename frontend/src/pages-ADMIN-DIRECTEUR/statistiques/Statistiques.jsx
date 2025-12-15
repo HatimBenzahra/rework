@@ -144,6 +144,12 @@ export default function Statistiques() {
     return filterStatisticsByPeriod(filteredStatistics, timePeriod)
   }, [filteredStatistics, timePeriod])
 
+  // Pour le graphique, on exclut les statistiques des directeurs car ce sont des agrégats
+  // On ne garde que la production réelle (commerciaux et managers)
+  const chartStatistics = useMemo(() => {
+    return timeFilteredStatistics.filter(stat => stat.commercialId || stat.managerId)
+  }, [timeFilteredStatistics])
+
   // Calculs des métriques - IMPORTANT: utiliser les stats globales pour éviter les doublons
   const metrics = useMemo(() => {
     if (!timeFilteredStatistics?.length) {
@@ -167,13 +173,15 @@ export default function Statistiques() {
 
     // Si on a une stat globale, l'utiliser directement (déjà calculée côté backend)
     // Sinon, fallback: additionner toutes les stats disponibles
-    let contratsSignes, rendezVousPris, refus, nbRepassages, nbImmeubles
+    let contratsSignes, rendezVousPris, refus, absents, argumentes, nbRepassages, nbImmeubles
 
     if (globalStat) {
       // Utiliser directement les valeurs de la stat globale
       contratsSignes = globalStat.contratsSignes || 0
       rendezVousPris = globalStat.rendezVousPris || 0
       refus = globalStat.refus || 0
+      absents = globalStat.absents || 0
+      argumentes = globalStat.argumentes || 0
       nbRepassages = globalStat.nbRepassages || 0
       nbImmeubles = globalStat.immeublesVisites || 0
     } else {
@@ -187,6 +195,8 @@ export default function Statistiques() {
         0
       )
       refus = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.refus || 0), 0)
+      absents = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.absents || 0), 0)
+      argumentes = timeFilteredStatistics.reduce((sum, stat) => sum + (stat.argumentes || 0), 0)
       nbRepassages = timeFilteredStatistics.reduce(
         (sum, stat) => sum + (stat.nbRepassages || 0),
         0
@@ -197,25 +207,6 @@ export default function Statistiques() {
       )
     }
     const nbCommerciaux = filteredCommercials?.length || 0
-
-    // Calculer absents et argumentés depuis les portes des commerciaux (non disponible dans Statistic)
-    let absents = 0
-    let argumentes = 0
-
-    if (filteredCommercials?.length) {
-      filteredCommercials.forEach(commercial => {
-        if (commercial.immeubles) {
-          commercial.immeubles.forEach(immeuble => {
-            if (immeuble.portes) {
-              immeuble.portes.forEach(porte => {
-                if (porte.statut === 'ABSENT') absents++
-                if (porte.statut === 'ARGUMENTE') argumentes++
-              })
-            }
-          })
-        }
-      })
-    }
 
     return {
       contratsSignes,
@@ -352,7 +343,7 @@ export default function Statistiques() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         {/* Chart d'évolution des contrats */}
         <ContratsEvolutionChart
-          statistics={timeFilteredStatistics}
+          statistics={chartStatistics}
           title="Évolution des contrats signés"
           description={`Tendance sur ${TIME_FILTERS.find(f => f.value === timePeriod)?.label?.toLowerCase()}`}
           daysToShow={

@@ -37,7 +37,10 @@ import {
   GET_STATUS_HISTORIQUE_BY_IMMEUBLE,
 } from './api-queries'
 
+
 import {
+  RECALCULATE_ALL_STATS,
+  VALIDATE_STATS_COHERENCE,
   CREATE_DIRECTEUR,
   UPDATE_DIRECTEUR,
   REMOVE_DIRECTEUR,
@@ -555,6 +558,16 @@ export const statisticApi = {
       { userId, userType }
     )
     return response.currentUserAssignment
+  },
+
+  async recalculateAllStats(): Promise<string> {
+    const response = await gql<{ recalculateAllStats: string }>(RECALCULATE_ALL_STATS)
+    return response.recalculateAllStats
+  },
+
+  async validateStatsCoherence(): Promise<string> {
+    const response = await gql<{ validateStatsCoherence: string }>(VALIDATE_STATS_COHERENCE)
+    return response.validateStatsCoherence
   },
 }
 
