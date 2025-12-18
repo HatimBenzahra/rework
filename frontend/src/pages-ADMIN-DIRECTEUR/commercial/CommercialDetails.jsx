@@ -7,6 +7,7 @@ import { calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
 import DateRangeFilter from '@/components/DateRangeFilter'
 import { useDateFilter } from '@/hooks/utils/useDateFilter'
+import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
 import {
   usePersonalStats,
   useImmeublesTableData,
@@ -53,7 +54,6 @@ export default function CommercialDetails() {
 
     return calculateRank(totalContratsSignes, totalRendezVousPris, totalImmeublesVisites)
   }, [commercial?.statistics])
-
   // Préparer les données pour l'affichage
   const commercialData = useMemo(() => {
     if (!commercial) return null
@@ -111,6 +111,91 @@ export default function CommercialDetails() {
 
   // Utiliser le hook pour collecter toutes les portes filtrées par date
   const allPortes = useFilteredPortes(commercial?.immeubles, appliedStartDate, appliedEndDate)
+
+  // Définir les colonnes du tableau des portes
+  const doorsColumns = [
+    {
+      header: 'Porte',
+      accessor: 'number',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Adresse',
+      accessor: 'address',
+      sortable: true,
+      className: 'text-sm',
+    },
+    {
+      header: 'Étage',
+      accessor: 'etage',
+      sortable: true,
+      className: 'text-sm',
+    },
+    {
+      header: 'Statut',
+      accessor: 'status',
+      sortable: true,
+      cell: row => {
+        const normalizedStatus = row.status?.toUpperCase()
+        const label = getStatusLabel(normalizedStatus)
+        const colorClasses = getStatusColor(normalizedStatus)
+        return <Badge className={colorClasses}>{label}</Badge>
+      },
+    },
+    {
+      header: 'RDV',
+      accessor: 'rdvDate',
+      sortable: true,
+      cell: row => {
+        if (row.rdvDate && row.rdvTime) {
+          return (
+            <div className="text-sm">
+              <div>{row.rdvDate}</div>
+              <div className="text-muted-foreground">{row.rdvTime}</div>
+            </div>
+          )
+        }
+        return <span className="text-muted-foreground">-</span>
+      },
+    },
+    {
+      header: 'Dernière visite',
+      accessor: 'lastVisit',
+      sortable: true,
+      cell: row => row.visitedAt || <span className="text-muted-foreground">-</span>,
+    },
+  ]
+
+  // Préparer les données pour le tableau des portes
+  const doorsData = useMemo(() => {
+    if (!allPortes) return []
+
+    return allPortes.map(porte => {
+      // Retrouver l'immeuble associé pour l'adresse et le code postal
+      const immeuble = commercial?.immeubles?.find(i => i.id === porte.immeubleId)
+      
+      return {
+        ...porte,
+        id: porte.id,
+        porteId: porte.id, // ID pour le timeline
+        tableId: `door-${porte.id}`, // Clé unique pour le tableau
+        number: porte.numero,
+        address: immeuble ? `${immeuble.adresse}` : 'Non spécifié',
+        etage: `Étage ${porte.etage}`,
+        status: porte.statut.toLowerCase(),
+        rdvDate: porte.rdvDate
+          ? new Date(porte.rdvDate).toLocaleDateString('fr-FR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+            })
+          : null,
+        rdvTime: porte.rdvTime || null,
+        lastVisit: porte.updatedAt ? new Date(porte.updatedAt).toLocaleDateString() : null,
+      }
+    })
+  }, [allPortes, commercial?.immeubles])
 
   if (loading) return <DetailsPageSkeleton />
 
@@ -349,10 +434,8 @@ export default function CommercialDetails() {
       data: {
         immeubles: immeublesTableData,
         columns: immeublesColumns,
-        customFilters: [
-          { value: 'all', label: 'Tous les immeubles' },
-          { value: 'actif', label: 'Actifs' },
-        ],
+        nestedColumns: doorsColumns,
+        showFilters: false,
       },
     },
   ]

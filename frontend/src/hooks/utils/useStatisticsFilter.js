@@ -94,6 +94,11 @@ export function useImmeublesTableData(immeubles, appliedStartDate, appliedEndDat
       const totalDoors = immeuble.nbEtages * immeuble.nbPortesParEtage
 
       // Calculer les statistiques à partir des portes
+      const visitedAt = portesImmeuble.reduce((latest, porte) => {
+        const visit = porte.derniereVisite || porte.updatedAt
+        if (!visit) return latest
+        return !latest || new Date(visit) > new Date(latest) ? visit : latest
+      }, null)
       const contratsSignes = portesImmeuble.filter(p => p.statut === 'CONTRAT_SIGNE').length
       const rdvPris = portesImmeuble.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
       const refus = portesImmeuble.filter(p => p.statut === 'REFUS').length
@@ -102,6 +107,38 @@ export function useImmeublesTableData(immeubles, appliedStartDate, appliedEndDat
       const repassages = portesImmeuble.reduce((sum, p) => sum + (p.nbRepassages || 0), 0)
       const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
       const couverture = totalDoors > 0 ? Math.round((portesProspectees / totalDoors) * 100) : 0
+
+      // Préparer les données des portes pour cette immeuble pour l'affichage imbriqué
+      // Note: On réutilise la structure attendue par le tableau (status, rdvDate, etc)
+
+      const formatDateTime = dateString => {
+        if (!dateString) return null
+        return new Date(dateString).toLocaleString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+  })
+}
+
+      const doors = portesImmeuble.map(porte => {
+        const porteVisit = porte.derniereVisite || porte.updatedAt || null
+
+        return {
+          ...porte,
+          id: porte.id,
+          porteId: porte.id,
+          tableId: `door-nested-${porte.id}`,
+          number: porte.numero,
+          etage: `Étage ${porte.etage}`,
+          status: porte.statut.toLowerCase(),
+          visitedAt: formatDateTime(porteVisit),
+          rdvDate: formatDateTime(porte.rdvDate),
+          rdvTime: porte.rdvTime || null,
+          lastVisit: formatDateTime(porteVisit),
+        }
+      })
 
       return {
         id: immeuble.id,
@@ -118,6 +155,8 @@ export function useImmeublesTableData(immeubles, appliedStartDate, appliedEndDat
         repassages: repassages,
         portes_prospectees: portesProspectees,
         createdAt: immeuble.createdAt,
+        visitedAt: formatDateTime(visitedAt),
+        doors, // Liste des portes pour l'affichage imbriqué
       }
     })
   }, [immeubles, appliedStartDate, appliedEndDate])

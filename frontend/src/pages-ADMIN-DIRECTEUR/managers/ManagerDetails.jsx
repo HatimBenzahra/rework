@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import DateRangeFilter from '@/components/DateRangeFilter'
 import { AdvancedDataTable } from '@/components/tableau'
 import { Award, TrendingUp, FileText, Building2, Calendar, X, Users, BookX } from 'lucide-react'
+import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
 
 export default function ManagerDetails() {
   const { id } = useParams()
@@ -300,7 +301,7 @@ export default function ManagerDetails() {
     return (
       <div className="space-y-6">
         <AdvancedDataTable
-          showStatusColumn={true}
+          showStatusColumn={false}
           title={`Commerciaux assignés (${assignedCommercials.length})`}
           data={assignedCommercials}
           columns={assignedColumns}
@@ -599,6 +600,61 @@ export default function ManagerDetails() {
     },
   ]
 
+  // Définir les colonnes du tableau des portes
+  const doorsColumns = [
+    {
+      header: 'Porte',
+      accessor: 'number',
+      sortable: true,
+      className: 'font-medium',
+    },
+    {
+      header: 'Adresse',
+      accessor: 'address',
+      sortable: true,
+      className: 'text-sm',
+    },
+    {
+      header: 'Étage',
+      accessor: 'etage',
+      sortable: true,
+      className: 'text-sm',
+    },
+    {
+      header: 'Statut',
+      accessor: 'status',
+      sortable: true,
+      cell: row => {
+        const normalizedStatus = row.status?.toUpperCase()
+        const label = getStatusLabel(normalizedStatus)
+        const colorClasses = getStatusColor(normalizedStatus)
+        return <Badge className={colorClasses}>{label}</Badge>
+      },
+    },
+    {
+      header: 'RDV',
+      accessor: 'rdvDate',
+      sortable: true,
+      cell: row => {
+        if (row.rdvDate && row.rdvTime) {
+          return (
+            <div className="text-sm">
+              <div>{row.rdvDate}</div>
+              <div className="text-muted-foreground">{row.rdvTime}</div>
+            </div>
+          )
+        }
+        return <span className="text-muted-foreground">-</span>
+      },
+    },
+    {
+      header: 'Dernière visite',
+      accessor: 'lastVisit',
+      sortable: true,
+      cell: row => row.visitedAt || <span className="text-muted-foreground">-</span>,
+    },
+  ]
+
   // Définir les colonnes du tableau des immeubles
   const immeublesColumns = [
     {
@@ -717,16 +773,13 @@ export default function ManagerDetails() {
       title: 'Immeubles prospectés',
       description: 'Liste des immeubles prospectés par ce manager avec leurs statistiques',
       type: 'custom',
-      render: () => (
-        <AdvancedDataTable
-          showStatusColumn={false}
-          title="Immeubles prospectés"
-          data={immeublesTableData}
-          columns={immeublesColumns}
-          searchKey="address"
-          detailsPath="/immeubles"
-        />
-      ),
+      component: 'ImmeublesTable',
+      data: {
+        immeubles: immeublesTableData,
+        columns: immeublesColumns,
+        nestedColumns: doorsColumns,
+        showFilters: false,
+      },
     },
     // Section des stats de l'équipe (cartes + tableau)
     {
