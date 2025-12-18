@@ -263,3 +263,33 @@ export function getStatusBadgeData(status, themeColors) {
     Icon: config.icon,
   }
 }
+
+/**
+ * Helper: Obtenir la couleur HSL pour un statut (pour les charts)
+ * Retourne une couleur HSL correspondant aux classes Tailwind
+ *
+ * @param {string} status - Le statut
+ * @returns {string} La couleur en format HSL
+ */
+export function getStatusChartColor(status) {
+  const normalizedStatus = status?.toUpperCase()
+
+  switch (normalizedStatus) {
+    case StatutPorte.CONTRAT_SIGNE:
+      return 'hsl(142 76% 36%)' // Vert (green-800)
+    case StatutPorte.REFUS:
+      return 'hsl(0 84% 60%)' // Rouge (red-800)
+    case StatutPorte.RENDEZ_VOUS_PRIS:
+      return 'hsl(213 94% 68%)' // Bleu (blue-800)
+    case StatutPorte.ABSENT:
+      return 'hsl(199 89% 48%)' // Bleu ciel (blue-800)
+    case StatutPorte.ARGUMENTE:
+      return 'hsl(25 95% 53%)' // Orange (orange-800)
+    case StatutPorte.NECESSITE_REPASSAGE:
+      return 'hsl(45 93% 47%)' // Jaune (yellow-800)
+    case StatutPorte.NON_VISITE:
+      return 'hsl(0 0% 45%)' // Gris (gray-800)
+    default:
+      return 'hsl(0 0% 45%)' // Gris par défaut
+  }
+}
