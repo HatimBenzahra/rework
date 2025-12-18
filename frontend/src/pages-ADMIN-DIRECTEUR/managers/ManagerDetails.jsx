@@ -32,7 +32,7 @@ export default function ManagerDetails() {
   const { showError, showSuccess } = useErrorToast()
   const [assigningCommercial, setAssigningCommercial] = useState(null)
 
-  // Hook pour gérer les filtres de date
+  // Hook pour gérer les filtres de date (pour les stats et portes)
   const {
     startDate,
     endDate,
@@ -43,6 +43,21 @@ export default function ManagerDetails() {
     handleApplyFilters,
     handleResetFilters,
   } = useDateFilter()
+
+  // États pour le filtre des immeubles
+  const {
+    startDate: immeubleStartDate,
+    endDate: immeubleEndDate,
+    appliedStartDate: appliedImmeubleStartDate,
+    appliedEndDate: appliedImmeubleEndDate,
+    setStartDate: setImmeubleStartDate,
+    setEndDate: setImmeubleEndDate,
+    handleApplyFilters: handleApplyImmeubleFilters,
+    handleResetFilters: handleResetImmeubleFilters,
+  } = useDateFilter()
+
+  // État pour le type de date à filtrer (création ou modification)
+  const [immeubleDateType, setImmeubleDateType] = useState('created')
 
   // API hooks
   const {
@@ -375,12 +390,33 @@ export default function ManagerDetails() {
     }
   }, [commercialStats])
 
-  // Utiliser le hook pour préparer les données des immeubles
-  const immeublesTableData = useImmeublesTableData(
+  // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date des portes)
+  const allImmeublesTableData = useImmeublesTableData(
     manager?.immeubles,
     appliedStartDate,
     appliedEndDate
   )
+
+  // Filtrer les immeubles par date (création ou modification selon le type sélectionné)
+  const immeublesTableData = useMemo(() => {
+    if (!allImmeublesTableData) return []
+    if (!appliedImmeubleStartDate && !appliedImmeubleEndDate) return allImmeublesTableData
+
+    return allImmeublesTableData.filter(immeuble => {
+      // Choisir la date selon le type de filtre
+      const dateToCompare = immeubleDateType === 'created'
+        ? new Date(immeuble.createdAt)
+        : new Date(immeuble.visitedAt || immeuble.createdAt)
+
+      const startDateObj = appliedImmeubleStartDate ? new Date(appliedImmeubleStartDate) : null
+      const endDateObj = appliedImmeubleEndDate ? new Date(appliedImmeubleEndDate) : null
+
+      if (startDateObj && dateToCompare < startDateObj) return false
+      if (endDateObj && dateToCompare > endDateObj) return false
+
+      return true
+    })
+  }, [allImmeublesTableData, appliedImmeubleStartDate, appliedImmeubleEndDate, immeubleDateType])
 
   // Utiliser le hook pour collecter toutes les portes filtrées
   const allPortes = useFilteredPortes(manager?.immeubles, appliedStartDate, appliedEndDate)
@@ -780,6 +816,23 @@ export default function ManagerDetails() {
         nestedColumns: doorsColumns,
         showFilters: false,
       },
+      customFilter: (
+        <DateRangeFilter
+          className="h-fit"
+          startDate={immeubleStartDate}
+          endDate={immeubleEndDate}
+          appliedStartDate={appliedImmeubleStartDate}
+          appliedEndDate={appliedImmeubleEndDate}
+          onChangeStart={setImmeubleStartDate}
+          onChangeEnd={setImmeubleEndDate}
+          onApply={handleApplyImmeubleFilters}
+          onReset={handleResetImmeubleFilters}
+          title="Filtrer les immeubles"
+          showDateTypeSelector={true}
+          dateType={immeubleDateType}
+          onDateTypeChange={setImmeubleDateType}
+        />
+      ),
     },
     // Section des stats de l'équipe (cartes + tableau)
     {

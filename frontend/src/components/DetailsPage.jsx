@@ -704,6 +704,8 @@ export default function DetailsPage({
             )}
           </div>
           <Separator className="mb-6" />
+          {/* Afficher le filtre personnalisé si présent */}
+          {section.customFilter && <div className="mb-6">{section.customFilter}</div>}
           <Card className="border-2">
             <CardContent className="pt-6">
               {section.type === 'grid' && (

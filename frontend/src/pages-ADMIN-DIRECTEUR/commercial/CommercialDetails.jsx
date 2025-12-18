@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import DetailsPage from '@/components/DetailsPage'
 import { DetailsPageSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercialFull, useManagers, useCurrentZoneAssignment } from '@/services'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { calculateRank } from '@/share/ranks'
 import { Badge } from '@/components/ui/badge'
 import DateRangeFilter from '@/components/DateRangeFilter'
@@ -20,7 +20,7 @@ export default function CommercialDetails() {
   const { data: managers } = useManagers()
   const { data: currentZone } = useCurrentZoneAssignment(parseInt(id), 'COMMERCIAL')
 
-  // Hook pour gérer les filtres de date
+  // Hook pour gérer les filtres de date (pour les stats et portes)
   const {
     startDate,
     endDate,
@@ -31,6 +31,21 @@ export default function CommercialDetails() {
     handleApplyFilters,
     handleResetFilters,
   } = useDateFilter()
+
+  // États pour le filtre des immeubles
+  const {
+    startDate: immeubleStartDate,
+    endDate: immeubleEndDate,
+    appliedStartDate: appliedImmeubleStartDate,
+    appliedEndDate: appliedImmeubleEndDate,
+    setStartDate: setImmeubleStartDate,
+    setEndDate: setImmeubleEndDate,
+    handleApplyFilters: handleApplyImmeubleFilters,
+    handleResetFilters: handleResetImmeubleFilters,
+  } = useDateFilter()
+
+  // État pour le type de date à filtrer (création ou modification)
+  const [immeubleDateType, setImmeubleDateType] = useState('created')
 
   // Utiliser le hook pour calculer les stats personnelles du commercial
   const { personalStats } = usePersonalStats(commercial, appliedStartDate, appliedEndDate)
@@ -102,12 +117,33 @@ export default function CommercialDetails() {
     ]
   }, [currentZone, commercial?.id])
 
-  // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date)
-  const immeublesTableData = useImmeublesTableData(
+  // Utiliser le hook pour préparer les données des immeubles (avec filtrage par date des portes)
+  const allImmeublesTableData = useImmeublesTableData(
     commercial?.immeubles,
     appliedStartDate,
     appliedEndDate
   )
+
+  // Filtrer les immeubles par date (création ou modification selon le type sélectionné)
+  const immeublesTableData = useMemo(() => {
+    if (!allImmeublesTableData) return []
+    if (!appliedImmeubleStartDate && !appliedImmeubleEndDate) return allImmeublesTableData
+
+    return allImmeublesTableData.filter(immeuble => {
+      // Choisir la date selon le type de filtre
+      const dateToCompare = immeubleDateType === 'created'
+        ? new Date(immeuble.createdAt)
+        : new Date(immeuble.visitedAt || immeuble.createdAt)
+
+      const startDateObj = appliedImmeubleStartDate ? new Date(appliedImmeubleStartDate) : null
+      const endDateObj = appliedImmeubleEndDate ? new Date(appliedImmeubleEndDate) : null
+
+      if (startDateObj && dateToCompare < startDateObj) return false
+      if (endDateObj && dateToCompare > endDateObj) return false
+
+      return true
+    })
+  }, [allImmeublesTableData, appliedImmeubleStartDate, appliedImmeubleEndDate, immeubleDateType])
 
   // Utiliser le hook pour collecter toutes les portes filtrées par date
   const allPortes = useFilteredPortes(commercial?.immeubles, appliedStartDate, appliedEndDate)
@@ -437,6 +473,23 @@ export default function CommercialDetails() {
         nestedColumns: doorsColumns,
         showFilters: false,
       },
+      customFilter: (
+        <DateRangeFilter
+          className="h-fit"
+          startDate={immeubleStartDate}
+          endDate={immeubleEndDate}
+          appliedStartDate={appliedImmeubleStartDate}
+          appliedEndDate={appliedImmeubleEndDate}
+          onChangeStart={setImmeubleStartDate}
+          onChangeEnd={setImmeubleEndDate}
+          onApply={handleApplyImmeubleFilters}
+          onReset={handleResetImmeubleFilters}
+          title="Filtrer les immeubles"
+          showDateTypeSelector={true}
+          dateType={immeubleDateType}
+          onDateTypeChange={setImmeubleDateType}
+        />
+      ),
     },
   ]
 
@@ -459,7 +512,7 @@ export default function CommercialDetails() {
           onChangeEnd={setEndDate}
           onApply={handleApplyFilters}
           onReset={handleResetFilters}
-          title="Filtres de période"
+          title="Filtres de période (stats & portes)"
         />
       }
       assignedZones={assignedZones}
