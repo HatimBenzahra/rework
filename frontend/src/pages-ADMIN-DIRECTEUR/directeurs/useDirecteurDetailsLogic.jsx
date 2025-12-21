@@ -10,7 +10,7 @@ import {
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { useMemo, useState } from 'react'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {

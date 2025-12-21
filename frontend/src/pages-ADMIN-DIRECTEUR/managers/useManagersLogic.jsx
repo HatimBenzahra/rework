@@ -3,7 +3,7 @@ import { useManagers, useUpdateManager, useDirecteurs } from '@/services'
 import { useEntityPage } from '@/hooks/metier/permissions/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 
 const getManagersColumns = () => {
   const baseColumns = [

@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { logger } from '@/services/core'
-import { delay } from '@/constants/timing'
+import { delay } from '@/constants/ui/timing'
 
 /**
  * Hook pour gérer un timeout avec contrôles avancés

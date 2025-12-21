@@ -288,7 +288,7 @@ function mergeWithDefault(presetColors, mode) {
  *
  * Usage:
  * ```js
- * import { applyPreset } from '@/config/theme-presets'
+ * import { applyPreset } from '@/config/theme/presets'
  *
  * applyPreset('ocean')  // Applique le thème océan
  * ```

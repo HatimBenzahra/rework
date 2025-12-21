@@ -2,7 +2,7 @@ import { useParams } from 'react-router-dom'
 import { useImmeuble, useCommercials, useManagers, useInfinitePortesByImmeuble } from '@/services'
 import { useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
-import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
+import { getStatusLabel, getStatusColor } from '@/constants/domain/porte-status'
 
 export function useImmeubleDetailsLogic() {
   const { id } = useParams()

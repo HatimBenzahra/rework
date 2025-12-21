@@ -1,11 +1,11 @@
 import { useParams } from 'react-router-dom'
 import { useCommercialFull, useManagers, useCurrentZoneAssignment } from '@/services'
 import { useMemo, useState } from 'react'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 import { Badge } from '@/components/ui/badge'
 import DateRangeFilter from '@/components/DateRangeFilter'
 import { useDateFilter } from '@/hooks/utils/filters/useDateFilter'
-import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
+import { getStatusLabel, getStatusColor } from '@/constants/domain/porte-status'
 import {
   usePersonalStats,
   useImmeublesTableData,

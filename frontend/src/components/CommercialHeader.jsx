@@ -1,7 +1,7 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { User, Calendar, Award, Crown, Star, Gem, Trophy, MapPin } from 'lucide-react'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 
 export default function CommercialHeader({
   commercial,

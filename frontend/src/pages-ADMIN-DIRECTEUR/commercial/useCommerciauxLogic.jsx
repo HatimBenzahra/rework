@@ -3,7 +3,7 @@ import { useCommercials, useUpdateCommercial, useManagers, useDirecteurs } from 
 import { useRole } from '@/contexts/userole'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/permissions/useRoleBasedData'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 
 const getCommerciauxColumns = (isAdmin, isDirecteur) => {
   const baseColumns = [

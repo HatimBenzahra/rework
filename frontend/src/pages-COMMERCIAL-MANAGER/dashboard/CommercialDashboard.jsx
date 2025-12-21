@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { calculateRank, RANKS } from '@/share/ranks'
+import { calculateRank, RANKS } from '@/utils/business/ranks'
 import { useCommercialTeamRanking } from '@/hooks/metier/use-api'
 import { usePortesRdvToday } from '@/hooks/metier/use-api'
 import { useNavigate } from 'react-router-dom'

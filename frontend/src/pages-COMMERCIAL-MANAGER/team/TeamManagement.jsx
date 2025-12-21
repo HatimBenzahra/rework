@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 import ContratsEvolutionChart from '@/components/charts/ContratsEvolutionChart'
 import ZoneComparisonChart from '@/components/ZoneComparisonChart'
 import { BarChart3, TrendingUp } from 'lucide-react'

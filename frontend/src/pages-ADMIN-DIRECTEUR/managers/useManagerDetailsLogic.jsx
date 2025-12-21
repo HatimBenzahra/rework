@@ -15,12 +15,12 @@ import {
   useFilteredPortes,
 } from '@/hooks/utils/filters/useStatisticsFilter'
 import { useMemo, useState } from 'react'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import DateRangeFilter from '@/components/DateRangeFilter'
 import { AdvancedDataTable } from '@/components/tableau'
-import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
+import { getStatusLabel, getStatusColor } from '@/constants/domain/porte-status'
 
 export function useManagerDetailsLogic() {
   const { id } = useParams()

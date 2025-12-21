@@ -1,4 +1,4 @@
-import { applyPreset } from './theme-presets.js'
+import { applyPreset } from './presets.js'
 
 /**
  * Configuration des couleurs de l'application

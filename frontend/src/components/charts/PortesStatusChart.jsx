@@ -12,7 +12,7 @@ import {
   getStatusLabel,
   getStatusChartColor,
   StatutPorte
-} from '@/constants/porte-status.constants'
+} from '@/constants/domain/porte-status'
 
 // Configuration des couleurs et libellés pour chaque statut
 // Utilise les fonctions centralisées du fichier constants

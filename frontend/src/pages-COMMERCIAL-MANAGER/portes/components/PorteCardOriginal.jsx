@@ -10,7 +10,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { StatutPorte } from '@/constants/porte-status.constants'
+import { StatutPorte } from '@/constants/domain/porte-status'
 
 export default function PorteCardOriginal({
   porte,

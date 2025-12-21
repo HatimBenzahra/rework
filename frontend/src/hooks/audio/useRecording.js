@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { RecordingService } from '@/services/audio'
 import { logger } from '@/services/core'
-import { AUDIO_TIMING } from '@/constants/timing'
+import { AUDIO_TIMING } from '@/constants/ui/timing'
 import { useTimeout } from '@/hooks/utils/async/useTimeout'
 import { useCleanup } from '@/hooks/utils/async/useCleanup'
 

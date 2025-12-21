@@ -1,6 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { RANKS } from '@/share/ranks'
+import { RANKS } from '@/utils/business/ranks'
 import { Card } from '@/components/ui/card'
 import { useManagersLogic } from './useManagersLogic'
 

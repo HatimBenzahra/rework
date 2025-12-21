@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Clock, User, Calendar, MessageSquare } from 'lucide-react'
-import { getStatusLabel, getStatusColor } from '@/constants/porte-status.constants'
+import { getStatusLabel, getStatusColor } from '@/constants/domain/porte-status'
 import { useStatusHistoriqueByPorte } from '@/hooks/metier/use-api'
 
 export default function PorteHistoriqueTimeline({ porteId, porteNumero }) {
