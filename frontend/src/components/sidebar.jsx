@@ -18,7 +18,7 @@ import {
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useRole } from '@/contexts/userole'
-import { hasPermission, ROLES } from '@/hooks/metier/roleFilters'
+import { hasPermission, ROLES } from '@/hooks/metier/permissions/roleFilters'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible'
 import { useDetailsSections } from '@/contexts/DetailsSectionsContext'
 import { cn } from '@/lib/utils'

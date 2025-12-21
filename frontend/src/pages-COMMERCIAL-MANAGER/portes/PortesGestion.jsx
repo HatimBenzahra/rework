@@ -15,7 +15,7 @@ import { Building2, Clock, RotateCcw, Calendar, Plus, Minus } from 'lucide-react
 
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useRecording } from '@/hooks/audio/useRecording'
-import { useErrorToast } from '@/hooks/utils/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { useRole } from '@/contexts/userole'
 import {
   useInfinitePortesByImmeuble,

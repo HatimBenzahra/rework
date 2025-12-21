@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { logger } from '@/services/core'
-import { useErrorToast } from './use-error-toast'
+import { useErrorToast } from '../ui/use-error-toast'
 
 /**
  * Configuration pour useAsyncState

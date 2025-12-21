@@ -19,7 +19,7 @@ import { immeubleApi } from '@/services/api'
 import AddImmeubleModal from '@/components/AddImmeubleModal'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { useErrorToast } from '@/hooks/utils/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { UI_TIMING } from '@/constants/timing'
 
 const ITEMS_PER_PAGE = 8

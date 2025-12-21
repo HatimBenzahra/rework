@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCreateDirecteur, useCreateManager, useCreateCommercial } from '@/services'
-import { useErrorToast } from '@/hooks/utils/use-error-toast'
+import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { Crown, Briefcase, UserCircle, Loader2 } from 'lucide-react'
 
 /**

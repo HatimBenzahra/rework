@@ -4,7 +4,7 @@
  */
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ROLES } from '../hooks/metier/roleFilters'
+import { ROLES } from '../hooks/metier/permissions/roleFilters'
 import { RoleContext } from './userole'
 import { authService } from '../services/auth'
 import { api } from '../services/api'

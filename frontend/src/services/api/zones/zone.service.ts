@@ -16,23 +16,6 @@ import {
   UPDATE_ZONE,
   REMOVE_ZONE,
 } from './zone.mutations'
-import {
-  ASSIGN_ZONE_TO_DIRECTEUR,
-  ASSIGN_ZONE_TO_MANAGER,
-} from '../../api-mutations' // Importing from central until verified where these belong or if I should duplicate them/move them here.
-// Actually, `ASSIGN_ZONE_TO_DIRECTEUR` belongs to Directeur module logically, but could be used here.
-// However, looking at my previous work, I put `ASSIGN_ZONE_TO_MANAGER` in `manager.mutations.ts`.
-// But `zoneApi` uses them.
-// Ideally `zoneApi` should probably import them from the respective modules or I should move them to `zone.mutations.ts` if they are considered "zone operations".
-// The instruction said: "Extract all zone-related mutations... to zone.mutations.ts". ASSIGN_ZONE_TO_DIRECTEUR operates on zone assignment.
-// But earlier I extracted `ASSIGN_ZONE_TO_COMMERCIAL` to commercial module.
-// Let's stick to importing them from where they are defined now.
-// `ASSIGN_ZONE_TO_DIRECTEUR` is in `directeur.mutations.ts`.
-// `ASSIGN_ZONE_TO_MANAGER` is in `manager.mutations.ts`.
-// But wait, `api-mutations.ts` still exists.
-// I should import from the new modules if possible, but for now I can import from `../../api-mutations` as a temporary step OR import from the new locations.
-// Importing from new locations is better.
-
 import { ASSIGN_ZONE_TO_DIRECTEUR as ASSIGN_TO_DIRECTEUR_MUTATION } from '../directeurs/directeur.mutations'
 import { ASSIGN_ZONE_TO_MANAGER as ASSIGN_TO_MANAGER_MUTATION } from '../managers/manager.mutations'
 
