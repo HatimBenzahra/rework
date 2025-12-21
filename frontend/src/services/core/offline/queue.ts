@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Offline queue service for storing mutations when offline
+ * Handles queueing and persistence of offline actions
+ */
+
 export interface OfflineAction<T = any> {
   id: string
   type: string

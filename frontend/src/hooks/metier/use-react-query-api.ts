@@ -4,9 +4,9 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../../services/api-service'
+import { api } from '../../services/api'
 import { useErrorToast } from '../utils/use-error-toast'
-import { invalidateRelatedCaches } from '../../services/api-cache'
+import { invalidateRelatedCaches } from '../../services/core'
 import type {
   Manager,
   Commercial,

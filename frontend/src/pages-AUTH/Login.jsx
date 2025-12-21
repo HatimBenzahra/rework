@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { User2, Lock, Mail, Loader2, Eye, EyeOff } from 'lucide-react'
 import ThemeToggle from '@/components/ThemeSwitchDarklight'
 import ThemeSelector from '@/components/Theme'
-import { authService } from '@/services/auth.service'
+import { authService } from '@/services/auth'
 import { useToast } from '@/components/ui/toast'
-import { logger as Logger } from '@/services/graphql-errors'
+import { logger as Logger } from '@/services/core'
 import { Input } from '@/components/ui/input'
 
 export default function Login() {

@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { logger } from '@/services/graphql-errors'
+import { logger } from '@/services/core'
 import { useErrorToast } from './use-error-toast'
 
 /**

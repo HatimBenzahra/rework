@@ -18,7 +18,7 @@ import { usePagination } from '@/hooks/utils/usePagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
 import { useActiveRooms } from '@/hooks/audio/useActiveRooms'
-import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
+import { AudioMonitoringService, LiveKitUtils } from '@/services/audio'
 import { Play, Square, User, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
 
 export default function EcouteLive() {

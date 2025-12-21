@@ -3,7 +3,7 @@ import { useAllCurrentAssignments, useCommercials, useManagers, useDirecteurs } 
 import { AdvancedDataTable } from '@/components/tableau'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { mapboxCache } from '@/services/api-cache'
+import { mapboxCache } from '@/services/core'
 
 // Fonction pour récupérer l'adresse via reverse geocoding Mapbox AVEC CACHE
 const fetchLocationName = async (longitude, latitude) => {

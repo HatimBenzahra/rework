@@ -7,12 +7,12 @@ import {
   useCommercials,
   useZoneStatistics,
   useZoneCurrentAssignments,
-} from '@/services'
+} from '@/hooks/metier/use-api'
 import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
 import { useMemo, useState, useEffect } from 'react'
 import AssignedZoneCard from '@/components/AssignedZoneCard'
-import { mapboxCache } from '@/services/api-cache'
-import { logError } from '@/services/graphql-errors'
+import { mapboxCache } from '@/services/core'
+import { logError } from '@/services/core'
 
 const fetchLocationName = async (longitude, latitude) => {
   const roundedLng = longitude.toFixed(4)

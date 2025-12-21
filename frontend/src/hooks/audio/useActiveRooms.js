@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { AudioMonitoringService } from '@/services/audio-monitoring'
+import { AudioMonitoringService } from '@/services/audio'
 import { useAsyncState } from '@/hooks/utils/useAsyncState'
 import { usePolling } from '../utils/useInterval'
 

@@ -3,53 +3,9 @@
  * Handles login, logout, token management and role extraction
  */
 
-import { graphqlClient } from './graphql-client'
-
-// =============================================================================
-// Types
-// =============================================================================
-
-export interface LoginCredentials {
-  username: string
-  password: string
-}
-
-export interface AuthResponse {
-  access_token: string
-  refresh_token: string
-  expires_in: number
-  token_type?: string
-  scope?: string
-  groups: string[]
-  role: string
-  userId: number
-  email?: string
-}
-
-export interface TokenPayload {
-  sub: string
-  email?: string
-  name?: string
-  groups: string[]
-  exp: number
-  iat: number
-}
-
-// Mapping des groupes Keycloak vers les rôles de l'application
-export const GROUP_TO_ROLE_MAP: Record<string, string> = {
-  'Prospection-Admin': 'admin',
-  'Prospection-Directeur': 'directeur',
-  'Prospection-Manager': 'manager',
-  'Prospection-Commercial': 'commercial',
-}
-
-// Groupes autorisés
-export const ALLOWED_GROUPS = [
-  'Prospection-Admin',
-  'Prospection-Directeur',
-  'Prospection-Manager',
-  'Prospection-Commercial',
-]
+import { graphqlClient } from '../core/graphql'
+import { LoginCredentials, AuthResponse, ALLOWED_GROUPS, GROUP_TO_ROLE_MAP } from './auth.types'
+import { decodeToken } from './token.utils'
 
 // =============================================================================
 // GraphQL Mutations
@@ -172,7 +128,7 @@ export class AuthService {
 
     // Vérifier si le token est expiré
     try {
-      const payload = this.decodeToken(token)
+      const payload = decodeToken(token)
       const now = Date.now() / 1000
       return payload.exp > now
     } catch {
@@ -187,7 +143,7 @@ export class AuthService {
     const token = this.getAccessToken()
     if (!token) return null
     try {
-      const payload = this.decodeToken(token)
+      const payload = decodeToken(token)
       return payload.exp
     } catch {
       return null
@@ -202,7 +158,7 @@ export class AuthService {
     if (!token) return null
 
     try {
-      const payload = this.decodeToken(token)
+      const payload = decodeToken(token)
       const groups = payload.groups || []
 
       // Mapper le groupe au rôle
@@ -225,7 +181,7 @@ export class AuthService {
     if (!token) return []
 
     try {
-      const payload = this.decodeToken(token)
+      const payload = decodeToken(token)
       return payload.groups || []
     } catch {
       return []
@@ -275,25 +231,6 @@ export class AuthService {
   }
 
   /**
-   * Décode un JWT token (sans vérification de signature)
-   */
-  private decodeToken(token: string): TokenPayload {
-    try {
-      const base64Url = token.split('.')[1]
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      )
-      return JSON.parse(jsonPayload)
-    } catch (error) {
-      throw new Error('Invalid token format')
-    }
-  }
-
-  /**
    * Extrait l'email depuis le token JWT
    */
   getUserEmail(): string | null {
@@ -301,7 +238,7 @@ export class AuthService {
     if (!token) return null
 
     try {
-      const payload = this.decodeToken(token)
+      const payload = decodeToken(token)
       return payload.email || null
     } catch {
       return null

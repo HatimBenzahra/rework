@@ -4,9 +4,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { api } from '../../services/api-service'
+import { api } from '../../services/api'
 import { ROLES } from './roleFilters'
-import { apiCache, invalidateRelatedCaches } from '../../services/api-cache'
+import { apiCache, invalidateRelatedCaches } from '../../services/core'
 import type {
   Directeur,
   Manager,
@@ -126,7 +126,7 @@ type MutateOptions<TOutput, TOptimistic> = {
 }
 
 // NEW IMPORT
-import { offlineQueue } from '../../services/offline-queue' // adjust path if needed
+import { offlineQueue } from '../../services/core'
 
 export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
   mutationFn: (input: TInput, signal?: AbortSignal) => Promise<TOutput>,

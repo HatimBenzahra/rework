@@ -22,7 +22,7 @@ import { useEcoutesUsers } from '@/hooks/ecoutes/useEcoutesUsers'
 import { usePagination } from '@/hooks/utils/usePagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { useErrorToast } from '@/hooks/utils/use-error-toast'
-import { RecordingService } from '@/services/recordings'
+import { RecordingService } from '@/services/audio'
 import { Play, Download, Clock, User } from 'lucide-react'
 
 export default function Enregistrement() {

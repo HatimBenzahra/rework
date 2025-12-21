@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
-import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
-import { logger } from '@/services/graphql-errors'
+import { AudioMonitoringService, LiveKitUtils } from '@/services/audio'
+import { logger } from '@/services/core'
 import { AUDIO_TIMING } from '@/constants/timing'
 import { useTimeout } from '../utils/useTimeout'
 import { useConnectionCleanup } from '../utils/useCleanup'

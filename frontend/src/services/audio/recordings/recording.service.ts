@@ -1,5 +1,13 @@
-import { graphqlClient } from './graphql-client'
-import { logger as Logger } from '@/services/graphql-errors'
+import { graphqlClient } from '../../core/graphql'
+import { logger as Logger } from '../../core/graphql'
+import type {
+  RecordingData,
+  EnrichedRecording,
+  StartRecordingInput,
+  StartRecordingResponse,
+  StopRecordingInput,
+} from './recording.types'
+
 // GraphQL Queries pour les enregistrements
 const LIST_RECORDINGS = `
   query ListRecordings($roomName: String!) {
@@ -44,7 +52,10 @@ export class RecordingService {
    * @param {string} userType - Type d'utilisateur ('commercial' ou 'manager')
    * @returns {Promise<Array>} Liste des enregistrements filtrés (uniquement .mp4)
    */
-  static async getRecordingsForUser(userId, userType) {
+  static async getRecordingsForUser(
+    userId: number,
+    userType: string
+  ): Promise<EnrichedRecording[]> {
     try {
       // Le backend, LiveKit et les clés S3 attendent le format room:<userType>:<id>
       // (le service backend remplace les deux-points par des underscores pour le stockage)
@@ -63,28 +74,35 @@ export class RecordingService {
       console.log('📋 Liste brute:', data.listRecordings)
 
       // Filtrer uniquement les fichiers .mp4
-      const recordings = data.listRecordings.filter(
-        recording => recording.key && recording.key.toLowerCase().endsWith('.mp4')
+      const recordings: RecordingData[] = data.listRecordings.filter(
+        (recording: RecordingData) =>
+          recording.key && recording.key.toLowerCase().endsWith('.mp4')
       )
 
       console.log('🎬 Fichiers .mp4 filtrés:', recordings)
 
       // Enrichir les données pour l'affichage (sans charger les URLs immédiatement)
-      const enrichedRecordings = recordings.map(recording => ({
-        id: recording.key,
-        key: recording.key,
-        url: null, // On charge l'URL seulement quand on clique sur "Écouter"
-        rawUrl: recording.url, // Garde l'URL originale pour lazy loading
-        size: recording.size,
-        lastModified: recording.lastModified,
-        // Extraire des infos du nom de fichier si possible
-        filename: recording.key.split('/').pop(),
-        date: recording.lastModified ? new Date(recording.lastModified).toLocaleDateString() : '',
-        time: recording.lastModified ? new Date(recording.lastModified).toLocaleTimeString() : '',
-        duration: this.formatFileSize(recording.size), // On affiche la taille en attendant la vraie durée
-        userId,
-        userType,
-      }))
+      const enrichedRecordings: EnrichedRecording[] = recordings.map(
+        (recording: RecordingData) => ({
+          id: recording.key,
+          key: recording.key,
+          url: null, // On charge l'URL seulement quand on clique sur "Écouter"
+          rawUrl: recording.url, // Garde l'URL originale pour lazy loading
+          size: recording.size,
+          lastModified: recording.lastModified,
+          // Extraire des infos du nom de fichier si possible
+          filename: recording.key.split('/').pop() || '',
+          date: recording.lastModified
+            ? new Date(recording.lastModified).toLocaleDateString()
+            : '',
+          time: recording.lastModified
+            ? new Date(recording.lastModified).toLocaleTimeString()
+            : '',
+          duration: this.formatFileSize(recording.size), // On affiche la taille en attendant la vraie durée
+          userId,
+          userType,
+        })
+      )
 
       console.log('✨ Enregistrements enrichis:', enrichedRecordings)
       return enrichedRecordings
@@ -97,7 +115,12 @@ export class RecordingService {
   /**
    * Démarre un enregistrement pour un utilisateur (commercial ou manager)
    */
-  static async startRecording(userId, userType, audioOnly = true, immeubleId = null) {
+  static async startRecording(
+    userId: number,
+    userType: string,
+    audioOnly = true,
+    immeubleId: number | null = null
+  ): Promise<StartRecordingResponse> {
     try {
       Logger.debug('🔧 Service startRecording appelé avec:', {
         userId,
@@ -135,7 +158,7 @@ export class RecordingService {
   /**
    * Arrête un enregistrement
    */
-  static async stopRecording(egressId) {
+  static async stopRecording(egressId: string): Promise<void> {
     try {
       Logger.debug('🛑 Arrêt enregistrement, egressId:', egressId)
 
@@ -154,7 +177,7 @@ export class RecordingService {
   /**
    * Formate la taille du fichier en format lisible
    */
-  static formatFileSize(bytes) {
+  static formatFileSize(bytes: number): string {
     if (!bytes) return '0 B'
 
     const sizes = ['B', 'KB', 'MB', 'GB']
@@ -166,7 +189,7 @@ export class RecordingService {
   /**
    * Génère une URL optimisée pour le streaming
    */
-  static async getStreamingUrl(key) {
+  static async getStreamingUrl(key: string): Promise<string> {
     try {
       const data = await graphqlClient.request(GET_STREAMING_URL, { key })
       return data.getStreamingUrl
@@ -179,7 +202,7 @@ export class RecordingService {
   /**
    * Télécharge un enregistrement
    */
-  static downloadRecording(url, filename) {
+  static downloadRecording(url: string, filename?: string): void {
     if (!url) return
 
     const link = document.createElement('a')

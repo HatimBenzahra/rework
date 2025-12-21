@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Calendar, Maximize2, X, Lock, Unlock, Building2 } from 'lucide-react'
 import { MapSkeleton } from '@/components/LoadingSkeletons'
-import { mapboxCache } from '@/services/api-cache'
-import { logError } from '@/services/graphql-errors'
+import { mapboxCache } from '@/services/core'
+import { logError } from '@/services/core'
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN

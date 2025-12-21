@@ -3,8 +3,8 @@
  * Handles all communication with the backend GraphQL API
  */
 
-import type { GraphQLResponse } from '../types/api'
-import { ApiException } from '../types/api'
+import type { GraphQLResponse } from '../../../types/api'
+import { ApiException } from '../../../types/api'
 import {
   ErrorType,
   GraphQLClientError,
@@ -12,7 +12,7 @@ import {
   isGraphQLClientError,
   getErrorMessage,
   logError,
-} from './graphql-errors'
+} from './errors'
 
 // Re-export error utilities for convenience
 export { ErrorType, GraphQLClientError, isGraphQLClientError, getErrorMessage, logError }

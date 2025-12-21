@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { RecordingService } from '@/services/recordings'
-import { logger } from '@/services/graphql-errors'
+import { RecordingService } from '@/services/audio'
+import { logger } from '@/services/core'
 import { AUDIO_TIMING } from '@/constants/timing'
 import { useTimeout } from '@/hooks/utils/useTimeout'
 import { useCleanup } from '@/hooks/utils/useCleanup'

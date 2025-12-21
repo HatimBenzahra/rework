@@ -15,7 +15,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
-import { immeubleApi } from '@/services/api-service'
+import { immeubleApi } from '@/services/api'
 import AddImmeubleModal from '@/components/AddImmeubleModal'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'

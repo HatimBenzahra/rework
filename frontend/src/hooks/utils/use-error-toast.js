@@ -10,7 +10,7 @@ import {
   getErrorMessage,
   logError,
   ErrorType,
-} from '@/services/graphql-errors'
+} from '@/services/core'
 
 /**
  * Hook personnalisé pour gérer les erreurs avec toast

@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { apiCache, mapboxCache } from '@/services/api-cache'
+import { apiCache, mapboxCache } from '@/services/core'
 
 /**
  * Configuration pour un loader de données spécifique

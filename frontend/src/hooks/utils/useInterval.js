@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react'
-import { logger } from '@/services/graphql-errors'
+import { logger } from '@/services/core'
 
 /**
  * Hook pour gérer un interval avec cleanup automatique

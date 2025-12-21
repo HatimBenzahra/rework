@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { authService } from '@/services/auth.service'
+import { authService } from '@/services/auth'
 import { useRole } from '@/contexts/userole'
 
 const IDLE_TIMEOUT = 30 * 60 * 1000 // 30 minutes

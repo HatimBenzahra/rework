@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { logger } from '@/services/graphql-errors'
+import { logger } from '@/services/core'
 import { delay } from '@/constants/timing'
 
 /**
