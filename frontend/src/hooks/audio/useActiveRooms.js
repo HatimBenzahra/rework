@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { AudioMonitoringService } from '@/services/audio-monitoring'
-import { useAsyncState } from '@/hooks/utils/useAsyncState'
-import { usePolling } from '../utils/useInterval'
+import { AudioMonitoringService } from '@/services/audio'
+import { useAsyncState } from '@/hooks/utils/async/useAsyncState'
+import { usePolling } from '@/hooks/utils/async/useInterval'
 
 /**
  * Hook pour récupérer et surveiller les rooms actives et les commerciaux en ligne

@@ -44,6 +44,7 @@ model Manager {
   zones           Zone[]
   immeubles       Immeuble[]
   statistics      Statistic[]
+  statusHistorique StatusHistorique[]
 }
 
 model Commercial {
@@ -62,6 +63,7 @@ model Commercial {
   directeur       Directeur?   @relation(fields: [directeurId], references: [id])
   immeubles       Immeuble[]
   statistics      Statistic[]
+  statusHistorique StatusHistorique[]
 }
 
 model Zone {
@@ -116,6 +118,8 @@ model Statistic {
   immeublesVisites      Int      // Nombre d'immeubles visités
   rendezVousPris        Int      // Nombre de rendez-vous pris
   refus                 Int      // Nombre de refus
+  absents               Int      @default(0) // Nombre de portes où personne n'était présent
+  argumentes            Int      @default(0) // Nombre de refus après argumentation
   nbImmeublesProspectes Int      // Nombre d'immeubles prospectés
   nbPortesProspectes    Int      // Nombre de portes prospectées
   createdAt             DateTime @default(now())
@@ -144,6 +148,7 @@ model Porte {
   updatedAt         DateTime  @updatedAt
 
   immeuble          Immeuble  @relation(fields: [immeubleId], references: [id])
+  statusHistorique  StatusHistorique[]
 
   @@unique([immeubleId, numero])
 }
@@ -201,4 +206,25 @@ model HistoriqueZone {
   @@index([zoneId])
   @@index([userId, userType])
   @@index([assignedAt, unassignedAt])
+}
+
+model StatusHistorique {
+  id            Int         @id @default(autoincrement())
+  porteId       Int
+  commercialId  Int?
+  managerId     Int?
+  statut        StatutPorte
+  commentaire   String?
+  rdvDate       DateTime?
+  rdvTime       String?
+  createdAt     DateTime    @default(now())
+
+  porte         Porte       @relation(fields: [porteId], references: [id], onDelete: Cascade)
+  commercial    Commercial? @relation(fields: [commercialId], references: [id])
+  manager       Manager?    @relation(fields: [managerId], references: [id])
+
+  @@index([porteId])
+  @@index([commercialId])
+  @@index([managerId])
+  @@index([createdAt])
 }

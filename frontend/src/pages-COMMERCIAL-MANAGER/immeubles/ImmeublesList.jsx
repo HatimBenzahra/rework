@@ -15,12 +15,12 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useRole } from '@/contexts/userole'
-import { immeubleApi } from '@/services/api-service'
+import { immeubleApi } from '@/services/api'
 import AddImmeubleModal from '@/components/AddImmeubleModal'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { useErrorToast } from '@/hooks/utils/use-error-toast'
-import { UI_TIMING } from '@/constants/timing'
+import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
+import { UI_TIMING } from '@/constants/ui/timing'
 
 const ITEMS_PER_PAGE = 8
 

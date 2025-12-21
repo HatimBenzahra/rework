@@ -88,6 +88,8 @@ export interface Statistic extends BaseEntity {
   immeublesVisites: number
   rendezVousPris: number
   refus: number
+  absents: number
+  argumentes: number
   nbImmeublesProspectes: number
   nbPortesProspectes: number
 }
@@ -115,7 +117,7 @@ export interface ZoneStatistic {
 /**
  * Enum des statuts de porte (TypeScript)
  * IMPORTANT: Doit être synchronisé avec :
- * - @/constants/porte-status.constants (configuration UI)
+ * - @/constants/domain/porte-status (configuration UI)
  * - backend/src/porte/porte-status.constants.ts (backend)
  * - backend/prisma/schema.prisma (database)
  */

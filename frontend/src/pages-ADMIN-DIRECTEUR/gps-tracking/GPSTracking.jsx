@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { MapSkeleton, TableSkeleton } from '@/components/LoadingSkeletons'
 import { useCommercials, useManagers } from '@/services'
-import { useEntityPage } from '@/hooks/metier/useRoleBasedData'
-import { useErrorToast } from '@/hooks/utils/use-error-toast'
+import { useEntityPage } from '@/hooks/metier/permissions/useRoleBasedData'
+import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import {
   MapPin,
   Search,

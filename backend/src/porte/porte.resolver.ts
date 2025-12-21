@@ -1,7 +1,7 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 import { PorteService } from './porte.service';
-import { Porte, CreatePorteInput, UpdatePorteInput, PorteStatistics } from './porte.dto';
+import { Porte, CreatePorteInput, UpdatePorteInput, PorteStatistics, StatusHistorique } from './porte.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -101,5 +101,23 @@ export class PorteResolver {
   @Roles('admin', 'directeur', 'manager', 'commercial')
   findRdvToday(@CurrentUser() user: any) {
     return this.porteService.findRdvToday(user.id, user.role);
+  }
+
+  // ============= STATUS HISTORIQUE QUERIES =============
+
+  @Query(() => [StatusHistorique], { name: 'statusHistoriqueByPorte' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
+  getStatusHistoriqueByPorte(
+    @Args('porteId', { type: () => Int }) porteId: number,
+  ) {
+    return this.porteService.getStatusHistoriqueByPorte(porteId);
+  }
+
+  @Query(() => [StatusHistorique], { name: 'statusHistoriqueByImmeuble' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
+  getStatusHistoriqueByImmeuble(
+    @Args('immeubleId', { type: () => Int }) immeubleId: number,
+  ) {
+    return this.porteService.getStatusHistoriqueByImmeuble(immeubleId);
   }
 }

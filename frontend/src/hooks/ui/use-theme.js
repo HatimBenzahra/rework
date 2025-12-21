@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { applyTheme, toggleTheme as toggleThemeUtil } from '@/config/theme'
+import { applyTheme, toggleTheme as toggleThemeUtil } from '@/config/theme/base'
 
 /**
  * Hook personnalisé pour gérer le thème de l'application

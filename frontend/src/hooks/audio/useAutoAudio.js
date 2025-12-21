@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback } from 'react'
-import { AudioMonitoringService, LiveKitUtils } from '@/services/audio-monitoring'
-import { logger } from '@/services/graphql-errors'
-import { AUDIO_TIMING } from '@/constants/timing'
-import { useTimeout } from '../utils/useTimeout'
-import { useConnectionCleanup } from '../utils/useCleanup'
+import { AudioMonitoringService, LiveKitUtils } from '@/services/audio'
+import { logger } from '@/services/core'
+import { AUDIO_TIMING } from '@/constants/ui/timing'
+import { useTimeout } from '../utils/async/useTimeout'
+import { useConnectionCleanup } from '../utils/async/useCleanup'
 
 /**
  * Hook pour gérer l'audio monitoring automatique des commerciaux et managers

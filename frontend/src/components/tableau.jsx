@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useLazyDataLoader } from '@/hooks/utils/use-lazy-data-loader'
+import { useLazyDataLoader } from '@/hooks/utils/data/use-lazy-data-loader'
 import { useNavigate } from 'react-router-dom'
 import {
   Table,

@@ -40,6 +40,12 @@ export class Statistic {
   refus: number;
 
   @Field(() => Int)
+  absents: number;
+
+  @Field(() => Int)
+  argumentes: number;
+
+  @Field(() => Int)
   nbImmeublesProspectes: number;
 
   @Field(() => Int)
@@ -80,6 +86,12 @@ export class CreateStatisticInput {
 
   @Field(() => Int)
   refus: number;
+
+  @Field(() => Int)
+  absents: number;
+
+  @Field(() => Int)
+  argumentes: number;
 
   @Field(() => Int)
   nbImmeublesProspectes: number;

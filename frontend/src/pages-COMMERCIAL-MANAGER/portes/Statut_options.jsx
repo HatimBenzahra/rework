@@ -1,5 +1,5 @@
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { getStatusOptions } from '@/constants/porte-status.constants'
+import { getStatusOptions } from '@/constants/domain/porte-status'
 
 /**
  * Hook pour obtenir les options de statut avec les couleurs du thème

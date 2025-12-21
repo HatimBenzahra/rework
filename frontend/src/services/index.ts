@@ -7,41 +7,35 @@
 // API Services
 // =============================================================================
 
-export { default as api } from './api-service'
-export {
+export { 
+  api, 
+  default as default,
   directeurApi,
   managerApi,
   commercialApi,
   zoneApi,
   immeubleApi,
   statisticApi,
-} from './api-service'
+  porteApi, 
+} from './api'
+
+export * from './api/commercials'
+export * from './api/managers'
+export * from './api/directeurs'
+export * from './api/zones'
+export * from './api/immeubles'
+export * from './api/portes'
+export * from './api/statistics'
+
 
 // =============================================================================
-// GraphQL Client
+// Core Services (Auth, Audio, etc.)
 // =============================================================================
 
-export { graphqlClient, gql, GraphQLClient } from './graphql-client'
-export { isGraphQLError, handleApiError } from './graphql-client'
-
-// =============================================================================
-// GraphQL Error Handling
-// =============================================================================
-
-export {
-  ErrorType,
-  GraphQLClientError,
-  isGraphQLClientError,
-  getErrorMessage,
-  logError,
-} from './graphql-errors'
-
-// =============================================================================
-// Queries and Mutations
-// =============================================================================
-
-export * from './api-queries'
-export * from './api-mutations'
+export * from './core'
+export * from './auth'
+export * from './audio'
+export * from './core/graphql'
 
 // =============================================================================
 // React Hooks

@@ -12,7 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Trophy, Medal, Award, Star, Users, Crown, Shield } from 'lucide-react'
-import { calculateRank } from '@/share/ranks'
+import { calculateRank } from '@/utils/business/ranks'
 
 const formatNumber = num => {
   if (typeof num !== 'number') return '0'

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AppLoadingContext } from './AppLoadingContext'
-import { apiCache } from '../services/api-cache'
+import { apiCache } from '../services/core'
 
 export function AppLoadingProvider({ children }) {
   const [isAppReady, setIsAppReady] = useState(false)

@@ -199,8 +199,8 @@ export class PorteService {
 
     const oldStatut = currentPorte.statut;
 
-    // 2. Si le statut change vers NECESSITE_REPASSAGE ou ABSENT, incrémenter le nombre de repassages
-    if (data.statut === StatutPorte.NECESSITE_REPASSAGE || data.statut === StatutPorte.ABSENT) {
+    // 2. Si le statut change vers ABSENT, incrémenter le nombre de repassages
+    if (data.statut === StatutPorte.ABSENT) {
       if (currentPorte.statut !== data.statut) {
         data.nbRepassages = (currentPorte.nbRepassages || 0) + 1;
       }
@@ -221,13 +221,37 @@ export class PorteService {
       data: { updatedAt: new Date() },
     });
 
-    // 5. 🎯 NOUVELLE LOGIQUE : Synchroniser les statistiques si le statut a changé
+    // Synchroniser les statistiques si le statut a changé
     if (data.statut && data.statut !== oldStatut) {
       try {
         await this.statisticSyncService.syncCommercialStats(updatedPorte.immeubleId);
       } catch (error) {
         // Log l'erreur mais ne fait pas échouer la mise à jour de la porte
         console.error('Erreur sync statistiques:', error);
+      }
+
+      // Enregistrer dans l'historique si le statut a changé
+      try {
+        // Déterminer si c'est un commercial ou un manager qui fait la modification
+        const immeuble = await this.prisma.immeuble.findUnique({
+          where: { id: updatedPorte.immeubleId },
+          select: { commercialId: true, managerId: true },
+        });
+
+        await this.prisma.statusHistorique.create({
+          data: {
+            porteId: id,
+            statut: data.statut,
+            commentaire: data.commentaire || null,
+            rdvDate: data.rdvDate || null,
+            rdvTime: data.rdvTime || null,
+            commercialId: userRole === 'commercial' ? userId : immeuble?.commercialId,
+            managerId: userRole === 'manager' ? userId : immeuble?.managerId,
+          },
+        });
+      } catch (error) {
+        // Log l'erreur mais ne fait pas échouer la mise à jour de la porte
+        console.error('Erreur enregistrement historique:', error);
       }
     }
 
@@ -425,6 +449,76 @@ export class PorteService {
       },
       orderBy: {
         rdvTime: 'asc',
+      },
+    });
+  }
+
+  // ============= STATUS HISTORIQUE METHODS =============
+
+  /**
+   * Récupère l'historique complet des statuts d'une porte
+   * Trié du plus récent au plus ancien
+   */
+  async getStatusHistoriqueByPorte(porteId: number) {
+    return this.prisma.statusHistorique.findMany({
+      where: { porteId },
+      include: {
+        commercial: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+          },
+        },
+        manager: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Récupère l'historique des statuts d'un immeuble
+   */
+  async getStatusHistoriqueByImmeuble(immeubleId: number) {
+    return this.prisma.statusHistorique.findMany({
+      where: {
+        porte: {
+          immeubleId,
+        },
+      },
+      include: {
+        porte: {
+          select: {
+            id: true,
+            numero: true,
+            etage: true,
+          },
+        },
+        commercial: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+          },
+        },
+        manager: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }

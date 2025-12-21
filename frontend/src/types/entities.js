@@ -77,7 +77,7 @@
 /**
  * Type des statuts de porte
  * IMPORTANT: Doit être synchronisé avec :
- * - @/constants/porte-status.constants (configuration UI - source de vérité frontend)
+ * - @/constants/domain/porte-status (configuration UI - source de vérité frontend)
  * - backend/src/porte/porte-status.constants.ts (backend)
  * - backend/prisma/schema.prisma (database)
  *

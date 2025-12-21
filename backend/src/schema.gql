@@ -43,6 +43,12 @@ type Commercial {
   zones: [Zone!]!
 }
 
+type CommercialInfo {
+  id: Int!
+  nom: String!
+  prenom: String!
+}
+
 input CreateCommercialInput {
   age: Int!
   directeurId: Int
@@ -96,6 +102,8 @@ input CreatePorteInput {
 }
 
 input CreateStatisticInput {
+  absents: Int!
+  argumentes: Int!
   commercialId: Int
   contratsSignes: Int!
   directeurId: Int
@@ -210,6 +218,12 @@ type Manager {
   zones: [Zone!]
 }
 
+type ManagerInfo {
+  id: Int!
+  nom: String!
+  prenom: String!
+}
+
 type MonitoringSession {
   endedAt: DateTime
   id: ID!
@@ -290,6 +304,12 @@ type Porte {
   updatedAt: DateTime!
 }
 
+type PorteInfo {
+  etage: Int!
+  id: Int!
+  numero: String!
+}
+
 type PorteStatistics {
   absent: Int!
   argumente: Int!
@@ -333,6 +353,8 @@ type Query {
   portesRdvToday: [Porte!]!
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int): [Statistic!]!
+  statusHistoriqueByImmeuble(immeubleId: Int!): [StatusHistorique!]!
+  statusHistoriqueByPorte(porteId: Int!): [StatusHistorique!]!
   userZoneHistory(userId: Int!, userType: UserType!): [HistoriqueZone!]!
   validateStatsCoherence: String!
   zone(id: Int!): Zone!
@@ -371,6 +393,8 @@ input StartRecordingInput {
 }
 
 type Statistic {
+  absents: Int!
+  argumentes: Int!
   commercialId: Int
   contratsSignes: Int!
   createdAt: DateTime!
@@ -385,6 +409,21 @@ type Statistic {
   rendezVousPris: Int!
   updatedAt: DateTime!
   zoneId: Int
+}
+
+type StatusHistorique {
+  commentaire: String
+  commercial: CommercialInfo
+  commercialId: Int
+  createdAt: DateTime!
+  id: Int!
+  manager: ManagerInfo
+  managerId: Int
+  porte: PorteInfo
+  porteId: Int!
+  rdvDate: DateTime
+  rdvTime: String
+  statut: StatutPorte!
 }
 
 """Statut possible pour une porte"""
@@ -474,6 +513,8 @@ input UpdatePorteInput {
 }
 
 input UpdateStatisticInput {
+  absents: Int
+  argumentes: Int
   commercialId: Int
   contratsSignes: Int
   directeurId: Int

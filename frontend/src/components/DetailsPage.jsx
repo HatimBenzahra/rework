@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ import {
   Search,
   Filter,
   ChevronDown,
+  ChevronRight,
 } from 'lucide-react'
 import { useDetailsSections } from '@/contexts/DetailsSectionsContext'
 import {
@@ -45,11 +47,12 @@ import {
 } from '@/components/ui/pagination'
 import AssignedZoneCard from './AssignedZoneCard'
 import { AdvancedDataTable } from './tableau'
-import { useEntityPermissions } from '@/hooks/metier/useRoleBasedData'
+import { useEntityPermissions } from '@/hooks/metier/permissions/useRoleBasedData'
 import { useState, useMemo, useEffect } from 'react'
 import PortesProspectionChart from './charts/PortesProspectionChart'
 import PortesWeeklyChart from './charts/PortesWeeklyChart'
 import PortesStatusChart from './charts/PortesStatusChart'
+import PorteHistoriqueTimeline from '@/pages-ADMIN-DIRECTEUR/immeubles/components/PorteHistoriqueTimeline'
 
 /**
  * Composant de tableau sans Card wrapper pour éviter les doubles cards
@@ -57,20 +60,26 @@ import PortesStatusChart from './charts/PortesStatusChart'
 function DoorsTableContent({
   data,
   columns,
-  customStatusFilter,
+  customStatusFilter = null,
   searchPlaceholder = 'Rechercher...',
   searchKey = 'number',
+  nestedTableColumns = null,
+  nestedDataKey = null,
+  showFilters = true,
 }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [currentPage, setCurrentPage] = useState(1)
+  const [expandedRows, setExpandedRows] = useState(new Set())
   const itemsPerPage = 20
 
   // Filtrage et tri des données
   const filteredAndSortedData = useMemo(() => {
     let filtered = data.filter(item => {
       const searchMatch = item[searchKey]?.toLowerCase().includes(searchTerm.toLowerCase())
+      // Si l'élément a une propriété 'status', on check. Sinon, on ignore le filtre statut pour cet item (ex: immeuble sans statut de porte)
+      // Ou on check si statusFilter correspond.
       const statusMatch = statusFilter === 'all' || item.status === statusFilter
       return searchMatch && statusMatch
     })
@@ -110,39 +119,55 @@ function DoorsTableContent({
     }))
   }
 
+  const toggleRow = (rowId) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId)
+      } else {
+        newSet.add(rowId)
+      }
+      return newSet
+    })
+  }
+
   return (
     <div className="space-y-4">
       {/* Barre de filtres */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder={searchPlaceholder}
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
+      {showFilters && (
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={searchPlaceholder}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <Filter className="mr-2 h-4 w-4" />
-              Statut
-              <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Filtrer par statut</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {customStatusFilter.map(filter => (
-              <DropdownMenuItem key={filter.value} onClick={() => setStatusFilter(filter.value)}>
-                {filter.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+          {customStatusFilter && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Statut
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Filtrer par statut</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {customStatusFilter.map(filter => (
+                  <DropdownMenuItem key={filter.value} onClick={() => setStatusFilter(filter.value)}>
+                    {filter.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      )}
 
       {/* Tableau */}
       <div className="rounded-md border overflow-hidden">
@@ -150,6 +175,7 @@ function DoorsTableContent({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]"></TableHead>
                 {columns.map((column, index) => (
                   <TableHead
                     key={index}
@@ -169,25 +195,78 @@ function DoorsTableContent({
             <TableBody>
               {paginatedData.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                  <TableCell colSpan={columns.length + 1} className="h-24 text-center">
                     Aucun résultat trouvé
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedData.map((row, rowIndex) => (
-                  <TableRow key={rowIndex} className="hover:bg-muted/50">
-                    {columns.map((column, colIndex) => (
-                      <TableCell key={colIndex} className={column.className}>
-                        {column.cell ? column.cell(row) : row[column.accessor]}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+                paginatedData.map((row, rowIndex) => {
+                  const rowKey = row.tableId || row.id
+                  const porteId = row.porteId || row.id
+                  const isExpanded = expandedRows.has(rowKey)
+
+                  // Vérifier si c'est une ligne 'Immeuble' avec des portes imbriquées (via nestedDataKey)
+                  // OU fallback sur le comportement par défaut (PorteHistoriqueTimeline)
+                  const hasNestedData = nestedDataKey && row[nestedDataKey] && row[nestedDataKey].length > 0;
+
+                  return (
+                    <React.Fragment key={rowKey}>
+                      <TableRow className="hover:bg-muted/50">
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleRow(rowKey)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronRight
+                              className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                            />
+                          </Button>
+                        </TableCell>
+                        {columns.map((column, colIndex) => (
+                          <TableCell key={colIndex} className={column.className}>
+                            {column.cell ? column.cell(row) : row[column.accessor]}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                      {isExpanded && (
+                        <TableRow>
+                          <TableCell colSpan={columns.length + 1} className="p-0 bg-muted/20">
+                            <div className="p-2 sm:p-4">
+                              {hasNestedData ? (
+                                <DoorsTableContent
+                                  data={row[nestedDataKey]}
+                                  columns={nestedTableColumns}
+                                  customStatusFilter={[
+                                    { value: 'all', label: 'Tous les statuts' },
+                                    { value: 'contrat_signe', label: 'Contrats signés' },
+                                    { value: 'rendez_vous_pris', label: 'RDV programmés' },
+                                    { value: 'absent', label: 'Absents' },
+                                    { value: 'argumente', label: 'Argumentés' },
+                                    { value: 'refus', label: 'Refus' },
+                                    { value: 'necessite_repassage', label: 'Repassages nécessaires' },
+                                    { value: 'non_visite', label: 'Non visités' },
+                                  ]} // Filtres par défaut pour les portes
+                                  searchPlaceholder="Rechercher porte..."
+                                  searchKey="number"
+                                />
+                              ) : (
+                                <PorteHistoriqueTimeline porteId={porteId} porteNumero={row.number} />
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  )
+                })
               )}
             </TableBody>
           </Table>
         </div>
       </div>
+
 
       {/* Footer avec pagination */}
       {totalPages > 1 && (
@@ -625,6 +704,8 @@ export default function DetailsPage({
             )}
           </div>
           <Separator className="mb-6" />
+          {/* Afficher le filtre personnalisé si présent */}
+          {section.customFilter && <div className="mb-6">{section.customFilter}</div>}
           <Card className="border-2">
             <CardContent className="pt-6">
               {section.type === 'grid' && (
@@ -670,6 +751,9 @@ export default function DetailsPage({
                   customStatusFilter={section.data.customFilters}
                   searchPlaceholder="Rechercher par adresse..."
                   searchKey="address"
+                  nestedTableColumns={section.data.nestedColumns}
+                  nestedDataKey="doors"
+                  showFilters={section.data.showFilters !== false}
                 />
               )}
               {section.type === 'custom' && section.component === 'ChartsSection' && (

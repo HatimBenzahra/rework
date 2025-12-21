@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './index.css'
 import App from './App.jsx'
-import { initTheme } from './config/theme'
+import { initTheme } from './config/theme/base'
 import { initSentry } from './config/sentry'
 import ScrollToTop from './components/ScrollToTop'
 import './utils/errorHandler' // Initialiser le gestionnaire d'erreurs global
@@ -15,7 +15,7 @@ initSentry()
 // Initialise le thème avant le rendu de l'application
 initTheme()
 
-// Créer une instance de QueryClient avec configuration optimisée
+// Créer une instance de QueryClient avec configuration optimisée POUR LA PAGE GESTION
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

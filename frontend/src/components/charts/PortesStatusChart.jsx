@@ -8,74 +8,80 @@ import {
   ChartLegend,
   ChartLegendContent,
 } from '@/components/ui/chart'
+import {
+  getStatusLabel,
+  getStatusChartColor,
+  StatutPorte
+} from '@/constants/domain/porte-status'
 
 // Configuration des couleurs et libellés pour chaque statut
+// Utilise les fonctions centralisées du fichier constants
 const statusConfig = {
-  CONTRAT_SIGNE: {
-    label: 'Contrats signés',
-    color: 'var(--chart-2)', // Vert
-    fill: 'var(--chart-2)',
+  [StatutPorte.CONTRAT_SIGNE]: {
+    label: getStatusLabel(StatutPorte.CONTRAT_SIGNE),
+    color: getStatusChartColor(StatutPorte.CONTRAT_SIGNE),
+    fill: getStatusChartColor(StatutPorte.CONTRAT_SIGNE),
   },
-  RENDEZ_VOUS_PRIS: {
-    label: 'RDV pris',
-    color: 'var(--chart-1)', // Orange
-    fill: 'var(--chart-1)',
+  [StatutPorte.RENDEZ_VOUS_PRIS]: {
+    label: getStatusLabel(StatutPorte.RENDEZ_VOUS_PRIS),
+    color: getStatusChartColor(StatutPorte.RENDEZ_VOUS_PRIS),
+    fill: getStatusChartColor(StatutPorte.RENDEZ_VOUS_PRIS),
   },
-  ABSENT: {
-    label: 'Absent',
-    color: 'var(--chart-4)', // Jaune-vert
-    fill: 'var(--chart-4)',
+  [StatutPorte.ABSENT]: {
+    label: getStatusLabel(StatutPorte.ABSENT),
+    color: getStatusChartColor(StatutPorte.ABSENT),
+    fill: getStatusChartColor(StatutPorte.ABSENT),
   },
-  ARGUMENTE: {
-    label: 'Argumenté',
-    color: 'var(--chart-6)', // Orange-warning
-    fill: 'var(--chart-6)',
+  [StatutPorte.ARGUMENTE]: {
+    label: getStatusLabel(StatutPorte.ARGUMENTE),
+    color: getStatusChartColor(StatutPorte.ARGUMENTE),
+    fill: getStatusChartColor(StatutPorte.ARGUMENTE),
   },
-  REFUS: {
-    label: 'Refus',
-    color: 'var(--chart-5)', // Rouge-orange
-    fill: 'var(--chart-5)',
+  [StatutPorte.REFUS]: {
+    label: getStatusLabel(StatutPorte.REFUS),
+    color: getStatusChartColor(StatutPorte.REFUS),
+    fill: getStatusChartColor(StatutPorte.REFUS),
   },
-  NECESSITE_REPASSAGE: {
-    label: 'À recontacter',
-    color: 'var(--chart-3)', // Bleu
-    fill: 'var(--chart-3)',
+  [StatutPorte.NECESSITE_REPASSAGE]: {
+    label: getStatusLabel(StatutPorte.NECESSITE_REPASSAGE),
+    color: getStatusChartColor(StatutPorte.NECESSITE_REPASSAGE),
+    fill: getStatusChartColor(StatutPorte.NECESSITE_REPASSAGE),
   },
-  NON_VISITE: {
-    label: 'Non visitées',
-    color: 'oklch(0.8 0 0)', // Gris clair
-    fill: 'oklch(0.8 0 0)',
+  [StatutPorte.NON_VISITE]: {
+    label: getStatusLabel(StatutPorte.NON_VISITE),
+    color: getStatusChartColor(StatutPorte.NON_VISITE),
+    fill: getStatusChartColor(StatutPorte.NON_VISITE),
   },
 }
 
 const chartConfig = {
   contrats: {
-    label: 'Contrats signés',
-    color: 'var(--chart-2)',
+    label: getStatusLabel(StatutPorte.CONTRAT_SIGNE),
+    color: getStatusChartColor(StatutPorte.CONTRAT_SIGNE),
   },
   rdv: {
-    label: 'RDV pris',
-    color: 'var(--chart-1)',
+    label: getStatusLabel(StatutPorte.RENDEZ_VOUS_PRIS),
+    color: getStatusChartColor(StatutPorte.RENDEZ_VOUS_PRIS),
   },
   absent: {
-    label: 'Absent',
-    color: 'var(--chart-4)',
+    label: getStatusLabel(StatutPorte.ABSENT),
+    color: getStatusChartColor(StatutPorte.ABSENT),
   },
   argumente: {
-    label: 'Argumenté',
-    color: 'var(--chart-6)',
+    label: getStatusLabel(StatutPorte.ARGUMENTE),
+    color: getStatusChartColor(StatutPorte.ARGUMENTE),
   },
   refus: {
-    label: 'Refus',
-    color: 'var(--chart-5)',
+    label: getStatusLabel(StatutPorte.REFUS),
+    color: getStatusChartColor(StatutPorte.REFUS),
   },
   repassage: {
-    label: 'À recontacter',
-    color: 'var(--chart-3)',
+    label: getStatusLabel(StatutPorte.NECESSITE_REPASSAGE),
+    color: getStatusChartColor(StatutPorte.NECESSITE_REPASSAGE),
   },
   nonVisite: {
-    label: 'Non visitées',
-    color: 'oklch(0.8 0 0)',
+    label: getStatusLabel(StatutPorte.NON_VISITE),
+    color: getStatusChartColor(StatutPorte.NON_VISITE),
   },
 }
 

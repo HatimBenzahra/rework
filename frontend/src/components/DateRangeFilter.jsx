@@ -92,6 +92,9 @@ export default function DateRangeFilter({
   onReset,
   className = '',
   title = 'Filtres de période',
+  showDateTypeSelector = false,
+  dateType = 'created',
+  onDateTypeChange,
 }) {
   const [selectedPreset, setSelectedPreset] = useState(null)
   const [showCustomDates, setShowCustomDates] = useState(true)
@@ -123,6 +126,44 @@ export default function DateRangeFilter({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {/* Sélecteur de type de date */}
+          {showDateTypeSelector && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>Filtrer par</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onDateTypeChange?.('created')}
+                  className={`
+                    flex-1 px-4 py-2.5 rounded-lg text-sm font-medium
+                    transition-all duration-200
+                    ${dateType === 'created'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                    }
+                  `}
+                >
+                  📅 Date de création
+                </button>
+                <button
+                  onClick={() => onDateTypeChange?.('modified')}
+                  className={`
+                    flex-1 px-4 py-2.5 rounded-lg text-sm font-medium
+                    transition-all duration-200
+                    ${dateType === 'modified'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-secondary/50 text-secondary-foreground hover:bg-secondary'
+                    }
+                  `}
+                >
+                  🔄 Date de modification
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Filtres par bulles */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

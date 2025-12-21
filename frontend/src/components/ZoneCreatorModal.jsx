@@ -8,15 +8,11 @@ import mapboxgl from 'mapbox-gl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { MultiSelect } from '@/components/ui/multi-select'
 import { MapSkeleton } from '@/components/LoadingSkeletons'
-import { X, Check, Move3D, MousePointerClick, RotateCcw } from 'lucide-react'
+import { X, Check, MousePointerClick, RotateCcw } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { ThreeDButton, MapStyleButton, ZonesToggleButton } from './MapControls'
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
@@ -94,37 +90,6 @@ const GeocoderControl = React.memo(({ onResult, position }) => {
   return null
 })
 
-// 3D Control Component
-const ThreeDControl = ({ position, onClick, show3D }) => (
-  <div
-    className={`mapboxgl-ctrl mapboxgl-ctrl-group ${position.includes('top') ? 'mapboxgl-ctrl-top-right' : 'mapboxgl-ctrl-bottom-right'}`}
-    style={{
-      position: 'absolute',
-      top: position.includes('top') ? '74px' : 'auto',
-      bottom: position.includes('bottom') ? '10px' : 'auto',
-      right: '10px',
-      zIndex: 2,
-    }}
-  >
-    <button
-      onClick={onClick}
-      className={`mapboxgl-ctrl-icon ${show3D ? 'bg-primary/10 text-primary' : 'bg-card text-foreground'}`}
-      style={{
-        width: '29px',
-        height: '29px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: 'none',
-        cursor: 'pointer',
-      }}
-      title="Mode 3D"
-    >
-      <Move3D className="h-4 w-4" />
-    </button>
-  </div>
-)
-
 export const ZoneCreatorModal = ({
   onValidate,
   onClose,
@@ -132,6 +97,7 @@ export const ZoneCreatorModal = ({
   zoneToEdit = null,
   userRole,
   assignableUsers = [],
+  isSubmitting = false,
 }) => {
   const isEditMode = !!zoneToEdit
   const mapRef = useRef(null)
@@ -145,13 +111,20 @@ export const ZoneCreatorModal = ({
   const [radius, setRadius] = useState(isEditMode ? zoneToEdit?.rayon || 1000 : 0)
   const [step, setStep] = useState(isEditMode ? 3 : 1)
   const [zoneName, setZoneName] = useState(isEditMode ? zoneToEdit?.nom || '' : '')
-  const [assignedUserId, setAssignedUserId] = useState(
-    isEditMode && zoneToEdit?.assignedUserId ? zoneToEdit.assignedUserId : ''
+  const [assignedUserIds, setAssignedUserIds] = useState(
+    isEditMode && zoneToEdit?.assignedUserIds
+      ? zoneToEdit.assignedUserIds
+      : isEditMode && zoneToEdit?.assignedUserId
+        ? [zoneToEdit.assignedUserId]
+        : []
   )
   const [zoneColor, setZoneColor] = useState(
     isEditMode && zoneToEdit?.id ? getZoneColor(zoneToEdit.id) : '#3388ff'
   )
   const [show3D, setShow3D] = useState(false)
+  const [isSatellite, setIsSatellite] = useState(false)
+  // Default to FALSE for existing zones
+  const [showExistingZones, setShowExistingZones] = useState(false)
   const [mapLoading, setMapLoading] = useState(true)
 
   // Map view state - Focus sur l'Île-de-France
@@ -172,32 +145,15 @@ export const ZoneCreatorModal = ({
   useEffect(() => {
     if (mapRef.current) {
       if (show3D) {
-        mapRef.current.easeTo({ pitch: 60, duration: 1000 })
+        mapRef.current.easeTo({ pitch: 60, bearing: -17.6, duration: 1500, essential: true })
       } else {
-        mapRef.current.easeTo({ pitch: 0, duration: 1000 })
+        mapRef.current.easeTo({ pitch: 0, bearing: 0, duration: 1000, essential: true })
       }
     }
   }, [show3D])
 
-  // Fit bounds to existing zones when creating new one
-  useEffect(() => {
-    if (!isEditMode && existingZones.length > 0) {
-      const map = mapRef.current
-      if (map) {
-        const allPoints = existingZones
-          .filter(z => z.xOrigin && z.yOrigin)
-          .map(z => [z.xOrigin, z.yOrigin])
-
-        if (allPoints.length > 0) {
-          const bounds = allPoints.reduce(
-            (bounds, coord) => bounds.extend(coord),
-            new mapboxgl.LngLatBounds(allPoints[0], allPoints[0])
-          )
-          map.fitBounds(bounds, { padding: 80, animate: true, maxZoom: 12 })
-        }
-      }
-    }
-  }, [isEditMode, existingZones])
+  // Removed auto-fit bounds on existing zones toggle to prevent unwanted zooming
+  // Users typically want to stay in their current context when toggling layers
 
   const handleMapClick = e => {
     const { lng, lat } = e.lngLat
@@ -221,7 +177,7 @@ export const ZoneCreatorModal = ({
     setRadius(0)
     setStep(1)
     setZoneName('')
-    setAssignedUserId('')
+    setAssignedUserIds([])
     setZoneColor('#3388ff')
   }
 
@@ -238,16 +194,23 @@ export const ZoneCreatorModal = ({
         zoneData.id = zoneToEdit.id
       }
 
-      // Note: color is managed locally on the frontend only
-      // It's stored in local state/storage, not in the backend
-      onValidate(zoneData, assignedUserId)
+      onValidate(zoneData, assignedUserIds)
     }
   }
 
   const handleGeocoderResult = e => {
     const { result } = e
     if (result && result.center) {
-      mapRef.current?.flyTo({ center: result.center, zoom: 12 })
+      // 1. Déplacer la carte
+      mapRef.current?.flyTo({ center: result.center, zoom: 14 })
+      
+      // 2. Placer le marqueur central pour définir la zone
+      setCenter([result.center[0], result.center[1]])
+      
+      // 3. Passer automatiquement à l'étape rayon si on est à l'étape 1
+      if (step === 1) {
+        setStep(2)
+      }
     }
   }
 
@@ -259,237 +222,362 @@ export const ZoneCreatorModal = ({
     zoneName &&
     radius > 0 &&
     (userRole === 'directeur' || userRole === 'manager' || userRole === 'admin'
-      ? assignedUserId
+      ? assignedUserIds.length > 0
       : true)
   const currentCircleGeoJSON = center && radius > 0 ? createGeoJSONCircle(center, radius) : null
 
+  /**
+   * Détermine si une option doit être désactivée
+   * CASCADE BACKEND:
+   * - Directeur → assigne automatiquement ses managers ET commerciaux
+   * - Manager → assigne automatiquement ses commerciaux
+   */
+  const getOptionDisabled = option => {
+    // Extraire le role depuis le format "role-id"
+    const [role] = option.value.split('-')
+
+    // Les directeurs ne sont jamais désactivés
+    if (role === 'directeur') return false
+
+    // Vérifier si un directeur sélectionné gère cet utilisateur
+    const hasDirecteurSelected = assignedUserIds.some(selectedValue => {
+      const [selectedRole, selectedIdStr] = selectedValue.split('-')
+      const selectedId = parseInt(selectedIdStr, 10)
+
+      if (selectedRole === 'directeur' && option.directeurId === selectedId) {
+        return true
+      }
+      return false
+    })
+
+    // Si c'est un manager et son directeur est sélectionné, le désactiver
+    if (role === 'manager' && hasDirecteurSelected) {
+      return true
+    }
+
+    // Si c'est un commercial
+    if (role === 'commercial') {
+      // Si son directeur est sélectionné, le désactiver
+      if (hasDirecteurSelected) {
+        return true
+      }
+
+      // Sinon, vérifier si son manager est sélectionné
+      return assignedUserIds.some(selectedValue => {
+        const [selectedRole, selectedIdStr] = selectedValue.split('-')
+        const selectedId = parseInt(selectedIdStr, 10)
+
+        // Si un manager est sélectionné et que c'est le manager de ce commercial
+        if (selectedRole === 'manager' && option.managerId === selectedId) {
+          return true
+        }
+
+        return false
+      })
+    }
+
+    return false
+  }
+
   return (
-    <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col p-4 animate-in fade-in-0">
-      <div className="flex-1 w-full relative">
-        {mapLoading && (
-          <div className="absolute inset-0 z-10">
-            <MapSkeleton />
-          </div>
-        )}
-        <Map
-          ref={mapRef}
-          initialViewState={initialMapViewState}
-          style={{ height: '100%', width: '100%', borderRadius: '0.5rem' }}
-          mapStyle="mapbox://styles/mapbox/streets-v12"
-          onClick={handleMapClick}
-          onMouseMove={handleMouseMove}
-          cursor={step < 3 ? 'crosshair' : 'default'}
-          onLoad={() => setMapLoading(false)}
-          onError={() => setMapLoading(false)}
-        >
-          <NavigationControl position="top-right" />
-          <GeocoderControl onResult={handleGeocoderResult} position="top-left" />
-          <ThreeDControl position="top-right" onClick={() => setShow3D(!show3D)} show3D={show3D} />
+    <div className="fixed inset-0 z-[100] flex flex-col animate-in fade-in duration-300">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
 
-          {/* 3D Buildings Layer */}
-          {show3D && (
-            <Layer
-              id="3d-buildings"
-              source="composite"
-              source-layer="building"
-              filter={['==', 'extrude', 'true']}
-              type="fill-extrusion"
-              minzoom={15}
-              paint={{
-                'fill-extrusion-color': '#aaa',
-                'fill-extrusion-height': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  15,
-                  0,
-                  15.05,
-                  ['get', 'height'],
-                ],
-                'fill-extrusion-base': [
-                  'interpolate',
-                  ['linear'],
-                  ['zoom'],
-                  15,
-                  0,
-                  15.05,
-                  ['get', 'min_height'],
-                ],
-                'fill-extrusion-opacity': 0.6,
-              }}
-            />
+      {/* Main Container */}
+      <div className="relative flex-1 w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 ring-1 ring-black/5 bg-background">
+          
+          {mapLoading && (
+            <div className="absolute inset-0 z-20 bg-background/50 backdrop-blur-sm">
+              <MapSkeleton />
+            </div>
           )}
 
-          {/* Display existing zones */}
-          {existingZones
-            .filter(z => z.id !== zoneToEdit?.id && z.xOrigin && z.yOrigin)
-            .map(zone => {
-              const circle = createGeoJSONCircle([zone.xOrigin, zone.yOrigin], zone.rayon || 1000)
-              const color = getZoneColor(zone.id)
-              return (
-                <Source
-                  key={`existing-${zone.id}`}
-                  id={`existing-${zone.id}`}
-                  type="geojson"
-                  data={circle}
-                >
-                  <Layer
-                    key={`fill-existing-${zone.id}`}
-                    id={`fill-existing-${zone.id}`}
-                    type="fill"
-                    paint={{
-                      'fill-color': color,
-                      'fill-opacity': 0.15,
-                    }}
-                  />
-                  <Layer
-                    key={`line-existing-${zone.id}`}
-                    id={`line-existing-${zone.id}`}
-                    type="line"
-                    paint={{
-                      'line-color': color,
-                      'line-width': 2,
-                      'line-dasharray': [2, 2],
-                    }}
-                  />
-                </Source>
-              )
-            })}
+          <Map
+            ref={mapRef}
+            initialViewState={initialMapViewState}
+            style={{ height: '100%', width: '100%' }}
+            // Toggle between Standard Streets (colorful) and Satellite Streets
+            mapStyle={isSatellite ? "mapbox://styles/mapbox/satellite-streets-v12" : "mapbox://styles/mapbox/streets-v12"}
+            onClick={handleMapClick}
+            onMouseMove={handleMouseMove}
+            cursor={step < 3 ? 'crosshair' : 'default'}
+            onLoad={() => setMapLoading(false)}
+            onError={() => setMapLoading(false)}
+            attributionControl={false} // Clean look
+            logoPosition="bottom-left"
+          >
+            <NavigationControl position="top-right" showCompass={false} />
+            <GeocoderControl onResult={handleGeocoderResult} position="top-left" />
+            
+            {/* Custom 3D Button */}
+            <ThreeDButton onClick={() => setShow3D(!show3D)} show3D={show3D} />
+            
+            {/* Custom Map Style Button */}
+            <MapStyleButton onClick={() => setIsSatellite(!isSatellite)} isSatellite={isSatellite} />
+            
+            {/* Custom Existing Zones Toggle Button */}
+            <ZonesToggleButton onClick={() => setShowExistingZones(!showExistingZones)} showZones={showExistingZones} />
 
-          {/* Display current zone being created/edited */}
-          {center && <Marker longitude={center[0]} latitude={center[1]} />}
-          {currentCircleGeoJSON && (
-            <Source id="current-zone" type="geojson" data={currentCircleGeoJSON}>
+            {/* 3D Buildings Layer */}
+            {show3D && (
               <Layer
-                key="current-zone-fill"
-                id="current-zone-fill"
-                type="fill"
-                paint={{ 'fill-color': validZoneColor, 'fill-opacity': 0.35 }}
+                id="3d-buildings"
+                source="composite"
+                source-layer="building"
+                filter={['==', 'extrude', 'true']}
+                type="fill-extrusion"
+                minzoom={14}
+                paint={{
+                  'fill-extrusion-color': '#e5e5e5',
+                  'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    14,
+                    0,
+                    14.05,
+                    ['get', 'height'],
+                  ],
+                  'fill-extrusion-base': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    14,
+                    0,
+                    14.05,
+                    ['get', 'min_height'],
+                  ],
+                  'fill-extrusion-opacity': 0.8,
+                }}
               />
-              <Layer
-                key="current-zone-line"
-                id="current-zone-line"
-                type="line"
-                paint={{ 'line-color': validZoneColor, 'line-width': 2 }}
-              />
-            </Source>
-          )}
-        </Map>
+            )}
 
-        {/* Control Panel */}
-        <div className="absolute top-4 right-20 bg-card border border-border rounded-xl shadow-2xl p-6 w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-card-foreground">
-              {isEditMode
-                ? 'Modifier la Zone'
-                : step === 1
-                  ? 'Étape 1: Centre'
-                  : step === 2
-                    ? 'Étape 2: Rayon'
-                    : 'Étape 3: Détails'}
-            </h2>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon" onClick={handleReset} title="Recommencer">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+            {/* Display existing zones - CONDITIONAL RENDERING */}
+            {showExistingZones && existingZones
+              .filter(z => z.id !== zoneToEdit?.id && z.xOrigin && z.yOrigin)
+              .map(zone => {
+                const circle = createGeoJSONCircle([zone.xOrigin, zone.yOrigin], zone.rayon || 1000)
+                const color = getZoneColor(zone.id)
+                return (
+                  <Source
+                    key={`existing-${zone.id}`}
+                    id={`existing-${zone.id}`}
+                    type="geojson"
+                    data={circle}
+                  >
+                    <Layer
+                      key={`fill-existing-${zone.id}`}
+                      id={`fill-existing-${zone.id}`}
+                      type="fill"
+                      paint={{
+                        'fill-color': color,
+                        'fill-opacity': isSatellite ? 0.25 : 0.1, // Increased opacity in satellite mode
+                      }}
+                    />
+                    <Layer
+                      key={`line-existing-${zone.id}`}
+                      id={`line-existing-${zone.id}`}
+                      type="line"
+                      paint={{
+                        'line-color': isSatellite ? '#ffffff' : color, // Use white lines in satellite for contrast, or stick to color
+                        'line-width': 1.5,
+                        'line-dasharray': [2, 2],
+                        'line-opacity': 0.8,
+                      }}
+                    />
+                  </Source>
+                )
+              })}
 
-          {/* Step Instructions */}
-          {step < 3 && (
-            <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
-              <p className="text-sm text-foreground flex items-center gap-2">
-                <MousePointerClick className="h-4 w-4" />
-                {step === 1
-                  ? 'Cliquez sur la carte pour placer le centre de la zone.'
-                  : 'Déplacez la souris pour ajuster le rayon, puis cliquez pour confirmer.'}
-              </p>
-            </div>
-          )}
-
-          {/* Current Values Display */}
-          {center && (
-            <div className="mb-4 text-sm text-muted-foreground">
-              <p>
-                <strong>Centre:</strong> {center[1].toFixed(4)}, {center[0].toFixed(4)}
-              </p>
-              {radius > 0 && (
-                <p>
-                  <strong>Rayon:</strong> {(radius / 1000).toFixed(2)} km
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Form Fields (Step 3 or Edit Mode) */}
-          {(step >= 3 || isEditMode) && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="zone-name">Nom de la zone *</Label>
-                <Input
-                  id="zone-name"
-                  value={zoneName}
-                  onChange={e => setZoneName(e.target.value)}
-                  placeholder="Ex: Paris Centre"
+            {/* Display current zone being created/edited */}
+            {center && <Marker longitude={center[0]} latitude={center[1]} color={validZoneColor} />}
+            {currentCircleGeoJSON && (
+              <Source id="current-zone" type="geojson" data={currentCircleGeoJSON}>
+                <Layer
+                  key="current-zone-fill"
+                  id="current-zone-fill"
+                  type="fill"
+                  paint={{ 'fill-color': validZoneColor, 'fill-opacity': isSatellite ? 0.4 : 0.25 }}
                 />
+                <Layer
+                  key="current-zone-line"
+                  id="current-zone-line"
+                  type="line"
+                  paint={{ 'line-color': validZoneColor, 'line-width': 2 }}
+                />
+              </Source>
+            )}
+          </Map>
+
+          {/* Premium Glassmorphic Control Panel */}
+          <div className="absolute top-4 right-14 w-full max-w-[400px] z-20 pointer-events-none">
+             <div className="pointer-events-auto bg-card/95 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-6 animate-in slide-in-from-right-10 duration-500">
+              
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    {isEditMode ? 'Modifier la Zone' : 'Nouvelle Zone'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {step === 1 && 'Définissez le centre géographique'}
+                    {step === 2 && 'Ajustez le rayon de couverture'}
+                    {step === 3 && 'Configurez les détails et assignations'}
+                  </p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={onClose} 
+                  className="rounded-full hover:bg-destructive/10 hover:text-destructive -mr-2 -mt-2"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
 
-              {(userRole === 'admin' || userRole === 'directeur' || userRole === 'manager') && (
-                <div className="space-y-2">
-                  <Label htmlFor="assigned-user">
-                    {userRole === 'admin'
-                      ? 'Assigner à *'
-                      : userRole === 'directeur'
-                        ? 'Assigner au manager/commercial *'
-                        : 'Assigner au commercial *'}
-                  </Label>
-                  <Select value={assignedUserId} onValueChange={setAssignedUserId}>
-                    <SelectTrigger id="assigned-user">
-                      <SelectValue
-                        placeholder={
-                          userRole === 'admin'
-                            ? 'Sélectionnez directeur/manager/commercial'
-                            : userRole === 'directeur'
-                              ? 'Sélectionnez manager/commercial'
-                              : userRole === 'manager'
-                                ? 'Sélectionnez commercial'
-                                : 'Sélectionnez un utilisateur'
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent className="z-[150]">
-                      {assignableUsers.map(user => (
-                        <SelectItem
-                          key={`${user.role}-${user.id}`}
-                          value={`${user.role}-${user.id}`}
-                        >
-                          {user.name} ({user.role})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              {/* Progress Indicator */}
+              {!isEditMode && (
+                <div className="flex gap-2 mb-6">
+                  {[1, 2, 3].map((s) => (
+                    <div 
+                      key={s} 
+                      className={cn(
+                        "h-1.5 flex-1 rounded-full transition-all duration-300",
+                        step >= s ? "bg-primary" : "bg-primary/20"
+                      )} 
+                    />
+                  ))}
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 mt-6">
-            <Button
-              onClick={handleValidate}
-              disabled={!isFormValid}
-              className="flex-1"
-              variant="default"
-            >
-              <Check className="mr-2 h-4 w-4" />
-              {isEditMode ? 'Enregistrer' : 'Créer la zone'}
-            </Button>
-            <Button onClick={onClose} variant="outline" className="px-6">
-              Annuler
-            </Button>
+              {/* Step Instructions & Inputs */}
+              <div className="space-y-6">
+                
+                {/* Step 1 & 2 Info */}
+                {step < 3 && (
+                  <div className="p-4 bg-primary/5 rounded-xl border border-primary/10 flex items-start gap-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <MousePointerClick className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm text-foreground">
+                        {step === 1 ? 'Cliquez sur la carte' : 'Ajustez le rayon'}
+                      </h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+                        {step === 1 
+                          ? 'Positionnez le marqueur central pour définir le point de départ de votre zone.'
+                          : 'Déplacez votre souris pour agrandir ou réduire la zone, puis cliquez pour valider.'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Live Data Display */}
+                {center && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Centre</span>
+                      <div className="font-mono text-sm bg-muted/50 p-2 rounded-lg border border-border/50">
+                        {center[1].toFixed(4)}, {center[0].toFixed(4)}
+                      </div>
+                    </div>
+                    {radius > 0 && (
+                       <div className="space-y-1">
+                       <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Rayon</span>
+                       <div className="font-mono text-sm bg-muted/50 p-2 rounded-lg border border-border/50">
+                         {(radius / 1000).toFixed(2)} km
+                       </div>
+                     </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Form Fields (Step 3) */}
+                {(step >= 3 || isEditMode) && (
+                  <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div className="space-y-2">
+                      <Label htmlFor="zone-name" className="text-sm font-medium">Nom de la zone</Label>
+                      <Input
+                        id="zone-name"
+                        value={zoneName}
+                        onChange={e => setZoneName(e.target.value)}
+                        placeholder="Ex: Paris Centre - Secteur 1"
+                        className="bg-background/50 border-input/50 focus:bg-background transition-colors"
+                      />
+                    </div>
+
+                    {(userRole === 'admin' || userRole === 'directeur' || userRole === 'manager') && (
+                      <div className="space-y-2">
+                        <Label htmlFor="assigned-users" className="text-sm font-medium">
+                          {userRole === 'admin'
+                            ? 'Responsables assignés'
+                            : 'Membres assignés'}
+                        </Label>
+                        <MultiSelect
+                          id="assigned-users"
+                          options={assignableUsers.map(user => ({
+                            value: `${user.role}-${user.id}`,
+                            label: `${user.name} (${user.role})`,
+                            group: user.role === 'directeur' ? 'Directeurs' : user.role === 'manager' ? 'Managers' : 'Commerciaux',
+                            managerId: user.managerId,
+                            directeurId: user.directeurId
+                          }))}
+                          selected={assignedUserIds}
+                          onChange={setAssignedUserIds}
+                          getOptionDisabled={getOptionDisabled}
+                          placeholder="Sélectionner des membres..."
+                          emptyText="Aucun membre disponible"
+                          className="bg-background/50 border-input/50"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 pt-4 border-t border-border/50">
+                   {!isEditMode && step > 1 && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleReset}
+                      className="gap-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                   )}
+                  
+                  <div className="flex-1 flex justify-end gap-3">
+                    <Button onClick={onClose} variant="ghost" disabled={isSubmitting}>
+                      Annuler
+                    </Button>
+                    <Button
+                      onClick={handleValidate}
+                      disabled={!isFormValid || isSubmitting}
+                      className={cn(
+                        "transition-all duration-300",
+                        isFormValid ? "bg-primary shadow-lg shadow-primary/25 hover:shadow-primary/40" : ""
+                      )}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                          Sauvegarde...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          {isEditMode ? 'Enregistrer' : 'Créer'}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+              </div>
+             </div>
           </div>
         </div>
       </div>

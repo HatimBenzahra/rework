@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { MapPin, Calendar, Maximize2, X, Lock, Unlock, Building2 } from 'lucide-react'
 import { MapSkeleton } from '@/components/LoadingSkeletons'
-import { mapboxCache } from '@/services/api-cache'
-import { logError } from '@/services/graphql-errors'
+import { mapboxCache } from '@/services/core'
+import { logError } from '@/services/core'
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
@@ -242,6 +242,7 @@ export default function AssignedZoneCard({
   const MapContent = ({ height = '300px', showControls = false }) => {
     const containerRef = useRef(null)
     const [containerHeight, setContainerHeight] = useState(null)
+    const [isContainerReady, setIsContainerReady] = useState(false)
 
     // Observer pour obtenir la hauteur réelle du conteneur quand height="100%"
     useEffect(() => {
@@ -251,6 +252,7 @@ export default function AssignedZoneCard({
             const h = entry.contentRect.height
             if (h > 0) {
               setContainerHeight(h)
+              setIsContainerReady(true)
             }
           }
         })
@@ -259,12 +261,16 @@ export default function AssignedZoneCard({
       } else if (height !== '100%') {
         // Si height n'est pas 100%, on peut utiliser directement la valeur
         setContainerHeight(height)
+        // Petit délai pour s'assurer que le DOM est prêt
+        const timer = setTimeout(() => setIsContainerReady(true), 50)
+        return () => clearTimeout(timer)
       }
     }, [height])
 
     // Vérifier que tout est prêt avant de rendre la carte
     const canRenderMap =
       isMounted &&
+      isContainerReady &&
       containerHeight != null &&
       (showAllImmeubles ||
         (zone?.xOrigin != null &&

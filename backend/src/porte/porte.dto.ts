@@ -217,3 +217,80 @@ export class UpdatePorteInput {
   @IsDateString()
   derniereVisite?: Date;
 }
+
+// ============= STATUS HISTORIQUE DTOs =============
+
+@ObjectType()
+export class CommercialInfo {
+  @Field(() => Int)
+  id: number;
+
+  @Field()
+  nom: string;
+
+  @Field()
+  prenom: string;
+}
+
+@ObjectType()
+export class ManagerInfo {
+  @Field(() => Int)
+  id: number;
+
+  @Field()
+  nom: string;
+
+  @Field()
+  prenom: string;
+}
+
+@ObjectType()
+export class PorteInfo {
+  @Field(() => Int)
+  id: number;
+
+  @Field()
+  numero: string;
+
+  @Field(() => Int)
+  etage: number;
+}
+
+@ObjectType()
+export class StatusHistorique {
+  @Field(() => Int)
+  id: number;
+
+  @Field(() => Int)
+  porteId: number;
+
+  @Field(() => Int, { nullable: true })
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  managerId?: number;
+
+  @Field(() => StatutPorte)
+  statut: StatutPorte;
+
+  @Field({ nullable: true })
+  commentaire?: string;
+
+  @Field({ nullable: true })
+  rdvDate?: Date;
+
+  @Field({ nullable: true })
+  rdvTime?: string;
+
+  @Field()
+  createdAt: Date;
+
+  @Field(() => PorteInfo, { nullable: true })
+  porte?: PorteInfo;
+
+  @Field(() => CommercialInfo, { nullable: true })
+  commercial?: CommercialInfo;
+
+  @Field(() => ManagerInfo, { nullable: true })
+  manager?: ManagerInfo;
+}
