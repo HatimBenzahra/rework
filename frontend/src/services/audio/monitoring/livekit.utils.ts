@@ -11,8 +11,7 @@ export class LiveKitUtils {
     connectionDetails: ConnectionDetails
   ): Promise<LiveKitRoom> {
     try {
-      // Import dynamique de LiveKit (CDN)
-      const { Room } = await import('https://cdn.skypack.dev/livekit-client@2')
+      const { Room } = await import('livekit-client')
 
       const room = new Room()
       await room.connect(
@@ -38,10 +37,8 @@ export class LiveKitUtils {
 
       console.log('✅ Commercial connecté:', room.localParticipant.identity)
       console.log('📊 Room state:', {
-        participants: room.participants ? room.participants.size : 0,
-        localTracks: room.localParticipant.tracks
-          ? room.localParticipant.tracks.size
-          : 0,
+        participants: room.remoteParticipants.size,
+        localTracks: room.localParticipant.trackPublications.size,
       })
 
       return room
@@ -59,7 +56,7 @@ export class LiveKitUtils {
     audioContainer: HTMLElement | null = null
   ): Promise<LiveKitRoom> {
     try {
-      const { Room } = await import('https://cdn.skypack.dev/livekit-client@2')
+      const { Room } = await import('livekit-client')
 
       const room = new Room()
 
@@ -142,8 +139,8 @@ export class LiveKitUtils {
       console.log('✅ Superviseur connecté:', room.localParticipant.identity)
       console.log(
         '📊 Room participants:',
-        room.participants
-          ? Array.from(room.participants.keys())
+        room.remoteParticipants.size > 0
+          ? Array.from(room.remoteParticipants.keys())
           : 'Aucun participant'
       )
 

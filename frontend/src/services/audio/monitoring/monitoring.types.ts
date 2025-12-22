@@ -2,6 +2,10 @@
  * Types for Audio Monitoring Service
  */
 
+import type { Room } from 'livekit-client'
+
+export type LiveKitRoom = Room
+
 export interface TokenResponse {
   serverUrl: string
   participantToken: string
@@ -35,16 +39,4 @@ export interface ConnectionDetails {
   participantToken: string
   roomName: string
   participantName: string
-}
-
-export interface LiveKitRoom {
-  connect: (serverUrl: string, token: string) => Promise<void>
-  disconnect: () => Promise<void>
-  localParticipant: {
-    identity: string
-    publishTrack: (track: MediaStreamTrack) => Promise<void>
-    tracks?: Map<string, any>
-  }
-  participants?: Map<string, any>
-  on: (event: string, callback: (...args: any[]) => void) => void
 }
