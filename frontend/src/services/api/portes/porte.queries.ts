@@ -12,6 +12,7 @@ export const GET_PORTES = `
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire
@@ -32,6 +33,7 @@ export const GET_PORTE = `
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire
@@ -52,6 +54,7 @@ export const GET_PORTES_BY_IMMEUBLE = `
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire
@@ -72,6 +75,7 @@ export const GET_PORTES_MODIFIED_TODAY = `
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire
@@ -113,6 +117,7 @@ export const GET_PORTES_RDV_TODAY = `
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire

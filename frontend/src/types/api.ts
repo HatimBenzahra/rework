@@ -138,6 +138,7 @@ export interface Porte extends BaseEntity {
   immeubleId: number
   statut: StatutPorte
   nbRepassages: number
+  nbContrats: number
   rdvDate?: string | null
   rdvTime?: string | null
   commentaire?: string | null
@@ -209,10 +210,12 @@ export interface CreateStatisticInput {
 
 export interface CreatePorteInput {
   numero: string
+  nomPersonnalise?: string
   etage: number
   immeubleId: number
   statut?: StatutPorte
   nbRepassages?: number
+  nbContrats?: number
   rdvDate?: string
   rdvTime?: string
   commentaire?: string
@@ -295,6 +298,7 @@ export interface UpdatePorteInput {
   etage?: number
   statut?: StatutPorte
   nbRepassages?: number
+  nbContrats?: number
   rdvDate?: string
   rdvTime?: string
   commentaire?: string

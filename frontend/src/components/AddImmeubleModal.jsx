@@ -44,6 +44,8 @@ const STEPS = [
   },
 ]
 
+import { useKeyboardVisibility } from '@/hooks/ui/use-keyboard-visibility'
+
 export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -64,6 +66,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
   // Mapbox access token - should be in env file
   const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+  const { isKeyboardOpen } = useKeyboardVisibility()
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -274,11 +277,11 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
     switch (currentStep) {
       case 0: // Address step
         return (
-          <div className="space-y-[1vh]">
-            <div className="space-y-[0.5vh] relative">
+          <div className="space-y-6">
+            <div className="space-y-2 relative">
               <Label
                 htmlFor="adresse"
-                className="text-[clamp(0.75rem,1.6vh,0.875rem)] !text-gray-900 dark:!text-gray-900"
+                className="text-base font-semibold text-gray-900"
               >
                 Adresse de l'immeuble *
               </Label>
@@ -288,7 +291,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.adresse}
                   onChange={e => handleInputChange('adresse', e.target.value)}
                   placeholder="Tapez une adresse..."
-                  className={`${errors.adresse ? 'border-red-500' : ''} text-sm sm:text-base ${formData.adresse ? 'pr-10' : ''}`}
+                  className={`h-12 text-base ${errors.adresse ? 'border-red-500' : 'border-gray-300'} ${formData.adresse ? 'pr-10' : ''}`}
                   autoComplete="off"
                 />
                 {/* Bouton pour effacer */}
@@ -299,37 +302,37 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                       handleInputChange('adresse', '')
                       setAddressSuggestions([])
                     }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:!bg-gray-200 rounded-full transition-colors z-10"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
                     aria-label="Effacer l'adresse"
                   >
-                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600 dark:!text-gray-500 dark:hover:!text-gray-700" />
+                    <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   </button>
                 )}
                 {loadingSuggestions && (
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
+                    <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
                   </div>
                 )}
               </div>
-              {errors.adresse && <p className="text-xs text-red-500">{errors.adresse}</p>}
+              {errors.adresse && <p className="text-sm text-red-500 mt-1">{errors.adresse}</p>}
 
               {/* Address suggestions - Absolute positioning with high z-index */}
               {addressSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 z-[9999] mt-1 border border-gray-300 dark:!border-gray-300 rounded-md bg-white dark:!bg-white shadow-lg max-h-[25vh] overflow-y-auto overflow-x-hidden">
+                <div className="absolute left-0 right-0 z-[9999] mt-1 border border-gray-200 rounded-lg bg-white shadow-xl max-h-[250px] overflow-y-auto">
                   {addressSuggestions.map((suggestion, index) => (
                     <button
                       key={index}
                       type="button"
-                      className="w-full text-left px-[1vh] py-[1vh] hover:bg-blue-50 dark:hover:!bg-blue-50 border-b border-gray-200 dark:!border-gray-200 last:border-b-0 text-sm transition-colors"
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
                       onClick={() => selectAddress(suggestion)}
                     >
-                      <div className="flex items-start gap-[0.5vh]">
-                        <MapPin className="h-[1.5vh] w-[1.5vh] min-h-[14px] min-w-[14px] text-blue-500 dark:!text-blue-500 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <div className="font-medium text-gray-900 dark:!text-gray-900 truncate text-[clamp(0.75rem,1.5vh,0.875rem)]">
+                      <div className="flex items-start gap-3">
+                        <MapPin className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 truncate text-sm">
                             {suggestion.text}
                           </div>
-                          <div className="text-gray-600 dark:!text-gray-600 truncate text-[clamp(0.625rem,1.2vh,0.75rem)]">
+                          <div className="text-gray-500 truncate text-xs mt-0.5">
                             {suggestion.place_name}
                           </div>
                         </div>
@@ -340,17 +343,18 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               )}
 
               {!MAPBOX_TOKEN && (
-                <p className="text-xs text-orange-500">
-                  ⚠️ Configuration Mapbox manquante - saisie manuelle uniquement
-                </p>
+                <div className="flex items-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg text-sm border border-amber-200">
+                  <span className="text-lg">⚠️</span>
+                  Configuration Mapbox manquante - saisie manuelle uniquement
+                </div>
               )}
             </div>
 
             {/* Complément d'adresse (optionnel) */}
-            <div className="space-y-[0.5vh]">
+            <div className="space-y-2">
               <Label
                 htmlFor="complementAdresse"
-                className="text-[clamp(0.75rem,1.6vh,0.875rem)] !text-gray-900 dark:!text-gray-900"
+                className="text-base font-semibold text-gray-900"
               >
                 Complément d'adresse (optionnel)
               </Label>
@@ -359,9 +363,9 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                 value={formData.complementAdresse}
                 onChange={e => handleInputChange('complementAdresse', e.target.value)}
                 placeholder="Ex: Appartement 12, Bâtiment A, Porte 3..."
-                className="text-sm sm:text-base"
+                className="h-12 text-base border-gray-300"
               />
-              <p className="text-[clamp(0.625rem,1.2vh,0.75rem)] text-gray-500 dark:!text-gray-400">
+              <p className="text-sm text-gray-500">
                 Numéro d'appartement, bâtiment, étage, ou toute information complémentaire
               </p>
             </div>
@@ -370,12 +374,12 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
       case 1: // Details step
         return (
-          <div className="space-y-[1vh]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1.5vh]">
-              <div className="space-y-[0.5vh]">
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
                 <Label
                   htmlFor="nbEtages"
-                  className="text-[clamp(0.75rem,1.6vh,0.875rem)] !text-gray-900 dark:!text-gray-900"
+                  className="text-base font-semibold text-gray-900"
                 >
                   Nombre d'étages *
                 </Label>
@@ -386,15 +390,15 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.nbEtages}
                   onChange={e => handleInputChange('nbEtages', e.target.value)}
                   placeholder="Ex: 5"
-                  className={`${errors.nbEtages ? 'border-red-500' : ''} text-sm sm:text-base`}
+                  className={`h-12 text-base ${errors.nbEtages ? 'border-red-500' : 'border-gray-300'}`}
                 />
-                {errors.nbEtages && <p className="text-xs text-red-500">{errors.nbEtages}</p>}
+                {errors.nbEtages && <p className="text-sm text-red-500">{errors.nbEtages}</p>}
               </div>
 
-              <div className="space-y-[0.5vh]">
+              <div className="space-y-2">
                 <Label
                   htmlFor="nbPortesParEtage"
-                  className="text-[clamp(0.75rem,1.6vh,0.875rem)] !text-gray-900 dark:!text-gray-900"
+                  className="text-base font-semibold text-gray-900"
                 >
                   Portes par étage *
                 </Label>
@@ -405,32 +409,32 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.nbPortesParEtage}
                   onChange={e => handleInputChange('nbPortesParEtage', e.target.value)}
                   placeholder="Ex: 4"
-                  className={`${errors.nbPortesParEtage ? 'border-red-500' : ''} text-sm sm:text-base`}
+                  className={`h-12 text-base ${errors.nbPortesParEtage ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {errors.nbPortesParEtage && (
-                  <p className="text-xs text-red-500">{errors.nbPortesParEtage}</p>
+                  <p className="text-sm text-red-500">{errors.nbPortesParEtage}</p>
                 )}
               </div>
             </div>
 
             {/* Summary card */}
             {formData.nbEtages && formData.nbPortesParEtage && (
-              <div className="p-[1.5vh] rounded-lg border border-gray-200 dark:!border-gray-200 bg-gray-50 dark:!bg-gray-50">
-                <div className="flex items-center justify-between gap-[1vh]">
-                  <div className="flex-1">
-                    <p className="text-[clamp(0.625rem,1.4vh,0.875rem)] text-gray-600 dark:!text-gray-600">
-                      Total des portes
-                    </p>
-                    <p className="text-[clamp(1rem,2.2vh,1.375rem)] font-bold text-gray-900 dark:!text-gray-900 leading-tight">
-                      {parseInt(formData.nbEtages) * parseInt(formData.nbPortesParEtage)}
-                    </p>
-                    <p className="text-[clamp(0.5625rem,1.2vh,0.75rem)] text-gray-600 dark:!text-gray-600 mt-[0.3vh]">
-                      {formData.nbEtages} étages × {formData.nbPortesParEtage} portes/étage
-                    </p>
-                  </div>
-                  <div className="p-[1vh] rounded-lg border border-gray-200 dark:!border-gray-200 bg-white dark:!bg-white flex-shrink-0">
-                    <Building2 className="h-[2.5vh] w-[2.5vh] text-gray-600 dark:!text-gray-600" />
-                  </div>
+              <div className="p-5 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-between shadow-sm">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">
+                    Total estimé
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900 mt-1">
+                    {parseInt(formData.nbEtages) * parseInt(formData.nbPortesParEtage)} <span className="text-lg font-normal text-gray-500">portes</span>
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                    <span>{formData.nbEtages} étages</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                    <span>{formData.nbPortesParEtage} portes/étage</span>
+                  </p>
+                </div>
+                <div className="p-3 rounded-full bg-white border border-gray-200 shadow-sm">
+                  <Building2 className="h-8 w-8 text-gray-400" />
                 </div>
               </div>
             )}
@@ -439,45 +443,47 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
       case 2: // Access step
         return (
-          <div className="space-y-[1.5vh]">
-            <div className="space-y-[1vh]">
-              <div className="flex items-center justify-between">
-                <div className="space-y-[0.3vh]">
-                  <Label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-medium !text-gray-900 dark:!text-gray-900">
+          <div className="space-y-6">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-gray-50/50">
+                <div className="space-y-1">
+                  <Label className="text-base font-semibold text-gray-900">
                     Ascenseur présent
                   </Label>
-                  <p className="text-[clamp(0.625rem,1.4vh,0.75rem)] text-gray-600 dark:!text-gray-600">
+                  <p className="text-sm text-gray-500">
                     Y a-t-il un ascenseur dans cet immeuble ?
                   </p>
                 </div>
-                <div className="flex items-center space-x-[1vh]">
-                  <ArrowUp className="h-[2.5vh] w-[2.5vh] text-gray-400 dark:!text-gray-400" />
+                <div className="flex items-center gap-3">
+                  <ArrowUp className="h-6 w-6 text-gray-400" />
                   <input
                     type="checkbox"
                     id="ascenseurPresent"
                     checked={formData.ascenseurPresent}
                     onChange={e => handleInputChange('ascenseurPresent', e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    className="w-6 h-6 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer transition-all"
                   />
                 </div>
               </div>
 
-              <Separator className="!border-gray-200 dark:!border-gray-200" />
-
-              <div className="space-y-[0.5vh]">
+              <div className="space-y-2">
                 <Label
                   htmlFor="digitalCode"
-                  className="text-[clamp(0.75rem,1.6vh,0.875rem)] !text-gray-900 dark:!text-gray-900"
+                  className="text-base font-semibold text-gray-900"
                 >
                   Code d'accès digital (optionnel)
                 </Label>
-                <Input
-                  id="digitalCode"
-                  value={formData.digitalCode}
-                  onChange={e => handleInputChange('digitalCode', e.target.value)}
-                  placeholder="Ex: 1234A, A5678..."
-                />
-                <p className="text-[clamp(0.625rem,1.4vh,0.875rem)] text-gray-600 dark:!text-gray-600">
+                <div className="relative">
+                  <Input
+                    id="digitalCode"
+                    value={formData.digitalCode}
+                    onChange={e => handleInputChange('digitalCode', e.target.value)}
+                    placeholder="Ex: 1234A"
+                    className="h-12 pl-10 text-base border-gray-300"
+                  />
+                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-500">
                   Laissez vide si aucun code d'accès
                 </p>
               </div>
@@ -496,19 +502,27 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-md md:max-w-lg h-[90vh] overflow-hidden p-[2vh] sm:p-[3vh] !bg-white dark:!bg-white !text-gray-900 dark:!text-gray-900 flex flex-col">
-        <DialogHeader className="space-y-[0.5vh] flex-none">
-          <DialogTitle className="text-[clamp(1rem,2.5vh,1.5rem)] leading-tight !text-gray-900 dark:!text-gray-900">
+      <DialogContent 
+        className={`
+          flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-all duration-300
+          ${isKeyboardOpen 
+            ? '!top-0 !translate-y-0 !h-[100dvh] !max-h-[100dvh] !w-full !max-w-none !rounded-none' 
+            : '!top-[2%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[85%] max-w-6xl max-h-[96dvh]'
+          }
+        `}
+      >
+        <DialogHeader className="px-5 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
+          <DialogTitle className="text-xl font-bold text-gray-900 leading-tight">
             Ajouter un immeuble
           </DialogTitle>
-          <DialogDescription className="text-[clamp(0.75rem,1.8vh,1rem)] !text-gray-600 dark:!text-gray-600">
+          <DialogDescription className="text-sm text-gray-500">
             Remplissez les informations de l'immeuble en suivant les étapes
           </DialogDescription>
         </DialogHeader>
 
-        {/* Step indicator - Responsive */}
-        <div className="py-[1vh] px-0 overflow-x-hidden flex-none">
-          <div className="flex items-start justify-between gap-[0.5vh]">
+        {/* Step indicator */}
+        <div className="py-2 px-0 overflow-x-hidden flex-none bg-gray-50/50 border-b border-gray-100">
+          <div className="flex items-start justify-between px-6">
             {STEPS.map((step, index) => {
               const StepIcon = step.icon
               const isActive = index === currentStep
@@ -519,47 +533,43 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   <div className="flex flex-col items-center flex-1 min-w-0">
                     {/* Circle with icon */}
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${
                         isCompleted
-                          ? 'bg-green-600 dark:!bg-green-600 border-green-600 dark:!border-green-600 text-white dark:!text-white'
+                          ? 'bg-green-600 border-green-600 text-white'
                           : isActive
-                            ? 'bg-blue-600 dark:!bg-blue-600 border-blue-600 dark:!border-blue-600 text-white dark:!text-white'
-                            : 'border-gray-300 dark:!border-gray-300 text-gray-400 dark:!text-gray-400'
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                            : 'border-gray-300 text-gray-400 bg-white'
                       }`}
                     >
                       {isCompleted ? (
-                        <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <Check className="h-5 w-5" />
                       ) : (
-                        <StepIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <StepIcon className="h-5 w-5" />
                       )}
                     </div>
 
                     {/* Text labels */}
-                    <div className="text-center mt-[0.5vh] w-full px-0.5">
+                    <div className="text-center mt-2 w-full">
                       <div
-                        className={`text-[clamp(0.625rem,1.2vh,0.75rem)] font-medium leading-tight truncate ${
+                        className={`text-xs font-bold uppercase tracking-wider ${
                           isActive
-                            ? 'text-blue-600 dark:!text-blue-600'
-                            : 'text-gray-600 dark:!text-gray-600'
+                            ? 'text-blue-600'
+                            : 'text-gray-500'
                         }`}
-                        title={step.title}
                       >
                         {step.title}
-                      </div>
-                      <div className="text-[clamp(0.5rem,1vh,0.625rem)] text-gray-400 dark:!text-gray-400 leading-tight mt-[0.2vh] hidden sm:block truncate">
-                        {step.description}
                       </div>
                     </div>
                   </div>
 
                   {/* Connector line */}
                   {index < STEPS.length - 1 && (
-                    <div className="flex items-start pt-4">
+                    <div className="flex items-center pt-5 flex-1 mx-2">
                       <div
-                        className={`w-6 sm:w-12 md:w-16 h-0.5 transition-colors ${
+                        className={`w-full h-0.5 transition-colors ${
                           index < currentStep
-                            ? 'bg-green-600 dark:!bg-green-600'
-                            : 'bg-gray-300 dark:!bg-gray-300'
+                            ? 'bg-green-600'
+                            : 'bg-gray-200'
                         }`}
                       />
                     </div>
@@ -570,28 +580,26 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
           </div>
         </div>
 
-        <Separator className="my-[0.5vh] !border-gray-200 dark:!border-gray-200 flex-none" />
-
         {/* Step content - Prend tout l'espace disponible avec scroll */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-          {renderStepContent()}
+        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0 bg-white">
+          <div className="max-w-xl mx-auto w-full">
+            {renderStepContent()}
+          </div>
         </div>
 
-        <Separator className="my-[0.5vh] !border-gray-200 dark:!border-gray-200 flex-none" />
-
         {/* Footer buttons */}
-        <DialogFooter className="pt-[1vh] flex-none">
-          <div className="flex w-full gap-[1vh] flex-col-reverse sm:flex-row sm:justify-between">
+        <DialogFooter className="p-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+          <div className="flex w-full gap-3 flex-col-reverse sm:flex-row sm:justify-between">
             <Button
               variant="outline"
               onClick={isFirstStep ? () => onOpenChange(false) : prevStep}
-              className="w-full sm:w-auto h-[4.5vh] min-h-[36px] max-h-[44px] text-[clamp(0.75rem,1.5vh,0.875rem)]"
+              className="h-12 px-6 text-base font-medium border-gray-300 hover:bg-white hover:text-gray-900"
             >
               {isFirstStep ? (
                 'Annuler'
               ) : (
                 <>
-                  <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+                  <ArrowLeft className="h-4 w-4 mr-2" />
                   Précédent
                 </>
               )}
@@ -601,16 +609,16 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               <Button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="bg-blue-600 dark:!bg-blue-600 hover:bg-blue-700 dark:hover:!bg-blue-700 text-white dark:!text-white w-full sm:w-auto h-[4.5vh] min-h-[36px] max-h-[44px] text-[clamp(0.75rem,1.5vh,0.875rem)]"
+                className="h-12 px-6 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Enregistrement...
                   </>
                 ) : (
                   <>
-                    <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+                    <Check className="h-4 w-4 mr-2" />
                     Créer l'immeuble
                   </>
                 )}
@@ -618,10 +626,10 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
             ) : (
               <Button
                 onClick={nextStep}
-                className="bg-blue-600 dark:!bg-blue-600 hover:bg-blue-700 dark:hover:!bg-blue-700 text-white dark:!text-white w-full sm:w-auto h-[4.5vh] min-h-[36px] max-h-[44px] text-[clamp(0.75rem,1.5vh,0.875rem)]"
+                className="h-12 px-6 text-base font-bold bg-gray-900 hover:bg-gray-800 text-white shadow-md"
               >
                 Suivant
-                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             )}
           </div>

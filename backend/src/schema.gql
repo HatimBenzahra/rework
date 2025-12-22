@@ -93,6 +93,7 @@ input CreatePorteInput {
   derniereVisite: DateTime
   etage: Int!
   immeubleId: Int!
+  nbContrats: Int! = 1
   nbRepassages: Int! = 0
   nomPersonnalise: String
   numero: String!
@@ -259,6 +260,7 @@ type Mutation {
   createZone(createZoneInput: CreateZoneInput!): Zone!
   generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
+  logAudioEvent(details: String, eventType: String!, message: String!): Boolean!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
   refreshToken(refreshToken: String!): AuthResponse!
@@ -295,6 +297,7 @@ type Porte {
   etage: Int!
   id: Int!
   immeubleId: Int!
+  nbContrats: Int!
   nbRepassages: Int!
   nomPersonnalise: String
   numero: String!
@@ -504,6 +507,7 @@ input UpdatePorteInput {
   derniereVisite: DateTime
   etage: Int
   id: Int!
+  nbContrats: Int
   nbRepassages: Int
   nomPersonnalise: String
   numero: String

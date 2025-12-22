@@ -1,4 +1,5 @@
 import type { ConnectionDetails, LiveKitRoom } from './monitoring.types'
+import { AudioEventLogger } from '@/services/api/audio/audio.service'
 
 /**
  * Utilitaires LiveKit pour la gestion des connexions et des rooms
@@ -20,7 +21,6 @@ export class LiveKitUtils {
       )
 
       // Publier automatiquement l'audio
-      console.log('🎤 Demande accès microphone...')
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -30,20 +30,60 @@ export class LiveKitUtils {
       })
 
       const audioTrack = stream.getTracks()[0]
-      console.log('🎤 Track audio obtenu:', audioTrack)
+
+      // Logger l'état initial du microphone
+      AudioEventLogger.logMicrophoneUnmuted('Microphone initialisé', `enabled: ${audioTrack.enabled}, muted: ${audioTrack.muted}, readyState: ${audioTrack.readyState}`)
+
+      // Surveiller les changements d'état du track audio et logger au backend
+      audioTrack.onended = () => {
+        AudioEventLogger.logMicrophoneEnded('Track audio terminé', `readyState: ${audioTrack.readyState}`)
+      }
+
+      audioTrack.onmute = () => {
+        AudioEventLogger.logMicrophoneMuted('Track audio muted', `enabled: ${audioTrack.enabled}`)
+      }
+
+      audioTrack.onunmute = () => {
+        AudioEventLogger.logMicrophoneUnmuted('Track audio unmuted', `enabled: ${audioTrack.enabled}`)
+      }
 
       await room.localParticipant.publishTrack(audioTrack)
-      console.log('📡 Track audio publié')
 
-      console.log('✅ Commercial connecté:', room.localParticipant.identity)
-      console.log('📊 Room state:', {
-        participants: room.remoteParticipants.size,
-        localTracks: room.localParticipant.trackPublications.size,
+      // Confirmer la publication du track
+      AudioEventLogger.logMicrophoneUnmuted('Track audio publié dans LiveKit', `trackSid: ${room.localParticipant.audioTrackPublications.values().next().value?.trackSid || 'unknown'}`)
+
+      // Surveiller les événements de tracks locaux LiveKit et logger au backend
+      room.localParticipant.on('trackMuted', (publication) => {
+        AudioEventLogger.logMicrophoneMuted('Track LiveKit muted', `trackSid: ${publication.trackSid}`)
+      })
+
+      room.localParticipant.on('trackUnmuted', (publication) => {
+        AudioEventLogger.logMicrophoneUnmuted('Track LiveKit unmuted', `trackSid: ${publication.trackSid}`)
+      })
+
+      room.localParticipant.on('trackUnpublished', (publication) => {
+        AudioEventLogger.logTrackUnpublished('Track LiveKit unpublished', `trackSid: ${publication.trackSid}`)
+      })
+
+      // Surveiller les erreurs de connexion
+      room.on('disconnected', (reason) => {
+        if (reason) {
+          AudioEventLogger.logConnectionError('LiveKit disconnected', `reason: ${reason}`)
+        }
       })
 
       return room
     } catch (error) {
-      console.error('Erreur connexion commercial:', error)
+      // Logger l'erreur au backend
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorDetails = error instanceof Error ? error.stack : undefined
+
+      if (errorMessage.includes('WebSocket') || errorMessage.includes('connection')) {
+        AudioEventLogger.logWebSocketFailed(errorMessage, errorDetails)
+      } else {
+        AudioEventLogger.logConnectionError(errorMessage, errorDetails)
+      }
+
       throw error
     }
   }
@@ -62,33 +102,16 @@ export class LiveKitUtils {
 
       // Écouter les nouveaux tracks audio et les jouer automatiquement
       room.on('trackSubscribed', (track, publication, participant) => {
-        console.log(
-          '🎧 Track reçu:',
-          track.kind,
-          'de',
-          participant.identity,
-          track
-        )
-
         if (track.kind === 'audio') {
           // Créer et attacher l'élément audio
           const audioElement = track.attach() as HTMLAudioElement
 
           // Configuration audio pour maximiser les chances de lecture
           audioElement.autoplay = true
-          audioElement.controls = false // Pas de contrôles natifs visibles
+          audioElement.controls = false
           audioElement.volume = 1.0
           audioElement.muted = false
-
-          // Style pour cacher l'élément tout en gardant la fonctionnalité
           audioElement.style.display = 'none'
-
-          // Events pour debug
-          audioElement.onplay = () => console.log('▶️ Audio démarré')
-          audioElement.onpause = () => console.log('⏸️ Audio mis en pause')
-          audioElement.onerror = (e) => console.error('❌ Erreur audio:', e)
-          audioElement.onloadstart = () => console.log('🔄 Chargement audio...')
-          audioElement.oncanplay = () => console.log('✅ Audio prêt à jouer')
 
           // Ajouter au DOM
           if (audioContainer) {
@@ -99,54 +122,20 @@ export class LiveKitUtils {
 
           // Forcer la lecture après un court délai
           setTimeout(() => {
-            audioElement.play().catch((e) => {
-              console.error('❌ Impossible de lancer la lecture automatique:', e)
-              console.log('👆 Cliquez sur play manuellement si nécessaire')
+            audioElement.play().catch(() => {
+              // Échec silencieux
             })
           }, 100)
-
-          console.log(
-            '🔊 Audio attaché pour:',
-            participant.identity,
-            audioElement
-          )
         }
-      })
-
-      // Écouter les déconnexions de tracks
-      room.on('trackUnsubscribed', (track, publication, participant) => {
-        console.log(
-          '🔇 Track détaché:',
-          track.kind,
-          'de',
-          participant.identity
-        )
-      })
-
-      // Écouter les événements de connexion/déconnexion de participants
-      room.on('participantConnected', (participant) => {
-        console.log('👤 Participant connecté:', participant.identity)
-      })
-
-      room.on('participantDisconnected', (participant) => {
-        console.log('👤 Participant déconnecté:', participant.identity)
       })
 
       await room.connect(
         connectionDetails.serverUrl,
         connectionDetails.participantToken
       )
-      console.log('✅ Superviseur connecté:', room.localParticipant.identity)
-      console.log(
-        '📊 Room participants:',
-        room.remoteParticipants.size > 0
-          ? Array.from(room.remoteParticipants.keys())
-          : 'Aucun participant'
-      )
 
       return room
     } catch (error) {
-      console.error('Erreur connexion superviseur:', error)
       throw error
     }
   }
@@ -158,10 +147,9 @@ export class LiveKitUtils {
     try {
       if (room) {
         await room.disconnect()
-        console.log('🔌 Déconnexion LiveKit')
       }
     } catch (error) {
-      console.error('Erreur déconnexion:', error)
+      // Échec silencieux
     }
   }
 }

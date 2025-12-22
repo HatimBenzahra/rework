@@ -8,6 +8,7 @@ import {
   MessageSquare,
   RotateCcw,
   Calendar,
+  FileSignature,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
@@ -94,6 +95,20 @@ export default function PorteCardOriginal({
                   <RotateCcw className={`h-4 w-4 sm:h-4.5 sm:w-4.5 ${colors.warning.text}`} />
                   <span className={`font-bold text-xs sm:text-sm ${colors.warning.text}`}>
                     Repassages : {porte.nbRepassages}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Nombre de contrats en mode lecture */}
+            {porte.statut === 'CONTRAT_SIGNE' && porte.nbContrats > 1 && (
+              <div
+                className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-2.5"
+              >
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <FileSignature className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-green-600" />
+                  <span className="font-bold text-xs sm:text-sm text-green-600">
+                    {porte.nbContrats} contrats signés
                   </span>
                 </div>
               </div>
@@ -251,6 +266,35 @@ export default function PorteCardOriginal({
               className={`${base.bg.muted} border ${base.border.default} rounded-lg p-2 sm:p-2.5`}
             >
               <p className={`text-xs sm:text-sm ${base.text.secondary}`}>{porte.commentaire}</p>
+            </div>
+          )}
+
+          {/* Nombre de contrats - Mode gestion */}
+          {porte.statut === 'CONTRAT_SIGNE' && (
+            <div
+              className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-3.5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-green-100">
+                    <FileSignature className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-green-600" />
+                  </div>
+                  <span className="font-bold text-sm sm:text-base text-green-600">
+                    Contrats signés
+                  </span>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="border-green-300 text-green-700 bg-white/50 backdrop-blur-sm shadow-sm font-bold"
+                >
+                  {porte.nbContrats || 1} contrat{(porte.nbContrats || 1) > 1 ? 's' : ''}
+                </Badge>
+              </div>
+              {porte.nbContrats > 1 && (
+                <p className="text-[10px] sm:text-xs text-center mt-2 text-green-600 opacity-70 font-medium">
+                  Le client a signé plusieurs contrats
+                </p>
+              )}
             </div>
           )}
 

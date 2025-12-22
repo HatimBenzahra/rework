@@ -7,10 +7,12 @@ export const CREATE_PORTE = `
     createPorte(createPorteInput: $createPorteInput) {
       id
       numero
+      nomPersonnalise
       etage
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire
@@ -31,6 +33,7 @@ export const UPDATE_PORTE = `
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire
@@ -46,10 +49,12 @@ export const REMOVE_PORTE = `
     removePorte(id: $id) {
       id
       numero
+      nomPersonnalise
       etage
       immeubleId
       statut
       nbRepassages
+      nbContrats
       rdvDate
       rdvTime
       commentaire

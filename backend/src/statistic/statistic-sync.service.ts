@@ -124,6 +124,9 @@ export class StatisticSyncService {
       },
       _count: {
         statut: true
+      },
+      _sum: {
+        nbContrats: true
       }
     });
 
@@ -156,9 +159,16 @@ export class StatisticSyncService {
     // Utilisation du helper centralisé pour calculer les stats
     result.forEach(group => {
       const count = group._count.statut;
+      const totalContrats = group._sum.nbContrats || 0;
       const statusStats = calculateStatsForStatus(group.statut, count);
 
-      stats.contratsSignes += statusStats.contratsSignes;
+      // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats
+      if (group.statut === StatutPorte.CONTRAT_SIGNE) {
+        stats.contratsSignes = totalContrats;
+      } else {
+        stats.contratsSignes += statusStats.contratsSignes;
+      }
+
       stats.rendezVousPris += statusStats.rendezVousPris;
       stats.refus += statusStats.refus;
       stats.absents += statusStats.absents;
@@ -183,6 +193,9 @@ export class StatisticSyncService {
       },
       _count: {
         statut: true
+      },
+      _sum: {
+        nbContrats: true
       }
     });
 
@@ -215,9 +228,16 @@ export class StatisticSyncService {
     // Utilisation du helper centralisé pour calculer les stats
     result.forEach(group => {
       const count = group._count.statut;
+      const totalContrats = group._sum.nbContrats || 0;
       const statusStats = calculateStatsForStatus(group.statut, count);
 
-      stats.contratsSignes += statusStats.contratsSignes;
+      // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats
+      if (group.statut === StatutPorte.CONTRAT_SIGNE) {
+        stats.contratsSignes = totalContrats;
+      } else {
+        stats.contratsSignes += statusStats.contratsSignes;
+      }
+
       stats.rendezVousPris += statusStats.rendezVousPris;
       stats.refus += statusStats.refus;
       stats.absents += statusStats.absents;
