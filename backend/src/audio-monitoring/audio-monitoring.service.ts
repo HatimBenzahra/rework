@@ -320,6 +320,10 @@ export class AudioMonitoringService {
     const rooms = await this.liveKit.listRoomsWithParticipants();
     const sessionsToDelete: string[] = [];
 
+    this.logger.debug(
+      `🔍 Vérification des sessions fantômes (${this.activeSessions.size} session(s) active(s))`,
+    );
+
     for (const [sessionId, session] of this.activeSessions.entries()) {
       // Trouver la room correspondante
       const room = rooms.find((r) => r.roomName === session.roomName);
@@ -327,7 +331,7 @@ export class AudioMonitoringService {
       if (!room) {
         // La room n'existe plus du tout
         this.logger.warn(
-          `Ghost session detected: room ${session.roomName} doesn't exist anymore`,
+          `👻 Ghost session détectée: room ${session.roomName} n'existe plus (Session: ${sessionId}, User: ${session.userType}-${session.userId})`,
         );
         sessionsToDelete.push(sessionId);
         continue;
@@ -341,16 +345,31 @@ export class AudioMonitoringService {
 
       if (!userIsPresent) {
         this.logger.warn(
-          `Ghost session detected: ${expectedParticipant} not in ${session.roomName}`,
+          `👻 Ghost session détectée: ${expectedParticipant} NOT IN ${session.roomName}`,
+        );
+        this.logger.warn(
+          `   ❌ Participant attendu: "${expectedParticipant}" | Participants présents: [${room.participants.join(', ')}]`,
+        );
+        this.logger.warn(
+          `   📊 Session ID: ${sessionId} | User Type: ${session.userType} | User ID: ${session.userId}`,
         );
         sessionsToDelete.push(sessionId);
+      } else {
+        this.logger.debug(
+          `✅ Session valide: ${expectedParticipant} présent dans ${session.roomName}`,
+        );
       }
     }
 
     // Supprimer toutes les sessions fantômes
-    for (const sessionId of sessionsToDelete) {
-      this.activeSessions.delete(sessionId);
-      this.logger.log(`Ghost session ${sessionId} cleaned up`);
+    if (sessionsToDelete.length > 0) {
+      this.logger.log(
+        `🧹 Nettoyage de ${sessionsToDelete.length} session(s) fantôme(s)`,
+      );
+      for (const sessionId of sessionsToDelete) {
+        this.activeSessions.delete(sessionId);
+        this.logger.log(`   🗑️ Session ${sessionId} supprimée`);
+      }
     }
   }
 
@@ -406,7 +425,7 @@ export class AudioMonitoringService {
 
     if (requestedCommercialId && requestedCommercialId !== currentUser.id) {
       this.logger.warn(
-        `Commercial ${currentUser.id} attempted to request a token for ${requestedCommercialId}`,
+        `⚠️ Commercial ${currentUser.id} attempted to request a token for ${requestedCommercialId}`,
       );
     }
 
@@ -417,6 +436,10 @@ export class AudioMonitoringService {
 
     const finalRoomName = this.validateRoomName(roomName, target);
 
+    this.logger.log(
+      `🎤 [COMMERCIAL-${currentUser.id}] Génération token PUBLISHER (room: ${finalRoomName})`,
+    );
+
     await this.liveKit.createOrJoinRoom(finalRoomName);
 
     const conn = await this.liveKit.generateConnectionDetails(
@@ -426,7 +449,7 @@ export class AudioMonitoringService {
     );
 
     this.logger.log(
-      `Commercial token generated for commercial ${currentUser.id} (room ${finalRoomName})`,
+      `✅ [COMMERCIAL-${currentUser.id}] Token généré - Identity: commercial-${currentUser.id} - ServerUrl: ${conn.serverUrl}`,
     );
     return conn;
   }
@@ -472,5 +495,55 @@ export class AudioMonitoringService {
       `Manager token generated for manager ${currentUser.id} (room ${finalRoomName})`,
     );
     return conn;
+  }
+
+  /**
+   * Log les événements audio du frontend (microphone coupé, erreurs, etc.)
+   */
+  async logAudioEvent(
+    eventType: string,
+    message: string,
+    details: string | undefined,
+    currentUser?: { id: number; role: string },
+  ): Promise<boolean> {
+    if (!currentUser) {
+      return false;
+    }
+
+    const userInfo = `[${currentUser.role.toUpperCase()}-${currentUser.id}]`;
+
+    switch (eventType) {
+      case 'MICROPHONE_MUTED':
+        this.logger.warn(`🔇 ${userInfo} MICROPHONE MUTED: ${message}`);
+        break;
+      case 'MICROPHONE_UNMUTED':
+        this.logger.log(`🔊 ${userInfo} MICROPHONE UNMUTED: ${message}`);
+        break;
+      case 'MICROPHONE_ENDED':
+        this.logger.error(`❌ ${userInfo} MICROPHONE ENDED: ${message}`);
+        break;
+      case 'TRACK_UNPUBLISHED':
+        this.logger.warn(`📤 ${userInfo} TRACK UNPUBLISHED: ${message}`);
+        break;
+      case 'CONNECTION_ERROR':
+        this.logger.error(`❌ ${userInfo} CONNECTION ERROR: ${message}`);
+        if (details) {
+          this.logger.error(`   Details: ${details}`);
+        }
+        break;
+      case 'WEBSOCKET_FAILED':
+        this.logger.error(`🔌 ${userInfo} WEBSOCKET FAILED: ${message}`);
+        if (details) {
+          this.logger.error(`   Details: ${details}`);
+        }
+        break;
+      default:
+        this.logger.debug(`📊 ${userInfo} ${eventType}: ${message}`);
+        if (details) {
+          this.logger.debug(`   Details: ${details}`);
+        }
+    }
+
+    return true;
   }
 }

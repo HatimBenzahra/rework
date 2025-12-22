@@ -260,6 +260,7 @@ type Mutation {
   createZone(createZoneInput: CreateZoneInput!): Zone!
   generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
+  logAudioEvent(details: String, eventType: String!, message: String!): Boolean!
   login(loginInput: LoginInput!): AuthResponse!
   recalculateAllStats: String!
   refreshToken(refreshToken: String!): AuthResponse!

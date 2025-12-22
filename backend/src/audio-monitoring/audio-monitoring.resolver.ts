@@ -77,4 +77,20 @@ export class AudioMonitoringResolver {
       user,
     );
   }
+
+  @Mutation(() => Boolean)
+  @Roles('commercial', 'manager')
+  async logAudioEvent(
+    @Args('eventType') eventType: string,
+    @Args('message') message: string,
+    @Args('details', { nullable: true }) details?: string,
+    @CurrentUser() user?: any,
+  ) {
+    return this.audioMonitoringService.logAudioEvent(
+      eventType,
+      message,
+      details,
+      user,
+    );
+  }
 }
