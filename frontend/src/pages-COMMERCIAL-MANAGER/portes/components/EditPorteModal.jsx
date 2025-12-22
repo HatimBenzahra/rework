@@ -18,7 +18,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { Calendar, Clock, RotateCcw, Minus, Plus, MessageSquare } from 'lucide-react'
+import { Calendar, Clock, RotateCcw, Minus, Plus, MessageSquare, FileSignature } from 'lucide-react'
+
+import { useKeyboardVisibility } from '@/hooks/ui/use-keyboard-visibility'
 
 export default function EditPorteModal({
   open,
@@ -33,69 +35,77 @@ export default function EditPorteModal({
   onRepassageChange,
 }) {
   const { base, colors, getButtonClasses } = useCommercialTheme()
+  const { isKeyboardOpen } = useKeyboardVisibility()
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] max-w-lg mx-auto !bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200 h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="px-[2vh] py-[1.5vh] border-b !border-gray-200 dark:!border-gray-200 flex-shrink-0">
-          <DialogTitle className="text-base sm:text-lg font-bold !text-gray-900 dark:!text-gray-900 line-clamp-1">
+      <DialogContent 
+        className={`
+          flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-all duration-300
+          ${isKeyboardOpen 
+            ? '!top-0 !translate-y-0 !h-[100dvh] !max-h-[100dvh] !w-full !max-w-none !rounded-none' 
+            : '!top-[3%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[92%] max-w-7xl max-h-[96dvh]'
+          }
+        `}
+      >
+        <DialogHeader className="px-5 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
+          <DialogTitle className="text-lg md:text-xl font-bold text-gray-900 line-clamp-1">
             {selectedPorte?.nomPersonnalise || `Porte ${selectedPorte?.numero}`}
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm !text-gray-600 dark:!text-gray-600 line-clamp-1 mt-1">
+          <DialogDescription className="text-sm text-gray-500 mt-1 line-clamp-1">
             Étage {selectedPorte?.etage} • {immeubleAdresse}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-[2vh] py-[1.5vh] min-h-0">
-          <div className="space-y-[1.5vh]">
-            <div className="space-y-[0.5vh]">
-              <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 flex items-center gap-2">
-                Nom personnalisé (optionnel)
+        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-900 block">
+                Nom personnalisé
               </label>
-              <Input
-                placeholder={selectedPorte ? `Porte ${selectedPorte.numero}` : 'Porte'}
-                value={editForm.nomPersonnalise}
-                onChange={e => setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))}
-                className="h-11 sm:h-12 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900"
-              />
-              <p className="text-xs !text-gray-500 dark:!text-gray-500 leading-relaxed">
-                Ex: "Porte à droite", "Appt A", etc.
-              </p>
-              {editForm.nomPersonnalise && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditForm(prev => ({ ...prev, nomPersonnalise: '' }))}
-                  className={`text-xs h-8 ${base.text.muted} hover:${base.text.primary}`}
-                >
-                  Réinitialiser
-                </Button>
-              )}
+              <div className="relative">
+                <Input
+                  placeholder={selectedPorte ? `Porte ${selectedPorte.numero}` : 'Porte'}
+                  value={editForm.nomPersonnalise}
+                  onChange={e => setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))}
+                  className="h-12 text-base bg-white border-gray-300 text-gray-900 pr-24 focus:ring-2 focus:ring-blue-100"
+                />
+                {editForm.nomPersonnalise && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEditForm(prev => ({ ...prev, nomPersonnalise: '' }))}
+                    className="absolute right-2 top-2 h-8 text-xs text-gray-500 hover:text-gray-900"
+                  >
+                    Effacer
+                  </Button>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-[0.5vh]">
-              <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 block">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-900 block">
                 Statut *
               </label>
               <Select
                 value={editForm.statut}
                 onValueChange={value => setEditForm(prev => ({ ...prev, statut: value }))}
               >
-                <SelectTrigger className="h-11 sm:h-12 !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 text-sm sm:text-base">
+                <SelectTrigger className="h-12 bg-white border-gray-300 text-gray-900 text-base">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="!bg-white dark:!bg-white !border-gray-200 dark:!border-gray-200">
+                <SelectContent className="bg-white border-gray-200">
                   {statutOptions
                     .filter(option => option.value !== 'NECESSITE_REPASSAGE')
                     .map(option => (
                     <SelectItem
                       key={option.value}
                       value={option.value}
-                      className="!text-gray-900 dark:!text-gray-900 focus:!bg-blue-50 dark:focus:!bg-blue-50"
+                      className="py-3 text-gray-900 focus:bg-gray-50 cursor-pointer"
                     >
-                      <div className="flex items-center gap-2 py-0.5">
-                        <option.icon className="h-4 w-4 sm:h-5 sm:w-5 !text-gray-700 dark:!text-gray-700" />
-                        <span className="text-sm sm:text-base !text-gray-900 dark:!text-gray-900">
+                      <div className="flex items-center gap-3">
+                        <option.icon className="h-5 w-5 text-gray-600" />
+                        <span className="text-base text-gray-900">
                           {option.label}
                         </span>
                       </div>
@@ -106,136 +116,149 @@ export default function EditPorteModal({
             </div>
 
             {editForm.statut === 'RENDEZ_VOUS_PRIS' && (
-              <div
-                className={`p-[1.5vh] ${colors.primary.bgLight} rounded-lg border ${colors.primary.border} space-y-[1vh]`}
-              >
-                <p
-                  className={`text-sm font-semibold ${colors.primary.text} flex items-center gap-2`}
-                >
-                  <Calendar className="h-4 w-4" />
-                  Informations du rendez-vous
+              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-4">
+                <p className="text-sm font-semibold text-blue-700 flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Rendez-vous
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1vh]">
-                  <div className="space-y-[0.5vh]">
-                    <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 block">
-                      Date *
-                    </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-700 block">Date *</label>
                     <input
                       type="date"
                       value={editForm.rdvDate}
                       onChange={e => setEditForm(prev => ({ ...prev, rdvDate: e.target.value }))}
-                      className="w-fit px-3 py-2.5 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
+                      className="w-full h-12 px-3 text-base bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
-                  <div className="space-y-[0.5vh]">
-                    <label className="text-xs font-medium !text-gray-900 dark:!text-gray-900 flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5 !text-gray-700 dark:!text-gray-700" />
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                      <Clock className="h-4 w-4" />
                       Heure
                     </label>
                     <input
                       type="time"
                       value={editForm.rdvTime}
                       onChange={e => setEditForm(prev => ({ ...prev, rdvTime: e.target.value }))}
-                      className="w-fit px-3 py-2.5 text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 rounded-lg border focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200"
+                      className="w-full h-12 px-3 text-base bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                     />
                   </div>
                 </div>
               </div>
             )}
 
+            {editForm.statut === 'CONTRAT_SIGNE' && (
+              <div className="p-4 bg-green-50/50 rounded-xl border border-green-200 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-green-100/80">
+                      <FileSignature className="h-5 w-5 text-green-700" />
+                    </div>
+                    <span className="font-bold text-base text-green-700">Contrats</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center gap-6 bg-white/60 p-3 rounded-xl border border-green-100">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setEditForm(prev => ({ ...prev, nbContrats: Math.max(1, (prev.nbContrats || 1) - 1) }))
+                    }}
+                    disabled={(editForm.nbContrats || 1) <= 1}
+                    className="h-10 w-10 flex items-center justify-center rounded-lg bg-white border border-green-200 text-green-600 shadow-sm disabled:opacity-40 disabled:shadow-none hover:bg-green-50 transition-all"
+                  >
+                    <Minus className="h-6 w-6" />
+                  </button>
+
+                  <span className="text-4xl font-bold text-green-700 min-w-[3ch] text-center">
+                    {editForm.nbContrats || 1}
+                  </span>
+
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setEditForm(prev => ({ ...prev, nbContrats: (prev.nbContrats || 1) + 1 }))
+                    }}
+                    className="h-10 w-10 flex items-center justify-center rounded-lg bg-green-600 text-white shadow-md hover:bg-green-700 active:scale-95 transition-all"
+                  >
+                    <Plus className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {(editForm.statut === 'NECESSITE_REPASSAGE' || editForm.statut === 'ABSENT') && (
-              <div
-                className={`p-[1.5vh] ${colors.warning.bgLight} rounded-lg border ${colors.warning.border} space-y-[1vh]`}
-              >
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1.5 rounded-lg ${colors.warning.bg} bg-opacity-20`}>
-                        <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
-                      </div>
-                      <span className={`font-bold text-sm sm:text-base ${colors.warning.text}`}>
-                        Suivi de passage
-                      </span>
-                    </div>
-                    <div className={`text-xs px-2 py-0.5 rounded-full ${colors.warning.border} border ${colors.warning.text} bg-white/50`}>
-                      {selectedPorte?.nbRepassages || 0} visite{(selectedPorte?.nbRepassages || 0) > 1 ? 's' : ''}
-                    </div>
+              <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-200 space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <RotateCcw className="h-5 w-5 text-orange-600" />
+                    <span className="font-bold text-base text-orange-700">Suivi de passage</span>
                   </div>
 
-                  {/* Segmented Control */}
-                  <div className="bg-slate-900/5 dark:bg-white/5 p-1 rounded-lg flex relative">
+                  <div className="grid grid-cols-2 gap-2 bg-white/60 p-1 rounded-lg border border-orange-100">
                     <button
                       onClick={(e) => {
                         e.preventDefault()
                         const diff = 1 - (selectedPorte?.nbRepassages || 0)
                         if (diff !== 0) onRepassageChange(selectedPorte, diff)
                       }}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                      className={`py-3 text-sm font-bold rounded-md transition-all ${
                         (selectedPorte?.nbRepassages || 0) <= 1
-                          ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
-                          : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                          ? 'bg-orange-100 text-orange-700 shadow-sm'
+                          : 'text-gray-500 hover:bg-orange-50'
                       }`}
                     >
-                      <span className={ (selectedPorte?.nbRepassages || 0) <= 1 ? "opacity-100" : "opacity-70" }>1er Passage</span>
+                      1er Passage
                     </button>
-                    
+
                     <button
                       onClick={(e) => {
                         e.preventDefault()
                         const diff = 2 - (selectedPorte?.nbRepassages || 0)
                         if (diff !== 0) onRepassageChange(selectedPorte, diff)
                       }}
-                      className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
+                      className={`py-3 text-sm font-bold rounded-md transition-all ${
                         (selectedPorte?.nbRepassages || 0) >= 2
-                          ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
-                          : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                          ? 'bg-orange-100 text-orange-700 shadow-sm'
+                          : 'text-gray-500 hover:bg-orange-50'
                       }`}
                     >
-                      <span className={ (selectedPorte?.nbRepassages || 0) >= 2 ? "opacity-100" : "opacity-70" }>2ème Passage</span>
+                      2ème Passage
                     </button>
                   </div>
-                  
-                  <p className={`text-[10px] sm:text-xs text-center ${colors.warning.text} opacity-70 font-medium`}>
-                    {(selectedPorte?.nbRepassages || 0) <= 1 
-                      ? " Passage initial (Matin)" 
-                      : " Repassage effectué (Soir)"}
-                  </p>
               </div>
             )}
 
-            <div className="space-y-[0.5vh]">
-              <label className="text-[clamp(0.75rem,1.6vh,0.875rem)] font-semibold !text-gray-900 dark:!text-gray-900 block">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-900 block">
                 Commentaire
               </label>
               <Textarea
                 placeholder="Ajouter un commentaire..."
                 value={editForm.commentaire}
                 onChange={e => setEditForm(prev => ({ ...prev, commentaire: e.target.value }))}
-                rows={2}
-                className="text-sm sm:text-base !bg-white dark:!bg-white !border-gray-300 dark:!border-gray-300 !text-gray-900 dark:!text-gray-900 resize-none min-h-[8vh] max-h-[12vh] focus-visible:!outline-none focus-visible:!ring-0 focus-visible:!ring-offset-0 focus-visible:!border-gray-300"
+                className="min-h-[100px] text-base bg-white border-gray-300 text-gray-900 resize-none rounded-lg focus:border-gray-400 focus:ring-0"
               />
             </div>
           </div>
         </div>
 
-        <DialogFooter className="px:[2vh] py-[1.5vh] border-t !border-gray-200 dark:!border-gray-200 flex-shrink-0 px-[2vh]">
-          <div className="flex flex-col-reverse sm:flex-row gap-[1vh] w-full">
+        <DialogFooter className="p-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+          <div className="grid grid-cols-2 gap-3 w-full">
             <Button
-              variant="ghost"
+              variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
-              className={`w-full sm:flex-1 h-10 sm:h-11 text-sm sm:text-base ${getButtonClasses('outline')}`}
+              className="h-12 text-base font-medium border-gray-300 hover:bg-white hover:text-gray-900"
             >
               Annuler
             </Button>
             <Button
-              variant="ghost"
               onClick={onSave}
               disabled={isSaving}
-              className={`w-full sm:flex-1 h-10 sm:h-11 text-sm sm:text-base ${getButtonClasses('primary')}`}
+              className="h-12 text-base font-bold bg-gray-900 text-white hover:bg-gray-800"
             >
-              {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+              {isSaving ? '...' : 'Enregistrer'}
             </Button>
           </div>
         </DialogFooter>

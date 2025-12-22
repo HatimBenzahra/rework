@@ -140,6 +140,7 @@ model Porte {
   immeubleId        Int
   statut            StatutPorte @default(NON_VISITE)
   nbRepassages      Int       @default(0)
+  nbContrats        Int       @default(1) // Nombre de contrats signés pour cette porte
   rdvDate           DateTime?
   rdvTime           String?   // Ex: "14:30"
   commentaire       String?

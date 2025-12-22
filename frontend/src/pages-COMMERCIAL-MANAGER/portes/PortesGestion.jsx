@@ -101,6 +101,7 @@ export default function PortesGestion() {
     rdvDate: '',
     rdvTime: '',
     nomPersonnalise: '',
+    nbContrats: 1,
   })
 
   const etageSelecteurRef = useRef(null)
@@ -291,6 +292,7 @@ export default function PortesGestion() {
       rdvDate: porte.rdvDate ? porte.rdvDate.split('T')[0] : '',
       rdvTime: porte.rdvTime || '',
       nomPersonnalise: porte.nomPersonnalise || '',
+      nbContrats: porte.nbContrats || 1,
     })
     setIsSaving(false)
     setShowEditModal(true)
@@ -310,6 +312,9 @@ export default function PortesGestion() {
     if (editForm.statut === 'RENDEZ_VOUS_PRIS') {
       if (editForm.rdvDate) updateData.rdvDate = editForm.rdvDate
       if (editForm.rdvTime) updateData.rdvTime = editForm.rdvTime
+    }
+    if (editForm.statut === 'CONTRAT_SIGNE') {
+      updateData.nbContrats = editForm.nbContrats || 1
     }
 
     try {
@@ -351,6 +356,21 @@ export default function PortesGestion() {
           rdvDate: new Date().toISOString().split('T')[0],
           rdvTime: new Date().toTimeString().slice(0, 5),
           nomPersonnalise: porte.nomPersonnalise || '',
+          nbContrats: porte.nbContrats || 1,
+        })
+        setShowEditModal(true)
+        return
+      }
+
+      if (newStatut === 'CONTRAT_SIGNE') {
+        setSelectedPorte(porte)
+        setEditForm({
+          statut: newStatut,
+          commentaire: porte.commentaire || '',
+          rdvDate: '',
+          rdvTime: '',
+          nomPersonnalise: porte.nomPersonnalise || '',
+          nbContrats: porte.nbContrats || 1,
         })
         setShowEditModal(true)
         return

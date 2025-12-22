@@ -48,6 +48,9 @@ export class Porte {
   @Field(() => Int)
   nbRepassages: number;
 
+  @Field(() => Int)
+  nbContrats: number;
+
   @Field({ nullable: true })
   rdvDate?: Date;
 
@@ -144,6 +147,12 @@ export class CreatePorteInput {
   @Min(0)
   nbRepassages?: number;
 
+  @Field(() => Int, { defaultValue: 1 })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  nbContrats?: number;
+
   @Field({ nullable: true })
   @IsOptional()
   @IsDateString()
@@ -196,6 +205,12 @@ export class UpdatePorteInput {
   @IsInt()
   @Min(0)
   nbRepassages?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  nbContrats?: number;
 
   @Field({ nullable: true })
   @IsOptional()

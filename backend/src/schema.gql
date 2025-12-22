@@ -93,6 +93,7 @@ input CreatePorteInput {
   derniereVisite: DateTime
   etage: Int!
   immeubleId: Int!
+  nbContrats: Int! = 1
   nbRepassages: Int! = 0
   nomPersonnalise: String
   numero: String!
@@ -295,6 +296,7 @@ type Porte {
   etage: Int!
   id: Int!
   immeubleId: Int!
+  nbContrats: Int!
   nbRepassages: Int!
   nomPersonnalise: String
   numero: String!
@@ -504,6 +506,7 @@ input UpdatePorteInput {
   derniereVisite: DateTime
   etage: Int
   id: Int!
+  nbContrats: Int
   nbRepassages: Int
   nomPersonnalise: String
   numero: String
