@@ -61,11 +61,15 @@ export class LiveKitService {
    */
   async createOrJoinRoom(roomName: string) {
     try {
+      this.logger.log(`📝 Création/Jointure room: ${roomName}`);
       await this.rsc.createRoom({ name: roomName });
+      this.logger.log(`✅ Room créée: ${roomName}`);
     } catch (e: any) {
       // 409 = room déjà existante
       if (e?.response?.status !== 409) {
-        this.logger.warn(`createRoom(${roomName}): ${e.message}`);
+        this.logger.warn(`⚠️ Erreur createRoom(${roomName}): ${e.message}`);
+      } else {
+        this.logger.debug(`ℹ️ Room existe déjà: ${roomName}`);
       }
     }
   }
@@ -91,9 +95,17 @@ export class LiveKitService {
         participants: string[];
       }[] = [];
 
+      this.logger.debug(`📊 Listage de ${rooms.length} room(s) LiveKit`);
+
       for (const r of rooms) {
         try {
           const parts = await this.rsc.listParticipants(r.name);
+          const participantIdentities = parts.map((p) => p.identity);
+
+          this.logger.debug(
+            `📍 Room ${r.name}: ${participantIdentities.length} participant(s) - [${participantIdentities.join(', ')}]`
+          );
+
           out.push({
             roomName: r.name,
             createdAt: new Date(
@@ -101,7 +113,7 @@ export class LiveKitService {
                 ? Number((r as any).creationTime) * 1000
                 : Date.now(),
             ),
-            participants: parts.map((p) => p.identity),
+            participants: participantIdentities,
           });
         } catch (e: any) {
           // La room a pu disparaître entre les 2 appels
@@ -109,7 +121,7 @@ export class LiveKitService {
             e?.response?.status === 404 ||
             e?.message?.includes('not exist')
           ) {
-            this.logger.debug(`Room ${r.name} no longer exists, skipping`);
+            this.logger.debug(`⚠️ Room ${r.name} n'existe plus, ignorée`);
             continue;
           }
           throw e;
@@ -117,7 +129,7 @@ export class LiveKitService {
       }
       return out;
     } catch (e: any) {
-      this.logger.error(`Error listing rooms: ${e.message}`);
+      this.logger.error(`❌ Erreur listing rooms: ${e.message}`);
       return [];
     }
   }
