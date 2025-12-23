@@ -1,12 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 import { LiveKitConnectionDetails } from './audio-monitoring.dto';
 
 type Role = 'publisher' | 'subscriber';
 
 @Injectable()
-export class LiveKitService {
+export class LiveKitService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(LiveKitService.name);
+  private micStatusInterval: NodeJS.Timeout | null = null;
 
   // Ex: LK_HOST=https://<project>.livekit.cloud
   private readonly host = process.env.LK_HOST!;
@@ -119,6 +120,56 @@ export class LiveKitService {
     } catch (e: any) {
       this.logger.error(`Error listing rooms: ${e.message}`);
       return [];
+    }
+  }
+
+  /**
+   * Démarre le ping continu de l'état du micro (toutes les 10 secondes)
+   */
+  onModuleInit() {
+    this.micStatusInterval = setInterval(() => {
+      this.logAllMicrophoneStatus();
+    }, 10000); // 10 secondes
+    this.logger.log('Microphone status ping started (every 10s)');
+  }
+
+  onModuleDestroy() {
+    if (this.micStatusInterval) {
+      clearInterval(this.micStatusInterval);
+      this.logger.log('Microphone status ping stopped');
+    }
+  }
+
+  /**
+   * Log l'état du micro de tous les participants
+   */
+  private async logAllMicrophoneStatus() {
+    try {
+      const rooms = await this.rsc.listRooms();
+
+      for (const room of rooms) {
+        try {
+          const participants = await this.rsc.listParticipants(room.name);
+
+          for (const p of participants) {
+            // source=0 et type=0 = audio/microphone
+            const audioTrack = p.tracks.find((t) => t.source === 0 && t.type === 0);
+            const micStatus = audioTrack
+              ? audioTrack.muted
+                ? 'OFF'
+                : 'ON'
+              : 'OFF';
+
+            this.logger.log(
+              `[MICRO] ${p.identity} | Room: ${room.name} | Micro: ${micStatus}`,
+            );
+          }
+        } catch {
+          // Room peut avoir disparu
+        }
+      }
+    } catch (e: any) {
+      this.logger.error(`Error logAllMicrophoneStatus: ${e.message}`);
     }
   }
 }
