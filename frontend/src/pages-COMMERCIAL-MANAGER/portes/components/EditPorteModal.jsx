@@ -20,7 +20,7 @@ import {
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { Calendar, Clock, RotateCcw, Minus, Plus, MessageSquare, FileSignature } from 'lucide-react'
 
-import { useKeyboardVisibility } from '@/hooks/ui/use-keyboard-visibility'
+
 
 export default function EditPorteModal({
   open,
@@ -35,17 +35,14 @@ export default function EditPorteModal({
   onRepassageChange,
 }) {
   const { base, colors, getButtonClasses } = useCommercialTheme()
-  const { isKeyboardOpen } = useKeyboardVisibility()
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className={`
           flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-all duration-300
-          ${isKeyboardOpen 
-            ? '!top-0 !translate-y-0 !h-[100dvh] !max-h-[100dvh] !w-full !max-w-none !rounded-none' 
-            : '!top-[3%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[92%] max-w-7xl max-h-[96dvh]'
-          }
+          !top-[1%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[92%] max-w-7xl max-h-[96dvh]
         `}
       >
         <DialogHeader className="px-5 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
@@ -256,7 +253,7 @@ export default function EditPorteModal({
             <Button
               onClick={onSave}
               disabled={isSaving}
-              className="h-12 text-base font-bold bg-gray-900 text-white hover:bg-gray-800"
+              className="h-12 text-base font-medium bg-blue-600 text-white hover:bg-blue-700"
             >
               {isSaving ? '...' : 'Enregistrer'}
             </Button>

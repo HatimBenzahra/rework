@@ -43,9 +43,9 @@ export function useDashboardLogic() {
       immeubles: 0,
     }
 
-    // Compter par statut
+    // Compter par statut (avec somme des nbContrats pour CONTRAT_SIGNE)
     portesModifiedToday.forEach(porte => {
-      if (porte.statut === 'CONTRAT_SIGNE') stats.contrats++
+      if (porte.statut === 'CONTRAT_SIGNE') stats.contrats += (porte.nbContrats || 1)
       else if (porte.statut === 'RENDEZ_VOUS_PRIS') stats.rdv++
       else if (porte.statut === 'REFUS') stats.refus++
     })

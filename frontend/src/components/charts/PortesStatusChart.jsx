@@ -157,7 +157,10 @@ export default function PortesStatusChart({
   }, [portesProspectees, totalPortes])
 
   const tauxReussite = useMemo(() => {
-    const contrats = portes.filter(p => p.statut === 'CONTRAT_SIGNE').length
+    // Somme des nbContrats pour toutes les portes avec statut CONTRAT_SIGNE
+    const contrats = portes
+      .filter(p => p.statut === 'CONTRAT_SIGNE')
+      .reduce((sum, p) => sum + (p.nbContrats || 1), 0)
     const rdv = portes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
     const totalPositif = contrats + rdv
 

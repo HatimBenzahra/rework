@@ -44,7 +44,7 @@ const STEPS = [
   },
 ]
 
-import { useKeyboardVisibility } from '@/hooks/ui/use-keyboard-visibility'
+
 
 export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
   const [currentStep, setCurrentStep] = useState(0)
@@ -66,7 +66,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
 
   // Mapbox access token - should be in env file
   const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
-  const { isKeyboardOpen } = useKeyboardVisibility()
+
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -316,29 +316,40 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               </div>
               {errors.adresse && <p className="text-sm text-red-500 mt-1">{errors.adresse}</p>}
 
-              {/* Address suggestions - Absolute positioning with high z-index */}
+              {/* Address suggestions dropdown */}
               {addressSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 z-[9999] mt-1 border border-gray-200 rounded-lg bg-white shadow-xl max-h-[250px] overflow-y-auto">
-                  {addressSuggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                      onClick={() => selectAddress(suggestion)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <MapPin className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate text-sm">
-                            {suggestion.text}
+                <div className="absolute left-0 right-0 top-full z-50 mt-1">
+                  <div className="bg-white rounded-lg border border-gray-200 shadow-lg overflow-hidden">
+                    {/* Header with result count */}
+                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-500">
+                        {addressSuggestions.length} résultat{addressSuggestions.length > 1 ? 's' : ''}
+                      </span>
+                      <span className="text-[10px] text-gray-400">Sélectionnez une adresse</span>
+                    </div>
+                    
+                    {/* Scrollable list */}
+                    <div className="max-h-[200px] overflow-y-auto">
+                      {addressSuggestions.map((suggestion, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          className="w-full text-left px-3 py-2.5 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors flex items-center gap-3"
+                          onClick={() => selectAddress(suggestion)}
+                        >
+                          <MapPin className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate text-sm">
+                              {suggestion.text}
+                            </div>
+                            <div className="text-gray-500 truncate text-xs">
+                              {suggestion.place_name}
+                            </div>
                           </div>
-                          <div className="text-gray-500 truncate text-xs mt-0.5">
-                            {suggestion.place_name}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -505,10 +516,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
       <DialogContent 
         className={`
           flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-all duration-300
-          ${isKeyboardOpen 
-            ? '!top-0 !translate-y-0 !h-[100dvh] !max-h-[100dvh] !w-full !max-w-none !rounded-none' 
-            : '!top-[2%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[85%] max-w-6xl max-h-[96dvh]'
-          }
+          !top-[1%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[90%] h-[60%]
         `}
       >
         <DialogHeader className="px-5 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
@@ -626,7 +634,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
             ) : (
               <Button
                 onClick={nextStep}
-                className="h-12 px-6 text-base font-bold bg-gray-900 hover:bg-gray-800 text-white shadow-md"
+                className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white shadow-md"
               >
                 Suivant
                 <ArrowRight className="h-4 w-4 ml-2" />

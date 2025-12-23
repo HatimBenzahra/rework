@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Building2, Clock, RotateCcw, Calendar, Plus, Minus } from 'lucide-react'
+import { Building2, Clock, RotateCcw, Calendar, Plus, Minus, Zap, List, LogOut, AlertTriangle } from 'lucide-react'
 
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useRecording } from '@/hooks/audio/useRecording'
@@ -28,6 +28,7 @@ import {
 import { STATUT_OPTIONS } from './Statut_options'
 import PortesTemplate from './components/PortesTemplate'
 import EditPorteModal from './components/EditPorteModal'
+import ProspectionRapideMode from './components/ProspectionRapideMode'
 import {
   Select,
   SelectContent,
@@ -76,6 +77,21 @@ export default function PortesGestion() {
   const [selectedPorte, setSelectedPorte] = useState(null)
   const [showEditModal, setShowEditModal] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false)
+
+  // Mode d'affichage : 'liste' ou 'rapide' (persisté en localStorage)
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem(`viewMode-${immeubleId}`) || 'rapide'
+    } catch {
+      return 'rapide'
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem(`viewMode-${immeubleId}`, viewMode)
+    } catch { /* ignore */ }
+  }, [viewMode, immeubleId])
 
   // Filtres (lecture/écriture localStorage sécurisée)
   const [activeFilters, setActiveFilters] = useState(() => {
@@ -597,33 +613,165 @@ export default function PortesGestion() {
     ]
   )
 
+  // Handler pour ouvrir le modal depuis le mode rapide avec un statut prédéfini
+  const handleOpenEditModalFromRapide = useCallback((porte, presetStatut, quickComment = '') => {
+    setSelectedPorte(porte)
+    setEditForm({
+      statut: presetStatut,
+      commentaire: quickComment || porte.commentaire || '',
+      rdvDate: presetStatut === 'RENDEZ_VOUS_PRIS' ? new Date().toISOString().split('T')[0] : '',
+      rdvTime: presetStatut === 'RENDEZ_VOUS_PRIS' ? new Date().toTimeString().slice(0, 5) : '',
+      nomPersonnalise: porte.nomPersonnalise || '',
+      nbContrats: porte.nbContrats || 1,
+    })
+    setShowEditModal(true)
+  }, [])
+
+  // Handler pour le quick status change avec support du commentaire rapide
+  const handleQuickStatusChangeWithComment = useCallback(async (porte, newStatut, quickComment) => {
+    if (quickComment) {
+      // Si un commentaire est fourni, on l'inclut dans la mise à jour
+      const updateData = {
+        id: porte.id,
+        statut: newStatut,
+        commentaire: quickComment,
+        derniereVisite: new Date().toISOString(),
+      }
+      
+      updateLocalData(porte.id, { statut: newStatut, commentaire: quickComment, derniereVisite: new Date().toISOString() })
+      
+      try {
+        await updatePorte(updateData)
+        if (navigator.onLine && refetchStats) {
+          await refetchStats()
+        }
+      } catch (error) {
+        console.error('Error updating porte status:', error)
+        showError(error, 'Mise à jour statut')
+        if (navigator.onLine) {
+          await refetch()
+        }
+      }
+    } else {
+      // Sans commentaire, utiliser le handler existant
+      await handleQuickStatusChange(porte, newStatut)
+    }
+  }, [handleQuickStatusChange, updateLocalData, updatePorte, refetchStats, refetch, showError])
+
   return (
     <div className="space-y-3">
-      {/* Utilisation du template avec les configurations spécifiques à la gestion */}
-      <PortesTemplate
-        portes={filteredPortes}
-        statsData={statsData}
-        loading={(portesLoading && portes.length === 0) || immeubleLoading}
-        isFetchingMore={isFetchingMore}
-        readOnly={false}
-        showStatusFilters={false}
-        onPorteEdit={handleEditPorte}
-        onQuickStatusChange={handleQuickStatusChange}
-        onRepassageChange={handleRepassageChange}
-        onBack={handleBackToImmeubles}
-        backButtonText="Retour"
-        scrollTarget={etageSelecteurRef}
-        scrollTargetText="Étages"
-        customFilters={customFilters}
-        onAddPorteToEtage={handleAddPorteToEtage}
-        onAddEtage={handleAddEtage}
-        addingPorteToEtage={addingPorteToEtage}
-        addingEtage={addingEtage}
-        onFloorSelect={handleFloorSelect} // NEW
-        selectedFloor={selectedFloor} // NEW
-      />
+      {/* Header avec bouton Quitter - TOUJOURS VISIBLE */}
+      <div
+        className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50 flex items-center justify-between`}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowQuitConfirm(true)}
+          className="flex items-center gap-2 h-9 bg-red-500 hover:bg-red-600 text-white font-bold shadow-md"
+        >
+          <LogOut className="h-6 w-6" />
+          Quitter
+        </Button>
+        
+        {/* Toggle de mode */}
+        <button
+          onClick={() => setViewMode(viewMode === 'rapide' ? 'liste' : 'rapide')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-200 text-sm font-bold ${
+            viewMode === 'rapide' 
+              ? 'bg-white text-gray-700 border border-gray-200' 
+              : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+          }`}
+        >
+          {viewMode === 'rapide' ? (
+            <>
+              <List className="h-4 w-4" />
+              Mode Liste
+            </>
+          ) : (
+            <>
+              <Zap className="h-4 w-4" />
+              Mode Rapide
+            </>
+          )}
+        </button>
+      </div>
 
-      {/* Modal d'édition */}
+      {/* Dialogue de confirmation pour quitter */}
+      <Dialog open={showQuitConfirm} onOpenChange={setShowQuitConfirm}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-full bg-red-100">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <DialogTitle className="text-xl">Voulez-vous quitter cet immeuble ?</DialogTitle>
+            </div>
+            <DialogDescription className="text-base">
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-3 sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowQuitConfirm(false)}
+              className="flex-1"
+            >
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowQuitConfirm(false)
+                handleBackToImmeubles()
+              }}
+              className="flex-1 bg-red-600 hover:bg-red-700"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Oui, quitter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rendu conditionnel selon le mode */}
+      {viewMode === 'rapide' ? (
+        <ProspectionRapideMode
+          portes={portes}
+          statsData={statsData}
+          onQuickStatusChange={handleQuickStatusChangeWithComment}
+          onSwitchToListMode={() => setViewMode('liste')}
+          statutOptions={statutOptions}
+          immeuble={immeuble}
+          onOpenEditModal={handleOpenEditModalFromRapide}
+          onRepassageChange={handleRepassageChange}
+        />
+      ) : (
+        <PortesTemplate
+          portes={filteredPortes}
+          statsData={statsData}
+          loading={(portesLoading && portes.length === 0) || immeubleLoading}
+          isFetchingMore={isFetchingMore}
+          readOnly={false}
+          showStatusFilters={false}
+          onPorteEdit={handleEditPorte}
+          onQuickStatusChange={handleQuickStatusChange}
+          onRepassageChange={handleRepassageChange}
+          onBack={handleBackToImmeubles}
+          backButtonText="Retour"
+          scrollTarget={etageSelecteurRef}
+          scrollTargetText="Étages"
+          customFilters={customFilters}
+          onAddPorteToEtage={handleAddPorteToEtage}
+          onAddEtage={handleAddEtage}
+          addingPorteToEtage={addingPorteToEtage}
+          addingEtage={addingEtage}
+          onFloorSelect={handleFloorSelect}
+          selectedFloor={selectedFloor}
+          hideHeader={true}
+        />
+      )}
+
+      {/* Modal d'édition (partagé par les deux modes) */}
       <EditPorteModal
         open={showEditModal}
         onOpenChange={(open) => {

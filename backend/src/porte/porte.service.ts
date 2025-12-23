@@ -305,6 +305,9 @@ export class PorteService {
       _count: {
         statut: true,
       },
+      _sum: {
+        nbContrats: true,
+      },
     });
 
     const totalPortes = await this.prisma.porte.count({ where: whereClause });
@@ -319,6 +322,10 @@ export class PorteService {
     portesGrouped.forEach(group => {
       statusCounts[group.statut] = group._count.statut;
     });
+
+    // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats au lieu du simple count
+    const contratsSignesGroup = portesGrouped.find(g => g.statut === StatutPorte.CONTRAT_SIGNE);
+    const totalContratsSignes = contratsSignesGroup?._sum?.nbContrats || 0;
 
     // Statistiques par étage
     const etagesGrouped = await this.prisma.porte.groupBy({
@@ -339,7 +346,7 @@ export class PorteService {
 
     return {
       totalPortes,
-      contratsSigne: statusCounts[StatutPorte.CONTRAT_SIGNE],
+      contratsSigne: totalContratsSignes, // Somme des nbContrats au lieu du count de portes
       rdvPris: statusCounts[StatutPorte.RENDEZ_VOUS_PRIS],
       absent: statusCounts[StatutPorte.ABSENT],
       argumente: statusCounts[StatutPorte.ARGUMENTE],
@@ -349,7 +356,7 @@ export class PorteService {
       portesVisitees: totalPortes - statusCounts[StatutPorte.NON_VISITE],
       tauxConversion:
         totalPortes > 0
-          ? ((statusCounts[StatutPorte.CONTRAT_SIGNE] / totalPortes) * 100).toFixed(2)
+          ? ((totalContratsSignes / totalPortes) * 100).toFixed(2)
           : '0',
       portesParEtage, // NEW
     };

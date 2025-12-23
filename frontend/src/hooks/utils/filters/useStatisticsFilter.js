@@ -28,7 +28,10 @@ export function usePersonalStats(user, appliedStartDate, appliedEndDate) {
 
   // Calculer les totaux à partir des portes filtrées
   const personalStats = useMemo(() => {
-    const totalContratsSignes = filteredPortes.filter(p => p.statut === 'CONTRAT_SIGNE').length
+    // Somme des nbContrats pour toutes les portes avec statut CONTRAT_SIGNE
+    const totalContratsSignes = filteredPortes
+      .filter(p => p.statut === 'CONTRAT_SIGNE')
+      .reduce((sum, p) => sum + (p.nbContrats || 1), 0)
     const totalRendezVousPris = filteredPortes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
     const totalRefus = filteredPortes.filter(p => p.statut === 'REFUS').length
     const totalAbsents = filteredPortes.filter(p => p.statut === 'ABSENT').length
@@ -99,7 +102,10 @@ export function useImmeublesTableData(immeubles, appliedStartDate, appliedEndDat
         if (!visit) return latest
         return !latest || new Date(visit) > new Date(latest) ? visit : latest
       }, null)
-      const contratsSignes = portesImmeuble.filter(p => p.statut === 'CONTRAT_SIGNE').length
+      // Somme des nbContrats pour toutes les portes avec statut CONTRAT_SIGNE
+      const contratsSignes = portesImmeuble
+        .filter(p => p.statut === 'CONTRAT_SIGNE')
+        .reduce((sum, p) => sum + (p.nbContrats || 1), 0)
       const rdvPris = portesImmeuble.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
       const refus = portesImmeuble.filter(p => p.statut === 'REFUS').length
       const absent = portesImmeuble.filter(p => p.statut === 'ABSENT').length

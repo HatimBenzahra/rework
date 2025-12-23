@@ -28,7 +28,10 @@ export function useImmeublesLogic() {
   const description = useEntityDescription('immeubles')
 
   function calculnbcontrats(immeuble) {
-    return (immeuble.portes || []).filter(p => p.statut === 'CONTRAT_SIGNE').length
+    // Somme des nbContrats pour toutes les portes avec statut CONTRAT_SIGNE
+    return (immeuble.portes || [])
+      .filter(p => p.statut === 'CONTRAT_SIGNE')
+      .reduce((sum, p) => sum + (p.nbContrats || 1), 0)
   }
 
   // Configuration des colonnes

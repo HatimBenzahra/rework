@@ -54,6 +54,9 @@ export default function PortesTemplate({
   selectedFloor,
   isFetchingMore = false,
   statsData = null,
+  
+  // Header control - permet au parent de gérer le header
+  hideHeader = false,
 }) {
   const { immeubleId } = useParams()
   const navigate = useNavigate()
@@ -111,7 +114,10 @@ export default function PortesTemplate({
     }
     const total = portes.length
     const nonVisitees = portes.filter(p => p.statut === 'NON_VISITE').length
-    const contratsSigne = portes.filter(p => p.statut === 'CONTRAT_SIGNE').length
+    // Somme des nbContrats pour toutes les portes avec statut CONTRAT_SIGNE
+    const contratsSigne = portes
+      .filter(p => p.statut === 'CONTRAT_SIGNE')
+      .reduce((sum, p) => sum + (p.nbContrats || 1), 0)
     const rdvPris = portes.filter(p => p.statut === 'RENDEZ_VOUS_PRIS').length
     const absent = portes.filter(p => p.statut === 'ABSENT').length
     const argumente = portes.filter(p => p.statut === 'ARGUMENTE').length
@@ -192,20 +198,22 @@ export default function PortesTemplate({
 
   return (
     <div className="space-y-3 mb-40">
-      {/* Header sticky (always visible) */}
-      <div
-        className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}
-      >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={defaultBackHandler}
-          className={`flex items-center gap-2 ${getButtonClasses('primary')} w-full md:w-auto justify-center md:justify-start h-9`}
+      {/* Header sticky (optionnel - peut être géré par le parent) */}
+      {!hideHeader && (
+        <div
+          className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}
         >
-          <ArrowLeft className="h-4 w-4" />
-          {backButtonText}
-        </Button>
-      </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={defaultBackHandler}
+            className={`flex items-center gap-2 ${getButtonClasses('primary')} w-full md:w-auto justify-center md:justify-start h-9`}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {backButtonText}
+          </Button>
+        </div>
+      )}
 
       <div className="mb-3 md:mb-4">
         {/* Accès rapides aux étages */}
