@@ -1,0 +1,157 @@
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useStatutOptions } from '../hooks/useStatutOptions'
+import PortesTemplate from './PortesTemplate'
+import PorteListFilters from './PorteListFilters'
+
+/**
+ * Page Vue Liste des portes
+ * Gère le filtrage local et l'affichage sous forme de liste
+ */
+export default function PortesListe({
+  portes = [],
+  statsData,
+  loading,
+  immeuble,
+  immeubleId,
+  isFetchingMore,
+  onEdit,
+  onQuickChange,
+  onRepassageChange,
+  onBack,
+  onAddEtage,
+  onAddPorteToEtage,
+  addingEtage,
+  addingPorteToEtage,
+  selectedFloor,
+  onFloorSelect,
+}) {
+  const etageSelecteurRef = useRef(null)
+
+  // Configuration des statuts
+  const statutOptions = useStatutOptions()
+
+  // Filtres (lecture/écriture localStorage sécurisée)
+  const [activeFilters, setActiveFilters] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`filters-${immeubleId}`)
+      const parsed = saved ? JSON.parse(saved) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })
+
+  useEffect(() => {
+    try {
+      if (immeubleId) {
+        localStorage.setItem(`filters-${immeubleId}`, JSON.stringify(activeFilters))
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [activeFilters, immeubleId])
+
+  // Handlers filtres
+  const toggleFilter = useCallback(filterValue => {
+    setActiveFilters(prev =>
+      prev.includes(filterValue) ? prev.filter(f => f !== filterValue) : [...prev, filterValue]
+    )
+  }, [])
+
+  const clearAllFilters = useCallback(() => {
+    setActiveFilters([])
+    // On ne clear pas selectedFloor ici car c'est géré par le parent, mais on pourrait demander au parent de le faire si on voulait "tout" resetter
+    if (onFloorSelect) onFloorSelect(null)
+  }, [onFloorSelect])
+
+  // Comptes par statut mémoïsés
+  const statusCounts = useMemo(() => {
+    if (statsData) {
+        const m = new Map()
+        m.set('NON_VISITE', statsData.nonVisitees)
+        m.set('CONTRAT_SIGNE', statsData.contratsSigne)
+        m.set('RENDEZ_VOUS_PRIS', statsData.rdvPris)
+        m.set('ABSENT', statsData.absent)
+        m.set('ARGUMENTE', statsData.argumente)
+        m.set('REFUS', statsData.refus)
+        // Note: NECESSITE_REPASSAGE is maybe not in the map? Check PortesGestion.
+        // PortesGestion didn't include it in map explicitly but statsData usually has it.
+        // Assuming statsData matches what PortesGestion expected.
+        return { byStatus: m, totalSansContrat: statsData.totalPortes - statsData.contratsSigne }
+    }
+    
+    // Fallback local
+    const m = new Map()
+    let totalSansContrat = 0
+    for (const p of portes) {
+      m.set(p.statut, (m.get(p.statut) || 0) + 1)
+      if (p.statut !== 'CONTRAT_SIGNE') totalSansContrat++
+    }
+    return { byStatus: m, totalSansContrat }
+  }, [portes, statsData])
+
+  // Filtrage des portes
+  const filteredPortes = useMemo(() => {
+    let result = portes
+    // Filtrage local par statut
+    if (activeFilters.length > 0) {
+      result = result.filter(porte => activeFilters.includes(porte.statut))
+    }
+    return result
+  }, [portes, activeFilters])
+
+  // Composant de filtres
+  const customFilters = useMemo(
+    () => (
+      <PorteListFilters
+        ref={etageSelecteurRef}
+        activeFilters={activeFilters}
+        clearAllFilters={clearAllFilters}
+        toggleFilter={toggleFilter}
+        statusCounts={statusCounts}
+        statutOptions={statutOptions}
+        immeuble={immeuble}
+        selectedFloor={selectedFloor}
+        statsData={statsData}
+        totalPortes={portes.length}
+      />
+    ),
+    [
+      activeFilters,
+      clearAllFilters,
+      toggleFilter,
+      statusCounts,
+      statutOptions,
+      immeuble,
+      selectedFloor,
+      statsData,
+      portes.length
+    ]
+  )
+
+  return (
+    <PortesTemplate
+      portes={filteredPortes}
+      statsData={statsData}
+      loading={loading}
+      isFetchingMore={isFetchingMore}
+      readOnly={false}
+      showStatusFilters={false} // On utilise nos customFilters
+      onPorteEdit={onEdit}
+      onQuickStatusChange={onQuickChange}
+      onRepassageChange={onRepassageChange}
+      onBack={onBack}
+      backButtonText="Retour"
+      scrollTarget={etageSelecteurRef}
+      scrollTargetText="Étages"
+      customFilters={customFilters}
+      onAddPorteToEtage={onAddPorteToEtage}
+      onAddEtage={onAddEtage}
+      addingPorteToEtage={addingPorteToEtage}
+      addingEtage={addingEtage}
+      onFloorSelect={onFloorSelect}
+      selectedFloor={selectedFloor}
+      hideHeader={true}
+    />
+  )
+}

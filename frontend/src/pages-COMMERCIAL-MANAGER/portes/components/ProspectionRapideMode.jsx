@@ -4,30 +4,37 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   ChevronLeft,
-  ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Clock,
   UserX,
   X,
   Calendar,
   MessageSquare,
   FileSignature,
-  List,
   Zap,
-  SkipForward,
   Building2,
-  RotateCcw,
   Filter,
   Save,
   CheckCircle2,
-  Circle,
   Sun,
   Moon,
+  AlertTriangle,
+  Pencil,
+  FastForward,
+  History,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
+import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 
 /**
  * Mode Prospection Rapide - Affiche une porte à la fois pour une mise à jour ultra-rapide
@@ -40,8 +47,12 @@ export default function ProspectionRapideMode({
   immeuble,
   onOpenEditModal,
   onRepassageChange,
+  loadMore,
+  hasMore,
+  isFetchingMore,
 }) {
   const { colors, base } = useCommercialTheme()
+  const { showSuccess } = useErrorToast()
   
   // Index de la porte courante
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -51,13 +62,34 @@ export default function ProspectionRapideMode({
   const [showCommentInput, setShowCommentInput] = useState(false)
   
   // Auto-avancer après mise à jour
-  const [autoAdvance, setAutoAdvance] = useState(true)
+  const [autoAdvance, setAutoAdvance] = useState(() => {
+    try {
+        const saved = localStorage.getItem('rapidModeAutoAdvance')
+        return saved !== null ? JSON.parse(saved) : true
+    } catch {
+        return true
+    }
+  })
+
+  const toggleAutoAdvance = () => {
+    setAutoAdvance(prev => {
+        const newVal = !prev
+        localStorage.setItem('rapidModeAutoAdvance', JSON.stringify(newVal))
+        return newVal
+    })
+  }
   
   // Filtre : type de portes à afficher
   const [filterMode, setFilterMode] = useState('all') 
   
   // Pour le mode repassage
   const [showRepassageChoice, setShowRepassageChoice] = useState(false)
+  
+  // Confirmation state
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    statut: null,
+  })
   
   // Calculer les portes filtrées selon le mode
   const filteredPortes = useMemo(() => {
@@ -86,7 +118,7 @@ export default function ProspectionRapideMode({
     return { total, visited, percentage, remaining: total - visited }
   }, [portes, statsData])
 
-  // Calculer les étages cibles pour l'affichage (Moved up to avoid hook order error)
+  // Calculer les étages cibles pour l'affichage
   const previousFloorTarget = useMemo(() => {
     if (!currentPorte) return null
     for (let i = currentIndex - 1; i >= 0; i--) {
@@ -115,10 +147,29 @@ export default function ProspectionRapideMode({
   }, [])
   
   const goToNext = useCallback(() => {
-    setCurrentIndex(prev => Math.min(filteredPortes.length - 1, prev + 1))
-    setShowCommentInput(false)
-    setShowRepassageChoice(false)
-  }, [filteredPortes.length])
+    // 1. Prefetch si on approche de la fin (ex: reste 3 portes)
+    if (hasMore && !isFetchingMore && currentIndex >= filteredPortes.length - 3) {
+        if (typeof loadMore === 'function') {
+            loadMore()
+        }
+    }
+
+    if (currentIndex < filteredPortes.length - 1) {
+       // Cas normal : on avance
+       setCurrentIndex(prev => prev + 1)
+       setShowCommentInput(false)
+       setShowRepassageChoice(false)
+    } else if (hasMore) {
+       // Cas fin de liste mais il y en a d'autres au backend : on charge
+       if (!isFetchingMore && typeof loadMore === 'function') {
+           loadMore()
+           // Note: Une fois chargé, le useEffect qui surveille filteredPortes.length pourrait ajuster currentIndex si nécessaire,
+           // ou l'utilisateur devra cliquer à nouveau sur Suivant.
+           // Pour une meilleure UX, on peut ne rien faire ici et laisser le chargement se faire via le prefetch,
+           // mais si le prefetch a échoué ou n'a pas eu le temps, ce bloc assure le chargement explicite.
+       }
+    }
+  }, [currentIndex, filteredPortes, hasMore, loadMore, isFetchingMore])
   
   const goToFirst = useCallback(() => {
     setCurrentIndex(0)
@@ -131,12 +182,9 @@ export default function ProspectionRapideMode({
     const currentFloor = currentPorte.etage
     
     // Chercher la première porte de l'étage précédent dans la liste filtrée
-    // On parcourt à l'envers depuis l'index actuel
     for (let i = currentIndex - 1; i >= 0; i--) {
       if (filteredPortes[i].etage < currentFloor) {
-        // On a trouvé un étage inférieur. Maintenant on cherche le DÉBUT de cet étage.
         const targetFloor = filteredPortes[i].etage
-        // Remonter jusqu'au début de cet étage
         let targetIndex = i
         while (targetIndex > 0 && filteredPortes[targetIndex - 1].etage === targetFloor) {
           targetIndex--
@@ -156,7 +204,7 @@ export default function ProspectionRapideMode({
     // Chercher la première porte de l'étage suivant
     for (let i = currentIndex + 1; i < filteredPortes.length; i++) {
       if (filteredPortes[i].etage > currentFloor) {
-        setCurrentIndex(i) // C'est forcément la première de cet étage puisqu'on avance
+        setCurrentIndex(i)
         setQuickComment('')
         setShowCommentInput(false)
         return
@@ -182,7 +230,6 @@ export default function ProspectionRapideMode({
         return i
       }
     }
-    // Si aucune après, chercher depuis le début
     for (let i = 0; i < currentIndex; i++) {
       if (filteredPortes[i].statut === StatutPorte.NON_VISITE) {
         return i
@@ -191,28 +238,44 @@ export default function ProspectionRapideMode({
     return -1
   }, [currentIndex, filteredPortes])
   
-  // Gestion du changement de statut: Si RDV ou Contrat, ouvrir le modal pour les détails , Si Absent, montrer le choix de repassage
-  const handleStatusChange = useCallback(async (newStatut) => {
+  // Gestion du clic sur un bouton statut
+  const handleStatusClick = useCallback((newStatut) => {
     if (!currentPorte) return
     
+    // Si RDV ou Contrat, on ouvre directement le modal
     if (newStatut === StatutPorte.RENDEZ_VOUS_PRIS || newStatut === StatutPorte.CONTRAT_SIGNE) {
       if (onOpenEditModal) {
         onOpenEditModal(currentPorte, newStatut, quickComment)
       }
       return
     }
-    
+
+    // Si Absent, on affiche DIRECTEMENT le choix de repassage (le choix agit comme confirmation)
     if (newStatut === StatutPorte.ABSENT) {
       setShowRepassageChoice(true)
-      // Mettre d'abord le statut à ABSENT
-      await onQuickStatusChange(currentPorte, newStatut, quickComment)
+      // On applique le changement de statut immédiatement (statut ABSENT par défaut en attendant choix repassage)
+      onQuickStatusChange(currentPorte, newStatut, quickComment)
       return
     }
-    
-    // Pour les autres statuts, mise à jour rapide
+
+    // Pour les autres statuts (Refus, Argumenté...), on demande confirmation
+    setConfirmDialog({
+        isOpen: true,
+        statut: newStatut
+    })
+  }, [currentPorte, onOpenEditModal, quickComment, onQuickStatusChange])
+
+  // Confirmation et application du statut (Uniquement pour Refus/Argumenté maintenant)
+  const handleConfirmStatusChange = useCallback(async () => {
+    const { statut: newStatut } = confirmDialog
+    if (!currentPorte || !newStatut) return
+
+    setConfirmDialog({ isOpen: false, statut: null })
+
+    // Application du statut
     await onQuickStatusChange(currentPorte, newStatut, quickComment)
     
-    // Auto-avancer si activé
+    // Auto-avancer
     if (autoAdvance) {
       setTimeout(() => {
         const nextIndex = findNextUnvisited()
@@ -226,7 +289,8 @@ export default function ProspectionRapideMode({
         setShowRepassageChoice(false)
       }, 1000)
     }
-  }, [currentPorte, onQuickStatusChange, autoAdvance, findNextUnvisited, goToNext, onOpenEditModal, quickComment, currentIndex, filteredPortes.length])
+  }, [currentPorte, confirmDialog, onQuickStatusChange, quickComment, autoAdvance, findNextUnvisited, currentIndex, filteredPortes.length, goToNext])
+
   
   // Gestion du repassage
   const handleRepassageSelect = useCallback(async (nbRepassages) => {
@@ -272,15 +336,8 @@ export default function ProspectionRapideMode({
   // Sauvegarder uniquement le commentaire
   const handleSaveComment = useCallback(async () => {
     if (!currentPorte) return
-    
-    // On garde le statut actuel
     const currentStatus = currentPorte.statut
-    
-    // On utilise le handler qui gère déjà la sauvegarde (statut + commentaire)
-    // On passe le commentaire actuel
     await onQuickStatusChange(currentPorte, currentStatus, quickComment)
-    
-    // On ferme l'input et on vide (optionnel, selon préférence UX)
     setShowCommentInput(false)
     setQuickComment('')
   }, [currentPorte, quickComment, onQuickStatusChange])
@@ -292,6 +349,32 @@ export default function ProspectionRapideMode({
     { value: 'rendez_vous_pris', label: 'Rendez-vous pris', count: portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS).length },
     { value: 'all', label: 'Toutes', count: portes.length },
   ]
+
+  // Fonction pour retourner à la dernière porte traitée ou à la première non visitée (Reprendre)
+  const handleResume = useCallback(() => {
+    // 1. Chercher la première porte NON VISITÉE dans la liste filtrée
+    const firstUnvisitedIndex = filteredPortes.findIndex(p => p.statut === StatutPorte.NON_VISITE)
+    
+    if (firstUnvisitedIndex !== -1) {
+        setCurrentIndex(firstUnvisitedIndex)
+        showSuccess ? showSuccess('Reprise à la première porte non visitée') : null
+        return
+    }
+
+    // 2. Si toutes sont visitées, on cherche la toute dernière porte de la liste (ou on charge la suite)
+    // On suppose que l'utilisateur veut aller à la fin de ce qu'il a fait
+    if (filteredPortes.length > 0) {
+        if (hasMore && !isFetchingMore) {
+             // Si on a d'autres portes sur le serveur, on les charge
+             loadMore()
+             // On se met à la fin en attendant
+             setCurrentIndex(filteredPortes.length - 1)
+        } else {
+             setCurrentIndex(filteredPortes.length - 1)
+        }
+    }
+  }, [filteredPortes, hasMore, isFetchingMore, loadMore])
+
   
   // Si aucune porte à afficher
   if (filteredPortes.length === 0) {
@@ -397,20 +480,49 @@ export default function ProspectionRapideMode({
     },
   ]
 
+  // Config pour l'affichage du dialogue
+  const pendingStatutInfo = confirmDialog.statut 
+    ? statutOptions.find(o => o.value === confirmDialog.statut)
+    : null
 
+  // Trouver la couleur "Action" (forte) correspondante pour le bouton
+  const pendingActionBtn = actionButtons.find(b => b.statut === confirmDialog.statut)
+  const confirmBtnColor = pendingActionBtn 
+    ? pendingActionBtn.color // Utilise la couleur définie dans actionButtons (bg-red-500, etc.)
+    : pendingStatutInfo?.color?.split(' ')[0] || 'bg-primary' // Fallback
 
   return (
     <div className="flex flex-col min-h-[80vh]">
       {/* Header avec barre de progression */}
       <div className={`${base.bg.card} border-b ${base.border.default} p-4 rounded-t-xl`}>
         {/* Titre */}
-        <div className="flex items-center gap-3 mb-2">
-          <div className={`p-2 rounded-lg ${colors.primary.bgLight}`}>
-            <Zap className={`h-5 w-5 ${colors.primary.text}`} />
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${colors.primary.bgLight}`}>
+                <Zap className={`h-5 w-5 ${colors.primary.text}`} />
+            </div>
+            <div>
+                <h2 className={`font-bold text-lg ${base.text.primary}`}>Mode Rapide</h2>
+                <p className={`text-xs ${base.text.muted}`}>{immeuble?.adresse}</p>
+            </div>
           </div>
-          <div>
-            <h2 className={`font-bold text-lg ${base.text.primary}`}>Mode Rapide</h2>
-            <p className={`text-xs ${base.text.muted}`}>{immeuble?.adresse}</p>
+          
+          <div className="flex items-center gap-2">
+            <button 
+                onClick={handleResume} 
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200`}
+                title="Aller à la première porte non visitée"
+            >
+                <History className="h-3.5 w-3.5" />
+                Reprendre
+            </button>
+            <button 
+                onClick={toggleAutoAdvance} 
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${autoAdvance ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
+            >
+                <FastForward className={`h-3.5 w-3.5 ${autoAdvance ? 'text-green-600' : 'text-gray-400'}`} />
+                {autoAdvance ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
+            </button>
           </div>
         </div>
         
@@ -532,10 +644,23 @@ export default function ProspectionRapideMode({
                   </div>
                   
                   {/* Center: Porte Number/Name */}
-                  <div className="text-center flex-1 min-w-0">
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">
-                      {currentPorte.nomPersonnalise || currentPorte.numero}
-                    </h3>
+                  <div className="text-center flex-1 min-w-0 flex flex-col items-center justify-center">
+                    <div className="flex items-center justify-center gap-2">
+                        <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">
+                        {currentPorte.nomPersonnalise || currentPorte.numero}
+                        </h3>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 shrink-0"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                onOpenEditModal(currentPorte, currentPorte.statut, quickComment)
+                            }}
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                    </div>
                     {currentPorte.nomPersonnalise && (
                       <p className="text-[10px] font-medium text-gray-400">
                         Porte {currentPorte.numero}
@@ -600,6 +725,17 @@ export default function ProspectionRapideMode({
                     </Badge>
                   </div>
                 )}
+
+                {/* Contracts Info - Inline */}
+                {currentPorte.statut === StatutPorte.CONTRAT_SIGNE && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide shrink-0">Contrats:</span>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 px-2.5 py-0.5 text-[10px]">
+                      <FileSignature className="h-3 w-3 mr-1" />
+                      {currentPorte.nbContrats || 1} {(currentPorte.nbContrats || 1) > 1 ? 'Contrats' : 'Contrat'}
+                    </Badge>
+                  </div>
+                )}
               </div>
 
               {/* Commentaire existant */}
@@ -620,38 +756,59 @@ export default function ProspectionRapideMode({
                   <div className="text-center mb-3">
                     <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">Noter un passage</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => handleRepassageSelect(1)}
                       className={`
-                        group relative overflow-hidden p-4 rounded-2xl transition-all duration-300 border-2
+                        group relative overflow-hidden h-32 rounded-2xl transition-all duration-300 border-2 shadow-sm hover:shadow-lg hover:-translate-y-1 block w-full
                         ${(currentPorte.nbRepassages || 0) === 1
-                          ? 'bg-orange-50 border-orange-500 shadow-md ring-2 ring-orange-200 ring-offset-2' 
-                          : 'bg-white border-gray-100 hover:border-orange-200 hover:bg-orange-50/30'}
+                          ? 'border-orange-500 ring-2 ring-orange-200 ring-offset-2' 
+                          : 'border-transparent hover:border-orange-300'}
                       `}
                     >
-                      <div className="relative z-10 flex flex-col items-center">
-                        <span className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">🌅</span>
-                        <span className="font-bold text-gray-900">Matin</span>
-                        <span className="text-xs text-gray-500">1er passage</span>
+                      {/* Background Matin */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-orange-100 via-amber-50 to-blue-50 opacity-100 transition-opacity" />
+                       <div className="absolute -right-4 -top-4 opacity-20 group-hover:opacity-30 transition-opacity">
+                            <Sun className="h-24 w-24 text-orange-500" />
+                       </div>
+                      
+                      <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                        <div className="p-2 rounded-full bg-orange-100 text-orange-600 mb-2 group-hover:scale-110 transition-transform shadow-sm">
+                             <Sun className="h-6 w-6" />
+                        </div>
+                        <span className="font-bold text-gray-800 text-lg">Matin</span>
+                        <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full mt-1 border border-orange-100">
+                            1er passage
+                        </span>
                       </div>
                     </button>
                     
                     <button
                       onClick={() => handleRepassageSelect(2)}
                       className={`
-                        group relative overflow-hidden p-4 rounded-2xl transition-all duration-300 border-2
+                        group relative overflow-hidden h-32 rounded-2xl transition-all duration-300 border-2 shadow-sm hover:shadow-lg hover:-translate-y-1 block w-full
                         ${(currentPorte.nbRepassages || 0) >= 2
-                          ? 'bg-indigo-50 border-indigo-500 shadow-md ring-2 ring-indigo-200 ring-offset-2' 
-                          : 'bg-white border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30'}
+                          ? 'border-indigo-500 ring-2 ring-indigo-200 ring-offset-2' 
+                          : 'border-transparent hover:border-indigo-300'}
                       `}
                     >
-                       <div className="relative z-10 flex flex-col items-center">
-                        <span className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">🌆</span>
-                        <span className="font-bold text-gray-900">Soir</span>
-                        <span className="text-xs text-gray-500">2ème passage</span>
+                       {/* Background Soir */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-blue-50 to-purple-50 opacity-100 transition-opacity" />
+                      <div className="absolute -right-4 -top-4 opacity-20 group-hover:opacity-30 transition-opacity">
+                            <Moon className="h-24 w-24 text-indigo-600" />
+                       </div>
+
+                      <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                        <div className="p-2 rounded-full bg-indigo-100 text-indigo-600 mb-2 group-hover:scale-110 transition-transform shadow-sm">
+                             <Moon className="h-6 w-6" />
+                        </div>
+                        <span className="font-bold text-gray-800 text-lg">Soir</span>
+                         <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full mt-1 border border-indigo-100">
+                            2ème passage
+                        </span>
                       </div>
                     </button>
+
                   </div>
                   <button 
                     onClick={() => setShowRepassageChoice(false)}
@@ -667,21 +824,52 @@ export default function ProspectionRapideMode({
                 <>
                   <div className="grid grid-cols-3 gap-3 px-4 py-2">
                     {actionButtons.slice(0, 3).map(btn => {
-                      const Icon = btn.icon
                       const isActive = currentPorte.statut === btn.statut
+                      
+                      // Special styling for ABSENT if Repassage exists
+                      let buttonStyle = isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 text-gray-700'
+                      let Icon = btn.icon
+                      let label = btn.label
+                      
+                      if (btn.statut === StatutPorte.ABSENT && (currentPorte.nbRepassages || 0) > 0) {
+                          if (currentPorte.nbRepassages === 1) {
+                              // Matin Style
+                              buttonStyle = isActive 
+                                ? 'bg-gradient-to-br from-orange-400 to-orange-600 text-white ring-4 ring-offset-2 ring-orange-200' 
+                                : 'bg-orange-50 text-orange-700 border border-orange-200'
+                              Icon = Sun
+                              label = 'Abs. (Matin)'
+                          } else if (currentPorte.nbRepassages >= 2) {
+                              // Soir Style
+                              buttonStyle = isActive 
+                                ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white ring-4 ring-offset-2 ring-indigo-200' 
+                                : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                              Icon = Moon
+                              label = 'Abs. (Soir)'
+                          }
+                      }
+                      
                       return (
                         <button
                           key={btn.statut}
-                          onClick={() => handleStatusChange(btn.statut)}
+                          onClick={() => handleStatusClick(btn.statut)}
                           className={`
-                            flex flex-col items-center justify-center p-4 rounded-xl 
-                            ${isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 text-gray-700'}
+                            relative overflow-hidden flex flex-col items-center justify-center p-4 rounded-xl 
+                            ${buttonStyle}
                             transition-all duration-200 active:scale-80
                             min-h-[80px]
                           `}
                         >
-                          <Icon className="h-7 w-7 mb-2" />
-                          <span className="font-bold text-xs">{btn.label}</span>
+                          <Icon className={`h-7 w-7 mb-2 ${isActive ? 'text-white' : (btn.statut === StatutPorte.ABSENT && currentPorte.nbRepassages ? '' : 'text-current')}`} />
+                          <span className="font-bold text-xs">{label}</span>
+                          
+                          {/* Indicator for Absent/Repassage rendering */}
+                          {btn.statut === StatutPorte.ABSENT && (currentPorte.nbRepassages || 0) > 0 && (
+                              <div className="absolute top-1 right-1">
+                                  {currentPorte.nbRepassages === 1 && <Sun className="h-3 w-3 opacity-50" />}
+                                  {currentPorte.nbRepassages >= 2 && <Moon className="h-3 w-3 opacity-50" />}
+                              </div>
+                          )}
                         </button>
                       )
                     })}
@@ -694,7 +882,7 @@ export default function ProspectionRapideMode({
                       return (
                         <button
                           key={btn.statut}
-                          onClick={() => handleStatusChange(btn.statut)}
+                          onClick={() => handleStatusClick(btn.statut)}
                           className={`
                             flex flex-col items-center justify-center p-4 rounded-xl 
                             ${isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 text-gray-700'}
@@ -711,9 +899,7 @@ export default function ProspectionRapideMode({
                 </>
               )}
               
-              {/* Zone commentaire - REMOVED redundant display as requested. 
-                  Only show the input trigger button if no comment is being typed yet to keep UI clean.
-              */}
+              {/* Zone commentaire */}
               <div className="mt-2 py-2 px-4">
                 {!showCommentInput && (
                     <button
@@ -765,7 +951,6 @@ export default function ProspectionRapideMode({
 
         {/* Navigation Porte (Premium Design) - Moved below card */}
         <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
-          {/* Progress Bar Background */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 rounded-b-2xl overflow-hidden">
             <div 
               className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
@@ -773,7 +958,6 @@ export default function ProspectionRapideMode({
             />
           </div>
 
-          {/* Bouton Précédent */}
           <button
             onClick={goToPrevious}
             disabled={currentIndex === 0}
@@ -798,62 +982,76 @@ export default function ProspectionRapideMode({
             </div>
           </button>
 
-          {/* Center: Current Door Info */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Porte</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-lg font-black text-gray-900">
-                  {currentIndex + 1}
-                </span>
-                <span className="text-xs font-medium text-gray-400">
-                  / {filteredPortes.length}
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* Bouton Suivant */}
-          <button
+           <button
             onClick={goToNext}
-            disabled={currentIndex >= filteredPortes.length - 1}
+            disabled={(currentIndex >= filteredPortes.length - 1 && !hasMore) || isFetchingMore || currentPorte?.statut === StatutPorte.NON_VISITE}
+            title={currentPorte?.statut === StatutPorte.NON_VISITE ? "Veuillez définir un statut avant de continuer" : ""}
             className={`
-              relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300
-              ${currentIndex < filteredPortes.length - 1
+              relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300 text-right
+              ${!((currentIndex >= filteredPortes.length - 1 && !hasMore) || isFetchingMore || currentPorte?.statut === StatutPorte.NON_VISITE)
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
                 : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
             `}
           >
             <div className="flex flex-col items-end min-w-[50px]">
-              <span className={`text-[9px] font-bold uppercase ${currentIndex < filteredPortes.length - 1 ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
+              <span className={`text-[9px] font-bold uppercase ${(currentIndex < filteredPortes.length - 1 || hasMore) ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
               <span className="text-xs font-bold">
-                {currentIndex < filteredPortes.length - 1 ? `Porte ${filteredPortes[currentIndex + 1]?.numero || currentIndex + 2}` : '-'}
+                 {isFetchingMore ? '...' : 
+                    (currentIndex < filteredPortes.length - 1 
+                        ? `Porte ${filteredPortes[currentIndex + 1]?.numero || (currentIndex + 2)}` 
+                        : (hasMore ? 'Charger...' : '-'))
+                 }
               </span>
             </div>
             <div className={`
               p-1.5 rounded-full transition-colors
-              ${currentIndex < filteredPortes.length - 1 ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
+              ${(currentIndex < filteredPortes.length - 1 || hasMore) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
             `}>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronsRight className="h-4 w-4" />
             </div>
           </button>
         </div>
-        
-        {/* Options */}
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={autoAdvance}
-              onChange={(e) => setAutoAdvance(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300"
-            />
-            <span className={`text-sm ${base.text.muted}`}>
-              <SkipForward className="h-4 w-4 inline mr-1" />
-              Auto-avancer
-            </span>
-          </label>
-        </div>
+
+        {/* DIALOG DE CONFIRMATION */}
+        <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog(p => ({ ...p, isOpen: false }))}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`p-3 rounded-full ${pendingStatutInfo?.color?.replace('bg-', 'bg-').replace(' ', '/20 ') || 'bg-gray-100'}`}>
+                   {pendingStatutInfo?.icon && (() => {
+                      const Icon = pendingStatutInfo.icon;
+                      return <Icon className={`h-6 w-6 ${pendingStatutInfo?.color?.split(' ')[1] || 'text-gray-600'}`} />
+                   })()}
+                </div>
+                <DialogTitle className="text-xl">Confirmer le changement</DialogTitle>
+              </div>
+              <DialogDescription className="text-base text-gray-600">
+                Vous allez passer la porte <span className="font-bold text-gray-900">{currentPorte?.numero}</span> en statut :
+                <br />
+                <span className={`inline-block mt-2 px-2 py-1 rounded text-sm font-bold ${pendingStatutInfo?.color || 'bg-gray-100'}`}>
+                  {pendingStatutInfo?.label}
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 sm:gap-0 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDialog(p => ({ ...p, isOpen: false }))}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleConfirmStatusChange}
+                className={`flex-1 ${confirmBtnColor} text-white hover:opacity-90 shadow-md transition-all`}
+              >
+                Confirmer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
     </div>
   )
