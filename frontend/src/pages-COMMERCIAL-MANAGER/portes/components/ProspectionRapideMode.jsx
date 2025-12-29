@@ -21,6 +21,10 @@ import {
   RotateCcw,
   Filter,
   Save,
+  CheckCircle2,
+  Circle,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
@@ -32,7 +36,6 @@ export default function ProspectionRapideMode({
   portes = [],
   statsData,
   onQuickStatusChange,
-  onSwitchToListMode,
   statutOptions,
   immeuble,
   onOpenEditModal,
@@ -51,7 +54,7 @@ export default function ProspectionRapideMode({
   const [autoAdvance, setAutoAdvance] = useState(true)
   
   // Filtre : type de portes à afficher
-  const [filterMode, setFilterMode] = useState('non_visitees') // 'all' | 'non_visitees' | 'absents' | 'rdv'
+  const [filterMode, setFilterMode] = useState('all') 
   
   // Pour le mode repassage
   const [showRepassageChoice, setShowRepassageChoice] = useState(false)
@@ -63,17 +66,10 @@ export default function ProspectionRapideMode({
         return portes.filter(p => p.statut === StatutPorte.NON_VISITE)
       case 'absents':
         return portes.filter(p => 
-          p.statut === StatutPorte.ABSENT || 
-          p.statut === StatutPorte.NECESSITE_REPASSAGE
+          p.statut === StatutPorte.ABSENT
         )
       case 'rdv':
         return portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS)
-      case 'a_traiter':
-        return portes.filter(p => 
-          p.statut === StatutPorte.NON_VISITE || 
-          p.statut === StatutPorte.ABSENT ||
-          p.statut === StatutPorte.NECESSITE_REPASSAGE
-        )
       default:
         return portes
     }
@@ -89,18 +85,37 @@ export default function ProspectionRapideMode({
     const percentage = total > 0 ? Math.round((visited / total) * 100) : 0
     return { total, visited, percentage, remaining: total - visited }
   }, [portes, statsData])
+
+  // Calculer les étages cibles pour l'affichage (Moved up to avoid hook order error)
+  const previousFloorTarget = useMemo(() => {
+    if (!currentPorte) return null
+    for (let i = currentIndex - 1; i >= 0; i--) {
+        if (filteredPortes[i].etage < currentPorte.etage) {
+            return filteredPortes[i].etage
+        }
+    }
+    return null
+  }, [currentPorte, currentIndex, filteredPortes])
+
+  const nextFloorTarget = useMemo(() => {
+    if (!currentPorte) return null
+    for (let i = currentIndex + 1; i < filteredPortes.length; i++) {
+        if (filteredPortes[i].etage > currentPorte.etage) {
+            return filteredPortes[i].etage
+        }
+    }
+    return null
+  }, [currentPorte, currentIndex, filteredPortes])
   
   // Navigation
   const goToPrevious = useCallback(() => {
     setCurrentIndex(prev => Math.max(0, prev - 1))
-    setQuickComment('')
     setShowCommentInput(false)
     setShowRepassageChoice(false)
   }, [])
   
   const goToNext = useCallback(() => {
     setCurrentIndex(prev => Math.min(filteredPortes.length - 1, prev + 1))
-    setQuickComment('')
     setShowCommentInput(false)
     setShowRepassageChoice(false)
   }, [filteredPortes.length])
@@ -110,12 +125,55 @@ export default function ProspectionRapideMode({
     setQuickComment('')
     setShowCommentInput(false)
   }, [])
-  
-  const goToLast = useCallback(() => {
-    setCurrentIndex(filteredPortes.length - 1)
-    setQuickComment('')
-    setShowCommentInput(false)
-  }, [filteredPortes.length])
+  // Navigation par étage
+  const goToPreviousFloor = useCallback(() => {
+    if (!currentPorte) return
+    const currentFloor = currentPorte.etage
+    
+    // Chercher la première porte de l'étage précédent dans la liste filtrée
+    // On parcourt à l'envers depuis l'index actuel
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (filteredPortes[i].etage < currentFloor) {
+        // On a trouvé un étage inférieur. Maintenant on cherche le DÉBUT de cet étage.
+        const targetFloor = filteredPortes[i].etage
+        // Remonter jusqu'au début de cet étage
+        let targetIndex = i
+        while (targetIndex > 0 && filteredPortes[targetIndex - 1].etage === targetFloor) {
+          targetIndex--
+        }
+        setCurrentIndex(targetIndex)
+        setQuickComment('')
+        setShowCommentInput(false)
+        return
+      }
+    }
+  }, [currentIndex, filteredPortes, currentPorte])
+
+  const goToNextFloor = useCallback(() => {
+    if (!currentPorte) return
+    const currentFloor = currentPorte.etage
+    
+    // Chercher la première porte de l'étage suivant
+    for (let i = currentIndex + 1; i < filteredPortes.length; i++) {
+      if (filteredPortes[i].etage > currentFloor) {
+        setCurrentIndex(i) // C'est forcément la première de cet étage puisqu'on avance
+        setQuickComment('')
+        setShowCommentInput(false)
+        return
+      }
+    }
+  }, [currentIndex, filteredPortes.length, currentPorte])
+
+  // Vérifier si navigation étage possible
+  const canGoPreviousFloor = useMemo(() => {
+    if (!currentPorte || currentIndex === 0) return false
+    return filteredPortes.some((p, i) => i < currentIndex && p.etage < currentPorte.etage)
+  }, [currentPorte, currentIndex, filteredPortes])
+
+  const canGoNextFloor = useMemo(() => {
+    if (!currentPorte || currentIndex >= filteredPortes.length - 1) return false
+    return filteredPortes.some((p, i) => i > currentIndex && p.etage > currentPorte.etage)
+  }, [currentPorte, currentIndex, filteredPortes])
   
   // Trouver la prochaine porte non visitée
   const findNextUnvisited = useCallback(() => {
@@ -133,11 +191,10 @@ export default function ProspectionRapideMode({
     return -1
   }, [currentIndex, filteredPortes])
   
-  // Gestion du changement de statut
+  // Gestion du changement de statut: Si RDV ou Contrat, ouvrir le modal pour les détails , Si Absent, montrer le choix de repassage
   const handleStatusChange = useCallback(async (newStatut) => {
     if (!currentPorte) return
     
-    // Si RDV ou Contrat, ouvrir le modal pour les détails
     if (newStatut === StatutPorte.RENDEZ_VOUS_PRIS || newStatut === StatutPorte.CONTRAT_SIGNE) {
       if (onOpenEditModal) {
         onOpenEditModal(currentPorte, newStatut, quickComment)
@@ -145,7 +202,6 @@ export default function ProspectionRapideMode({
       return
     }
     
-    // Si Absent, montrer le choix de repassage
     if (newStatut === StatutPorte.ABSENT) {
       setShowRepassageChoice(true)
       // Mettre d'abord le statut à ABSENT
@@ -168,7 +224,7 @@ export default function ProspectionRapideMode({
         setQuickComment('')
         setShowCommentInput(false)
         setShowRepassageChoice(false)
-      }, 300)
+      }, 1000)
     }
   }, [currentPorte, onQuickStatusChange, autoAdvance, findNextUnvisited, goToNext, onOpenEditModal, quickComment, currentIndex, filteredPortes.length])
   
@@ -213,12 +269,27 @@ export default function ProspectionRapideMode({
     setQuickComment('')
   }, [filterMode])
   
+  // Sauvegarder uniquement le commentaire
+  const handleSaveComment = useCallback(async () => {
+    if (!currentPorte) return
+    
+    // On garde le statut actuel
+    const currentStatus = currentPorte.statut
+    
+    // On utilise le handler qui gère déjà la sauvegarde (statut + commentaire)
+    // On passe le commentaire actuel
+    await onQuickStatusChange(currentPorte, currentStatus, quickComment)
+    
+    // On ferme l'input et on vide (optionnel, selon préférence UX)
+    setShowCommentInput(false)
+    setQuickComment('')
+  }, [currentPorte, quickComment, onQuickStatusChange])
+  
   // Filters options
   const filterOptions = [
     { value: 'non_visitees', label: 'Non visitées', count: portes.filter(p => p.statut === StatutPorte.NON_VISITE).length },
-    { value: 'absents', label: 'Absents', count: portes.filter(p => p.statut === StatutPorte.ABSENT || p.statut === StatutPorte.NECESSITE_REPASSAGE).length },
-    { value: 'a_traiter', label: 'À traiter', count: portes.filter(p => p.statut === StatutPorte.NON_VISITE || p.statut === StatutPorte.ABSENT || p.statut === StatutPorte.NECESSITE_REPASSAGE).length },
-    { value: 'rdv', label: 'RDV', count: portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS).length },
+    { value: 'absents', label: 'Absents', count: portes.filter(p =>p.statut === StatutPorte.ABSENT).length},
+    { value: 'rendez_vous_pris', label: 'Rendez-vous pris', count: portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS).length },
     { value: 'all', label: 'Toutes', count: portes.length },
   ]
   
@@ -326,12 +397,14 @@ export default function ProspectionRapideMode({
     },
   ]
 
+
+
   return (
     <div className="flex flex-col min-h-[80vh]">
       {/* Header avec barre de progression */}
       <div className={`${base.bg.card} border-b ${base.border.default} p-4 rounded-t-xl`}>
         {/* Titre */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-2">
           <div className={`p-2 rounded-lg ${colors.primary.bgLight}`}>
             <Zap className={`h-5 w-5 ${colors.primary.text}`} />
           </div>
@@ -342,7 +415,7 @@ export default function ProspectionRapideMode({
         </div>
         
         {/* Filtres rapides */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-2">
           <Filter className={`h-4 w-4 ${base.text.muted} self-center`} />
           {filterOptions.map(opt => (
             <button
@@ -360,7 +433,7 @@ export default function ProspectionRapideMode({
         </div>
         
         {/* Barre de progression */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <span className={base.text.muted}>Progression globale</span>
             <span className={`font-bold ${colors.primary.text}`}>
@@ -375,153 +448,216 @@ export default function ProspectionRapideMode({
           </div>
         </div>
       </div>
-      
       {/* Navigation et porte courante */}
-      <div className="flex-1 p-4 space-y-4">
-        {/* Contrôles de navigation */}
-        <div className="flex items-center justify-between">
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToFirst}
-              disabled={currentIndex === 0}
-              className="h-10 w-10"
-            >
-              <ChevronsLeft className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToPrevious}
-              disabled={currentIndex === 0}
-              className="h-10 w-10"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-          </div>
-          
-          <div className="text-center">
-            <Badge variant="secondary" className="text-sm px-3 py-1">
-              {currentIndex + 1} / {filteredPortes.length}
-            </Badge>
-          </div>
-          
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToNext}
-              disabled={currentIndex >= filteredPortes.length - 1}
-              className="h-10 w-10"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={goToLast}
-              disabled={currentIndex >= filteredPortes.length - 1}
-              className="h-10 w-10"
-            >
-              <ChevronsRight className="h-5 w-5" />
-            </Button>
-          </div>
+      <div className="flex-1 p-2 space-y-2">
+        {/* Contrôles de navigation PREMIUM */}
+        <div className="flex flex-col gap-2">
+            {/* Navigation Étage (Premium Design) */}
+            <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+               {/* Label Central (Absolu pour ne pas gêner le flex) */}
+               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Étage</span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {currentPorte ? currentPorte.etage : '--'}
+                    </span>
+                  </div>
+               </div>
+
+               {/* Bouton Précédent */}
+               <button
+                  onClick={goToPreviousFloor}
+                  disabled={!canGoPreviousFloor}
+                  className={`
+                    relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
+                    ${canGoPreviousFloor 
+                        ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md -translate-y-0 active:scale-95' 
+                        : 'opacity-40 cursor-not-allowed grayscale'}
+                  `}
+               >
+                  <div className={`
+                    p-2 rounded-full transition-colors
+                    ${canGoPreviousFloor ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100 text-gray-400'}
+                  `}>
+                    <ChevronsLeft className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col items-start min-w-[60px]">
+                     <span className="text-[10px] font-bold opacity-60 uppercase">Précédent</span>
+                     <span className="text-sm font-bold">
+                        {previousFloorTarget !== null ? `Étage ${previousFloorTarget}` : '-'}
+                     </span>
+                  </div>
+               </button>
+
+               {/* Bouton Suivant */}
+               <button
+                  onClick={goToNextFloor}
+                  disabled={!canGoNextFloor}
+                  className={`
+                    relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-right
+                    ${canGoNextFloor 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
+                        : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
+                  `}
+               >
+                  <div className="flex flex-col items-end min-w-[60px]">
+                     <span className={`text-[10px] font-bold uppercase ${canGoNextFloor ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
+                     <span className="text-sm font-bold">
+                        {nextFloorTarget !== null ? `Étage ${nextFloorTarget}` : '-'}
+                     </span>
+                  </div>
+                  <div className={`
+                    p-2 rounded-full transition-colors
+                    ${canGoNextFloor ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
+                  `}>
+                    <ChevronsRight className="h-5 w-5" />
+                  </div>
+               </button>
+            </div>
         </div>
         
         {/* Carte de la porte courante */}
         {currentPorte && (
           <Card className={`${base.bg.card} border-2 ${base.border.default} shadow-lg`}>
-            <CardContent className="p-5">
-              {/* Info porte */}
-              <div className="text-center mb-5">
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Building2 className={`h-5 w-5 ${base.text.muted}`} />
-                  <span className={`text-sm ${base.text.muted}`}>Étage {currentPorte.etage}</span>
-                </div>
-                <h3 className={`text-2xl font-bold ${base.text.primary} mb-1`}>
-                  {currentPorte.nomPersonnalise || `Porte ${currentPorte.numero}`}
-                </h3>
-                {currentPorte.nomPersonnalise && (
-                  <p className={`text-sm ${base.text.muted}`}>N° {currentPorte.numero}</p>
-                )}
-                
-                {/* Badge statut actuel */}
-                <div className="mt-3 flex justify-center">
-                  <Badge className={`${statutInfo.color} text-sm px-4 py-1.5`}>
-                    {StatutIcon && <StatutIcon className="h-4 w-4 mr-2" />}
-                    {statutInfo.label}
+            <CardContent className="p-0">
+              {/* Header: Compact Horizontal Layout */}
+              <div className="relative overflow-hidden rounded-t-xl bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-100">
+                <div className="flex items-center justify-between gap-3">
+                  {/* Left: Étage */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100/80 backdrop-blur-sm shrink-0">
+                    <Building2 className="h-3 w-3 text-gray-500" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600">
+                      Étage {currentPorte.etage}
+                    </span>
+                  </div>
+                  
+                  {/* Center: Porte Number/Name */}
+                  <div className="text-center flex-1 min-w-0">
+                    <h3 className="text-2xl font-black text-gray-900 tracking-tight truncate">
+                      {currentPorte.nomPersonnalise || currentPorte.numero}
+                    </h3>
+                    {currentPorte.nomPersonnalise && (
+                      <p className="text-[10px] font-medium text-gray-400">
+                        Porte {currentPorte.numero}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Right: Status Badge */}
+                  <Badge className={`${statutInfo?.color || 'bg-gray-100 text-gray-700'} border-0 px-2.5 py-1 text-[10px] font-bold shadow-sm ring-1 ring-inset ring-black/5 shrink-0`}>
+                    {StatutIcon && <StatutIcon className="h-3 w-3 mr-1" />}
+                    {statutInfo?.label}
                   </Badge>
                 </div>
-                
-                {/* Info repassage */}
-                {needsRepassage && currentPorte.nbRepassages > 0 && (
-                  <div className={`mt-3 ${colors.warning.bgLight} rounded-lg p-2 inline-flex items-center gap-2`}>
-                    <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
-                    <span className={`text-sm font-medium ${colors.warning.text}`}>
-                      {currentPorte.nbRepassages === 1 ? '1er passage effectué' : '2ème passage effectué'}
-                    </span>
+              </div>
+
+              {/* Info Section: Compact Horizontal */}
+              <div className="px-4 py-2 bg-white">
+                {/* Repassage Info - Horizontal Pills for ABSENT */}
+                {currentPorte.statut === StatutPorte.ABSENT && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide shrink-0">Passages:</span>
+                    <div className="flex gap-2 flex-1">
+                      {/* 1er Passage */}
+                      <div className={`
+                        flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border flex-1
+                        ${currentPorte.nbRepassages >= 1 
+                          ? 'bg-orange-50 border-orange-200' 
+                          : 'bg-gray-50 border-gray-200 opacity-50'}
+                      `}>
+                        <div className={`p-1 rounded-full ${currentPorte.nbRepassages >= 1 ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-400'}`}>
+                          <Sun className="h-3 w-3" />
+                        </div>
+                        <span className={`text-[10px] font-bold ${currentPorte.nbRepassages >= 1 ? 'text-gray-900' : 'text-gray-500'}`}>Matin</span>
+                        {currentPorte.nbRepassages >= 1 && <CheckCircle2 className="h-3 w-3 text-green-500 ml-auto" />}
+                      </div>
+                      
+                      {/* 2ème Passage */}
+                      <div className={`
+                        flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border flex-1
+                        ${currentPorte.nbRepassages >= 2 
+                          ? 'bg-indigo-50 border-indigo-200' 
+                          : 'bg-gray-50 border-gray-200 opacity-50'}
+                      `}>
+                        <div className={`p-1 rounded-full ${currentPorte.nbRepassages >= 2 ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-400'}`}>
+                          <Moon className="h-3 w-3" />
+                        </div>
+                        <span className={`text-[10px] font-bold ${currentPorte.nbRepassages >= 2 ? 'text-gray-900' : 'text-gray-500'}`}>Soir</span>
+                        {currentPorte.nbRepassages >= 2 && <CheckCircle2 className="h-3 w-3 text-indigo-500 ml-auto" />}
+                      </div>
+                    </div>
                   </div>
                 )}
-                
-                {/* Info RDV */}
-                {currentPorte.rdvDate && (
-                  <div className={`mt-3 ${colors.primary.bgLight} rounded-lg p-2 inline-flex items-center gap-2`}>
-                    <Calendar className={`h-4 w-4 ${colors.primary.text}`} />
-                    <span className={`text-sm ${colors.primary.text}`}>
-                      RDV: {new Date(currentPorte.rdvDate).toLocaleDateString('fr-FR')}
-                      {currentPorte.rdvTime && ` à ${currentPorte.rdvTime}`}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Commentaire existant */}
-                {currentPorte.commentaire && !showCommentInput && (
-                  <div className={`mt-3 ${base.bg.muted} rounded-lg p-3 text-left`}>
-                    <p className={`text-xs ${base.text.muted} mb-1`}>💬 Commentaire :</p>
-                    <p className={`text-sm ${base.text.secondary}`}>{currentPorte.commentaire}</p>
+
+                {/* RDV Info - Inline */}
+                {currentPorte.statut === StatutPorte.RENDEZ_VOUS_PRIS && currentPorte.rdvDate && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide shrink-0">RDV:</span>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-2.5 py-0.5 text-[10px]">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(currentPorte.rdvDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      {currentPorte.rdvTime && ` • ${currentPorte.rdvTime}`}
+                    </Badge>
                   </div>
                 )}
               </div>
+
+              {/* Commentaire existant */}
+              {currentPorte.commentaire && (
+                <div className="px-4 pb-3">
+                  <div className="bg-yellow-50/50 border border-yellow-100 rounded-lg p-2.5 flex gap-2 shadow-sm">
+                    <span className="text-sm select-none">📝</span>
+                    <p className="text-[11px] font-medium text-gray-700 leading-relaxed italic">
+                      "{currentPorte.commentaire}"
+                    </p>
+                  </div>
+                </div>
+              )}
               
-              {/* Section Repassage (affichée si absent sélectionné) */}
+              {/* Section Sélection Repassage (affichée si absent sélectionné) */}
               {showRepassageChoice && (
-                <div className={`mb-4 p-4 ${colors.warning.bgLight} rounded-xl border ${colors.warning.border}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <RotateCcw className={`h-5 w-5 ${colors.warning.text}`} />
-                    <span className={`font-bold ${colors.warning.text}`}>Quel passage ?</span>
+                <div className="mb-6 animate-in zoom-in-95 duration-200 px-4">
+                  <div className="text-center mb-3">
+                    <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">Noter un passage</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => handleRepassageSelect(1)}
-                      className={`p-4 rounded-xl transition-all ${
-                        (currentPorte.nbRepassages || 0) === 1
-                          ? 'bg-orange-500 text-white shadow-lg'
-                          : 'bg-white hover:bg-orange-50 text-gray-700 border border-orange-200'
-                      }`}
+                      className={`
+                        group relative overflow-hidden p-4 rounded-2xl transition-all duration-300 border-2
+                        ${(currentPorte.nbRepassages || 0) === 1
+                          ? 'bg-orange-50 border-orange-500 shadow-md ring-2 ring-orange-200 ring-offset-2' 
+                          : 'bg-white border-gray-100 hover:border-orange-200 hover:bg-orange-50/30'}
+                      `}
                     >
-                      <span className="text-2xl block mb-1">🌅</span>
-                      <span className="font-bold text-sm">1er Passage</span>
-                      <span className="text-xs block opacity-70">Matin</span>
+                      <div className="relative z-10 flex flex-col items-center">
+                        <span className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">🌅</span>
+                        <span className="font-bold text-gray-900">Matin</span>
+                        <span className="text-xs text-gray-500">1er passage</span>
+                      </div>
                     </button>
+                    
                     <button
                       onClick={() => handleRepassageSelect(2)}
-                      className={`p-4 rounded-xl transition-all ${
-                        (currentPorte.nbRepassages || 0) >= 2
-                          ? 'bg-orange-500 text-white shadow-lg'
-                          : 'bg-white hover:bg-orange-50 text-gray-700 border border-orange-200'
-                      }`}
+                      className={`
+                        group relative overflow-hidden p-4 rounded-2xl transition-all duration-300 border-2
+                        ${(currentPorte.nbRepassages || 0) >= 2
+                          ? 'bg-indigo-50 border-indigo-500 shadow-md ring-2 ring-indigo-200 ring-offset-2' 
+                          : 'bg-white border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30'}
+                      `}
                     >
-                      <span className="text-2xl block mb-1">🌆</span>
-                      <span className="font-bold text-sm">2ème Passage</span>
-                      <span className="text-xs block opacity-70">Soir</span>
+                       <div className="relative z-10 flex flex-col items-center">
+                        <span className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">🌆</span>
+                        <span className="font-bold text-gray-900">Soir</span>
+                        <span className="text-xs text-gray-500">2ème passage</span>
+                      </div>
                     </button>
                   </div>
                   <button 
                     onClick={() => setShowRepassageChoice(false)}
-                    className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700"
+                    className="w-full mt-3 py-2 text-xs font-medium text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    Passer cette étape
+                    Ignorer pour l'instant
                   </button>
                 </div>
               )}
@@ -529,7 +665,7 @@ export default function ProspectionRapideMode({
               {/* Boutons d'action GÉANTS */}
               {!showRepassageChoice && (
                 <>
-                  <div className="grid grid-cols-3 gap-3 mb-3">
+                  <div className="grid grid-cols-3 gap-3 px-4 py-2">
                     {actionButtons.slice(0, 3).map(btn => {
                       const Icon = btn.icon
                       const isActive = currentPorte.statut === btn.statut
@@ -539,9 +675,9 @@ export default function ProspectionRapideMode({
                           onClick={() => handleStatusChange(btn.statut)}
                           className={`
                             flex flex-col items-center justify-center p-4 rounded-xl 
-                            ${isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}
-                            transition-all duration-200 active:scale-95
-                            min-h-[85px]
+                            ${isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 text-gray-700'}
+                            transition-all duration-200 active:scale-80
+                            min-h-[80px]
                           `}
                         >
                           <Icon className="h-7 w-7 mb-2" />
@@ -551,7 +687,7 @@ export default function ProspectionRapideMode({
                     })}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3 px-4 py-2">
                     {actionButtons.slice(3).map(btn => {
                       const Icon = btn.icon
                       const isActive = currentPorte.statut === btn.statut
@@ -561,7 +697,7 @@ export default function ProspectionRapideMode({
                           onClick={() => handleStatusChange(btn.statut)}
                           className={`
                             flex flex-col items-center justify-center p-4 rounded-xl 
-                            ${isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}
+                            ${isActive ? btn.color + ' text-white ring-4 ring-offset-2' : 'bg-gray-100 text-gray-700'}
                             transition-all duration-200 active:scale-95
                             min-h-[85px]
                           `}
@@ -575,55 +711,133 @@ export default function ProspectionRapideMode({
                 </>
               )}
               
-              {/* Zone commentaire */}
-              <div className="mt-4">
-                {!showCommentInput ? (
-                  <button
-                    onClick={() => setShowCommentInput(true)}
-                    className={`w-full py-3 rounded-lg border-2 border-dashed ${base.border.default} ${base.text.muted} hover:border-gray-400 transition-all flex items-center justify-center gap-2`}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    <span className="text-sm">Ajouter un commentaire rapide</span>
-                  </button>
-                ) : (
+              {/* Zone commentaire - REMOVED redundant display as requested. 
+                  Only show the input trigger button if no comment is being typed yet to keep UI clean.
+              */}
+              <div className="mt-2 py-2 px-4">
+                {!showCommentInput && (
+                    <button
+                      onClick={() => setShowCommentInput(true)}
+                      className={`w-full py-3 rounded-lg border-2 border-dashed ${base.border.default} ${base.text.muted} hover:border-gray-400 transition-all flex items-center justify-center gap-2`}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="text-sm">Ajouter un commentaire rapide</span>
+                    </button>
+                )}
+                
+                {showCommentInput && (
                   <div className="space-y-2">
                     <Textarea
-                      placeholder="Commentaire sur cette porte..."
+                      placeholder="Commentaire rapide..."
                       value={quickComment}
-                      onChange={(e) => setQuickComment(e.target.value)}
-                      className="min-h-[80px] text-sm resize-none"
+                      onChange={e => setQuickComment(e.target.value)}
+                      className="min-h-[80px]"
                       autoFocus
                     />
+                    
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setShowCommentInput(false)
-                          setQuickComment('')
-                        }}
-                        className="flex-1"
-                      >
-                        Annuler
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => setShowCommentInput(false)}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-                      >
-                        <Save className="h-4 w-4 mr-1" />
-                        OK
-                      </Button>
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => {
+                                setShowCommentInput(false)
+                            }}
+                            className="flex-1"
+                        >
+                            Masquer
+                        </Button>
+                         <Button 
+                            size="sm"
+                            onClick={handleSaveComment}
+                            disabled={!quickComment.trim()}
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <Save className="h-4 w-4 mr-1" />
+                            Enregistrer note
+                        </Button>
                     </div>
-                    <p className={`text-xs ${base.text.muted} text-center`}>
-                      Le commentaire sera enregistré avec le prochain statut
-                    </p>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Navigation Porte (Premium Design) - Moved below card */}
+        <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+          {/* Progress Bar Background */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 rounded-b-2xl overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+              style={{ width: `${((currentIndex + 1) / filteredPortes.length) * 100}%` }}
+            />
+          </div>
+
+          {/* Bouton Précédent */}
+          <button
+            onClick={goToPrevious}
+            disabled={currentIndex === 0}
+            className={`
+              relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300
+              ${currentIndex > 0
+                ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md active:scale-95' 
+                : 'opacity-40 cursor-not-allowed grayscale'}
+            `}
+          >
+            <div className={`
+              p-1.5 rounded-full transition-colors
+              ${currentIndex > 0 ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100 text-gray-400'}
+            `}>
+              <ChevronLeft className="h-4 w-4" />
+            </div>
+            <div className="flex flex-col items-start min-w-[50px]">
+              <span className="text-[9px] font-bold opacity-60 uppercase">Précédent</span>
+              <span className="text-xs font-bold">
+                {currentIndex > 0 ? `Porte ${filteredPortes[currentIndex - 1]?.numero || currentIndex}` : '-'}
+              </span>
+            </div>
+          </button>
+
+          {/* Center: Current Door Info */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Porte</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg font-black text-gray-900">
+                  {currentIndex + 1}
+                </span>
+                <span className="text-xs font-medium text-gray-400">
+                  / {filteredPortes.length}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bouton Suivant */}
+          <button
+            onClick={goToNext}
+            disabled={currentIndex >= filteredPortes.length - 1}
+            className={`
+              relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300
+              ${currentIndex < filteredPortes.length - 1
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
+                : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
+            `}
+          >
+            <div className="flex flex-col items-end min-w-[50px]">
+              <span className={`text-[9px] font-bold uppercase ${currentIndex < filteredPortes.length - 1 ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
+              <span className="text-xs font-bold">
+                {currentIndex < filteredPortes.length - 1 ? `Porte ${filteredPortes[currentIndex + 1]?.numero || currentIndex + 2}` : '-'}
+              </span>
+            </div>
+            <div className={`
+              p-1.5 rounded-full transition-colors
+              ${currentIndex < filteredPortes.length - 1 ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
+            `}>
+              <ChevronRight className="h-4 w-4" />
+            </div>
+          </button>
+        </div>
         
         {/* Options */}
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">

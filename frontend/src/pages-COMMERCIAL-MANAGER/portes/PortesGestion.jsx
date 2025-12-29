@@ -395,6 +395,7 @@ export default function PortesGestion() {
       const updateData = {
         id: porte.id,
         statut: newStatut,
+        commentaire: porte.commentaire,
         derniereVisite: new Date().toISOString(),
       }
 
@@ -406,7 +407,6 @@ export default function PortesGestion() {
           await refetchStats()
         }
       } catch (error) {
-        console.error('Error updating porte status:', error)
         showError(error, 'Mise à jour statut')
         // En cas d'erreur, on refetch pour revenir à l'état serveur
         if (navigator.onLine) {
@@ -629,34 +629,36 @@ export default function PortesGestion() {
 
   // Handler pour le quick status change avec support du commentaire rapide
   const handleQuickStatusChangeWithComment = useCallback(async (porte, newStatut, quickComment) => {
-    if (quickComment) {
-      // Si un commentaire est fourni, on l'inclut dans la mise à jour
-      const updateData = {
+    // Nettoyer le commentaire (trim) pour éviter les espaces vides
+    const cleanedComment = quickComment ? quickComment.trim() : ''
+    
+    const updateData = {
         id: porte.id,
         statut: newStatut,
-        commentaire: quickComment,
+        commentaire: cleanedComment, // On persiste le commentaire (nouveau ou existant)
         derniereVisite: new Date().toISOString(),
-      }
+    }
       
-      updateLocalData(porte.id, { statut: newStatut, commentaire: quickComment, derniereVisite: new Date().toISOString() })
+    // Optimistic update
+    updateLocalData(porte.id, { 
+        statut: newStatut, 
+        commentaire: cleanedComment, 
+        derniereVisite: new Date().toISOString() 
+    })
       
-      try {
+    try {
         await updatePorte(updateData)
         if (navigator.onLine && refetchStats) {
           await refetchStats()
         }
-      } catch (error) {
-        console.error('Error updating porte status:', error)
-        showError(error, 'Mise à jour statut')
+    } catch (error) {
+        console.error('Error updating porte status with comment:', error)
+        showError(error, 'Mise à jour statut et commentaire')
         if (navigator.onLine) {
           await refetch()
         }
-      }
-    } else {
-      // Sans commentaire, utiliser le handler existant
-      await handleQuickStatusChange(porte, newStatut)
     }
-  }, [handleQuickStatusChange, updateLocalData, updatePorte, refetchStats, refetch, showError])
+  }, [updateLocalData, updatePorte, refetchStats, refetch, showError])
 
   return (
     <div className="space-y-3">

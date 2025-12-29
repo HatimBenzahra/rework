@@ -62,8 +62,8 @@ export default function PorteCardOriginal({
               </Badge>
             </div>
 
-            {/* RDV info */}
-            {porte.rdvDate && (
+            {/* RDV info - Afficher uniquement si le statut est RENDEZ_VOUS_PRIS */}
+            {porte.statut === StatutPorte.RENDEZ_VOUS_PRIS && porte.rdvDate && (
               <div
                 className={`${colors.primary.bgLight} border ${colors.primary.border} rounded-lg p-2 sm:p-2.5`}
               >
@@ -245,8 +245,8 @@ export default function PorteCardOriginal({
             </div>
           )}
 
-          {/* RDV info */}
-          {porte.rdvDate && (
+          {/* RDV info - Afficher uniquement si le statut est RENDEZ_VOUS_PRIS */}
+          {porte.statut === StatutPorte.RENDEZ_VOUS_PRIS && porte.rdvDate && (
             <div
               className={`${colors.primary.bgLight} border ${colors.primary.border} rounded-lg p-2 sm:p-2.5`}
             >
