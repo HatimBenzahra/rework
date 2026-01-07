@@ -67,19 +67,22 @@ export default function PortesListe({
   // Comptes par statut mémoïsés
   const statusCounts = useMemo(() => {
     if (statsData) {
-        const m = new Map()
-        m.set('NON_VISITE', statsData.nonVisitees)
-        m.set('CONTRAT_SIGNE', statsData.contratsSigne)
-        m.set('RENDEZ_VOUS_PRIS', statsData.rdvPris)
-        m.set('ABSENT', statsData.absent)
-        m.set('ARGUMENTE', statsData.argumente)
-        m.set('REFUS', statsData.refus)
-        // Note: NECESSITE_REPASSAGE is maybe not in the map? Check PortesGestion.
-        // PortesGestion didn't include it in map explicitly but statsData usually has it.
-        // Assuming statsData matches what PortesGestion expected.
-        return { byStatus: m, totalSansContrat: statsData.totalPortes - statsData.contratsSigne }
+      const m = new Map()
+      // S'assurer que les compteurs ne sont jamais négatifs
+      m.set('NON_VISITE', Math.max(0, statsData.nonVisitees || 0))
+      m.set('CONTRAT_SIGNE', Math.max(0, statsData.contratsSigne || 0))
+      m.set('RENDEZ_VOUS_PRIS', Math.max(0, statsData.rdvPris || 0))
+      m.set('ABSENT', Math.max(0, statsData.absent || 0))
+      m.set('ARGUMENTE', Math.max(0, statsData.argumente || 0))
+      m.set('REFUS', Math.max(0, statsData.refus || 0))
+      // S'assurer que le total sans contrat n'est pas négatif
+      const totalSansContrat = Math.max(
+        0,
+        (statsData.totalPortes || 0) - (statsData.contratsSigne || 0)
+      )
+      return { byStatus: m, totalSansContrat }
     }
-    
+
     // Fallback local
     const m = new Map()
     let totalSansContrat = 0
@@ -125,7 +128,7 @@ export default function PortesListe({
       immeuble,
       selectedFloor,
       statsData,
-      portes.length
+      portes.length,
     ]
   )
 

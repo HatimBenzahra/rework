@@ -487,9 +487,9 @@ export default function ProspectionRapideMode({
 
   // Trouver la couleur "Action" (forte) correspondante pour le bouton
   const pendingActionBtn = actionButtons.find(b => b.statut === confirmDialog.statut)
-  const confirmBtnColor = pendingActionBtn 
-    ? pendingActionBtn.color // Utilise la couleur définie dans actionButtons (bg-red-500, etc.)
-    : pendingStatutInfo?.color?.split(' ')[0] || 'bg-primary' // Fallback
+  const confirmBtnColor = pendingActionBtn
+    ? pendingActionBtn.color
+    : pendingStatutInfo?.color?.split(' ')[0] || 'bg-primary'
 
   return (
     <div className="flex flex-col min-h-[80vh]">
@@ -563,70 +563,82 @@ export default function ProspectionRapideMode({
       {/* Navigation et porte courante */}
       <div className="flex-1 p-2 space-y-2">
         {/* Contrôles de navigation PREMIUM */}
-        <div className="flex flex-col gap-2">
-            {/* Navigation Étage (Premium Design) */}
-            <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
-               {/* Label Central (Absolu pour ne pas gêner le flex) */}
-               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                  <div className="flex flex-col items-center">
-                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Étage</span>
-                    <span className="text-sm font-bold text-gray-800">
-                      {currentPorte ? currentPorte.etage : '--'}
-                    </span>
-                  </div>
-               </div>
 
-               {/* Bouton Précédent */}
-               <button
-                  onClick={goToPreviousFloor}
-                  disabled={!canGoPreviousFloor}
-                  className={`
-                    relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
-                    ${canGoPreviousFloor 
-                        ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md -translate-y-0 active:scale-95' 
-                        : 'opacity-40 cursor-not-allowed grayscale'}
-                  `}
-               >
-                  <div className={`
-                    p-2 rounded-full transition-colors
-                    ${canGoPreviousFloor ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100 text-gray-400'}
-                  `}>
-                    <ChevronsLeft className="h-5 w-5" />
-                  </div>
-                  <div className="flex flex-col items-start min-w-[60px]">
-                     <span className="text-[10px] font-bold opacity-60 uppercase">Précédent</span>
-                     <span className="text-sm font-bold">
-                        {previousFloorTarget !== null ? `Étage ${previousFloorTarget}` : '-'}
-                     </span>
-                  </div>
-               </button>
+        {/* Navigation Porte (Premium Design) - Uniformized */}
+        <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+           {/* Label Central */}
+           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Porte</span>
+                <span className="text-sm font-bold text-gray-800">
+                  {currentIndex + 1} / {filteredPortes.length}
+                </span>
+              </div>
+           </div>
 
-               {/* Bouton Suivant */}
-               <button
-                  onClick={goToNextFloor}
-                  disabled={!canGoNextFloor}
-                  className={`
-                    relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-right
-                    ${canGoNextFloor 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
-                        : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
-                  `}
-               >
-                  <div className="flex flex-col items-end min-w-[60px]">
-                     <span className={`text-[10px] font-bold uppercase ${canGoNextFloor ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
-                     <span className="text-sm font-bold">
-                        {nextFloorTarget !== null ? `Étage ${nextFloorTarget}` : '-'}
-                     </span>
-                  </div>
-                  <div className={`
-                    p-2 rounded-full transition-colors
-                    ${canGoNextFloor ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
-                  `}>
-                    <ChevronsRight className="h-5 w-5" />
-                  </div>
-               </button>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 rounded-b-2xl overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+              style={{ width: `${((currentIndex + 1) / filteredPortes.length) * 100}%` }}
+            />
+          </div>
+
+          <button
+            onClick={goToPrevious}
+            disabled={currentIndex === 0}
+            className={`
+              relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
+              ${currentIndex > 0
+                ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md active:scale-95' 
+                : 'opacity-40 cursor-not-allowed grayscale'}
+            `}
+          >
+            <div className={`
+              p-2 rounded-full transition-colors
+              ${currentIndex > 0 ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100 text-gray-400'}
+            `}>
+              <ChevronsLeft className="h-5 w-5" />
             </div>
+            <div className="flex flex-col items-start min-w-[60px]">
+              <span className="text-[10px] font-bold opacity-60 uppercase">Précédent</span>
+              <span className="text-sm font-bold">
+                {currentIndex > 0 ? `Porte ${filteredPortes[currentIndex - 1]?.numero || currentIndex}` : '-'}
+              </span>
+            </div>
+          </button>
+
+          {/* Bouton Suivant */}
+           <button
+            onClick={goToNext}
+            disabled={(currentIndex >= filteredPortes.length - 1 && !hasMore) || isFetchingMore || currentPorte?.statut === StatutPorte.NON_VISITE}
+            title={currentPorte?.statut === StatutPorte.NON_VISITE ? "Veuillez définir un statut avant de continuer" : ""}
+            className={`
+              relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-right
+              ${!((currentIndex >= filteredPortes.length - 1 && !hasMore) || isFetchingMore || currentPorte?.statut === StatutPorte.NON_VISITE)
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
+                : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
+            `}
+          >
+            <div className="flex flex-col items-end min-w-[60px]">
+              <span className={`text-[10px] font-bold uppercase ${(currentIndex < filteredPortes.length - 1 || hasMore) ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
+              <span className="text-sm font-bold">
+                 {isFetchingMore ? '...' : 
+                    (currentIndex < filteredPortes.length - 1 
+                        ? `Porte ${filteredPortes[currentIndex + 1]?.numero || (currentIndex + 2)}` 
+                        : (hasMore ? 'Charger...' : '-'))
+                 }
+              </span>
+            </div>
+            <div className={`
+              p-2 rounded-full transition-colors
+              ${(currentIndex < filteredPortes.length - 1 || hasMore) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
+            `}>
+              <ChevronsRight className="h-5 w-5" />
+            </div>
+          </button>
         </div>
+
+
         
         {/* Carte de la porte courante */}
         {currentPorte && (
@@ -949,68 +961,69 @@ export default function ProspectionRapideMode({
           </Card>
         )}
 
-        {/* Navigation Porte (Premium Design) - Moved below card */}
-        <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 rounded-b-2xl overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
-              style={{ width: `${((currentIndex + 1) / filteredPortes.length) * 100}%` }}
-            />
-          </div>
+        {/* Navigation Étage (Premium Design) - Moved below card */}
+        <div className="flex flex-col gap-2">
+            <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+               {/* Label Central (Absolu pour ne pas gêner le flex) */}
+               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Étage</span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {currentPorte ? currentPorte.etage : '--'}
+                    </span>
+                  </div>
+               </div>
 
-          <button
-            onClick={goToPrevious}
-            disabled={currentIndex === 0}
-            className={`
-              relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300
-              ${currentIndex > 0
-                ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md active:scale-95' 
-                : 'opacity-40 cursor-not-allowed grayscale'}
-            `}
-          >
-            <div className={`
-              p-1.5 rounded-full transition-colors
-              ${currentIndex > 0 ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100 text-gray-400'}
-            `}>
-              <ChevronLeft className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col items-start min-w-[50px]">
-              <span className="text-[9px] font-bold opacity-60 uppercase">Précédent</span>
-              <span className="text-xs font-bold">
-                {currentIndex > 0 ? `Porte ${filteredPortes[currentIndex - 1]?.numero || currentIndex}` : '-'}
-              </span>
-            </div>
-          </button>
+               {/* Bouton Précédent */}
+               <button
+                  onClick={goToPreviousFloor}
+                  disabled={!canGoPreviousFloor}
+                  className={`
+                    relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
+                    ${canGoPreviousFloor 
+                        ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md -translate-y-0 active:scale-95' 
+                        : 'opacity-40 cursor-not-allowed grayscale'}
+                  `}
+               >
+                  <div className={`
+                    p-2 rounded-full transition-colors
+                    ${canGoPreviousFloor ? 'bg-white shadow-sm text-blue-600' : 'bg-gray-100 text-gray-400'}
+                  `}>
+                    <ChevronsLeft className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col items-start min-w-[60px]">
+                     <span className="text-[10px] font-bold opacity-60 uppercase">Précédent</span>
+                     <span className="text-sm font-bold">
+                        {previousFloorTarget !== null ? `Étage ${previousFloorTarget}` : '-'}
+                     </span>
+                  </div>
+               </button>
 
-          {/* Bouton Suivant */}
-           <button
-            onClick={goToNext}
-            disabled={(currentIndex >= filteredPortes.length - 1 && !hasMore) || isFetchingMore || currentPorte?.statut === StatutPorte.NON_VISITE}
-            title={currentPorte?.statut === StatutPorte.NON_VISITE ? "Veuillez définir un statut avant de continuer" : ""}
-            className={`
-              relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all duration-300 text-right
-              ${!((currentIndex >= filteredPortes.length - 1 && !hasMore) || isFetchingMore || currentPorte?.statut === StatutPorte.NON_VISITE)
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
-                : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
-            `}
-          >
-            <div className="flex flex-col items-end min-w-[50px]">
-              <span className={`text-[9px] font-bold uppercase ${(currentIndex < filteredPortes.length - 1 || hasMore) ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
-              <span className="text-xs font-bold">
-                 {isFetchingMore ? '...' : 
-                    (currentIndex < filteredPortes.length - 1 
-                        ? `Porte ${filteredPortes[currentIndex + 1]?.numero || (currentIndex + 2)}` 
-                        : (hasMore ? 'Charger...' : '-'))
-                 }
-              </span>
+               {/* Bouton Suivant */}
+               <button
+                  onClick={goToNextFloor}
+                  disabled={!canGoNextFloor}
+                  className={`
+                    relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-right
+                    ${canGoNextFloor 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 active:scale-95' 
+                        : 'bg-gray-50 text-gray-400 opacity-60 cursor-not-allowed'}
+                  `}
+               >
+                  <div className="flex flex-col items-end min-w-[60px]">
+                     <span className={`text-[10px] font-bold uppercase ${canGoNextFloor ? 'opacity-80' : 'opacity-60'}`}>Suivant</span>
+                     <span className="text-sm font-bold">
+                        {nextFloorTarget !== null ? `Étage ${nextFloorTarget}` : '-'}
+                     </span>
+                  </div>
+                  <div className={`
+                    p-2 rounded-full transition-colors
+                    ${canGoNextFloor ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
+                  `}>
+                    <ChevronsRight className="h-5 w-5" />
+                  </div>
+               </button>
             </div>
-            <div className={`
-              p-1.5 rounded-full transition-colors
-              ${(currentIndex < filteredPortes.length - 1 || hasMore) ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-400'}
-            `}>
-              <ChevronsRight className="h-4 w-4" />
-            </div>
-          </button>
         </div>
 
         {/* DIALOG DE CONFIRMATION */}
