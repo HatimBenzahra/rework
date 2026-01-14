@@ -20,6 +20,8 @@ export default function PortesListe({
   onBack,
   onAddEtage,
   onAddPorteToEtage,
+  onRemoveEtage,
+  onRemovePorteFromEtage,
   addingEtage,
   addingPorteToEtage,
   selectedFloor,
@@ -150,6 +152,8 @@ export default function PortesListe({
       customFilters={customFilters}
       onAddPorteToEtage={onAddPorteToEtage}
       onAddEtage={onAddEtage}
+      onRemoveEtage={onRemoveEtage}
+      onRemovePorteFromEtage={onRemovePorteFromEtage}
       addingPorteToEtage={addingPorteToEtage}
       addingEtage={addingEtage}
       onFloorSelect={onFloorSelect}

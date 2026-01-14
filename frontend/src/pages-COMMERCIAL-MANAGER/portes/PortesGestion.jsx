@@ -39,7 +39,8 @@ export default function PortesGestion() {
       setViewMode, setEditForm, setShowEditModal, setShowQuitConfirm,
       handleFloorSelect, handleEditPorte, handleSavePorte, 
       handleQuickStatusChange, handleRepassageChange, handleAddEtage, 
-      handleAddPorteToEtage, handleBackToImmeubles, handleOpenEditModalFromRapide
+      handleAddPorteToEtage, handleRemoveEtage, handleRemovePorteFromEtage,
+      handleBackToImmeubles, handleOpenEditModalFromRapide
   } = actions
 
   // Récupère contexte audio (layout) pour le hook d'enregistrement
@@ -113,6 +114,12 @@ export default function PortesGestion() {
           loadMore={loadMore}
           hasMore={hasMore}
           isFetchingMore={isFetchingMore}
+          onAddEtage={handleAddEtage}
+          onAddPorteToEtage={handleAddPorteToEtage}
+          onRemoveEtage={handleRemoveEtage}
+          onRemovePorteFromEtage={handleRemovePorteFromEtage}
+          addingEtage={addingEtage}
+          addingPorteToEtage={addingPorteToEtage}
         />
       ) : (
         <PortesListe
@@ -128,6 +135,8 @@ export default function PortesGestion() {
           onBack={handleBackToImmeubles}
           onAddEtage={handleAddEtage}
           onAddPorteToEtage={handleAddPorteToEtage}
+          onRemoveEtage={handleRemoveEtage}
+          onRemovePorteFromEtage={handleRemovePorteFromEtage}
           addingEtage={addingEtage}
           addingPorteToEtage={addingPorteToEtage}
           selectedFloor={selectedFloor}
@@ -137,18 +146,22 @@ export default function PortesGestion() {
 
       {/* Dialogue de confirmation pour quitter */}
       <Dialog open={showQuitConfirm} onOpenChange={setShowQuitConfirm}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white dark:bg-white text-slate-900 dark:text-slate-900 border-none shadow-lg">
            <DialogHeader>
              <div className="flex items-center gap-3 mb-2">
                <div className="p-3 rounded-full bg-red-100">
                  <AlertTriangle className="h-6 w-6 text-red-600" />
                </div>
-               <DialogTitle className="text-xl">Voulez-vous quitter cet immeuble ?</DialogTitle>
+               <DialogTitle className="text-xl text-slate-900 dark:text-slate-900">Voulez-vous quitter cet immeuble ?</DialogTitle>
              </div>
              <DialogDescription className="text-base"></DialogDescription>
            </DialogHeader>
            <DialogFooter className="flex gap-3 sm:gap-3">
-             <Button variant="outline" onClick={() => setShowQuitConfirm(false)} className="flex-1">
+             <Button 
+               variant="outline" 
+               onClick={() => setShowQuitConfirm(false)} 
+               className="flex-1 border-slate-200 dark:border-slate-200 text-slate-700 dark:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-100 hover:text-slate-900 dark:hover:text-slate-900"
+             >
                Annuler
              </Button>
              <Button

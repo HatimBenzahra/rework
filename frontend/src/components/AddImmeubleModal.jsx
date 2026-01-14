@@ -281,7 +281,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
             <div className="space-y-2 relative">
               <Label
                 htmlFor="adresse"
-                className="text-base font-semibold text-gray-900"
+                className="text-black font-semibold text-gray-900"
               >
                 Adresse de l'immeuble *
               </Label>
@@ -291,7 +291,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.adresse}
                   onChange={e => handleInputChange('adresse', e.target.value)}
                   placeholder="Tapez une adresse..."
-                  className={`h-12 text-base ${errors.adresse ? 'border-red-500' : 'border-gray-300'} ${formData.adresse ? 'pr-10' : ''}`}
+                  className={`h-12 text-black ${errors.adresse ? 'border-red-500' : 'border-gray-300'} ${formData.adresse ? 'pr-10' : ''}`}
                   autoComplete="off"
                 />
                 {/* Bouton pour effacer */}
@@ -365,7 +365,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
             <div className="space-y-2">
               <Label
                 htmlFor="complementAdresse"
-                className="text-base font-semibold text-gray-900"
+                className="text-black font-semibold text-gray-900"
               >
                 Complément d'adresse (optionnel)
               </Label>
@@ -374,7 +374,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                 value={formData.complementAdresse}
                 onChange={e => handleInputChange('complementAdresse', e.target.value)}
                 placeholder="Ex: Appartement 12, Bâtiment A, Porte 3..."
-                className="h-12 text-base border-gray-300"
+                className="h-12 text-black border-gray-300"
               />
               <p className="text-sm text-gray-500">
                 Numéro d'appartement, bâtiment, étage, ou toute information complémentaire
@@ -390,7 +390,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               <div className="space-y-2">
                 <Label
                   htmlFor="nbEtages"
-                  className="text-base font-semibold text-gray-900"
+                  className="text-black font-semibold text-gray-900"
                 >
                   Nombre d'étages *
                 </Label>
@@ -401,7 +401,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.nbEtages}
                   onChange={e => handleInputChange('nbEtages', e.target.value)}
                   placeholder="Ex: 5"
-                  className={`h-12 text-base ${errors.nbEtages ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`h-12 text-black ${errors.nbEtages ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {errors.nbEtages && <p className="text-sm text-red-500">{errors.nbEtages}</p>}
               </div>
@@ -409,7 +409,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               <div className="space-y-2">
                 <Label
                   htmlFor="nbPortesParEtage"
-                  className="text-base font-semibold text-gray-900"
+                  className="text-black font-semibold text-gray-900"
                 >
                   Portes par étage *
                 </Label>
@@ -420,7 +420,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                   value={formData.nbPortesParEtage}
                   onChange={e => handleInputChange('nbPortesParEtage', e.target.value)}
                   placeholder="Ex: 4"
-                  className={`h-12 text-base ${errors.nbPortesParEtage ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`h-12 text-black ${errors.nbPortesParEtage ? 'border-red-500' : 'border-gray-300'}`}
                 />
                 {errors.nbPortesParEtage && (
                   <p className="text-sm text-red-500">{errors.nbPortesParEtage}</p>
@@ -458,7 +458,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
             <div className="space-y-6">
               <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl bg-gray-50/50">
                 <div className="space-y-1">
-                  <Label className="text-base font-semibold text-gray-900">
+                  <Label className="text-black font-semibold text-gray-900">
                     Ascenseur présent
                   </Label>
                   <p className="text-sm text-gray-500">
@@ -480,7 +480,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               <div className="space-y-2">
                 <Label
                   htmlFor="digitalCode"
-                  className="text-base font-semibold text-gray-900"
+                  className="text-black font-semibold text-gray-900"
                 >
                   Code d'accès digital (optionnel)
                 </Label>
@@ -490,7 +490,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
                     value={formData.digitalCode}
                     onChange={e => handleInputChange('digitalCode', e.target.value)}
                     placeholder="Ex: 1234A"
-                    className="h-12 pl-10 text-base border-gray-300"
+                    className="h-12 pl-10 text-black border-gray-300"
                   />
                   <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 </div>
@@ -601,7 +601,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
             <Button
               variant="outline"
               onClick={isFirstStep ? () => onOpenChange(false) : prevStep}
-              className="h-12 px-6 text-base font-medium border-gray-300 hover:bg-white hover:text-gray-900"
+              className="h-12 px-6 text-black font-medium border-gray-300 hover:bg-white hover:text-gray-900"
             >
               {isFirstStep ? (
                 'Annuler'
@@ -617,7 +617,7 @@ export default function AddImmeubleModal({ open, onOpenChange, onSave }) {
               <Button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="h-12 px-6 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+                className="h-12 px-6 text-black font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md"
               >
                 {loading ? (
                   <>

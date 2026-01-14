@@ -17,6 +17,12 @@ export default function PortesRapide({
   loadMore,
   hasMore,
   isFetchingMore,
+  onAddEtage,
+  onAddPorteToEtage,
+  onRemoveEtage,
+  onRemovePorteFromEtage,
+  addingEtage,
+  addingPorteToEtage,
 }) {
   const statutOptions = useStatutOptions()
 
@@ -33,6 +39,12 @@ export default function PortesRapide({
       loadMore={loadMore}
       hasMore={hasMore}
       isFetchingMore={isFetchingMore}
+      onAddEtage={onAddEtage}
+      onAddPorteToEtage={onAddPorteToEtage}
+      onRemoveEtage={onRemoveEtage}
+      onRemovePorteFromEtage={onRemovePorteFromEtage}
+      addingEtage={addingEtage}
+      addingPorteToEtage={addingPorteToEtage}
     />
   )
 }

@@ -75,8 +75,9 @@ export function filterPortesByDate(portes, start, end) {
   if (!start && !end) return portes
 
   return portes.filter(porte => {
-    if (!porte.derniereVisite) return false
-    const porteDate = new Date(porte.derniereVisite)
+    const dateToCheck = porte.derniereVisite || porte.updatedAt || porte.createdAt
+    if (!dateToCheck) return false
+    const porteDate = new Date(dateToCheck)
     if (start) {
       const startDateTime = new Date(start)
       startDateTime.setHours(0, 0, 0, 0)

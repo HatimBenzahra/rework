@@ -7,7 +7,7 @@ import { authService } from '@/services/auth'
 import { useToast } from '@/components/ui/toast'
 import { logger as Logger } from '@/services/core'
 import { Input } from '@/components/ui/input'
-
+import { useKeyboard } from '@/hooks/ui/keyboard'
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -16,6 +16,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const navigate = useNavigate()
   const { toast } = useToast()
+  const isKeyboardOpen = useKeyboard();
 
   const handleSubmit = async e => {
     e.preventDefault()
@@ -65,14 +66,18 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4 pb-4">
-      {/* Boutons de thème en haut à droite */}
-      <div className="fixed top-4 right-4 flex items-center gap-2">
+<div
+  className={`min-h-dvh bg-background text-2xl flex justify-center
+  ${isKeyboardOpen ? "items-start pt-6" : "items-center"}
+  px-4 sm:px-6 overflow-y-auto transition-all duration-150
+`}
+> {/* Boutons de thème en haut à droite */}
+      <div className="fixed top-6 right-6 flex items-center gap-2 text-2xl">
         <ThemeSelector />
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-xl text-xl">
         {/* Logo et titre */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -91,14 +96,14 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Message d'erreur */}
             {error && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-xl">
                 {error}
               </div>
             )}
 
             {/* Champ Email/Username */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
+              <label htmlFor="username" className="block font-medium text-foreground mb-2">
                 Email ou nom d'utilisateur
               </label>
               <div className="relative">
@@ -113,7 +118,7 @@ export default function Login() {
                   onChange={e => setUsername(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="pl-10" // Ajoute juste le padding gauche pour l'icône
+                  className="pl-10 py-5 text-lg" // Ajoute juste le padding gauche pour l'icône
                   placeholder="Email ou nom d'utilisateur"
                 />
               </div>
@@ -122,23 +127,23 @@ export default function Login() {
             {/* Champ Mot de passe */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                <label htmlFor="password" className="block text-xl font-medium text-foreground">
                   Mot de passe
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
-                  className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none flex items-center gap-1.5 text-xs font-medium"
+                  className="text-muted-foreground hover:text-foreground transition-colors focus:outline-none flex items-center gap-1 text-lg font-medium"
                 >
                   {showPassword ? (
                     <>
-                      <EyeOff className="h-3.5 w-3.5" />
+                      <EyeOff className="h-5 w-5" />
                       Masquer
                     </>
                   ) : (
                     <>
-                      <Eye className="h-3.5 w-3.5" />
+                      <Eye className="h-5 w-5" />
                       Afficher
                     </>
                   )}
@@ -156,7 +161,7 @@ export default function Login() {
                   onChange={e => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="pl-10" // Ajoute juste le padding gauche pour l'icône
+                  className="pl-10  py-5" // Ajoute juste le padding gauche pour l'icône
                   placeholder="********"
                 />
               </div>

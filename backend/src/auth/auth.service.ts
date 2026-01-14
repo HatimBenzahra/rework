@@ -268,20 +268,40 @@ export class AuthService {
    */
   private extractUserInfo(decodedToken: any): KeycloakUserInfo {
     const email = decodedToken.email || '';
-    const name = decodedToken.name || decodedToken.given_name || '';
-    const familyName = decodedToken.family_name || '';
 
-    let nom = familyName;
-    let prenom = name;
+    let nom = '';
+    let prenom = '';
 
-    if (!nom && !prenom && decodedToken.name) {
-      const nameParts = decodedToken.name.split(' ');
+    // Priorité 1: Utiliser given_name et family_name s'ils existent
+    if (decodedToken.given_name) {
+      prenom = decodedToken.given_name;
+    }
+    if (decodedToken.family_name) {
+      nom = decodedToken.family_name;
+    }
+
+    // Priorité 2: Si on n'a pas de given_name/family_name, parser le champ "name"
+    if ((!nom || !prenom) && decodedToken.name) {
+      const nameParts = decodedToken.name.trim().split(' ');
       if (nameParts.length > 1) {
-        prenom = nameParts[0];
-        nom = nameParts.slice(1).join(' ');
+        // Si on n'a pas de prénom, prendre le premier mot
+        if (!prenom) {
+          prenom = nameParts[0];
+        }
+        // Si on n'a pas de nom, prendre le reste
+        if (!nom) {
+          nom = nameParts.slice(1).join(' ');
+        }
       } else {
-        prenom = decodedToken.name;
-        nom = decodedToken.name;
+        // Un seul mot dans "name" - l'utiliser pour ce qui manque
+        if (!prenom && !nom) {
+          prenom = decodedToken.name;
+          nom = decodedToken.name;
+        } else if (!prenom) {
+          prenom = decodedToken.name;
+        } else if (!nom) {
+          nom = decodedToken.name;
+        }
       }
     }
 

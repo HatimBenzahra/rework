@@ -163,8 +163,9 @@ export class StatisticSyncService {
       const statusStats = calculateStatsForStatus(group.statut, count);
 
       // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats
+      // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats
       if (group.statut === StatutPorte.CONTRAT_SIGNE) {
-        stats.contratsSignes = totalContrats;
+        stats.contratsSignes += totalContrats;
       } else {
         stats.contratsSignes += statusStats.contratsSignes;
       }
@@ -232,8 +233,9 @@ export class StatisticSyncService {
       const statusStats = calculateStatsForStatus(group.statut, count);
 
       // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats
+      // Pour CONTRAT_SIGNE, utiliser la somme des nbContrats
       if (group.statut === StatutPorte.CONTRAT_SIGNE) {
-        stats.contratsSignes = totalContrats;
+        stats.contratsSignes += totalContrats;
       } else {
         stats.contratsSignes += statusStats.contratsSignes;
       }
@@ -435,7 +437,7 @@ export class StatisticSyncService {
   }
 
   /**
-   * Recalcule toutes les statistiques (job de maintenance)
+   * Recalcule toutes les statistiques
    */
   async recalculateAllStats(): Promise<{ updated: number; errors: number }> {
     let updated = 0;

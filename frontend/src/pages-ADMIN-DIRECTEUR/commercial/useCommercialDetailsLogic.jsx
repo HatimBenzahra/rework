@@ -35,25 +35,40 @@ export function useCommercialDetailsLogic() {
   // Utiliser le hook pour calculer les stats personnelles du commercial
   const { personalStats } = usePersonalStats(commercial, appliedStartDate, appliedEndDate)
 
+  // Calculer les stats globales depuis le backend (source de vérité)
+  const backendStats = useMemo(() => {
+    if (!commercial?.statistics) return null
+    
+    return commercial.statistics.reduce((acc, stat) => ({
+      totalContratsSignes: acc.totalContratsSignes + stat.contratsSignes,
+      totalImmeublesVisites: acc.totalImmeublesVisites + stat.immeublesVisites,
+      totalRendezVousPris: acc.totalRendezVousPris + stat.rendezVousPris,
+      totalRefus: acc.totalRefus + stat.refus,
+      totalAbsents: acc.totalAbsents + (stat.absents || 0),
+      totalArgumentes: acc.totalArgumentes + (stat.argumentes || 0),
+      totalPortesProspectes: acc.totalPortesProspectes + (stat.nbPortesProspectes || 0),
+      totalImmeublesProspectes: acc.totalImmeublesProspectes + (stat.nbImmeublesProspectes || 0),
+    }), {
+      totalContratsSignes: 0,
+      totalImmeublesVisites: 0,
+      totalRendezVousPris: 0,
+      totalRefus: 0,
+      totalAbsents: 0,
+      totalArgumentes: 0,
+      totalPortesProspectes: 0,
+      totalImmeublesProspectes: 0,
+    })
+  }, [commercial?.statistics])
+
   // Calculer le rang du commercial basé sur TOUTES ses stats (non filtrées)
   const memoizedCommercialRank = useMemo(() => {
-    if (!commercial?.statistics) return null
-
-    const totalContratsSignes = commercial.statistics.reduce(
-      (sum, stat) => sum + stat.contratsSignes,
-      0
+    if (!backendStats) return null
+    return calculateRank(
+      backendStats.totalContratsSignes,
+      backendStats.totalRendezVousPris,
+      backendStats.totalImmeublesVisites
     )
-    const totalRendezVousPris = commercial.statistics.reduce(
-      (sum, stat) => sum + stat.rendezVousPris,
-      0
-    )
-    const totalImmeublesVisites = commercial.statistics.reduce(
-      (sum, stat) => sum + stat.immeublesVisites,
-      0
-    )
-
-    return calculateRank(totalContratsSignes, totalRendezVousPris, totalImmeublesVisites)
-  }, [commercial?.statistics])
+  }, [backendStats])
 
   // Préparer les données pour l'affichage
   const commercialData = useMemo(() => {
@@ -62,24 +77,28 @@ export function useCommercialDetailsLogic() {
     const manager = managers?.find(m => m.id === commercial.managerId)
     const managerName = manager ? `${manager.prenom} ${manager.nom}` : 'Aucun manager assigné'
 
+    // Utiliser les stats du backend par défaut, sauf si un filtre de date est appliqué
+    const hasDateFilter = appliedStartDate || appliedEndDate
+    const statsSource = (!hasDateFilter && backendStats) ? backendStats : personalStats
+
     return {
       ...commercial,
       name: `${commercial.prenom} ${commercial.nom}`,
       managerName,
-      totalContratsSignes: personalStats.totalContratsSignes,
-      totalImmeublesVisites: personalStats.totalImmeublesVisites,
-      totalRendezVousPris: personalStats.totalRendezVousPris,
-      totalRefus: personalStats.totalRefus,
-      totalAbsents: personalStats.totalAbsents,
-      totalArgumentes: personalStats.totalArgumentes,
-      totalPortesProspectes: personalStats.totalPortesProspectes,
-      totalImmeublesProspectes: personalStats.totalImmeublesProspectes,
+      totalContratsSignes: statsSource.totalContratsSignes,
+      totalImmeublesVisites: statsSource.totalImmeublesVisites,
+      totalRendezVousPris: statsSource.totalRendezVousPris,
+      totalRefus: statsSource.totalRefus,
+      totalAbsents: statsSource.totalAbsents,
+      totalArgumentes: statsSource.totalArgumentes,
+      totalPortesProspectes: statsSource.totalPortesProspectes,
+      totalImmeublesProspectes: statsSource.totalImmeublesProspectes,
       zonesCount: currentZone ? 1 : 0,
       immeublesCount: commercial.immeubles?.length || 0,
       rank: memoizedCommercialRank?.rank,
       points: memoizedCommercialRank?.points,
     }
-  }, [commercial, managers, personalStats, memoizedCommercialRank, currentZone])
+  }, [commercial, managers, personalStats, backendStats, memoizedCommercialRank, currentZone, appliedStartDate, appliedEndDate])
 
   // Préparer les zones
   const assignedZones = useMemo(() => {

@@ -31,6 +31,10 @@ import {
   Pencil,
   FastForward,
   History,
+  Plus,
+  Minus,
+  DoorOpen,
+  Layers,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
@@ -50,6 +54,12 @@ export default function ProspectionRapideMode({
   loadMore,
   hasMore,
   isFetchingMore,
+  onAddEtage,
+  onAddPorteToEtage,
+  onRemoveEtage,
+  onRemovePorteFromEtage,
+  addingEtage = false,
+  addingPorteToEtage = false,
 }) {
   const { colors, base } = useCommercialTheme()
   const { showSuccess } = useErrorToast()
@@ -89,6 +99,13 @@ export default function ProspectionRapideMode({
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     statut: null,
+  })
+  
+  // Confirmation de suppression (UX sécurisée)
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    type: null, // 'porte' | 'etage'
+    etage: null,
   })
   
   // Calculer les portes filtrées selon le mode
@@ -929,7 +946,7 @@ export default function ProspectionRapideMode({
                       placeholder="Commentaire rapide..."
                       value={quickComment}
                       onChange={e => setQuickComment(e.target.value)}
-                      className="min-h-[80px]"
+                      className="min-h-[80px] bg-white text-black text-xl"
                       autoFocus
                     />
                     
@@ -940,7 +957,7 @@ export default function ProspectionRapideMode({
                             onClick={() => {
                                 setShowCommentInput(false)
                             }}
-                            className="flex-1"
+                            className="flex-1 bg-red-500 hover:bg-red-600 text-white"
                         >
                             Masquer
                         </Button>
@@ -1026,7 +1043,86 @@ export default function ProspectionRapideMode({
             </div>
         </div>
 
-        {/* DIALOG DE CONFIRMATION */}
+        {/* Section Gestion Portes/Étages */}
+        {(onAddEtage || onAddPorteToEtage) && currentPorte && (
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gestion</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Gestion Portes */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <DoorOpen className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase">Portes (Étage {currentPorte?.etage})</span>
+                </div>
+                {onAddPorteToEtage && (
+                  <button
+                    onClick={() => onAddPorteToEtage(currentPorte?.etage)}
+                    disabled={addingPorteToEtage}
+                    className={`
+                      w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                      transition-all duration-200 border-2 border-dashed
+                      ${addingPorteToEtage 
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                        : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'}
+                    `}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {addingPorteToEtage ? 'Ajout...' : 'Ajouter porte'}
+                  </button>
+                )}
+                {onRemovePorteFromEtage && (
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: true, type: 'porte', etage: currentPorte?.etage })}
+                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium
+                      transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Minus className="h-3 w-3" />
+                    Supprimer dernière porte
+                  </button>
+                )}
+              </div>
+              
+              {/* Gestion Étages */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Layers className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase">Étages</span>
+                </div>
+                {onAddEtage && (
+                  <button
+                    onClick={onAddEtage}
+                    disabled={addingEtage}
+                    className={`
+                      w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                      transition-all duration-200 border-2 border-dashed
+                      ${addingEtage 
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                        : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'}
+                    `}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {addingEtage ? 'Ajout...' : 'Ajouter étage'}
+                  </button>
+                )}
+                {onRemoveEtage && (
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: true, type: 'etage', etage: currentPorte?.etage })}
+                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium
+                      transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Minus className="h-3 w-3" />
+                    Supprimer dernier étage
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DIALOG DE CONFIRMATION STATUT */}
         <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog(p => ({ ...p, isOpen: false }))}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
@@ -1060,6 +1156,61 @@ export default function ProspectionRapideMode({
                 className={`flex-1 ${confirmBtnColor} text-white hover:opacity-90 shadow-md transition-all`}
               >
                 Confirmer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* DIALOG DE CONFIRMATION SUPPRESSION */}
+        <Dialog open={deleteConfirm.isOpen} onOpenChange={(open) => !open && setDeleteConfirm(p => ({ ...p, isOpen: false }))}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 rounded-full bg-red-100">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <DialogTitle className="text-xl text-red-900">
+                  {deleteConfirm.type === 'porte' ? 'Supprimer une porte ?' : 'Supprimer un étage ?'}
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-base text-gray-600">
+                {deleteConfirm.type === 'porte' ? (
+                  <>
+                    Êtes-vous sûr de vouloir <span className="font-bold text-red-700">supprimer la dernière porte</span> de l'étage {deleteConfirm.etage} ?
+                    <br /><br />
+                    <span className="text-red-600 font-semibold">⚠️ Cette action est irréversible.</span>
+                  </>
+                ) : (
+                  <>
+                    Êtes-vous sûr de vouloir <span className="font-bold text-red-700">supprimer le dernier étage</span> de l'immeuble ?
+                    <br /><br />
+                    <span className="text-red-600 font-semibold">⚠️ Toutes les portes de cet étage seront supprimées. Cette action est irréversible.</span>
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex gap-2 sm:gap-0 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirm({ isOpen: false, type: null, etage: null })}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (deleteConfirm.type === 'porte' && onRemovePorteFromEtage) {
+                    onRemovePorteFromEtage(deleteConfirm.etage)
+                  } else if (deleteConfirm.type === 'etage' && onRemoveEtage) {
+                    onRemoveEtage(deleteConfirm.etage)
+                  }
+                  setDeleteConfirm({ isOpen: false, type: null, etage: null })
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700"
+              >
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Supprimer définitivement
               </Button>
             </DialogFooter>
           </DialogContent>

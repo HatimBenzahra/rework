@@ -7,6 +7,8 @@ import {
   useUpdatePorte,
   useAddEtageToImmeuble,
   useAddPorteToEtage,
+  useRemoveEtageFromImmeuble,
+  useRemovePorteFromEtage,
   usePorteStatistics,
 } from '@/hooks/metier/use-api'
 import { useStatutOptions } from './useStatutOptions'
@@ -81,6 +83,8 @@ export function usePortesLogic() {
   const { mutate: updatePorte } = useUpdatePorte()
   const { mutate: addEtage } = useAddEtageToImmeuble()
   const { mutate: addPorteToEtage } = useAddPorteToEtage()
+  const { mutate: removeEtage } = useRemoveEtageFromImmeuble()
+  const { mutate: removePorteFromEtage } = useRemovePorteFromEtage()
 
   // --- Helpers ---
   const withScrollRestore = useCallback(
@@ -314,6 +318,37 @@ export function usePortesLogic() {
     [immeubleId, addingPorteToEtage, addPorteToEtage, refetchPortes, withScrollRestore, showSuccess, showError, refetchImmeuble]
   )
 
+  const handleRemoveEtage = useCallback(async (etage) => {
+    if (!immeubleId) return
+    try {
+      await withScrollRestore(async () => {
+        await removeEtage(parseInt(immeubleId, 10))
+        await Promise.all([refetchPortes(), refetchImmeuble(), refetchStats()])
+      })
+      showSuccess(`Étage ${etage} supprimé avec succès !`)
+    } catch (error) {
+      console.error('Error removing etage:', error)
+      showError(error, 'Suppression étage')
+    }
+  }, [immeubleId, removeEtage, refetchPortes, refetchImmeuble, refetchStats, withScrollRestore, showSuccess, showError])
+
+  const handleRemovePorteFromEtage = useCallback(
+    async (etage) => {
+      if (!immeubleId) return
+      try {
+        await withScrollRestore(async () => {
+          await removePorteFromEtage({ immeubleId: parseInt(immeubleId, 10), etage })
+          await Promise.all([refetchPortes(), refetchImmeuble(), refetchStats()])
+        })
+        showSuccess('Porte supprimée avec succès !')
+      } catch (error) {
+        console.error('Error removing porte from etage:', error)
+        showError(error, 'Suppression porte')
+      }
+    },
+    [immeubleId, removePorteFromEtage, refetchPortes, refetchImmeuble, refetchStats, withScrollRestore, showSuccess, showError]
+  )
+
   const handleBackToImmeubles = useCallback(() => {
     navigate('/immeubles')
   }, [navigate])
@@ -366,6 +401,8 @@ export function usePortesLogic() {
       handleRepassageChange,
       handleAddEtage,
       handleAddPorteToEtage,
+      handleRemoveEtage,
+      handleRemovePorteFromEtage,
       handleBackToImmeubles,
       handleOpenEditModalFromRapide,
     }

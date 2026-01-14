@@ -118,7 +118,12 @@ export default function PortesStatusChart({
 
     portes.forEach(porte => {
       if (porte.statut in statusCounts) {
-        statusCounts[porte.statut]++
+        // Pour les contrats signés, on ajoute le nombre de contrats
+        if (porte.statut === 'CONTRAT_SIGNE') {
+          statusCounts[porte.statut] += (porte.nbContrats || 1)
+        } else {
+          statusCounts[porte.statut]++
+        }
       }
     })
 
@@ -211,7 +216,7 @@ export default function PortesStatusChart({
                 <ChartTooltipContent
                   hideLabel
                   formatter={(value, name, props) => [
-                    `${value} porte${value > 1 ? 's' : ''} (${props.payload.percentage}%)`,
+                    `${value} (${props.payload.percentage}%)`,
                     name,
                   ]}
                 />

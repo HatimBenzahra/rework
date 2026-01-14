@@ -424,6 +424,9 @@ export class StatisticService {
           _count: {
             statut: true,
           },
+          _sum: {
+            nbContrats: true,
+          },
         });
 
         // Calculer les stats à partir des portes
@@ -439,9 +442,15 @@ export class StatisticService {
         // Utilisation du helper centralisé pour calculer les stats
         portesGroupedByStatut.forEach((group) => {
           const count = group._count.statut;
+          const totalContrats = group._sum.nbContrats || 0;
           const statusStats = calculateStatsForStatus(group.statut, count);
 
-          totalStats.contratsSignes += statusStats.contratsSignes;
+          if (group.statut === 'CONTRAT_SIGNE') {
+             totalStats.contratsSignes += totalContrats;
+          } else {
+             totalStats.contratsSignes += statusStats.contratsSignes;
+          }
+          
           totalStats.rendezVousPris += statusStats.rendezVousPris;
           totalStats.refus += statusStats.refus;
           totalStats.portesProspectes += statusStats.nbPortesProspectes;

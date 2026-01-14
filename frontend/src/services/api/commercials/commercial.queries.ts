@@ -91,6 +91,7 @@ export const GET_COMMERCIAL_FULL = `
           etage
           statut
           nbRepassages
+          nbContrats
           rdvDate
           rdvTime
           derniereVisite
@@ -114,6 +115,10 @@ export const GET_COMMERCIAL_FULL = `
         immeublesVisites
         rendezVousPris
         refus
+        absents
+        argumentes
+        nbImmeublesProspectes
+        nbPortesProspectes
         createdAt
         updatedAt
       }
