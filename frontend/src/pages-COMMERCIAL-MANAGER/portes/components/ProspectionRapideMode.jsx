@@ -542,14 +542,14 @@ export default function ProspectionRapideMode({
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200`}
                 title="Aller à la première porte non visitée"
             >
-                <History className="h-3.5 w-3.5" />
+                <History className="h-5 w-5" />
                 Reprendre
             </button>
             <button 
                 onClick={toggleAutoAdvance} 
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${autoAdvance ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
             >
-                <FastForward className={`h-3.5 w-3.5 ${autoAdvance ? 'text-green-600' : 'text-gray-400'}`} />
+                <FastForward className={`h-5 w-5 ${autoAdvance ? 'text-green-600' : 'text-gray-400'}`} />
                 {autoAdvance ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
             </button>
           </div>
@@ -657,8 +657,8 @@ export default function ProspectionRapideMode({
                 {onRemoveEtage && (
                   <button
                     onClick={() => setDeleteConfirm({ isOpen: true, type: 'etage', etage: currentPorte?.etage })}
-                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium
-                      transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                      transition-all duration-200 border-2 border-dashed bg-red-100 border-red-500"
                   >
                     <Minus className="h-3 w-3" />
                     Supprimer dernier étage
