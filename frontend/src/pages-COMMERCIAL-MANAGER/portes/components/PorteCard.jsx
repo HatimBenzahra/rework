@@ -157,7 +157,7 @@ export default function PorteCard({
                 className={`h-8 px-2 text-xs ${colors.success.bgLight} ${colors.success.text} border ${colors.success.border} hover:bg-green-200 flex-1`}
                 disabled={porte.statut === 'CONTRAT_SIGNE'}
               >
-                
+                Signé
               </Button>
               <Button
                 variant="ghost"
@@ -175,12 +175,12 @@ export default function PorteCard({
                 className={`h-8 px-2 text-xs ${colors.danger.bgLight} ${colors.danger.text} border ${colors.danger.border} hover:bg-red-200 flex-1`}
                 disabled={porte.statut === 'REFUS'}
               >
-                
+                Refus
               </Button>
             </div>
 
             {/* Gestion des repassages */}
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -190,7 +190,7 @@ export default function PorteCard({
               >
                 <Minus className="h-3 w-3" />
               </Button>
-              <span className="text-sm font-medium px-2 min-w-[2rem] text-center">
+              <span className="text-sm font-medium px-2 min-w text-center">
                 {porte.nbRepassages || 0}
               </span>
               <Button

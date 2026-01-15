@@ -63,42 +63,64 @@ export default function PortesGestion() {
   )
 
   return (
-    <div className="space-y-3">
-      {/* Header avec lien Quitter - TOUJOURS VISIBLE */}
-      <div
-        className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50 flex items-center justify-between`}
-      >
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowQuitConfirm(true)}
-          className="flex items-center gap-2 h-9 bg-red-500 hover:bg-red-600 text-white font-bold shadow-md"
-        >
-          <LogOut className="h-6 w-6" />
-          Quitter
-        </Button>
+    <div className="space-y-4">
+      {/* Header Principal - Design Premium */}
+      <div className="relative overflow-hidden">
+        {/* Fond avec gradient subtil */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-gray-50 to-slate-100" />
         
-        {/* Toggle de mode */}
-        <button
-          onClick={() => setViewMode(viewMode === 'rapide' ? 'liste' : 'rapide')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-200 text-sm font-bold ${
-            viewMode === 'rapide' 
-              ? 'bg-white text-gray-700 border border-gray-200' 
-              : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-          }`}
-        >
-          {viewMode === 'rapide' ? (
-            <>
-              <List className="h-4 w-4" />
-              Mode Liste
-            </>
-          ) : (
-            <>
-              <Zap className="h-4 w-4" />
-              Mode Rapide
-            </>
-          )}
-        </button>
+        <div className="relative bg-white rounded-2xl p-4">
+          <div className="flex items-center justify-between gap-4">
+            
+            {/* Bouton Quitter - Design épuré */}
+            <button
+              onClick={() => setShowQuitConfirm(true)}
+              className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg hover:shadow-xl hover:shadow-red-500/30 hover:scale-105 active:scale-95"
+            >
+              <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
+              <span>Quitter</span>
+            </button>
+
+            {/* Section centrale - Info immeuble (optionnel) */}
+            {immeuble && (
+              <div className="hidden md:flex flex-col items-center flex-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">Immeuble</p>
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate max-w-[200px] lg:max-w-[300px]">
+                  {immeuble.adresse}
+                </p>
+              </div>
+            )}
+
+            {/* Toggle Mode - Design premium */}
+            <button
+              onClick={() => setViewMode(viewMode === 'rapide' ? 'liste' : 'rapide')}
+              className={`group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 ${
+                viewMode === 'rapide'
+                  ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
+                  : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white hover:shadow-amber-500/30'
+              }`}
+            >
+              {viewMode === 'rapide' ? (
+                <>
+                  <List className="h-5 w-5 transition-transform group-hover:scale-110" />
+                  <span>Mode Liste</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="h-5 w-5 transition-transform group-hover:rotate-12 group-hover:scale-110" />
+                  <span>Mode Rapide</span>
+                </>
+              )}
+              
+              {/* Badge indicateur */}
+              <span className={`absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full ${
+                viewMode === 'rapide' 
+                  ? 'bg-blue-500' 
+                  : 'bg-gradient-to-r from-amber-400 to-orange-500 animate-pulse'
+              }`} />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Rendu conditionnel selon le mode */}

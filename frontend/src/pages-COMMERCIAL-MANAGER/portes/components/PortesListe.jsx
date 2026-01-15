@@ -119,6 +119,7 @@ export default function PortesListe({
         selectedFloor={selectedFloor}
         statsData={statsData}
         totalPortes={portes.length}
+        onFloorSelect={onFloorSelect}
       />
     ),
     [
@@ -131,6 +132,7 @@ export default function PortesListe({
       selectedFloor,
       statsData,
       portes.length,
+      onFloorSelect,
     ]
   )
 
