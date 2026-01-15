@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { BarChart3, Building2, History, Users } from 'lucide-react'
@@ -8,6 +9,8 @@ import { useAutoAudio } from '@/hooks/audio/useAutoAudio'
 import CommercialHeader from '@/components/CommercialHeader'
 import CommercialBottomBar from '@/components/CommercialBottomBar'
 import MicrophoneGuard from '@/components/MicrophoneGuard'
+import { applyTheme } from '@/config/theme/base'
+import { applyPreset } from '@/config/theme/presets'
 
 /**
  * Layout principal pour l'espace commercial
@@ -18,6 +21,36 @@ export default function CommercialLayout() {
   const location = useLocation()
   const { currentUserId, isManager } = useRole()
   const { base, components } = useCommercialTheme()
+
+  React.useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark')
+    const previousTheme = isDark ? 'dark' : 'light'
+    const savedPreset = localStorage.getItem('theme-preset')
+
+    const applyMode = mode => {
+      if (savedPreset) {
+        applyPreset(savedPreset, mode)
+      } else {
+        applyTheme(mode)
+      }
+    }
+
+    if (previousTheme !== 'light') {
+      applyMode('light')
+      document.documentElement.classList.remove('dark')
+    }
+
+    return () => {
+      if (previousTheme !== 'light') {
+        applyMode(previousTheme)
+        if (previousTheme === 'dark') {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      }
+    }
+  }, [])
 
   // Ref pour le scroll container (utilisée par PortesGestion)
   const scrollContainerRef = React.useRef(null)
@@ -171,7 +204,7 @@ export default function CommercialLayout() {
 
   if (profileLoading) {
     return (
-      <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
+      <div className={`flex flex-col h-screen w-full ${base.bg.card} overflow-hidden`}>
         <CommercialHeader
           commercial={null}
           currentZone={currentZoneAssignment?.zone}
@@ -196,7 +229,7 @@ export default function CommercialLayout() {
 
   if (profileError || !workspaceProfile) {
     return (
-      <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
+      <div className={`flex flex-col h-screen w-full ${base.bg.card} overflow-hidden`}>
         <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
           {profileError || "Impossible de charger l'espace utilisateur."}
         </div>
