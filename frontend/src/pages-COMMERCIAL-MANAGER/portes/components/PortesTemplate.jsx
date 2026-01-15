@@ -283,8 +283,8 @@ export default function PortesTemplate({
       )}
 
       <div className="mb-3 md:mb-4">
-        {/* Accès rapides aux étages */}
-        {etagesDisponibles.length > 0 && (
+        {/* Accès rapides aux étages (masqué si customFilters gère l'en-tête) */}
+        {!customFilters && etagesDisponibles.length > 0 && (
           <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 mb-3">
             <div className="flex items-center justify-between mb-2">
               <span className={`text-xs ${base.text.muted}`}>Accès rapide aux étages</span>
@@ -330,8 +330,8 @@ export default function PortesTemplate({
         {/* Filtres personnalisés additionnels */}
         {customFilters}
 
-        {/* Stats Cards avec actions rapides - Responsive */}
-        {!readOnly && (
+        {/* Stats Cards avec actions rapides - masquées si customFilters gère l'en-tête */}
+        {!readOnly && !customFilters && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5 md:gap-3 mb-4">
             <Card className={`${base.bg.card} ${base.border.card}`}>
               <CardContent className="p-2 sm:p-2.5 md:p-3">
@@ -415,44 +415,46 @@ export default function PortesTemplate({
           </div>
         )}
 
-        {/* Informations de l'immeuble */}
-        <Card className={`${base.bg.card} ${base.border.card} shadow-md mb-3 md:mb-4`}>
-          <CardContent className="p-3 sm:p-3.5 md:p-4">
-            {/* Adresse principale */}
-            <div className="flex items-start gap-2 sm:gap-2.5 mb-3">
-              <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
-                <MapPin
-                  className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`}
-                />
+        {/* Informations de l'immeuble - masquées si customFilters gère l'en-tête */}
+        {!customFilters && (
+          <Card className={`${base.bg.card} ${base.border.card} shadow-md mb-3 md:mb-4`}>
+            <CardContent className="p-3 sm:p-3.5 md:p-4">
+              {/* Adresse principale */}
+              <div className="flex items-start gap-2 sm:gap-2.5 mb-3">
+                <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
+                  <MapPin
+                    className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 uppercase tracking-wide`}
+                  >
+                    Adresse
+                  </p>
+                  <h1
+                    className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}
+                  >
+                    {immeuble?.adresse || 'Chargement...'}
+                  </h1>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p
-                  className={`text-[10px] sm:text-xs ${base.text.muted} mb-0.5 uppercase tracking-wide`}
-                >
-                  Adresse
-                </p>
-                <h1
-                  className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}
-                >
-                  {immeuble?.adresse || 'Chargement...'}
-                </h1>
-              </div>
-            </div>
 
-            {immeuble?.createdAt && (
-              <div className="mt-2 pt-2 border-t border-gray-200">
-                <p className={`text-xs ${base.text.muted}`}>
-                  Créé le{' '}
-                  {new Date(immeuble.createdAt).toLocaleDateString('fr-FR', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                  })}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              {immeuble?.createdAt && (
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <p className={`text-xs ${base.text.muted}`}>
+                    Créé le{' '}
+                    {new Date(immeuble.createdAt).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Actions additionnelles */}
         {additionalActions}

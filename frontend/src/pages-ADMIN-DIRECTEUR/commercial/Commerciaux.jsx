@@ -58,7 +58,7 @@ export default memo(function Commerciaux() {
   return (
     <div className="space-y-6">
       {/* Section d'information sur le système de rangs */}
-      <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+      <Card className="p-6 bg-linear-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold">🏆 Système de Rangs</h3>

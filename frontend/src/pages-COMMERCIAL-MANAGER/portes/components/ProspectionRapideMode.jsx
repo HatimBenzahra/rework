@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -80,6 +80,7 @@ export default function ProspectionRapideMode({
         return true
     }
   })
+  const pendingAutoAdvanceRef = useRef(null)
 
   const toggleAutoAdvance = () => {
     setAutoAdvance(prev => {
@@ -254,13 +255,32 @@ export default function ProspectionRapideMode({
     }
     return -1
   }, [currentIndex, filteredPortes])
+
+  const runAutoAdvance = useCallback((delay = 300) => {
+    if (!autoAdvance) return
+    setTimeout(() => {
+      const nextIndex = findNextUnvisited()
+      if (nextIndex >= 0) {
+        setCurrentIndex(nextIndex)
+      } else if (currentIndex < filteredPortes.length - 1) {
+        goToNext()
+      }
+      setQuickComment('')
+      setShowCommentInput(false)
+      setShowRepassageChoice(false)
+    }, delay)
+  }, [autoAdvance, findNextUnvisited, currentIndex, filteredPortes.length, goToNext])
   
   // Gestion du clic sur un bouton statut
   const handleStatusClick = useCallback((newStatut) => {
     if (!currentPorte) return
+    pendingAutoAdvanceRef.current = null
     
     // Si RDV ou Contrat, on ouvre directement le modal
     if (newStatut === StatutPorte.RENDEZ_VOUS_PRIS || newStatut === StatutPorte.CONTRAT_SIGNE) {
+      if (autoAdvance && currentPorte.id != null) {
+        pendingAutoAdvanceRef.current = { id: currentPorte.id, statut: newStatut }
+      }
       if (onOpenEditModal) {
         onOpenEditModal(currentPorte, newStatut, quickComment)
       }
@@ -280,7 +300,7 @@ export default function ProspectionRapideMode({
         isOpen: true,
         statut: newStatut
     })
-  }, [currentPorte, onOpenEditModal, quickComment, onQuickStatusChange])
+  }, [currentPorte, onOpenEditModal, quickComment, onQuickStatusChange, autoAdvance])
 
   // Confirmation et application du statut (Uniquement pour Refus/Argumenté maintenant)
   const handleConfirmStatusChange = useCallback(async () => {
@@ -293,20 +313,8 @@ export default function ProspectionRapideMode({
     await onQuickStatusChange(currentPorte, newStatut, quickComment)
     
     // Auto-avancer
-    if (autoAdvance) {
-      setTimeout(() => {
-        const nextIndex = findNextUnvisited()
-        if (nextIndex >= 0) {
-          setCurrentIndex(nextIndex)
-        } else if (currentIndex < filteredPortes.length - 1) {
-          goToNext()
-        }
-        setQuickComment('')
-        setShowCommentInput(false)
-        setShowRepassageChoice(false)
-      }, 1000)
-    }
-  }, [currentPorte, confirmDialog, onQuickStatusChange, quickComment, autoAdvance, findNextUnvisited, currentIndex, filteredPortes.length, goToNext])
+    runAutoAdvance(1000)
+  }, [currentPorte, confirmDialog, onQuickStatusChange, quickComment, runAutoAdvance])
 
   
   // Gestion du repassage
@@ -321,19 +329,23 @@ export default function ProspectionRapideMode({
     setShowRepassageChoice(false)
     
     // Auto-avancer
-    if (autoAdvance) {
-      setTimeout(() => {
-        const nextIndex = findNextUnvisited()
-        if (nextIndex >= 0) {
-          setCurrentIndex(nextIndex)
-        } else if (currentIndex < filteredPortes.length - 1) {
-          goToNext()
-        }
-        setQuickComment('')
-        setShowCommentInput(false)
-      }, 300)
+    runAutoAdvance(300)
+  }, [currentPorte, onRepassageChange, runAutoAdvance])
+
+  useEffect(() => {
+    const pending = pendingAutoAdvanceRef.current
+    if (!pending) return
+
+    if (!currentPorte || currentPorte.id !== pending.id) {
+      pendingAutoAdvanceRef.current = null
+      return
     }
-  }, [currentPorte, onRepassageChange, autoAdvance, findNextUnvisited, goToNext, currentIndex, filteredPortes.length])
+
+    if (currentPorte.statut !== pending.statut) return
+
+    pendingAutoAdvanceRef.current = null
+    runAutoAdvance(300)
+  }, [currentPorte?.id, currentPorte?.statut, runAutoAdvance])
   
   // Reset l'index si les portes filtrées changent
   useEffect(() => {
@@ -562,7 +574,7 @@ export default function ProspectionRapideMode({
         </div>
         
         {/* Barre de progression */}
-        <div className="space-y-1">
+        <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between text-sm">
             <span className={base.text.muted}>Progression globale</span>
             <span className={`font-bold ${colors.primary.text}`}>
@@ -576,6 +588,87 @@ export default function ProspectionRapideMode({
             />
           </div>
         </div>
+
+
+{/* Section Gestion Portes/Étages */}
+        {(onAddEtage || onAddPorteToEtage) && currentPorte && (
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 ">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gestion</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Gestion Portes */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <DoorOpen className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase">Portes (Étage {currentPorte?.etage})</span>
+                </div>
+                {onAddPorteToEtage && (
+                  <button
+                    onClick={() => onAddPorteToEtage(currentPorte?.etage)}
+                    disabled={addingPorteToEtage}
+                    className={`
+                      w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                      transition-all duration-200 border-2 border-dashed
+                      ${addingPorteToEtage 
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                        : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'}
+                    `}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {addingPorteToEtage ? 'Ajout...' : 'Ajouter porte'}
+                  </button>
+                )}
+                {onRemovePorteFromEtage && (
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: true, type: 'porte', etage: currentPorte?.etage })}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                      transition-all duration-200 border-2 border-dashed bg-red-100 border-red-500"
+                  >
+                    <Minus className="h-3 w-3" />
+                    Supprimer dernière porte
+                  </button>
+                )}
+              </div>
+              
+              {/* Gestion Étages */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Layers className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="text-[10px] font-bold text-gray-600 uppercase">Étages</span>
+                </div>
+                {onAddEtage && (
+                  <button
+                    onClick={onAddEtage}
+                    disabled={addingEtage}
+                    className={`
+                      w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                      transition-all duration-200 border-2 border-dashed
+                      ${addingEtage 
+                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
+                        : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'}
+                    `}
+                  >
+                    <Plus className="h-4 w-4" />
+                    {addingEtage ? 'Ajout...' : 'Ajouter étage'}
+                  </button>
+                )}
+                {onRemoveEtage && (
+                  <button
+                    onClick={() => setDeleteConfirm({ isOpen: true, type: 'etage', etage: currentPorte?.etage })}
+                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium
+                      transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Minus className="h-3 w-3" />
+                    Supprimer dernier étage
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
       {/* Navigation et porte courante */}
       <div className="flex-1 p-2 space-y-2">
@@ -1043,84 +1136,7 @@ export default function ProspectionRapideMode({
             </div>
         </div>
 
-        {/* Section Gestion Portes/Étages */}
-        {(onAddEtage || onAddPorteToEtage) && currentPorte && (
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gestion</span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              {/* Gestion Portes */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <DoorOpen className="h-3.5 w-3.5 text-gray-500" />
-                  <span className="text-[10px] font-bold text-gray-600 uppercase">Portes (Étage {currentPorte?.etage})</span>
-                </div>
-                {onAddPorteToEtage && (
-                  <button
-                    onClick={() => onAddPorteToEtage(currentPorte?.etage)}
-                    disabled={addingPorteToEtage}
-                    className={`
-                      w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
-                      transition-all duration-200 border-2 border-dashed
-                      ${addingPorteToEtage 
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
-                        : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'}
-                    `}
-                  >
-                    <Plus className="h-4 w-4" />
-                    {addingPorteToEtage ? 'Ajout...' : 'Ajouter porte'}
-                  </button>
-                )}
-                {onRemovePorteFromEtage && (
-                  <button
-                    onClick={() => setDeleteConfirm({ isOpen: true, type: 'porte', etage: currentPorte?.etage })}
-                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium
-                      transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <Minus className="h-3 w-3" />
-                    Supprimer dernière porte
-                  </button>
-                )}
-              </div>
-              
-              {/* Gestion Étages */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <Layers className="h-3.5 w-3.5 text-gray-500" />
-                  <span className="text-[10px] font-bold text-gray-600 uppercase">Étages</span>
-                </div>
-                {onAddEtage && (
-                  <button
-                    onClick={onAddEtage}
-                    disabled={addingEtage}
-                    className={`
-                      w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
-                      transition-all duration-200 border-2 border-dashed
-                      ${addingEtage 
-                        ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed' 
-                        : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'}
-                    `}
-                  >
-                    <Plus className="h-4 w-4" />
-                    {addingEtage ? 'Ajout...' : 'Ajouter étage'}
-                  </button>
-                )}
-                {onRemoveEtage && (
-                  <button
-                    onClick={() => setDeleteConfirm({ isOpen: true, type: 'etage', etage: currentPorte?.etage })}
-                    className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-lg text-[10px] font-medium
-                      transition-all duration-200 text-gray-400 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <Minus className="h-3 w-3" />
-                    Supprimer dernier étage
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        
 
         {/* DIALOG DE CONFIRMATION STATUT */}
         <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog(p => ({ ...p, isOpen: false }))}>

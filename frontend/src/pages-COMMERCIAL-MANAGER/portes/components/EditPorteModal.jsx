@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { Calendar, Clock, RotateCcw, Minus, Plus, MessageSquare, FileSignature } from 'lucide-react'
+import { Calendar, Clock, RotateCcw, Minus, Plus, MessageSquare, FileSignature, Trash } from 'lucide-react'
 
 
 
@@ -35,17 +35,55 @@ export default function EditPorteModal({
   onRepassageChange,
 }) {
   const { base, colors, getButtonClasses } = useCommercialTheme()
+  const [viewportState, setViewportState] = useState(null)
+
+  useEffect(() => {
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const initialHeight = viewport.height
+    const maxDiff = initialHeight * 0.4
+
+    const updateViewportState = () => {
+      const heightDiff = Math.max(0, initialHeight - viewport.height)
+      const progress = Math.min(heightDiff / maxDiff, 1)
+
+      setViewportState({
+        height: viewport.height,
+        offsetTop: viewport.offsetTop,
+        progress,
+      })
+    }
+
+    updateViewportState()
+    viewport.addEventListener('resize', updateViewportState)
+    viewport.addEventListener('scroll', updateViewportState)
+
+    return () => {
+      viewport.removeEventListener('resize', updateViewportState)
+      viewport.removeEventListener('scroll', updateViewportState)
+    }
+  }, [])
+
+  const dialogStyle = viewportState
+    ? {
+        top: `${viewportState.offsetTop + (1 - viewportState.progress) * (viewportState.height / 2) + viewportState.progress * 12}px`,
+        '--tw-translate-y': `${-50 + 50 * viewportState.progress}%`,
+      }
+    : undefined
 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
+      <DialogContent
+        showCloseButton={false}
+        style={dialogStyle}
         className={`
-          flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-all duration-300
-          !top-[1%] !translate-y-0 w-[98%] sm:w-[95%] md:w-[95%] lg:w-[92%] max-w-7xl max-h-[96dvh]
+          flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-[top,transform] duration-200 ease-out will-change-transform
+          w-[98%] sm:w-[95%] md:w-[95%] lg:w-[92%] max-w-7xl max-h-[96dvh]
         `}
       >
-        <DialogHeader className="px-5 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
+        <DialogHeader className="px-4 py-3 border-b border-gray-100 shrink-0 bg-white sm:px-5 sm:py-4">
           <DialogTitle className="text-lg md:text-xl font-bold text-gray-900 line-clamp-1">
             {selectedPorte?.nomPersonnalise || `Porte ${selectedPorte?.numero}`}
           </DialogTitle>
@@ -54,71 +92,42 @@ export default function EditPorteModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 min-h-0">
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-900 block">
-                Nom personnalisé
-              </label>
-              <div className="relative">
-                <Input
-                  placeholder={selectedPorte ? `Porte ${selectedPorte.numero}` : 'Porte'}
-                  value={editForm.nomPersonnalise}
-                  onChange={e => setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))}
-                  className="h-12 text-base bg-white border-gray-300 text-gray-900 pr-24 focus:ring-2 focus:ring-blue-100"
-                />
-                {editForm.nomPersonnalise && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditForm(prev => ({ ...prev, nomPersonnalise: '' }))}
-                    className="absolute right-2 top-2 h-8 text-xs text-gray-500 hover:text-gray-900"
-                  >
-                    Effacer
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-900 block">
-                Statut *
-              </label>
-              <Select
-                value={editForm.statut}
-                onValueChange={value => setEditForm(prev => ({ ...prev, statut: value }))}
-              >
-                <SelectTrigger className="h-12 bg-white border-gray-300 text-gray-900 text-base">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-gray-200">
-                  {statutOptions
-                    .filter(option => option.value !== 'NECESSITE_REPASSAGE')
-                    .map(option => (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
-                      className="py-3 text-gray-900 focus:bg-gray-50 cursor-pointer"
+        <div className="flex flex-1 min-h-0 px-4 py-3 sm:p-5 overflow-y-auto overscroll-contain">
+          <div className="w-[95%] max-w-4xl mx-auto space-y-3">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-900 block">
+                  Nom personnalisé
+                </label>
+                <div className="relative">
+                  <Input
+                    placeholder={selectedPorte ? `Porte ${selectedPorte.numero}` : 'Porte'}
+                    value={editForm.nomPersonnalise}
+                    onChange={e => setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))}
+                    className="h-12 text-base bg-white border-gray-300 text-gray-900 pr-24 focus:ring-2 focus:ring-blue-100"
+                  />
+                  {editForm.nomPersonnalise && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => setEditForm(prev => ({ ...prev, nomPersonnalise: '' }))}
+                      className="absolute right-2 top-2 h-8"
                     >
-                      <div className="flex items-center gap-3">
-                        <option.icon className="h-5 w-5 text-gray-600" />
-                        <span className="text-base text-gray-900">
-                          {option.label}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      <RotateCcw className="h-8 w-8" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+
             </div>
 
             {editForm.statut === 'RENDEZ_VOUS_PRIS' && (
-              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-4">
+              <div className="p-3 sm:p-4 bg-blue-50/50 rounded-xl border border-blue-100 space-y-3">
                 <p className="text-sm font-semibold text-blue-700 flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
                   Rendez-vous
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-gray-700 block">Date *</label>
                     <input
@@ -146,7 +155,7 @@ export default function EditPorteModal({
             )}
 
             {editForm.statut === 'CONTRAT_SIGNE' && (
-              <div className="p-4 bg-green-50/50 rounded-xl border border-green-200 space-y-4">
+              <div className="p-3 sm:p-4 bg-green-50/50 rounded-xl border border-green-200 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-lg bg-green-100/80">
@@ -186,7 +195,7 @@ export default function EditPorteModal({
             )}
 
             {(editForm.statut === 'NECESSITE_REPASSAGE' || editForm.statut === 'ABSENT') && (
-              <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-200 space-y-3">
+              <div className="p-3 sm:p-4 bg-orange-50/50 rounded-xl border border-orange-200 space-y-3">
                   <div className="flex items-center gap-2 mb-2">
                     <RotateCcw className="h-5 w-5 text-orange-600" />
                     <span className="font-bold text-base text-orange-700">Suivi de passage</span>
@@ -240,7 +249,7 @@ export default function EditPorteModal({
           </div>
         </div>
 
-        <DialogFooter className="p-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
+        <DialogFooter className="p-3 sm:p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
           <div className="grid grid-cols-2 gap-3 w-full">
             <Button
               variant="outline"

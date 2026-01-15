@@ -124,7 +124,7 @@ export function useImmeublesLogic() {
     const sortedImmeubles = [...filteredImmeubles].sort((a, b) => {
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     })
-    return sortedImmeubles.map(immeuble => {
+    const mappedData = sortedImmeubles.map(immeuble => {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
       const manager = managers?.find(m => m.id === immeuble.managerId)
       const portesImmeuble = immeuble.portes || []
@@ -152,7 +152,31 @@ export function useImmeublesLogic() {
         commercial_name: responsibleName,
       }
     })
+
+    const totalImmeubles = sortedImmeubles.length
+    const totalContrats = sortedImmeubles.reduce((acc, curr) => acc + calculnbcontrats(curr), 0)
+    const avgCouverture =
+      totalImmeubles > 0
+        ? (
+            sortedImmeubles.reduce((acc, curr) => {
+              const portesImmeuble = curr.portes || []
+              const totalDoors = portesImmeuble.length
+              const portesProspectees = portesImmeuble.filter(p => p.statut !== 'NON_VISITE').length
+              const couverture = totalDoors > 0 ? (portesProspectees / totalDoors) * 100 : 0
+              return acc + couverture
+            }, 0) / totalImmeubles
+          ).toFixed(1)
+        : 0
+
+    return { data: mappedData, stats: { totalImmeubles, totalContrats, avgCouverture } }
   }, [filteredImmeubles, commercials, managers])
+
+  const stats = tableData?.stats || {
+    totalImmeubles: 0,
+    totalContrats: 0,
+    avgCouverture: 0,
+  }
+  const finalTableData = tableData?.data || []
 
   const handleEditImmeuble = async editedData => {
     try {
@@ -193,7 +217,8 @@ export function useImmeublesLogic() {
     setViewMode,
     immeublesLoading,
     description,
-    tableData,
+    tableData: finalTableData,
+    stats,
     immeublesColumns,
     getImmeublesEditFields,
     permissions,

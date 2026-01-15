@@ -384,11 +384,17 @@ export function useManagerDetailsLogic() {
         ? new Date(immeuble.createdAt)
         : new Date(immeuble.visitedAt || immeuble.createdAt)
 
-      const startDateObj = appliedImmeubleStartDate ? new Date(appliedImmeubleStartDate) : null
-      const endDateObj = appliedImmeubleEndDate ? new Date(appliedImmeubleEndDate) : null
+      if (appliedImmeubleStartDate) {
+        const startDateObj = new Date(appliedImmeubleStartDate)
+        startDateObj.setHours(0, 0, 0, 0)
+        if (dateToCompare < startDateObj) return false
+      }
 
-      if (startDateObj && dateToCompare < startDateObj) return false
-      if (endDateObj && dateToCompare > endDateObj) return false
+      if (appliedImmeubleEndDate) {
+        const endDateObj = new Date(appliedImmeubleEndDate)
+        endDateObj.setHours(23, 59, 59, 999)
+        if (dateToCompare > endDateObj) return false
+      }
 
       return true
     })
