@@ -226,6 +226,25 @@ export function getStatusColorClasses(status, themeColors) {
 }
 
 /**
+ * Helper: Obtenir les classes CSS de bordure pour un statut
+ * Utilisé pour générer les classes Tailwind avec les couleurs du thème
+ *
+ * @param {string} status - Le statut
+ * @param {Object} themeColors - Les couleurs du thème (de useCommercialTheme)
+ * @returns {string} Les classes CSS
+ */
+export function getStatusBorderClasses(status, themeColors) {
+  const config = getStatusConfig(status)
+  const colorKey = config.themeColor
+  
+  if (colorKey === 'primary') {
+    return themeColors[colorKey].border || 'border-blue-500'
+  }
+  
+  return themeColors[colorKey].border || 'border-gray-200'
+}
+
+/**
  * Helper: Générer les options de statut pour les composants de formulaire
  * Utilisé par les selects, dropdowns, etc.
  *
@@ -242,6 +261,7 @@ export function getStatusOptions(themeColors, excludeStatuses = []) {
         value: config.value,
         label: config.label,
         color: getStatusColorClasses(status, themeColors),
+        borderColor: getStatusBorderClasses(status, themeColors),
         icon: config.icon,
       }
     })
@@ -260,6 +280,7 @@ export function getStatusBadgeData(status, themeColors) {
   return {
     label: config.label,
     colorClasses: getStatusColorClasses(status, themeColors),
+    borderClasses: getStatusBorderClasses(status, themeColors),
     Icon: config.icon,
   }
 }

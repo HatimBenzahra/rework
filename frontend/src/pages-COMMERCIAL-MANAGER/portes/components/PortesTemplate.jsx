@@ -268,7 +268,7 @@ export default function PortesTemplate({
       {/* Header sticky (optionnel - peut être géré par le parent) */}
       {!hideHeader && (
         <div
-          className={`top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}
+          className={`top-0 z-100 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2.5 bg-transparent border-b border-border/50`}
         >
           <Button
             variant="ghost"
@@ -344,7 +344,7 @@ export default function PortesTemplate({
                       {stats.tauxVisite}%
                     </p>
                   </div>
-                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 shrink-0">
                     <Eye
                       className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
                     />
@@ -364,7 +364,7 @@ export default function PortesTemplate({
                       {stats.contratsSigne}
                     </p>
                   </div>
-                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 shrink-0">
                     <CheckCircle2
                       className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
                     />
@@ -384,7 +384,7 @@ export default function PortesTemplate({
                       {stats.rdvPris}
                     </p>
                   </div>
-                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 shrink-0">
                     <Building2
                       className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
                     />
@@ -404,7 +404,7 @@ export default function PortesTemplate({
                       {stats.repassages}
                     </p>
                   </div>
-                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 flex-shrink-0">
+                  <div className="p-1 sm:p-1.5 md:p-2 rounded-lg border border-gray-200 bg-gray-50 shrink-0">
                     <RotateCcw
                       className={`h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 ${base.icon.default}`}
                     />
@@ -421,7 +421,7 @@ export default function PortesTemplate({
             <CardContent className="p-3 sm:p-3.5 md:p-4">
               {/* Adresse principale */}
               <div className="flex items-start gap-2 sm:gap-2.5 mb-3">
-                <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} flex-shrink-0`}>
+                <div className={`p-1.5 rounded-lg ${colors.primary.bgLight} shrink-0`}>
                   <MapPin
                     className={`h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 ${colors.primary.text}`}
                   />
@@ -433,7 +433,7 @@ export default function PortesTemplate({
                     Adresse
                   </p>
                   <h1
-                    className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight break-words`}
+                    className={`text-sm sm:text-base md:text-lg font-bold ${base.text.primary} leading-tight wrap-break-word`}
                   >
                     {immeuble?.adresse || 'Chargement...'}
                   </h1>
@@ -566,7 +566,7 @@ export default function PortesTemplate({
       {/* Loader de pagination */}
       {isFetchingMore && (
         <div className="py-4 text-center">
-          <div className={`${components.loading.spinner} mx-auto mb-2 !h-6 !w-6`}></div>
+          <div className={`${components.loading.spinner} mx-auto mb-2 h-6! w-6!`}></div>
           <p className="text-xs text-muted-foreground">Chargement de la suite...</p>
         </div>
       )}

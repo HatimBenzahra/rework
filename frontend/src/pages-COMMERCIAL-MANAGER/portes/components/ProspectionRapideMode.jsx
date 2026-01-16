@@ -35,6 +35,8 @@ import {
   Minus,
   DoorOpen,
   Layers,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
@@ -61,12 +63,15 @@ export default function ProspectionRapideMode({
   addingEtage = false,
   addingPorteToEtage = false,
 }) {
+  // ----------------------------------------------------------------------
+  // 1. HOOKS & CONSTANTES
+  // ----------------------------------------------------------------------
   const { colors, base } = useCommercialTheme()
   const { showSuccess } = useErrorToast()
-  
+
   // Index de la porte courante
   const [currentIndex, setCurrentIndex] = useState(0)
-  
+
   // Commentaire rapide (inline)
   const [quickComment, setQuickComment] = useState('')
   const [showCommentInput, setShowCommentInput] = useState(false)
@@ -108,7 +113,28 @@ export default function ProspectionRapideMode({
     type: null, // 'porte' | 'etage'
     etage: null,
   })
+
+  // Affichage de la carte de visualisation
+  const [showVisualization, setShowVisualization] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rapidModeShowVisualization')
+      return saved !== null ? JSON.parse(saved) : true
+    } catch {
+      return true
+    }
+  })
+
+  const toggleVisualization = () => {
+    setShowVisualization(prev => {
+      const newVal = !prev
+      localStorage.setItem('rapidModeShowVisualization', JSON.stringify(newVal))
+      return newVal
+    })
+  }
   
+  // ----------------------------------------------------------------------
+  // 2. MEMOS & FILTRES
+  // ----------------------------------------------------------------------
   // Calculer les portes filtrées selon le mode
   const filteredPortes = useMemo(() => {
     switch (filterMode) {
@@ -157,6 +183,9 @@ export default function ProspectionRapideMode({
     return null
   }, [currentPorte, currentIndex, filteredPortes])
   
+  // ----------------------------------------------------------------------
+  // 3. NAVIGATION HANDLERS
+  // ----------------------------------------------------------------------
   // Navigation
   const goToPrevious = useCallback(() => {
     setCurrentIndex(prev => Math.max(0, prev - 1))
@@ -271,6 +300,9 @@ export default function ProspectionRapideMode({
     }, delay)
   }, [autoAdvance, findNextUnvisited, currentIndex, filteredPortes.length, goToNext])
   
+  // ----------------------------------------------------------------------
+  // 4. ACTIONS & STATUTS
+  // ----------------------------------------------------------------------
   // Gestion du clic sur un bouton statut
   const handleStatusClick = useCallback((newStatut) => {
     if (!currentPorte) return
@@ -346,14 +378,14 @@ export default function ProspectionRapideMode({
     pendingAutoAdvanceRef.current = null
     runAutoAdvance(300)
   }, [currentPorte?.id, currentPorte?.statut, runAutoAdvance])
-  
+
   // Reset l'index si les portes filtrées changent
   useEffect(() => {
     if (currentIndex >= filteredPortes.length) {
       setCurrentIndex(Math.max(0, filteredPortes.length - 1))
     }
   }, [filteredPortes.length, currentIndex])
-  
+
   // Reset quand on change de filtre
   useEffect(() => {
     setCurrentIndex(0)
@@ -374,6 +406,9 @@ export default function ProspectionRapideMode({
   // Filters options
   const filterOptions = [
     { value: 'non_visitees', label: 'Non visitées', count: portes.filter(p => p.statut === StatutPorte.NON_VISITE).length },
+    { value: 'argumentes', label: 'Argumentés', count: portes.filter(p =>p.statut === StatutPorte.ARGUMENTE).length},
+    {value: 'contrat_signe', label: 'Contrat signé', count: portes.filter(p =>p.statut === StatutPorte.CONTRAT_SIGNE).length},
+    { value: 'refus', label: 'Refus', count: portes.filter(p =>p.statut === StatutPorte.REFUS).length},
     { value: 'absents', label: 'Absents', count: portes.filter(p =>p.statut === StatutPorte.ABSENT).length},
     { value: 'rendez_vous_pris', label: 'Rendez-vous pris', count: portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS).length },
     { value: 'all', label: 'Toutes', count: portes.length },
@@ -383,7 +418,7 @@ export default function ProspectionRapideMode({
   const handleResume = useCallback(() => {
     // 1. Chercher la première porte NON VISITÉE dans la liste filtrée
     const firstUnvisitedIndex = filteredPortes.findIndex(p => p.statut === StatutPorte.NON_VISITE)
-    
+
     if (firstUnvisitedIndex !== -1) {
         setCurrentIndex(firstUnvisitedIndex)
         showSuccess ? showSuccess('Reprise à la première porte non visitée') : null
@@ -404,7 +439,52 @@ export default function ProspectionRapideMode({
     }
   }, [filteredPortes, hasMore, isFetchingMore, loadMore])
 
+  // Organiser les portes par étage pour la visualisation
+  const portesParEtage = useMemo(() => {
+    const grouped = {}
+    filteredPortes.forEach(porte => {
+      if (!grouped[porte.etage]) {
+        grouped[porte.etage] = []
+      }
+      grouped[porte.etage].push(porte)
+    })
+    return Object.entries(grouped).sort(([a], [b]) => Number(a) - Number(b))
+  }, [filteredPortes])
+
+  // Fonction pour obtenir la couleur selon le statut
+  const getStatusColor = useCallback((statut) => {
+    switch (statut) {
+      case StatutPorte.NON_VISITE:
+        return 'bg-gray-300'
+      case StatutPorte.ABSENT:
+        return 'bg-orange-500'
+      case StatutPorte.REFUS:
+        return 'bg-red-500'
+      case StatutPorte.RENDEZ_VOUS_PRIS:
+        return 'bg-blue-500'
+      case StatutPorte.ARGUMENTE:
+        return 'bg-purple-500'
+      case StatutPorte.CONTRAT_SIGNE:
+        return 'bg-green-500'
+      default:
+        return 'bg-gray-400'
+    }
+  }, [])
+
+  // Navigation vers une porte spécifique
+  const goToPorte = useCallback((porteId) => {
+    const index = filteredPortes.findIndex(p => p.id === porteId)
+    if (index !== -1) {
+      setCurrentIndex(index)
+      setShowCommentInput(false)
+      setShowRepassageChoice(false)
+    }
+  }, [filteredPortes])
+
   
+  // ----------------------------------------------------------------------
+  // 5. RENDER: EMPTY STATE
+  // ----------------------------------------------------------------------
   // Si aucune porte à afficher
   if (filteredPortes.length === 0) {
     return (
@@ -473,8 +553,6 @@ export default function ProspectionRapideMode({
   const statutInfo = statutOptions.find(o => o.value === currentPorte?.statut) || statutOptions[0]
   const StatutIcon = statutInfo?.icon
   
-  const needsRepassage = currentPorte?.statut === StatutPorte.ABSENT || currentPorte?.statut === StatutPorte.NECESSITE_REPASSAGE
-  
   // Boutons d'action avec leurs configs
   const actionButtons = [
     { 
@@ -520,10 +598,17 @@ export default function ProspectionRapideMode({
     ? pendingActionBtn.color
     : pendingStatutInfo?.color?.split(' ')[0] || 'bg-primary'
 
+  // ----------------------------------------------------------------------
+  // 6. RENDER: MAIN UI
+  // ----------------------------------------------------------------------
   return (
-    <div className="flex flex-col min-h-[80vh]">
-      {/* Header avec barre de progression */}
-      <div className={`${base.bg.card} border-b ${base.border.default} p-4 rounded-t-xl`}>
+    <>
+      <div className="flex flex-col min-h-[80vh]">
+        {/* ---------------------------------------------------------------------- */}
+        {/* HEADER SECTION */}
+        {/* ---------------------------------------------------------------------- */}
+        {/* Header avec barre de progression */}
+        <div className={`border-b p-2 rounded-xl bg-blue-50`}>
         {/* Titre */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
@@ -537,32 +622,40 @@ export default function ProspectionRapideMode({
           </div>
           
           <div className="flex items-center gap-2">
-            <button 
-                onClick={handleResume} 
+            <button
+                onClick={handleResume}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200`}
                 title="Aller à la première porte non visitée"
             >
                 <History className="h-5 w-5" />
                 Reprendre
             </button>
-            <button 
-                onClick={toggleAutoAdvance} 
+            <button
+                onClick={toggleAutoAdvance}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${autoAdvance ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
             >
                 <FastForward className={`h-5 w-5 ${autoAdvance ? 'text-green-600' : 'text-gray-400'}`} />
                 {autoAdvance ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
             </button>
+            <button
+                onClick={toggleVisualization}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${showVisualization ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
+                title={showVisualization ? "Masquer la visualisation" : "Afficher la visualisation"}
+            >
+                {showVisualization ? <Eye className="h-5 w-5 text-purple-600" /> : <EyeOff className="h-5 w-5 text-gray-400" />}
+                Vue
+            </button>
           </div>
         </div>
         
         {/* Filtres rapides */}
-        <div className="flex flex-wrap gap-2 mb-2">
-          <Filter className={`h-4 w-4 ${base.text.muted} self-center`} />
+        <div className="flex flex-wrap gap-2 mb-2 mt-2 ">
+          <Filter className={`h-5 w-5 ${base.text.muted} self-center`} />
           {filterOptions.map(opt => (
             <button
               key={opt.value}
               onClick={() => setFilterMode(opt.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
                 filterMode === opt.value 
                   ? `${colors.primary.bg} text-white shadow-md` 
                   : `${base.bg.muted} ${base.text.muted} hover:opacity-80`
@@ -582,17 +675,123 @@ export default function ProspectionRapideMode({
             </span>
           </div>
           <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full ${colors.primary.bg} transition-all duration-500 ease-out`}
               style={{ width: `${progressStats.percentage}%` }}
             />
           </div>
         </div>
+      
+        {/* ---------------------------------------------------------------------- */}
+        {/* VISUALISATION GRID */}
+        {/* ---------------------------------------------------------------------- */}
+        {/* Carte de visualisation des portes par étage */}
+        {showVisualization && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-gray-500" />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Vue d'ensemble</span>
+              </div>
+              <span className="text-[10px] text-gray-400">
+                {filteredPortes.length} porte{filteredPortes.length > 1 ? 's' : ''}
+              </span>
+            </div>
 
+            {/* Zone scrollable */}
+            <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar p-2">
+              {portesParEtage.map(([etageNum, portesEtage]) => (
+                <div key={etageNum} className="space-y-2">
+                  {/* Séparateur d'étage */}
+                  <div className="flex items-center gap-2">
+                    <div className="shrink-0 w-16 px-2 py-1 bg-gray-100 rounded-lg">
+                      <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wide">
+                        Étage {etageNum}
+                      </span>
+                    </div>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
 
+                  {/* Portes de l'étage */}
+                  <div className="flex flex-wrap gap-2">
+                    {portesEtage.map((porte) => {
+                      const isCurrent = currentPorte?.id === porte.id
+                      const statusColor = getStatusColor(porte.statut)
+
+                      return (
+                        <button
+                          key={porte.id}
+                          onClick={() => goToPorte(porte.id)}
+                          className={`
+                            relative group flex items-center justify-center min-w-[44px] h-10 px-2 rounded-lg
+                            transition-all duration-200
+                            ${isCurrent
+                              ? `${statusColor} ring-2 ring-offset-2 ring-blue-400 shadow-lg scale-110`
+                              : `${statusColor} hover:scale-105 hover:shadow-md opacity-80 hover:opacity-100`
+                            }
+                          `}
+                          title={`Porte ${porte.numero} - ${statutOptions.find(s => s.value === porte.statut)?.label || porte.statut}`}
+                        >
+                          <span className="text-[11px] font-bold text-white drop-shadow-sm">
+                            {porte.nomPersonnalise || porte.numero}
+                          </span>
+
+                          {/* Indicateur de porte courante */}
+                          {isCurrent && (
+                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white" />
+                          )}
+
+                          {/* Tooltip au hover */}
+                          <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                            {porte.nomPersonnalise && `${porte.nomPersonnalise} - `}Porte {porte.numero}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Légende des couleurs */}
+            <div className="mt-4 pt-3 border-t border-gray-100">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-gray-300" />
+                  <span className="text-[9px] text-gray-600">Non visité</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-orange-500" />
+                  <span className="text-[9px] text-gray-600">Absent</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-red-500" />
+                  <span className="text-[9px] text-gray-600">Refus</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-blue-500" />
+                  <span className="text-[9px] text-gray-600">RDV</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-purple-500" />
+                  <span className="text-[9px] text-gray-600">Argumenté</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded bg-green-500" />
+                  <span className="text-[9px] text-gray-600">Contrat</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+{/* ---------------------------------------------------------------------- */}
+{/* MANAGEMENT SECTION */}
+{/* ---------------------------------------------------------------------- */}
 {/* Section Gestion Portes/Étages */}
         {(onAddEtage || onAddPorteToEtage) && currentPorte && (
-          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 ">
+          <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100  ">
             <div className="flex items-center justify-center gap-2 mb-3">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Gestion</span>
             </div>
@@ -623,7 +822,7 @@ export default function ProspectionRapideMode({
                 {onRemovePorteFromEtage && (
                   <button
                     onClick={() => setDeleteConfirm({ isOpen: true, type: 'porte', etage: currentPorte?.etage })}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-black text-xs font-bold
                       transition-all duration-200 border-2 border-dashed bg-red-100 border-red-500"
                   >
                     <Minus className="h-3 w-3" />
@@ -657,7 +856,7 @@ export default function ProspectionRapideMode({
                 {onRemoveEtage && (
                   <button
                     onClick={() => setDeleteConfirm({ isOpen: true, type: 'etage', etage: currentPorte?.etage })}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs text-black font-bold
                       transition-all duration-200 border-2 border-dashed bg-red-100 border-red-500"
                   >
                     <Minus className="h-3 w-3" />
@@ -671,11 +870,14 @@ export default function ProspectionRapideMode({
 
       </div>
       {/* Navigation et porte courante */}
+      {/* ---------------------------------------------------------------------- */}
+      {/* NAVIGATION PRINCIPALE */}
+      {/* ---------------------------------------------------------------------- */}
       <div className="flex-1 p-2 space-y-2">
         {/* Contrôles de navigation PREMIUM */}
 
         {/* Navigation Porte (Premium Design) - Uniformized */}
-        <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
+        <div className="relative flex items-center justify-between bg-white rounded-2xl p-1 shadow-sm border border-gray-100">
            {/* Label Central */}
            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
               <div className="flex flex-col items-center">
@@ -688,7 +890,7 @@ export default function ProspectionRapideMode({
 
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-100 rounded-b-2xl overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+              className="h-full bg-linear-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
               style={{ width: `${((currentIndex + 1) / filteredPortes.length) * 100}%` }}
             />
           </div>
@@ -750,15 +952,18 @@ export default function ProspectionRapideMode({
 
 
         
+        {/* ---------------------------------------------------------------------- */}
+        {/* CARTE PORTE COURANTE */}
+        {/* ---------------------------------------------------------------------- */}
         {/* Carte de la porte courante */}
         {currentPorte && (
-          <Card className={`${base.bg.card} border-2 ${base.border.default} shadow-lg`}>
+          <Card className={`${base.bg.card} border-2 ${base.border.default} shadow-lg bg-blue-50`}>
             <CardContent className="p-0">
               {/* Header: Compact Horizontal Layout */}
-              <div className="relative overflow-hidden rounded-t-xl bg-gradient-to-r from-gray-50 to-white px-4 py-3 border-b border-gray-100">
+              <div className="relative overflow-hidden rounded-t-xl bg-linear-to-r bg-blue-50 px-4 py-3 border-b border-gray-100">
                 <div className="flex items-center justify-between gap-3">
                   {/* Left: Étage */}
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-100/80 backdrop-blur-sm shrink-0">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full  backdrop-blur-sm shrink-0">
                     <Building2 className="h-3 w-3 text-gray-500" />
                     <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600">
                       Étage {currentPorte.etage}
@@ -799,10 +1004,10 @@ export default function ProspectionRapideMode({
               </div>
 
               {/* Info Section: Compact Horizontal */}
-              <div className="px-4 py-2 bg-white">
+              <div className="px-4 py-2 bg-blue-50">
                 {/* Repassage Info - Horizontal Pills for ABSENT */}
                 {currentPorte.statut === StatutPorte.ABSENT && (
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 bg-">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide shrink-0">Passages:</span>
                     <div className="flex gap-2 flex-1">
                       {/* 1er Passage */}
@@ -889,7 +1094,7 @@ export default function ProspectionRapideMode({
                       `}
                     >
                       {/* Background Matin */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-orange-100 via-amber-50 to-blue-50 opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-linear-to-br from-orange-100 via-amber-50 to-blue-50 opacity-100 transition-opacity" />
                        <div className="absolute -right-4 -top-4 opacity-20 group-hover:opacity-30 transition-opacity">
                             <Sun className="h-24 w-24 text-orange-500" />
                        </div>
@@ -915,7 +1120,7 @@ export default function ProspectionRapideMode({
                       `}
                     >
                        {/* Background Soir */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-blue-50 to-purple-50 opacity-100 transition-opacity" />
+                      <div className="absolute inset-0 bg-linear-to-br from-indigo-100 via-blue-50 to-purple-50 opacity-100 transition-opacity" />
                       <div className="absolute -right-4 -top-4 opacity-20 group-hover:opacity-30 transition-opacity">
                             <Moon className="h-24 w-24 text-indigo-600" />
                        </div>
@@ -1071,8 +1276,11 @@ export default function ProspectionRapideMode({
           </Card>
         )}
 
+        {/* ---------------------------------------------------------------------- */}
+        {/* NAVIGATION ETAGES */}
+        {/* ---------------------------------------------------------------------- */}
         {/* Navigation Étage (Premium Design) - Moved below card */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 p-1 mb-40">
             <div className="relative flex items-center justify-between bg-white rounded-2xl p-2 shadow-sm border border-gray-100">
                {/* Label Central (Absolu pour ne pas gêner le flex) */}
                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
@@ -1091,7 +1299,7 @@ export default function ProspectionRapideMode({
                   className={`
                     relative z-10 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
                     ${canGoPreviousFloor 
-                        ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md -translate-y-0 active:scale-95' 
+                        ? 'bg-gray-50 text-gray-700 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md translate-y-0 active:scale-95' 
                         : 'opacity-40 cursor-not-allowed grayscale'}
                   `}
                >
@@ -1138,9 +1346,12 @@ export default function ProspectionRapideMode({
 
         
 
+        {/* ---------------------------------------------------------------------- */}
+        {/* MODALS & DIALOGS */}
+        {/* ---------------------------------------------------------------------- */}
         {/* DIALOG DE CONFIRMATION STATUT */}
         <Dialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && setConfirmDialog(p => ({ ...p, isOpen: false }))}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-white text-gray-800">
             <DialogHeader>
               <div className="flex items-center gap-3 mb-2">
                 <div className={`p-3 rounded-full ${pendingStatutInfo?.color?.replace('bg-', 'bg-').replace(' ', '/20 ') || 'bg-gray-100'}`}>
@@ -1234,5 +1445,6 @@ export default function ProspectionRapideMode({
 
       </div>
     </div>
+    </>
   )
 }

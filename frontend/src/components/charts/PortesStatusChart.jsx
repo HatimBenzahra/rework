@@ -258,7 +258,7 @@ export default function PortesStatusChart({
             <div key={index} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <div
-                  className="w-3 h-3 rounded-sm flex-shrink-0"
+                  className="w-3 h-3 rounded-sm shrink-0"
                   style={{ backgroundColor: item.fill }}
                 />
                 <span className="text-muted-foreground">{item.name}</span>

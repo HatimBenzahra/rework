@@ -70,7 +70,7 @@ export default function PorteCard({
               </h3>
               {porte.nomPersonnalise && (
                 <span
-                  className={`text-xs ${base.text.muted} bg-gray-100 px-2 py-0.5 rounded flex-shrink-0`}
+                  className={`text-xs ${base.text.muted} bg-gray-100 px-2 py-0.5 rounded shrink-0`}
                 >
                   {porte.numero}
                 </span>
@@ -89,7 +89,7 @@ export default function PorteCard({
               variant="ghost"
               size="sm"
               onClick={() => onEdit(porte)}
-              className={`${getButtonClasses('secondary')} h-8 w-8 p-0 flex-shrink-0`}
+              className={`${getButtonClasses('secondary')} h-8 w-8 p-0 shrink-0`}
             >
               <Edit3 className="h-4 w-4" />
             </Button>
@@ -125,8 +125,8 @@ export default function PorteCard({
             <div
               className={`flex items-start gap-2 p-2 rounded-lg ${base.bg.muted} border ${base.border.default}`}
             >
-              <MessageSquare className={`h-4 w-4 ${base.text.muted} mt-0.5 flex-shrink-0`} />
-              <span className={`text-sm ${base.text.secondary} break-words`}>
+              <MessageSquare className={`h-4 w-4 ${base.text.muted} mt-0.5 shrink-0`} />
+              <span className={`text-sm ${base.text.secondary} wrap-break-word`}>
                 {porte.commentaire}
               </span>
             </div>

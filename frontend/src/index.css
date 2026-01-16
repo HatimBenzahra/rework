@@ -279,4 +279,22 @@ body {
   .animation-delay-2500 {
     animation-delay: 2.5s;
   }
+
+/* Scrollbar personnalisée concerant le mode visualtion des portes dans l'espace commercial/manager */
+  .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+
+
 }

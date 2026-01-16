@@ -118,7 +118,7 @@ const PorteListFilters = forwardRef(
                       onClick={() => onFloorSelect && onFloorSelect(isSelected ? null : etage)}
                       className={`group relative flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all duration-200 min-w-max ${
                         isSelected
-                          ? 'bg-linear-to-r from-blue-500 to-indigo-600 text-white shadow-md hover:shadow-lg scale-[1.02]'
+                          ? 'bg-linear-to-r from-blue-500 to-indigo-600 text-white shadow-md hover:shadow-lg scale-[1.02] border border-blue-600'
                           : `${base.bg.muted} ${base.text.primary} hover:bg-blue-50 dark:hover:bg-blue-900/20 border ${base.border.default} hover:border-blue-400 dark:hover:border-blue-500`
                       }`}
                     >
@@ -166,7 +166,7 @@ const PorteListFilters = forwardRef(
               onClick={clearAllFilters}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                 activeFilters.length === 0
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md scale-[1.02]'
+                  ? 'bg-linear-to-r from-blue-500 to-indigo-600 text-white shadow-md scale-[1.02] border border-blue-600'
                   : `${base.bg.muted} ${base.text.muted} border ${base.border.default} hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10`
               }`}
             >
@@ -194,7 +194,7 @@ const PorteListFilters = forwardRef(
                     onClick={() => toggleFilter(option.value)}
                     className={`group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
                       isActive
-                        ? `${option.color} shadow-md scale-[1.02]`
+                        ? `${option.color} shadow-md scale-[1.02] border ${option.borderColor || 'border-transparent'}`
                         : `${base.bg.muted} ${base.text.muted} border ${base.border.default} hover:border-gray-400 dark:hover:border-gray-500 opacity-80 hover:opacity-100`
                     }`}
                   >

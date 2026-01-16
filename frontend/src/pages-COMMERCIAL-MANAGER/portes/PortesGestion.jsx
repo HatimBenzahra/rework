@@ -65,17 +65,17 @@ export default function PortesGestion() {
   return (
     <div className="space-y-4">
       {/* Header Principal - Design Premium */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden bg-white">
         {/* Fond avec gradient subtil */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-gray-50 to-slate-100" />
+        <div className="absolute inset-0 bg-linear-to-r bg-white" />
         
-        <div className="relative bg-white rounded-2xl p-4">
+        <div className="relative bg-white rounded-2xl p-2 ">
           <div className="flex items-center justify-between gap-4">
             
             {/* Bouton Quitter - Design épuré */}
             <button
               onClick={() => setShowQuitConfirm(true)}
-              className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg hover:shadow-xl hover:shadow-red-500/30 hover:scale-105 active:scale-95"
+              className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 bg-linear-to-r from-red-500 to-rose-600 text-white shadow-lg hover:shadow-xl hover:shadow-red-500/30 hover:scale-105 active:scale-95"
             >
               <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-0.5" />
               <span>Quitter</span>
@@ -97,7 +97,7 @@ export default function PortesGestion() {
               className={`group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 ${
                 viewMode === 'rapide'
                   ? 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-2 border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500'
-                  : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white hover:shadow-amber-500/30'
+                  : 'bg-linear-to-r from-amber-500 via-orange-500 to-amber-600 text-white hover:shadow-amber-500/30'
               }`}
             >
               {viewMode === 'rapide' ? (
@@ -116,7 +116,7 @@ export default function PortesGestion() {
               <span className={`absolute -top-1.5 -right-1.5 w-3 h-3 rounded-full ${
                 viewMode === 'rapide' 
                   ? 'bg-blue-500' 
-                  : 'bg-gradient-to-r from-amber-400 to-orange-500 animate-pulse'
+                  : 'bg-linear-to-r from-amber-400 to-orange-500 animate-pulse'
               }`} />
             </button>
           </div>
@@ -168,8 +168,9 @@ export default function PortesGestion() {
 
       {/* Dialogue de confirmation pour quitter */}
       <Dialog open={showQuitConfirm} onOpenChange={setShowQuitConfirm}>
-        <DialogContent className="sm:max-w-md bg-white dark:bg-white text-slate-900 dark:text-slate-900 border-none shadow-lg">
+        <DialogContent className="sm:max-w-md bg-white" showCloseButton={false}>
            <DialogHeader>
+
              <div className="flex items-center gap-3 mb-2">
                <div className="p-3 rounded-full bg-red-100">
                  <AlertTriangle className="h-6 w-6 text-red-600" />
@@ -180,19 +181,19 @@ export default function PortesGestion() {
            </DialogHeader>
            <DialogFooter className="flex gap-3 sm:gap-3">
              <Button 
-               variant="outline" 
+               variant="default" 
                onClick={() => setShowQuitConfirm(false)} 
-               className="flex-1 border-slate-200 dark:border-slate-200 text-slate-700 dark:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-100 hover:text-slate-900 dark:hover:text-slate-900"
+               className="flex-1 bg-white border-2 border-gray-200"
              >
                Annuler
              </Button>
              <Button
-               variant="destructive"
+               variant="default"
                onClick={() => {
                  setShowQuitConfirm(false)
                  handleBackToImmeubles()
                }}
-               className="flex-1 bg-red-600 hover:bg-red-700"
+               className="flex-1 bg-red-500"
              >
                <LogOut className="h-4 w-4 mr-2" />
                Oui, quitter
