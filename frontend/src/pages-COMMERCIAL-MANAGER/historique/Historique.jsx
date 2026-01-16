@@ -105,6 +105,15 @@ export default function Historique() {
 
       {/* Liste des immeubles */}
       <div className="space-y-3">
+        {/* Compteur d'affichage */}
+        {filteredImmeubleIds.length > 0 && (
+          <div className={`text-sm ${base.text.muted}`}>
+            Affichage de {startIndex + 1} à {Math.min(endIndex, filteredImmeubleIds.length)} sur{' '}
+            {filteredImmeubleIds.length} immeuble
+            {filteredImmeubleIds.length > 1 ? 's' : ''}
+          </div>
+        )}
+
         {immeubles.length === 0 ? (
           <Card className={`p-8 ${base.bg.card} ${base.border.card}`}>
             <div className="text-center">
@@ -172,13 +181,7 @@ export default function Historique() {
 
       {/* Pagination controls */}
       {filteredImmeubleIds.length > ITEMS_PER_PAGE && (
-        <div className="mt-6 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className={`text-sm ${base.text.muted}`}>
-            Affichage de {startIndex + 1} à {Math.min(endIndex, filteredImmeubleIds.length)} sur{' '}
-            {filteredImmeubleIds.length} immeuble
-            {filteredImmeubleIds.length > 1 ? 's' : ''}
-          </div>
-
+        <div className="mt-6 mb-6 flex items-center justify-center">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -250,4 +253,3 @@ export default function Historique() {
     </div>
   )
 }
-
