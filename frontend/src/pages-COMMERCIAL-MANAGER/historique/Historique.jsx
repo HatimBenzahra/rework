@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import React, { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
@@ -35,14 +36,34 @@ export default function Historique() {
     setCurrentPage(1)
   }, [periodFilter])
 
-  // Plus de tracking via portes; on utilise updatedAt de l'immeuble
-  const sortedImmeubleIds = React.useMemo(() => sortedImmeubles.map(i => i.id), [sortedImmeubles])
+  // Filtrer selon la période sélectionnée
+  const filteredImmeubles = React.useMemo(() => {
+    const now = Date.now()
+    return sortedImmeubles.filter(imm => {
+      const lastModified = new Date(imm.updatedAt).getTime()
+      switch (periodFilter) {
+        case '24h':
+          return now - lastModified < 24 * 60 * 60 * 1000
+        case '7d':
+          return now - lastModified < 7 * 24 * 60 * 60 * 1000
+        case '30d':
+          return now - lastModified < 30 * 24 * 60 * 60 * 1000
+        default:
+          return true
+      }
+    })
+  }, [sortedImmeubles, periodFilter])
+
+  const filteredImmeubleIds = React.useMemo(
+    () => filteredImmeubles.map(i => i.id),
+    [filteredImmeubles]
+  )
 
   // Pagination
-  const totalPages = Math.ceil(sortedImmeubleIds.length / ITEMS_PER_PAGE)
+  const totalPages = Math.ceil(filteredImmeubleIds.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
-  const paginatedImmeubleIds = new Set(sortedImmeubleIds.slice(startIndex, endIndex))
+  const paginatedImmeubleIds = new Set(filteredImmeubleIds.slice(startIndex, endIndex))
 
   return (
     <div className="space-y-4 mb-40">
@@ -84,6 +105,15 @@ export default function Historique() {
 
       {/* Liste des immeubles */}
       <div className="space-y-3">
+        {/* Compteur d'affichage */}
+        {filteredImmeubleIds.length > 0 && (
+          <div className={`text-sm ${base.text.muted}`}>
+            Affichage de {startIndex + 1} à {Math.min(endIndex, filteredImmeubleIds.length)} sur{' '}
+            {filteredImmeubleIds.length} immeuble
+            {filteredImmeubleIds.length > 1 ? 's' : ''}
+          </div>
+        )}
+
         {immeubles.length === 0 ? (
           <Card className={`p-8 ${base.bg.card} ${base.border.card}`}>
             <div className="text-center">
@@ -93,23 +123,7 @@ export default function Historique() {
           </Card>
         ) : (
           <>
-            {sortedImmeubles
-              .filter(imm => {
-                // Filtre période basé sur immeuble.updatedAt uniquement
-                const lastModified = new Date(imm.updatedAt).getTime()
-                const now = Date.now()
-                switch (periodFilter) {
-                  case '24h':
-                    return now - lastModified < 24 * 60 * 60 * 1000
-                  case '7d':
-                    return now - lastModified < 7 * 24 * 60 * 60 * 1000
-                  case '30d':
-                    return now - lastModified < 30 * 24 * 60 * 60 * 1000
-                  default:
-                    return true
-                }
-              })
-              .map(
+            {filteredImmeubles.map(
                 immeuble =>
                   paginatedImmeubleIds.has(immeuble.id) && (
                     <Card
@@ -151,7 +165,7 @@ export default function Historique() {
               )}
 
             {/* Message si aucun immeuble visible après filtrage */}
-            {sortedImmeubleIds.length === 0 && immeubles.length > 0 && (
+            {filteredImmeubleIds.length === 0 && immeubles.length > 0 && (
               <Card className={`p-8 ${base.bg.card} ${base.border.card}`}>
                 <div className="text-center">
                   <Building2 className={`w-12 h-12 mx-auto mb-3 ${base.text.muted}`} />
@@ -166,14 +180,8 @@ export default function Historique() {
       </div>
 
       {/* Pagination controls */}
-      {sortedImmeubleIds.length > ITEMS_PER_PAGE && (
-        <div className="mt-6 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className={`text-sm ${base.text.muted}`}>
-            Affichage de {startIndex + 1} à {Math.min(endIndex, sortedImmeubleIds.length)} sur{' '}
-            {sortedImmeubleIds.length} immeuble
-            {sortedImmeubleIds.length > 1 ? 's' : ''}
-          </div>
-
+      {filteredImmeubleIds.length > ITEMS_PER_PAGE && (
+        <div className="mt-6 mb-6 flex items-center justify-center">
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
