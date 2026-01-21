@@ -10,17 +10,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
-import { Calendar, Clock, RotateCcw, Minus, Plus, MessageSquare, FileSignature, Trash } from 'lucide-react'
-
-
+import { Calendar, Clock, RotateCcw, Minus, Plus, FileSignature } from 'lucide-react'
 
 export default function EditPorteModal({
   open,
@@ -29,12 +19,10 @@ export default function EditPorteModal({
   immeubleAdresse,
   editForm,
   setEditForm,
-  statutOptions,
   isSaving,
   onSave,
   onRepassageChange,
 }) {
-  const { base, colors, getButtonClasses } = useCommercialTheme()
   const [viewportState, setViewportState] = useState(null)
 
   useEffect(() => {
@@ -72,11 +60,11 @@ export default function EditPorteModal({
       }
     : undefined
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
+        onOpenAutoFocus={event => event.preventDefault()}
         style={dialogStyle}
         className={`
           flex flex-col p-0 overflow-hidden bg-white border border-gray-200 shadow-xl rounded-xl transition-[top,transform] duration-200 ease-out will-change-transform
@@ -103,7 +91,9 @@ export default function EditPorteModal({
                   <Input
                     placeholder={selectedPorte ? `Porte ${selectedPorte.numero}` : 'Porte'}
                     value={editForm.nomPersonnalise}
-                    onChange={e => setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))}
+                    onChange={e =>
+                      setEditForm(prev => ({ ...prev, nomPersonnalise: e.target.value }))
+                    }
                     className="h-12 text-base bg-white border-gray-300 text-gray-900 pr-24 focus:ring-2 focus:ring-blue-100"
                   />
                   {editForm.nomPersonnalise && (
@@ -117,8 +107,6 @@ export default function EditPorteModal({
                   )}
                 </div>
               </div>
-
-
             </div>
 
             {editForm.statut === 'RENDEZ_VOUS_PRIS' && (
@@ -134,7 +122,7 @@ export default function EditPorteModal({
                       type="date"
                       value={editForm.rdvDate}
                       onChange={e => setEditForm(prev => ({ ...prev, rdvDate: e.target.value }))}
-                      className="w-full h-12 px-3 text-base bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                      className="w-auto h-10 p-2 text-black bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all border-2"
                       min={new Date().toISOString().split('T')[0]}
                     />
                   </div>
@@ -147,7 +135,7 @@ export default function EditPorteModal({
                       type="time"
                       value={editForm.rdvTime}
                       onChange={e => setEditForm(prev => ({ ...prev, rdvTime: e.target.value }))}
-                      className="w-full h-12 px-3 text-base bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
+                      className="w-auto border-2 h-12 px-3 text-black bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -167,9 +155,12 @@ export default function EditPorteModal({
 
                 <div className="flex items-center justify-center gap-6 bg-white/60 p-3 rounded-xl border border-green-100">
                   <button
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault()
-                      setEditForm(prev => ({ ...prev, nbContrats: Math.max(1, (prev.nbContrats || 1) - 1) }))
+                      setEditForm(prev => ({
+                        ...prev,
+                        nbContrats: Math.max(1, (prev.nbContrats || 1) - 1),
+                      }))
                     }}
                     disabled={(editForm.nbContrats || 1) <= 1}
                     className="h-10 w-10 flex items-center justify-center rounded-lg bg-white border border-green-200 text-green-600 shadow-sm disabled:opacity-40 disabled:shadow-none hover:bg-green-50 transition-all"
@@ -182,7 +173,7 @@ export default function EditPorteModal({
                   </span>
 
                   <button
-                    onClick={(e) => {
+                    onClick={e => {
                       e.preventDefault()
                       setEditForm(prev => ({ ...prev, nbContrats: (prev.nbContrats || 1) + 1 }))
                     }}
@@ -196,49 +187,47 @@ export default function EditPorteModal({
 
             {(editForm.statut === 'NECESSITE_REPASSAGE' || editForm.statut === 'ABSENT') && (
               <div className="p-3 sm:p-4 bg-orange-50/50 rounded-xl border border-orange-200 space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <RotateCcw className="h-5 w-5 text-orange-600" />
-                    <span className="font-bold text-base text-orange-700">Suivi de passage</span>
-                  </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <RotateCcw className="h-5 w-5 text-orange-600" />
+                  <span className="font-bold text-base text-orange-700">Suivi de passage</span>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-2 bg-white/60 p-1 rounded-lg border border-orange-100">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const diff = 1 - (selectedPorte?.nbRepassages || 0)
-                        if (diff !== 0) onRepassageChange(selectedPorte, diff)
-                      }}
-                      className={`py-3 text-sm font-bold rounded-md transition-all ${
-                        (selectedPorte?.nbRepassages || 0) <= 1
-                          ? 'bg-orange-100 text-orange-700 shadow-sm'
-                          : 'text-gray-500 hover:bg-orange-50'
-                      }`}
-                    >
-                      1er Passage
-                    </button>
+                <div className="grid grid-cols-2 gap-2 bg-white/60 p-1 rounded-lg border border-orange-100">
+                  <button
+                    onClick={e => {
+                      e.preventDefault()
+                      const diff = 1 - (selectedPorte?.nbRepassages || 0)
+                      if (diff !== 0) onRepassageChange(selectedPorte, diff)
+                    }}
+                    className={`py-3 text-sm font-bold rounded-md transition-all ${
+                      (selectedPorte?.nbRepassages || 0) <= 1
+                        ? 'bg-orange-100 text-orange-700 shadow-sm'
+                        : 'text-gray-500 hover:bg-orange-50'
+                    }`}
+                  >
+                    1er Passage
+                  </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        const diff = 2 - (selectedPorte?.nbRepassages || 0)
-                        if (diff !== 0) onRepassageChange(selectedPorte, diff)
-                      }}
-                      className={`py-3 text-sm font-bold rounded-md transition-all ${
-                        (selectedPorte?.nbRepassages || 0) >= 2
-                          ? 'bg-orange-100 text-orange-700 shadow-sm'
-                          : 'text-gray-500 hover:bg-orange-50'
-                      }`}
-                    >
-                      2ème Passage
-                    </button>
-                  </div>
+                  <button
+                    onClick={e => {
+                      e.preventDefault()
+                      const diff = 2 - (selectedPorte?.nbRepassages || 0)
+                      if (diff !== 0) onRepassageChange(selectedPorte, diff)
+                    }}
+                    className={`py-3 text-sm font-bold rounded-md transition-all ${
+                      (selectedPorte?.nbRepassages || 0) >= 2
+                        ? 'bg-orange-100 text-orange-700 shadow-sm'
+                        : 'text-gray-500 hover:bg-orange-50'
+                    }`}
+                  >
+                    2ème Passage
+                  </button>
+                </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-900 block">
-                Commentaire
-              </label>
+              <label className="text-sm font-semibold text-gray-900 block">Commentaire</label>
               <Textarea
                 placeholder="Ajouter un commentaire..."
                 value={editForm.commentaire}
@@ -249,13 +238,13 @@ export default function EditPorteModal({
           </div>
         </div>
 
-        <DialogFooter className="p-3 sm:p-4 border-t border-gray-100 bg-gray-50/50 shrink-0">
+        <DialogFooter className="p-3 sm:p-4 border-t border-gray-1">
           <div className="grid grid-cols-2 gap-3 w-full">
             <Button
-              variant="outline"
+              variant="default"
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
-              className="h-12 text-base font-medium border-gray-300 hover:bg-white hover:text-gray-900"
+              className="h-12 text-base font-medium bg-red-500 text-white"
             >
               Annuler
             </Button>

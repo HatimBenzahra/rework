@@ -118,7 +118,7 @@ export default function Login() {
                   onChange={e => setUsername(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="pl-10 py-5 text-xl" // Ajoute juste le padding gauche pour l'icône
+                  className="pl-10 py-5 text-[20px]" // Ajoute juste le padding gauche pour l'icône
                   placeholder="Email ou nom d'utilisateur"
                 />
               </div>
@@ -161,7 +161,7 @@ export default function Login() {
                   onChange={e => setPassword(e.target.value)}
                   disabled={isLoading}
                   required
-                  className="pl-10  py-5 text-xl" // Ajoute juste le padding gauche pour l'icône
+                  className="pl-10  py-5 text-[20px]" // Ajoute juste le padding gauche pour l'icône
                   placeholder="********"
                 />
               </div>

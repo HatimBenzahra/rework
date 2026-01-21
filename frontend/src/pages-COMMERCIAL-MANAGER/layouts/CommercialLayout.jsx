@@ -7,7 +7,6 @@ import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { useAutoAudio } from '@/hooks/audio/useAutoAudio'
 import CommercialHeader from '@/components/CommercialHeader'
 import CommercialBottomBar from '@/components/CommercialBottomBar'
-import MicrophoneGuard from '@/components/MicrophoneGuard'
 
 /**
  * Layout principal pour l'espace commercial
@@ -205,47 +204,45 @@ export default function CommercialLayout() {
   }
 
   return (
-    <MicrophoneGuard>
-      <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
-        <CommercialHeader
-          commercial={workspaceProfile}
-          currentZone={currentZoneAssignment?.zone}
-          showGreeting={true}
-          stats={workspaceStats}
-          pageTitle={getPageTitle()}
+    <div className={`flex flex-col h-screen w-screen ${base.bg.card} overflow-hidden`}>
+      <CommercialHeader
+        commercial={workspaceProfile}
+        currentZone={currentZoneAssignment?.zone}
+        showGreeting={true}
+        stats={workspaceStats}
+        pageTitle={getPageTitle()}
+      />
+
+      <div
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-2 sm:py-3 ${
+          location.pathname.startsWith('/portes/')
+            ? 'portes-scroll-container'
+            : 'commercial-scroll-container pb-20'
+        }`}
+      >
+        <Outlet
+          context={{
+            commercial: workspaceProfile,
+            myStats: workspaceStats,
+            commercialLoading: profileLoading,
+            refetch,
+            audioStatus: { audioConnected, audioConnecting, audioError, roomName },
+            scrollContainerRef,
+            workspaceRole,
+            isManager,
+          }}
         />
-
-        <div
-          ref={scrollContainerRef}
-          className={`flex-1 overflow-y-auto overflow-x-hidden ${base.bg.page} px-4 sm:px-6 py-2 sm:py-3 ${
-            location.pathname.startsWith('/portes/')
-              ? 'portes-scroll-container'
-              : 'commercial-scroll-container pb-20'
-          }`}
-        >
-          <Outlet
-            context={{
-              commercial: workspaceProfile,
-              myStats: workspaceStats,
-              commercialLoading: profileLoading,
-              refetch,
-              audioStatus: { audioConnected, audioConnecting, audioError, roomName },
-              scrollContainerRef,
-              workspaceRole,
-              isManager,
-            }}
-          />
-        </div>
-
-        {/* Cacher la bottombar sur la page PortesGestion */}
-        {!location.pathname.startsWith('/portes/') && (
-          <CommercialBottomBar
-            navigationItems={navigationItems}
-            activeTab={getActiveTab()}
-            onTabChange={handleTabChange}
-          />
-        )}
       </div>
-    </MicrophoneGuard>
+
+      {/* Cacher la bottombar sur la page PortesGestion */}
+      {!location.pathname.startsWith('/portes/') && (
+        <CommercialBottomBar
+          navigationItems={navigationItems}
+          activeTab={getActiveTab()}
+          onTabChange={handleTabChange}
+        />
+      )}
+    </div>
   )
 }

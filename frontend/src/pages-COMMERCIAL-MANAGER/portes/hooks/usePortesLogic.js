@@ -218,9 +218,7 @@ export function usePortesLogic() {
 
   const handleQuickStatusChange = useCallback(
     async (porte, newStatut, quickComment = '') => {
-      // 1. Optimistic UI Update
       const cleanedComment = quickComment ? quickComment.trim() : (porte.commentaire || '')
-      updateLocalData(porte.id, { statut: newStatut, commentaire: cleanedComment, derniereVisite: new Date().toISOString() })
 
       // Special cases handling for modal opening
       if (newStatut === 'RENDEZ_VOUS_PRIS' || newStatut === 'CONTRAT_SIGNE') {
@@ -236,6 +234,13 @@ export function usePortesLogic() {
         setShowEditModal(true)
         return
       }
+
+      // 1. Optimistic UI Update
+      updateLocalData(porte.id, {
+        statut: newStatut,
+        commentaire: cleanedComment,
+        derniereVisite: new Date().toISOString(),
+      })
 
       const updateData = {
         id: porte.id,

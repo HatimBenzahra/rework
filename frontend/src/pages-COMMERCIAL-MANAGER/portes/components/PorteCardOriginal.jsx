@@ -2,14 +2,7 @@ import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Plus,
-  Minus,
-  MessageSquare,
-  RotateCcw,
-  Calendar,
-  FileSignature,
-} from 'lucide-react'
+import { MessageSquare, RotateCcw, Calendar, FileSignature } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
 
@@ -30,7 +23,7 @@ export default function PorteCardOriginal({
   const statutInfo = getStatutInfo(porte.statut)
   const IconComponent = statutInfo.icon
 
-  const needsRepassage = porte.statut === 'NECESSITE_REPASSAGE' || porte.statut === 'ABSENT'
+  const needsRepassage = porte.statut === 'ABSENT'
 
   if (readOnly) {
     // Version simple pour le mode lecture
@@ -102,9 +95,7 @@ export default function PorteCardOriginal({
 
             {/* Nombre de contrats en mode lecture */}
             {porte.statut === 'CONTRAT_SIGNE' && porte.nbContrats > 1 && (
-              <div
-                className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-2.5"
-              >
+              <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-2.5 ">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <FileSignature className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-green-600" />
                   <span className="font-bold text-xs sm:text-sm text-green-600">
@@ -126,7 +117,7 @@ export default function PorteCardOriginal({
         porte.statut === 'NON_VISITE'
           ? base.border.default
           : `${statutInfo.color.split(' ')[0].replace('bg-', 'border-')}`
-      } shadow-md hover:shadow-xl transition-all duration-200`}
+      } shadow-md hover:shadow-xl transition-all duration-200 `}
     >
       <CardContent className="p-3 sm:p-3.5 md:p-4">
         <div className="space-y-3">
@@ -156,7 +147,11 @@ export default function PorteCardOriginal({
             <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
               {/* Génération dynamique des boutons basée sur statutOptions (centralisé) */}
               {statutOptions
-                .filter(option => option.value !== StatutPorte.NON_VISITE && option.value !== StatutPorte.NECESSITE_REPASSAGE)
+                .filter(
+                  option =>
+                    option.value !== StatutPorte.NON_VISITE &&
+                    option.value !== StatutPorte.NECESSITE_REPASSAGE
+                )
                 .map(option => {
                   const Icon = option.icon
                   const isActive = porte.statut === option.value
@@ -181,7 +176,7 @@ export default function PorteCardOriginal({
             </div>
           </div>
 
-{/* GESTION DES REPASSAGES - NOUVEAU UI */}
+          {/* GESTION DES REPASSAGES */}
           {needsRepassage && (
             <div
               className={`mt-2 ${colors.warning.bgLight} border ${colors.warning.border} rounded-xl p-3 overflow-hidden relative`}
@@ -190,57 +185,63 @@ export default function PorteCardOriginal({
               <div className="flex items-center justify-between mb-3 relative z-10">
                 <div className="flex items-center gap-2">
                   <div className={`p-1.5 rounded-lg ${colors.warning.bg} bg-opacity-20`}>
-                     <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
+                    <RotateCcw className={`h-4 w-4 ${colors.warning.text}`} />
                   </div>
                   <span className={`font-bold text-sm ${colors.warning.text}`}>
                     Suivi de passage
                   </span>
                 </div>
-                <Badge 
-                  variant="outline" 
-                  className={`${colors.warning.border} ${colors.warning.text} bg-white/50 backdrop-blur-sm shadow-sm`}
+                <Badge
+                  variant="outline"
+                  className={`${colors.warning.border} ${colors.warning.text} bg-white/50`}
                 >
                   {porte.nbRepassages || 0} visite{(porte.nbRepassages || 0) > 1 ? 's' : ''}
                 </Badge>
               </div>
 
               {/* Segmented Control / Switch */}
-              <div className="bg-slate-900/5 dark:bg-white/5 p-1 rounded-lg flex relative">
+              <div className="bg-gray-100 p-1 rounded-lg flex relative border border-gray-200/50">
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     const diff = 1 - (porte.nbRepassages || 0)
                     if (diff !== 0) onRepassageChange(porte, diff)
                   }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
                     (porte.nbRepassages || 0) <= 1
-                      ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
-                      : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                      ? `bg-white ${colors.warning.text} shadow-sm scale-100`
+                      : 'text-gray-500 hover:bg-white/60'
                   }`}
                 >
-                  <span className={ (porte.nbRepassages || 0) <= 1 ? "opacity-100" : "opacity-70" }>1er Passage</span>
+                  <span className={(porte.nbRepassages || 0) <= 1 ? 'opacity-100' : 'opacity-70'}>
+                    1er Passage
+                  </span>
                 </button>
-                
+
                 <button
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation()
                     const diff = 2 - (porte.nbRepassages || 0)
                     if (diff !== 0) onRepassageChange(porte, diff)
                   }}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 text-xs sm:text-sm font-bold rounded-md transition-all duration-300 ${
                     (porte.nbRepassages || 0) >= 2
-                      ? 'bg-white dark:bg-slate-800 text-orange-600 shadow-sm scale-100'
-                      : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-white/10'
+                      ? `bg-white ${colors.warning.text} shadow-sm scale-100`
+                      : 'text-gray-500 hover:bg-white/60'
                   }`}
                 >
-                  <span className={ (porte.nbRepassages || 0) >= 2 ? "opacity-100" : "opacity-70" }>2ème Passage</span>
+                  <span className={(porte.nbRepassages || 0) >= 2 ? 'opacity-100' : 'opacity-70'}>
+                    2ème Passage
+                  </span>
                 </button>
               </div>
-              
-              <p className={`text-[10px] text-center mt-2 ${colors.warning.text} opacity-70 font-medium`}>
-                {(porte.nbRepassages || 0) <= 1 
-                  ? " Passage initial (Matin)" 
-                  : " Repassage effectué (Soir)"}
+
+              <p
+                className={`text-[10px] text-center mt-2 ${colors.warning.text} opacity-70 font-medium`}
+              >
+                {(porte.nbRepassages || 0) <= 1
+                  ? ' Passage initial (Matin)'
+                  : ' Repassage effectué (Soir)'}
               </p>
             </div>
           )}
@@ -271,9 +272,7 @@ export default function PorteCardOriginal({
 
           {/* Nombre de contrats - Mode gestion */}
           {porte.statut === 'CONTRAT_SIGNE' && (
-            <div
-              className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-3.5"
-            >
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-green-100">

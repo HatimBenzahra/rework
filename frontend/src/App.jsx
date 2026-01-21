@@ -194,7 +194,13 @@ function CommercialLayout() {
 
 // Composant principal qui route selon le rôle
 function AppRouter() {
-  const { isCommercial, isManager } = useRole()
+  const { isCommercial, isManager, isAuthenticated } = useRole()
+  const location = useLocation()
+
+  // Si l'utilisateur n'est pas authentifié, rediriger vers login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />
+  }
 
   // Si l'utilisateur est commercial, afficher l'interface dédiée
   if (isCommercial || isManager) {

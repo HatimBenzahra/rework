@@ -94,7 +94,14 @@ export class GraphQLClient {
 
       // Handle HTTP errors
       if (!response.ok) {
-        throw errorHandler.handleHttpError(response.status, response.statusText)
+        const error = errorHandler.handleHttpError(response.status, response.statusText)
+        
+        // Si c'est une erreur 401 (non authentifié), déclencher un événement
+        if (response.status === 401) {
+          window.dispatchEvent(new Event('auth-unauthorized'))
+        }
+        
+        throw error
       }
 
       // Parse JSON response
@@ -102,7 +109,14 @@ export class GraphQLClient {
 
       // Handle GraphQL errors
       if (result.errors && result.errors.length > 0) {
-        throw errorHandler.handleGraphQLErrors(result.errors)
+        const error = errorHandler.handleGraphQLErrors(result.errors)
+        
+        // Si c'est une erreur d'authentification, déclencher un événement
+        if (error.errorType === ErrorType.AUTHENTICATION) {
+          window.dispatchEvent(new Event('auth-unauthorized'))
+        }
+        
+        throw error
       }
 
       // Validate data presence

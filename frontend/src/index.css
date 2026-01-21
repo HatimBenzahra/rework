@@ -90,6 +90,7 @@
     -webkit-user-select: text !important;
     -moz-user-select: text !important;
     -ms-user-select: text !important;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
   /* Empêcher les débordements de texte */

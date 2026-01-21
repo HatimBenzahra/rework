@@ -24,6 +24,7 @@ export const RoleProvider = ({ children }) => {
   // userId sera chargé depuis l'API via api.auth.getMe()
   const [currentRole, setCurrentRole] = useState(() => authService.getUserRole())
   const [currentUserId, setCurrentUserId] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated())
 
   // Envoyer les infos utilisateur à Sentry au montage initial (si authentifié)
   useEffect(() => {
@@ -96,6 +97,7 @@ export const RoleProvider = ({ children }) => {
 
       // Recharger les infos utilisateur depuis l'API
       if (authService.isAuthenticated()) {
+        setIsAuthenticated(true)
         api.auth
           .getMe()
           .then(userInfo => {
@@ -111,6 +113,7 @@ export const RoleProvider = ({ children }) => {
       } else {
         setCurrentUserId(null)
         setSentryUser(null)
+        setIsAuthenticated(false)
       }
 
       // Nettoyer les anciens timers
@@ -174,6 +177,7 @@ export const RoleProvider = ({ children }) => {
     // Réinitialiser les états locaux
     setCurrentRole(null)
     setCurrentUserId(null)
+    setIsAuthenticated(false)
 
     // Retirer l'utilisateur de Sentry
     setSentryUser(null)
@@ -188,19 +192,58 @@ export const RoleProvider = ({ children }) => {
       currentUserId,
 
       logout,
-      isAuthenticated: authService.isAuthenticated(),
+      isAuthenticated,
       isAdmin: currentRole === ROLES.ADMIN,
       isDirecteur: currentRole === ROLES.DIRECTEUR,
       isManager: currentRole === ROLES.MANAGER,
       isCommercial: currentRole === ROLES.COMMERCIAL,
     }),
-    [currentRole, currentUserId, logout]
+    [currentRole, currentUserId, logout, isAuthenticated]
   )
+
+  // Vérifier périodiquement l'état d'authentification pour détecter l'expiration du token
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const currentlyAuthenticated = authService.isAuthenticated()
+      if (currentlyAuthenticated !== isAuthenticated) {
+        setIsAuthenticated(currentlyAuthenticated)
+        if (!currentlyAuthenticated) {
+          // Si le token vient d'expirer, nettoyer les états
+          setCurrentRole(null)
+          setCurrentUserId(null)
+          setSentryUser(null)
+        }
+      }
+    }
+
+    // Écouter les erreurs 401 pour mettre à jour immédiatement
+    const handleUnauthorized = () => {
+      setIsAuthenticated(false)
+      setCurrentRole(null)
+      setCurrentUserId(null)
+      setSentryUser(null)
+    }
+
+    // Vérifier immédiatement
+    checkAuthStatus()
+
+    // Vérifier toutes les 2 secondes pour détecter rapidement l'expiration
+    const interval = setInterval(checkAuthStatus, 2000)
+
+    // Écouter les événements d'erreur 401
+    window.addEventListener('auth-unauthorized', handleUnauthorized)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('auth-unauthorized', handleUnauthorized)
+    }
+  }, [isAuthenticated])
 
   // Charger les infos utilisateur depuis l'API au démarrage
   useEffect(() => {
     const fetchUserInfo = async () => {
       if (authService.isAuthenticated()) {
+        setIsAuthenticated(true)
         try {
           const userInfo = await api.auth.getMe()
           setCurrentUserId(userInfo.id)
@@ -216,6 +259,8 @@ export const RoleProvider = ({ children }) => {
           // En cas d'erreur, déconnecter l'utilisateur
           logout()
         }
+      } else {
+        setIsAuthenticated(false)
       }
     }
 
