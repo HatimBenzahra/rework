@@ -94,7 +94,7 @@ const CommercialListItem = React.memo(function CommercialListItem({
         ${
           isSelected
             ? 'bg-primary/10 border-primary shadow-sm ring-2 ring-primary/40'
-            : 'bg-card hover:bg-accent/50 border-border hover:translate-y-[1px] active:scale-[0.98]'
+            : 'bg-card hover:bg-accent/50 border-border hover:translate-y-px active:scale-[0.98]'
         }
       `}
     >
@@ -105,10 +105,7 @@ const CommercialListItem = React.memo(function CommercialListItem({
               <h3 className="font-semibold text-sm truncate">
                 {commercial.prenom} {commercial.nom}
               </h3>
-              <Badge
-                variant={isActive ? 'default' : 'secondary'}
-                className="h-5 text-xs flex-shrink-0"
-              >
+              <Badge variant={isActive ? 'default' : 'secondary'} className="h-5 text-xs shrink-0">
                 {isActive ? 'Actif' : 'Inactif'}
               </Badge>
             </div>
@@ -116,19 +113,19 @@ const CommercialListItem = React.memo(function CommercialListItem({
             <div className="space-y-1 text-xs text-muted-foreground">
               {commercial.email && (
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Mail className="h-3 w-3 flex-shrink-0" />
+                  <Mail className="h-3 w-3 shrink-0" />
                   <span className="truncate">{commercial.email}</span>
                 </div>
               )}
               {commercial.numTel && (
                 <div className="flex items-center gap-1.5">
-                  <Phone className="h-3 w-3 flex-shrink-0" />
+                  <Phone className="h-3 w-3 shrink-0" />
                   <span className="truncate">{commercial.numTel}</span>
                 </div>
               )}
               {gpsData && (
                 <div className="flex items-center gap-1.5 text-green-600">
-                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <MapPin className="h-3 w-3 shrink-0" />
                   <span className="truncate">{formatLastUpdate(gpsData.lastUpdate)}</span>
                 </div>
               )}
@@ -140,7 +137,7 @@ const CommercialListItem = React.memo(function CommercialListItem({
           <button
             type="button"
             title="Centrer sur la carte"
-            className="h-8 w-8 p-0 flex-shrink-0 rounded-md hover:bg-accent transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="h-8 w-8 p-0 shrink-0 rounded-md hover:bg-accent transition-colors flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             onClick={e => {
               e.stopPropagation()
               onLocate?.()
@@ -479,10 +476,10 @@ export default function GPSTracking() {
 
       {/* Modal Fullscreen */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col p-2 sm:p-4 animate-in fade-in-0">
+        <div className="fixed inset-0 z-100 bg-background/95 backdrop-blur-sm flex flex-col p-2 sm:p-4 animate-in fade-in-0">
           <div className="flex items-center justify-between mb-4 gap-2">
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Navigation2 className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
@@ -496,7 +493,7 @@ export default function GPSTracking() {
             </div>
             <button
               onClick={() => setIsFullscreen(false)}
-              className="h-10 w-10 rounded-lg border-2 border-border hover:bg-accent transition-colors flex items-center justify-center flex-shrink-0"
+              className="h-10 w-10 rounded-lg border-2 border-border hover:bg-accent transition-colors flex items-center justify-center shrink-0"
             >
               <X className="h-5 w-5" />
             </button>

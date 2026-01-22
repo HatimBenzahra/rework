@@ -56,14 +56,14 @@
 @layer base {
   html {
     @apply overflow-x-hidden;
-    font-size: 14px; /* Taille de base fixe pour éviter les problèmes de zoom */
+    font-size: 16px; /* Taille de base fixe pour éviter les problèmes de zoom */
   }
 
   body {
     @apply bg-background text-foreground;
     min-width: 320px; /* Largeur minimale pour mobile */
     max-width: 100vw; /* Ne jamais dépasser la largeur de l'écran */
-    overflow-y: scroll; /* Empêche le déplacement vertical lors de l'ouverture des dropdowns */
+    overflow-y: auto; /* Empêche le déplacement vertical lors de l'ouverture des dropdowns */
     overflow-x: hidden; /* Empêche le scroll horizontal mais sans auto */
     position: relative;
   }

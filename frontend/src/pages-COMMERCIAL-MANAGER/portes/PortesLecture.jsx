@@ -1,5 +1,4 @@
-import React, { useMemo } from 'react'
-import { useOutletContext, useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Eye, Building } from 'lucide-react'
 
@@ -29,9 +28,6 @@ export default function PortesLecture() {
     immeubleId: hookImmeubleId,
   } = state
 
-  // Récupère contexte audio (layout)
-  const { audioStatus } = useOutletContext() || {}
-
   // Navigation vers la gestion
   const handleGoToGestion = () => {
     navigate(`/portes/${immeubleId}`)
@@ -45,7 +41,7 @@ export default function PortesLecture() {
   return (
     <div className="space-y-4">
       {/* Header avec navigation */}
-      <div className="top-0 z-[100] -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 border-b border-border/50">
+      <div className="top-0 z-100 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 border-b border-border/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
@@ -65,7 +61,6 @@ export default function PortesLecture() {
           </div>
 
           <div className="flex items-center gap-2">
-
             {isManager && (
               <Button
                 variant="outline"

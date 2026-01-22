@@ -6,12 +6,17 @@ import {
   useCommercials,
   useManagers,
 } from '@/services'
-import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/permissions/useRoleBasedData'
+import {
+  useEntityPermissions,
+  useEntityDescription,
+} from '@/hooks/metier/permissions/useRoleBasedData'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 
 export function useImmeublesLogic() {
   const { showError, showSuccess } = useErrorToast()
-  const [viewMode, setViewMode] = useState('list') // 'list' ou 'map'
+  const [viewMode, setViewMode] = useState('list')
+  const [sortBy, setSortBy] = useState('updatedAt_desc')
+  const [filterCommercial, setFilterCommercial] = useState('all')
 
   // API hooks
   const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
@@ -20,8 +25,15 @@ export function useImmeublesLogic() {
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 
-  // Les données sont déjà filtrées côté serveur, pas besoin de filtrer côté client
-  const filteredImmeubles = useMemo(() => immeublesApi || [], [immeublesApi])
+  const filteredImmeubles = useMemo(() => {
+    let result = immeublesApi || []
+
+    if (filterCommercial !== 'all') {
+      result = result.filter(imm => imm.commercialId === parseInt(filterCommercial))
+    }
+
+    return result
+  }, [immeublesApi, filterCommercial])
 
   // Récupération des permissions et description
   const permissions = useEntityPermissions('immeubles')
@@ -118,11 +130,14 @@ export function useImmeublesLogic() {
     [commercials]
   )
 
-  // Préparation des données pour le tableau avec mapping API → UI
   const tableData = useMemo(() => {
     if (!filteredImmeubles) return []
+
+    const [field, direction] = sortBy.split('_')
     const sortedImmeubles = [...filteredImmeubles].sort((a, b) => {
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      const dateA = new Date(a[field]).getTime()
+      const dateB = new Date(b[field]).getTime()
+      return direction === 'desc' ? dateB - dateA : dateA - dateB
     })
     const mappedData = sortedImmeubles.map(immeuble => {
       const commercial = commercials?.find(c => c.id === immeuble.commercialId)
@@ -169,7 +184,7 @@ export function useImmeublesLogic() {
         : 0
 
     return { data: mappedData, stats: { totalImmeubles, totalContrats, avgCouverture } }
-  }, [filteredImmeubles, commercials, managers])
+  }, [filteredImmeubles, commercials, managers, sortBy])
 
   const stats = tableData?.stats || {
     totalImmeubles: 0,
@@ -225,5 +240,10 @@ export function useImmeublesLogic() {
     handleEditImmeuble,
     handleDeleteImmeuble,
     filteredImmeubles,
+    sortBy,
+    setSortBy,
+    filterCommercial,
+    setFilterCommercial,
+    commercialsList: commercials,
   }
 }
