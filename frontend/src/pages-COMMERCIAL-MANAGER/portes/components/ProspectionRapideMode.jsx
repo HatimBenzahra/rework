@@ -37,6 +37,8 @@ import {
   Layers,
   Eye,
   EyeOff,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
@@ -133,6 +135,24 @@ export default function ProspectionRapideMode({
     })
   }
 
+  // État pour la carte pliable du header
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(() => {
+    try {
+      const saved = localStorage.getItem('rapidModeHeaderExpanded')
+      return saved !== null ? JSON.parse(saved) : true
+    } catch {
+      return true
+    }
+  })
+
+  const toggleHeaderExpanded = () => {
+    setIsHeaderExpanded(prev => {
+      const newVal = !prev
+      localStorage.setItem('rapidModeHeaderExpanded', JSON.stringify(newVal))
+      return newVal
+    })
+  }
+
   // ----------------------------------------------------------------------
   // 2. MEMOS & FILTRES
   // ----------------------------------------------------------------------
@@ -221,11 +241,6 @@ export default function ProspectionRapideMode({
     }
   }, [currentIndex, filteredPortes, hasMore, loadMore, isFetchingMore])
 
-  const goToFirst = useCallback(() => {
-    setCurrentIndex(0)
-    setQuickComment('')
-    setShowCommentInput(false)
-  }, [])
   // Navigation par étage
   const goToPreviousFloor = useCallback(() => {
     if (!currentPorte) return
@@ -264,7 +279,7 @@ export default function ProspectionRapideMode({
         return
       }
     }
-  }, [currentIndex, filteredPortes.length, currentPorte])
+  }, [currentPorte, currentIndex, filteredPortes])
 
   // Vérifier si navigation étage possible
   const canGoPreviousFloor = useMemo(() => {
@@ -406,7 +421,7 @@ export default function ProspectionRapideMode({
 
     pendingAutoAdvanceRef.current = null
     runAutoAdvance(300)
-  }, [currentPorte?.id, currentPorte?.statut, runAutoAdvance])
+  }, [currentPorte?.id, currentPorte?.statut, runAutoAdvance, currentPorte])
 
   // Reset l'index si les portes filtrées changent
   useEffect(() => {
@@ -491,7 +506,7 @@ export default function ProspectionRapideMode({
         setCurrentIndex(filteredPortes.length - 1)
       }
     }
-  }, [filteredPortes, hasMore, isFetchingMore, loadMore])
+  }, [filteredPortes, hasMore, isFetchingMore, loadMore, showSuccess])
 
   // Organiser les portes par étage pour la visualisation
   const portesParEtage = useMemo(() => {
@@ -658,132 +673,145 @@ export default function ProspectionRapideMode({
     <>
       <div className="flex flex-col min-h-[80vh]">
         {/* ---------------------------------------------------------------------- */}
-        {/* HEADER SECTION */}
+        {/* HEADER SECTION - CARTE PLIABLE */}
         {/* ---------------------------------------------------------------------- */}
-        {/* Header avec barre de progression */}
-        <div className={`border-b p-2 rounded-xl bg-blue-50`}>
-          {/* Titre */}
-          <div className="flex items-center justify-between mb-2">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mb-4 overflow-hidden">
+          {/* Header cliquable - toujours visible */}
+          <button
+            onClick={toggleHeaderExpanded}
+            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+          >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${colors.primary.bgLight}`}>
                 <Zap className={`h-5 w-5 ${colors.primary.text}`} />
               </div>
-              <div>
+              <div className="text-left">
                 <h2 className={`font-bold text-lg ${base.text.primary}`}>Mode Rapide</h2>
                 <p className={`text-xs ${base.text.muted}`}>{immeuble?.adresse}</p>
               </div>
             </div>
+            {isHeaderExpanded ? (
+              <ChevronUp className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleResume}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200`}
-                title="Aller à la première porte non visitée"
-              >
-                <History className="h-5 w-5" />
-                Reprendre
-              </button>
-              <button
-                onClick={toggleAutoAdvance}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${autoAdvance ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
-              >
-                <FastForward
-                  className={`h-5 w-5 ${autoAdvance ? 'text-green-600' : 'text-gray-400'}`}
-                />
-                {autoAdvance ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
-              </button>
-              <button
-                onClick={toggleVisualization}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${showVisualization ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
-                title={showVisualization ? 'Masquer la visualisation' : 'Afficher la visualisation'}
-              >
-                {showVisualization ? (
-                  <Eye className="h-5 w-5 text-purple-600" />
-                ) : (
-                  <EyeOff className="h-5 w-5 text-gray-400" />
-                )}
-                Vue
-              </button>
-            </div>
-          </div>
-
-          {/* Filtres rapides */}
-          <div className="flex flex-wrap gap-2 mb-2 mt-2 ">
-            <Filter className={`h-5 w-5 ${base.text.muted} self-center`} />
-            {filterOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setFilterMode(opt.value)}
-                className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
-                  filterMode === opt.value
-                    ? `${colors.primary.bg} text-white shadow-md`
-                    : `${base.bg.muted} ${base.text.muted} hover:opacity-80`
-                }`}
-              >
-                {opt.label} ({opt.count})
-              </button>
-            ))}
-          </div>
-
-          {/* Barre de progression */}
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className={base.text.muted}>Progression globale</span>
-              <span className={`font-bold ${colors.primary.text}`}>
-                {progressStats.visited}/{progressStats.total} ({progressStats.percentage}%)
-              </span>
-            </div>
-            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className={`h-full ${colors.primary.bg} transition-all duration-500 ease-out`}
-                style={{ width: `${progressStats.percentage}%` }}
-              />
-            </div>
-          </div>
-
-          {/* ---------------------------------------------------------------------- */}
-          {/* VISUALISATION GRID */}
-          {/* ---------------------------------------------------------------------- */}
-          {/* Carte de visualisation des portes par étage */}
-          {showVisualization && (
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 text-gray-500" />
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    Vue d'ensemble
-                  </span>
-                </div>
-                <span className="text-[10px] text-gray-400">
-                  {filteredPortes.length} porte{filteredPortes.length > 1 ? 's' : ''}
-                </span>
+          {/* Contenu pliable */}
+          {isHeaderExpanded && (
+            <div className="border-t border-gray-100 p-4 space-y-4 bg-blue-50">
+              {/* Boutons d'action */}
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <button
+                  onClick={handleResume}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200`}
+                  title="Aller à la première porte non visitée"
+                >
+                  <History className="h-5 w-5" />
+                  Reprendre
+                </button>
+                <button
+                  onClick={toggleAutoAdvance}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${autoAdvance ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
+                >
+                  <FastForward
+                    className={`h-5 w-5 ${autoAdvance ? 'text-green-600' : 'text-gray-400'}`}
+                  />
+                  {autoAdvance ? 'Auto-scroll ON' : 'Auto-scroll OFF'}
+                </button>
+                <button
+                  onClick={toggleVisualization}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${showVisualization ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`}
+                  title={
+                    showVisualization ? 'Masquer la visualisation' : 'Afficher la visualisation'
+                  }
+                >
+                  {showVisualization ? (
+                    <Eye className="h-5 w-5 text-purple-600" />
+                  ) : (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  )}
+                  Vue
+                </button>
               </div>
 
-              {/* Zone scrollable */}
-              <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar p-2">
-                {portesParEtage.map(([etageNum, portesEtage]) => (
-                  <div key={etageNum} className="space-y-2">
-                    {/* Séparateur d'étage */}
+              {/* Filtres rapides */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Filter className={`h-5 w-5 ${base.text.muted} self-center`} />
+                {filterOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setFilterMode(opt.value)}
+                    className={`px-3 py-2 rounded-full text-xs font-medium transition-all ${
+                      filterMode === opt.value
+                        ? `${colors.primary.bg} text-white shadow-md`
+                        : `${base.bg.muted} ${base.text.muted} hover:opacity-80`
+                    }`}
+                  >
+                    {opt.label} ({opt.count})
+                  </button>
+                ))}
+              </div>
+
+              {/* Barre de progression */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className={base.text.muted}>Progression globale</span>
+                  <span className={`font-bold ${colors.primary.text}`}>
+                    {progressStats.visited}/{progressStats.total} ({progressStats.percentage}%)
+                  </span>
+                </div>
+                <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full ${colors.primary.bg} transition-all duration-500 ease-out`}
+                    style={{ width: `${progressStats.percentage}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* ---------------------------------------------------------------------- */}
+              {/* VISUALISATION GRID */}
+              {/* ---------------------------------------------------------------------- */}
+              {/* Carte de visualisation des portes par étage */}
+              {showVisualization && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="shrink-0 w-16 px-2 py-1 bg-gray-100 rounded-lg">
-                        <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wide">
-                          Étage {etageNum}
-                        </span>
-                      </div>
-                      <div className="flex-1 h-px bg-gray-200" />
+                      <Building2 className="h-4 w-4 text-gray-500" />
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        Vue d'ensemble
+                      </span>
                     </div>
+                    <span className="text-[10px] text-gray-400">
+                      {filteredPortes.length} porte{filteredPortes.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
 
-                    {/* Portes de l'étage */}
-                    <div className="flex flex-wrap gap-2">
-                      {portesEtage.map(porte => {
-                        const isCurrent = currentPorte?.id === porte.id
-                        const statusColor = getStatusColor(porte.statut)
+                  {/* Zone scrollable */}
+                  <div className="max-h-[300px] overflow-y-auto space-y-3 pr-2 custom-scrollbar p-2">
+                    {portesParEtage.map(([etageNum, portesEtage]) => (
+                      <div key={etageNum} className="space-y-2">
+                        {/* Séparateur d'étage */}
+                        <div className="flex items-center gap-2">
+                          <div className="shrink-0 w-16 px-2 py-1 bg-gray-100 rounded-lg">
+                            <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wide">
+                              Étage {etageNum}
+                            </span>
+                          </div>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
 
-                        return (
-                          <button
-                            key={porte.id}
-                            onClick={() => goToPorte(porte.id)}
-                            className={`
+                        {/* Portes de l'étage */}
+                        <div className="flex flex-wrap gap-2">
+                          {portesEtage.map(porte => {
+                            const isCurrent = currentPorte?.id === porte.id
+                            const statusColor = getStatusColor(porte.statut)
+
+                            return (
+                              <button
+                                key={porte.id}
+                                onClick={() => goToPorte(porte.id)}
+                                className={`
                             relative group flex items-center justify-center min-w-[44px] h-10 px-2 rounded-lg
                             transition-all duration-200
                             ${
@@ -792,89 +820,89 @@ export default function ProspectionRapideMode({
                                 : `${statusColor} hover:scale-105 hover:shadow-md opacity-80 hover:opacity-100`
                             }
                           `}
-                            title={`Porte ${porte.numero} - ${statutOptions.find(s => s.value === porte.statut)?.label || porte.statut}`}
-                          >
-                            <span className="text-[11px] font-bold text-white drop-shadow-sm">
-                              {porte.nomPersonnalise || porte.numero}
-                            </span>
+                                title={`Porte ${porte.numero} - ${statutOptions.find(s => s.value === porte.statut)?.label || porte.statut}`}
+                              >
+                                <span className="text-[11px] font-bold text-white drop-shadow-sm">
+                                  {porte.nomPersonnalise || porte.numero}
+                                </span>
 
-                            {/* Indicateur de porte courante */}
-                            {isCurrent && (
-                              <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white" />
-                            )}
+                                {/* Indicateur de porte courante */}
+                                {isCurrent && (
+                                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full border-2 border-white" />
+                                )}
 
-                            {/* Tooltip au hover */}
-                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                              {porte.nomPersonnalise && `${porte.nomPersonnalise} - `}Porte{' '}
-                              {porte.numero}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
-                            </div>
-                          </button>
-                        )
-                      })}
+                                {/* Tooltip au hover */}
+                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                  {porte.nomPersonnalise && `${porte.nomPersonnalise} - `}Porte{' '}
+                                  {porte.numero}
+                                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                                </div>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Légende des couleurs */}
+                  <div className="mt-4 pt-3 border-t border-gray-100">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-gray-300" />
+                        <span className="text-[9px] text-gray-600">Non visité</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-orange-500" />
+                        <span className="text-[9px] text-gray-600">Absent</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-red-500" />
+                        <span className="text-[9px] text-gray-600">Refus</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-blue-500" />
+                        <span className="text-[9px] text-gray-600">RDV</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-purple-500" />
+                        <span className="text-[9px] text-gray-600">Argumenté</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded bg-green-500" />
+                        <span className="text-[9px] text-gray-600">Contrat</span>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Légende des couleurs */}
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-gray-300" />
-                    <span className="text-[9px] text-gray-600">Non visité</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-orange-500" />
-                    <span className="text-[9px] text-gray-600">Absent</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-red-500" />
-                    <span className="text-[9px] text-gray-600">Refus</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-blue-500" />
-                    <span className="text-[9px] text-gray-600">RDV</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-purple-500" />
-                    <span className="text-[9px] text-gray-600">Argumenté</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded bg-green-500" />
-                    <span className="text-[9px] text-gray-600">Contrat</span>
-                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* ---------------------------------------------------------------------- */}
-          {/* MANAGEMENT SECTION */}
-          {/* ---------------------------------------------------------------------- */}
-          {/* Section Gestion Portes/Étages */}
-          {(onAddEtage || onAddPorteToEtage) && currentPorte && (
-            <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  Gestion
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {/* Gestion Portes */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <DoorOpen className="h-3.5 w-3.5 text-gray-500" />
-                    <span className="text-[10px] font-bold text-gray-600 uppercase">
-                      Portes (Étage {currentPorte?.etage})
+              {/* ---------------------------------------------------------------------- */}
+              {/* MANAGEMENT SECTION */}
+              {/* ---------------------------------------------------------------------- */}
+              {/* Section Gestion Portes/Étages */}
+              {(onAddEtage || onAddPorteToEtage) && currentPorte && (
+                <div className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      Gestion
                     </span>
                   </div>
-                  {onAddPorteToEtage && (
-                    <button
-                      onClick={() => onAddPorteToEtage(currentPorte?.etage)}
-                      disabled={addingPorteToEtage}
-                      className={`
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Gestion Portes */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <DoorOpen className="h-3.5 w-3.5 text-gray-500" />
+                        <span className="text-[10px] font-bold text-gray-600 uppercase">
+                          Portes (Étage {currentPorte?.etage})
+                        </span>
+                      </div>
+                      {onAddPorteToEtage && (
+                        <button
+                          onClick={() => onAddPorteToEtage(currentPorte?.etage)}
+                          disabled={addingPorteToEtage}
+                          className={`
                       w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
                       transition-all duration-200 border-2 border-dashed
                       ${
@@ -883,40 +911,42 @@ export default function ProspectionRapideMode({
                           : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'
                       }
                     `}
-                    >
-                      <Plus className="h-4 w-4" />
-                      {addingPorteToEtage ? 'Ajout...' : 'Ajouter porte'}
-                    </button>
-                  )}
-                  {onRemovePorteFromEtage && (
-                    <button
-                      onClick={() =>
-                        setDeleteConfirm({
-                          isOpen: true,
-                          type: 'porte',
-                          etage: currentPorte?.etage,
-                        })
-                      }
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-black text-xs font-bold
+                        >
+                          <Plus className="h-4 w-4" />
+                          {addingPorteToEtage ? 'Ajout...' : 'Ajouter porte'}
+                        </button>
+                      )}
+                      {onRemovePorteFromEtage && (
+                        <button
+                          onClick={() =>
+                            setDeleteConfirm({
+                              isOpen: true,
+                              type: 'porte',
+                              etage: currentPorte?.etage,
+                            })
+                          }
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-black text-xs font-bold
                       transition-all duration-200 border-2 border-dashed bg-red-100 border-red-500"
-                    >
-                      <Minus className="h-3 w-3" />
-                      Supprimer dernière porte
-                    </button>
-                  )}
-                </div>
+                        >
+                          <Minus className="h-3 w-3" />
+                          Supprimer dernière porte
+                        </button>
+                      )}
+                    </div>
 
-                {/* Gestion Étages */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <Layers className="h-3.5 w-3.5 text-gray-500" />
-                    <span className="text-[10px] font-bold text-gray-600 uppercase">Étages</span>
-                  </div>
-                  {onAddEtage && (
-                    <button
-                      onClick={onAddEtage}
-                      disabled={addingEtage}
-                      className={`
+                    {/* Gestion Étages */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <Layers className="h-3.5 w-3.5 text-gray-500" />
+                        <span className="text-[10px] font-bold text-gray-600 uppercase">
+                          Étages
+                        </span>
+                      </div>
+                      {onAddEtage && (
+                        <button
+                          onClick={onAddEtage}
+                          disabled={addingEtage}
+                          className={`
                       w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold
                       transition-all duration-200 border-2 border-dashed
                       ${
@@ -925,37 +955,39 @@ export default function ProspectionRapideMode({
                           : 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 hover:border-solid active:scale-95'
                       }
                     `}
-                    >
-                      <Plus className="h-4 w-4" />
-                      {addingEtage ? 'Ajout...' : 'Ajouter étage'}
-                    </button>
-                  )}
-                  {onRemoveEtage && (
-                    <button
-                      onClick={() =>
-                        setDeleteConfirm({
-                          isOpen: true,
-                          type: 'etage',
-                          etage: currentPorte?.etage,
-                        })
-                      }
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs text-black font-bold
+                        >
+                          <Plus className="h-4 w-4" />
+                          {addingEtage ? 'Ajout...' : 'Ajouter étage'}
+                        </button>
+                      )}
+                      {onRemoveEtage && (
+                        <button
+                          onClick={() =>
+                            setDeleteConfirm({
+                              isOpen: true,
+                              type: 'etage',
+                              etage: currentPorte?.etage,
+                            })
+                          }
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs text-black font-bold
                       transition-all duration-200 border-2 border-dashed bg-red-100 border-red-500"
-                    >
-                      <Minus className="h-3 w-3" />
-                      Supprimer dernier étage
-                    </button>
-                  )}
+                        >
+                          <Minus className="h-3 w-3" />
+                          Supprimer dernier étage
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
         {/* Navigation et porte courante */}
         {/* ---------------------------------------------------------------------- */}
-        {/* NAVIGATION PRINCIPALE */}
+        {/* NAVIGATION PRINCIPALE - CENTRÉE */}
         {/* ---------------------------------------------------------------------- */}
-        <div className="flex-1 p-2 space-y-2">
+        <div className="flex-1 p-2 space-y-2 max-w-4xl mx-auto w-full">
           {/* Contrôles de navigation PREMIUM */}
 
           {/* Navigation Porte (Premium Design) - Uniformized */}
