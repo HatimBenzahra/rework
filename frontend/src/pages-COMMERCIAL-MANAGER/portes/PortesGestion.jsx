@@ -105,18 +105,6 @@ export default function PortesGestion() {
               <span>Quitter</span>
             </button>
 
-            {/* Section centrale - Info immeuble (optionnel) */}
-            {immeuble && (
-              <div className="hidden md:flex flex-col items-center flex-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider font-medium">
-                  Immeuble
-                </p>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 truncate max-w-[200px] lg:max-w-[300px]">
-                  {immeuble.adresse}
-                </p>
-              </div>
-            )}
-
             {/* Toggle Mode - Design premium */}
             <button
               onClick={() => setViewMode(viewMode === 'rapide' ? 'liste' : 'rapide')}
