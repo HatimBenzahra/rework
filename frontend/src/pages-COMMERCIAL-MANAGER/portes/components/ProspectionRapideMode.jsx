@@ -44,6 +44,17 @@ import { useCommercialTheme } from '@/hooks/ui/use-commercial-theme'
 import { StatutPorte } from '@/constants/domain/porte-status'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 
+const getEtageValue = etage => (typeof etage === 'number' ? etage : Number(etage) || 0)
+
+const comparePortesDesc = (a, b) => {
+  const etageDiff = getEtageValue(b.etage) - getEtageValue(a.etage)
+  if (etageDiff !== 0) return etageDiff
+  return String(b.numero ?? '').localeCompare(String(a.numero ?? ''), 'fr', {
+    numeric: true,
+    sensitivity: 'base',
+  })
+}
+
 /**
  * Mode Prospection Rapide - Affiche une porte à la fois pour une mise à jour ultra-rapide
  */
@@ -158,16 +169,29 @@ export default function ProspectionRapideMode({
   // ----------------------------------------------------------------------
   // Calculer les portes filtrées selon le mode
   const filteredPortes = useMemo(() => {
+    let result = portes
     switch (filterMode) {
       case 'non_visitees':
-        return portes.filter(p => p.statut === StatutPorte.NON_VISITE)
+        result = portes.filter(p => p.statut === StatutPorte.NON_VISITE)
+        break
       case 'absents':
-        return portes.filter(p => p.statut === StatutPorte.ABSENT)
+        result = portes.filter(p => p.statut === StatutPorte.ABSENT)
+        break
+      case 'absents_matin':
+        result = portes.filter(
+          p => p.statut === StatutPorte.ABSENT && (p.nbRepassages || 0) === 1
+        )
+        break
+      case 'absents_soir':
+        result = portes.filter(
+          p => p.statut === StatutPorte.ABSENT && (p.nbRepassages || 0) >= 2
+        )
+        break
       case 'rdv':
-        return portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS)
-      default:
-        return portes
+        result = portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS)
+        break
     }
+    return [...result].sort(comparePortesDesc)
   }, [portes, filterMode])
 
   // Porte courante
@@ -187,7 +211,7 @@ export default function ProspectionRapideMode({
   const previousFloorTarget = useMemo(() => {
     if (!currentPorte) return null
     for (let i = currentIndex - 1; i >= 0; i--) {
-      if (filteredPortes[i].etage < currentPorte.etage) {
+      if (filteredPortes[i].etage !== currentPorte.etage) {
         return filteredPortes[i].etage
       }
     }
@@ -197,7 +221,7 @@ export default function ProspectionRapideMode({
   const nextFloorTarget = useMemo(() => {
     if (!currentPorte) return null
     for (let i = currentIndex + 1; i < filteredPortes.length; i++) {
-      if (filteredPortes[i].etage > currentPorte.etage) {
+      if (filteredPortes[i].etage !== currentPorte.etage) {
         return filteredPortes[i].etage
       }
     }
@@ -248,7 +272,7 @@ export default function ProspectionRapideMode({
 
     // Chercher la première porte de l'étage précédent dans la liste filtrée
     for (let i = currentIndex - 1; i >= 0; i--) {
-      if (filteredPortes[i].etage < currentFloor) {
+      if (filteredPortes[i].etage !== currentFloor) {
         const targetFloor = filteredPortes[i].etage
         let targetIndex = i
         while (targetIndex > 0 && filteredPortes[targetIndex - 1].etage === targetFloor) {
@@ -270,7 +294,7 @@ export default function ProspectionRapideMode({
 
     // Chercher la première porte de l'étage suivant
     for (let i = currentIndex + 1; i < filteredPortes.length; i++) {
-      if (filteredPortes[i].etage > currentFloor) {
+      if (filteredPortes[i].etage !== currentFloor) {
         setCurrentIndex(i)
         setQuickComment('')
         setShowCommentInput(false)
@@ -284,12 +308,12 @@ export default function ProspectionRapideMode({
   // Vérifier si navigation étage possible
   const canGoPreviousFloor = useMemo(() => {
     if (!currentPorte || currentIndex === 0) return false
-    return filteredPortes.some((p, i) => i < currentIndex && p.etage < currentPorte.etage)
+    return filteredPortes.some((p, i) => i < currentIndex && p.etage !== currentPorte.etage)
   }, [currentPorte, currentIndex, filteredPortes])
 
   const canGoNextFloor = useMemo(() => {
     if (!currentPorte || currentIndex >= filteredPortes.length - 1) return false
-    return filteredPortes.some((p, i) => i > currentIndex && p.etage > currentPorte.etage)
+    return filteredPortes.some((p, i) => i > currentIndex && p.etage !== currentPorte.etage)
   }, [currentPorte, currentIndex, filteredPortes])
 
   // Trouver la prochaine porte non visitée
@@ -476,6 +500,21 @@ export default function ProspectionRapideMode({
       count: portes.filter(p => p.statut === StatutPorte.ABSENT).length,
     },
     {
+      value: 'absents_matin',
+      label: 'Absents matin',
+      count: portes.filter(
+        p => p.statut === StatutPorte.ABSENT && (p.nbRepassages || 0) === 1
+      ).length,
+    },
+    {
+      value: 'absents_soir',
+      label: 'Absents soir',
+      count: portes.filter(
+        p => p.statut === StatutPorte.ABSENT && (p.nbRepassages || 0) >= 2
+      ).length,
+    },
+
+    {
       value: 'rendez_vous_pris',
       label: 'Rendez-vous pris',
       count: portes.filter(p => p.statut === StatutPorte.RENDEZ_VOUS_PRIS).length,
@@ -517,7 +556,7 @@ export default function ProspectionRapideMode({
       }
       grouped[porte.etage].push(porte)
     })
-    return Object.entries(grouped).sort(([a], [b]) => Number(a) - Number(b))
+    return Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a))
   }, [filteredPortes])
 
   // Fonction pour obtenir la couleur selon le statut
