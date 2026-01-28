@@ -24,18 +24,7 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
       accessor: 'rankBadge',
       sortable: false,
       className: 'hidden sm:table-cell',
-    },
-    {
-      header: 'Email',
-      accessor: 'email',
-      sortable: true,
-      className: 'hidden md:table-cell',
-    },
-    {
-      header: 'Téléphone',
-      accessor: 'numTel',
-      className: 'hidden lg:table-cell',
-    },
+    }
   ]
 
   // Colonne Manager: visible pour Admin et Directeur seulement
