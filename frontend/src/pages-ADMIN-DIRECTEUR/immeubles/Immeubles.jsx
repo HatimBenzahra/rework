@@ -4,6 +4,7 @@ import AssignedZoneCard from '@/components/AssignedZoneCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -32,16 +33,16 @@ export default function Immeubles() {
     description,
     tableData,
     immeublesColumns,
-    getImmeublesEditFields,
     permissions,
-    handleEditImmeuble,
     handleDeleteImmeuble,
     filteredImmeubles,
     stats,
-    sortBy,
-    setSortBy,
     filterCommercial,
     setFilterCommercial,
+    dateFilterMode,
+    setDateFilterMode,
+    createdDate,
+    setCreatedDate,
     commercialsList,
   } = useImmeublesLogic()
 
@@ -138,18 +139,30 @@ export default function Immeubles() {
             <span className="text-sm font-medium text-muted-foreground">Filtres:</span>
           </div>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={dateFilterMode} onValueChange={setDateFilterMode}>
             <SelectTrigger className="w-auto">
               <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Trier par..." />
+              <SelectValue placeholder="Date / tri" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="updatedAt_desc">Modifié récemment</SelectItem>
-              <SelectItem value="updatedAt_asc">Modifié anciennement</SelectItem>
-              <SelectItem value="createdAt_desc">Créé récemment</SelectItem>
-              <SelectItem value="createdAt_asc">Créé anciennement</SelectItem>
+              <SelectItem value="updatedAt_desc">Modifiés récemment</SelectItem>
+              <SelectItem value="updatedAt_asc">Modifiés anciennement</SelectItem>
+              <SelectItem value="createdAt_desc">Créés récemment</SelectItem>
+              <SelectItem value="createdAt_asc">Créés anciennement</SelectItem>
+              <SelectItem value="created_yesterday">Créés hier</SelectItem>
+              <SelectItem value="created_this_week">Créés cette semaine</SelectItem>
+              <SelectItem value="created_specific_date">Créés à une date</SelectItem>
             </SelectContent>
           </Select>
+
+          {dateFilterMode === 'created_specific_date' && (
+            <Input
+              type="date"
+              value={createdDate}
+              onChange={event => setCreatedDate(event.target.value)}
+              className="w-[170px] border-2 border-primary"
+            />
+          )}
 
           <Select value={filterCommercial} onValueChange={setFilterCommercial}>
             <SelectTrigger className="w-auto">
@@ -197,8 +210,6 @@ export default function Immeubles() {
           columns={immeublesColumns}
           searchKey="address"
           detailsPath="/immeubles"
-          editFields={getImmeublesEditFields}
-          onEdit={permissions.canEdit ? handleEditImmeuble : undefined}
           onDelete={permissions.canDelete ? handleDeleteImmeuble : undefined}
         />
       ) : (

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   useImmeubles,
   useUpdateImmeuble,
@@ -15,8 +15,9 @@ import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 export function useImmeublesLogic() {
   const { showError, showSuccess } = useErrorToast()
   const [viewMode, setViewMode] = useState('list')
-  const [sortBy, setSortBy] = useState('updatedAt_desc')
+  const [dateFilterMode, setDateFilterMode] = useState('updatedAt_desc')
   const [filterCommercial, setFilterCommercial] = useState('all')
+  const [createdDate, setCreatedDate] = useState('')
 
   // API hooks
   const { data: immeublesApi, loading: immeublesLoading, refetch } = useImmeubles()
@@ -25,6 +26,24 @@ export function useImmeublesLogic() {
   const { mutate: updateImmeuble } = useUpdateImmeuble()
   const { mutate: removeImmeuble } = useRemoveImmeuble()
 
+  useEffect(() => {
+    if (dateFilterMode !== 'created_specific_date' && createdDate) {
+      setCreatedDate('')
+    }
+  }, [dateFilterMode, createdDate])
+
+  const effectiveSortBy = useMemo(() => {
+    if (
+      dateFilterMode === 'createdAt_desc' ||
+      dateFilterMode === 'createdAt_asc' ||
+      dateFilterMode === 'updatedAt_desc' ||
+      dateFilterMode === 'updatedAt_asc'
+    ) {
+      return dateFilterMode
+    }
+    return 'createdAt_desc'
+  }, [dateFilterMode])
+
   const filteredImmeubles = useMemo(() => {
     let result = immeublesApi || []
 
@@ -32,8 +51,50 @@ export function useImmeublesLogic() {
       result = result.filter(imm => imm.commercialId === parseInt(filterCommercial))
     }
 
+    if (dateFilterMode === 'created_yesterday') {
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - 1)
+      startDate.setHours(0, 0, 0, 0)
+      const endDate = new Date(startDate)
+      endDate.setHours(23, 59, 59, 999)
+
+      result = result.filter(imm => {
+        const createdAt = new Date(imm.createdAt)
+        return createdAt >= startDate && createdAt <= endDate
+      })
+    }
+
+    if (dateFilterMode === 'created_this_week') {
+      const now = new Date()
+      const day = now.getDay()
+      const diffToMonday = (day + 6) % 7
+      const startDate = new Date(now)
+      startDate.setDate(now.getDate() - diffToMonday)
+      startDate.setHours(0, 0, 0, 0)
+      const endDate = new Date(startDate)
+      endDate.setDate(startDate.getDate() + 6)
+      endDate.setHours(23, 59, 59, 999)
+
+      result = result.filter(imm => {
+        const createdAt = new Date(imm.createdAt)
+        return createdAt >= startDate && createdAt <= endDate
+      })
+    }
+
+    if (dateFilterMode === 'created_specific_date' && createdDate) {
+      const startDate = new Date(createdDate)
+      startDate.setHours(0, 0, 0, 0)
+      const endDate = new Date(startDate)
+      endDate.setHours(23, 59, 59, 999)
+
+      result = result.filter(imm => {
+        const createdAt = new Date(imm.createdAt)
+        return createdAt >= startDate && createdAt <= endDate
+      })
+    }
+
     return result
-  }, [immeublesApi, filterCommercial])
+  }, [immeublesApi, filterCommercial, dateFilterMode, createdDate])
 
   // Récupération des permissions et description
   const permissions = useEntityPermissions('immeubles')
@@ -133,7 +194,7 @@ export function useImmeublesLogic() {
   const tableData = useMemo(() => {
     if (!filteredImmeubles) return []
 
-    const [field, direction] = sortBy.split('_')
+    const [field, direction] = effectiveSortBy.split('_')
     const sortedImmeubles = [...filteredImmeubles].sort((a, b) => {
       const dateA = new Date(a[field]).getTime()
       const dateB = new Date(b[field]).getTime()
@@ -184,7 +245,7 @@ export function useImmeublesLogic() {
         : 0
 
     return { data: mappedData, stats: { totalImmeubles, totalContrats, avgCouverture } }
-  }, [filteredImmeubles, commercials, managers, sortBy])
+  }, [filteredImmeubles, commercials, managers, effectiveSortBy])
 
   const stats = tableData?.stats || {
     totalImmeubles: 0,
@@ -240,10 +301,12 @@ export function useImmeublesLogic() {
     handleEditImmeuble,
     handleDeleteImmeuble,
     filteredImmeubles,
-    sortBy,
-    setSortBy,
     filterCommercial,
     setFilterCommercial,
+    dateFilterMode,
+    setDateFilterMode,
+    createdDate,
+    setCreatedDate,
     commercialsList: commercials,
   }
 }
