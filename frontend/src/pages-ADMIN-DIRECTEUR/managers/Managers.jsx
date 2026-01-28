@@ -2,6 +2,7 @@ import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { RANKS } from '@/utils/business/ranks'
 import { Card } from '@/components/ui/card'
+import { useMemo } from 'react'
 import { useManagersLogic } from './useManagersLogic'
 
 export default function Managers() {
@@ -14,7 +15,19 @@ export default function Managers() {
     managersEditFields,
     handleEditManager,
     isAdmin,
+    statusOptions,
   } = useManagersLogic()
+
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Tous' },
+      ...statusOptions.map(option => ({
+        value: option.value,
+        label: option.label,
+      })),
+    ],
+    [statusOptions]
+  )
 
   if (managersLoading) {
     return (
@@ -33,7 +46,7 @@ export default function Managers() {
   return (
     <div className="space-y-6">
       {/* Section d'information sur le système de rangs */}
-      <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+      <Card className="p-6 bg-linear-to-br from-primary/5 to-primary/10 border-primary/20">
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold">🏆 Système de Rangs</h3>
@@ -72,7 +85,7 @@ export default function Managers() {
       </Card>
 
       <AdvancedDataTable
-        showStatusColumn={false}
+        showStatusColumn
         title="Liste des Managers"
         description={description}
         data={tableData}
@@ -81,6 +94,8 @@ export default function Managers() {
         detailsPath="/managers"
         editFields={managersEditFields}
         onEdit={permissions.canEdit ? handleEditManager : undefined}
+        customStatusFilter={statusFilterOptions}
+        defaultStatusFilter="ACTIF"
       />
     </div>
   )

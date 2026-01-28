@@ -24,6 +24,7 @@ export interface Directeur extends BaseEntity {
   adresse: string
   email: string
   numTelephone: string
+  status: UserStatus
 }
 
 export interface Manager extends BaseEntity {
@@ -32,6 +33,7 @@ export interface Manager extends BaseEntity {
   email?: string | null
   numTelephone?: string | null
   directeurId?: number | null
+  status: UserStatus
   directeur?: Directeur | null
   commercials?: Commercial[]
   zones?: Zone[]
@@ -49,6 +51,7 @@ export interface Commercial extends BaseEntity {
   age: number
   managerId?: number | null
   directeurId?: number | null
+  status: UserStatus
   immeubles: Immeuble[]
   zones: Zone[]
   statistics: Statistic[]
@@ -114,6 +117,13 @@ export interface ZoneStatistic {
   performanceGlobale: number
 }
 
+/* Ces unemarations sont pour classifier les utilisateurs d'un utilisateur actif a celui non actif et aussi de separer les comptes de testes */
+export enum UserStatus {
+  ACTIF = 'ACTIF',
+  CONTRAT_FINIE = 'CONTRAT_FINIE',
+  UTILISATEUR_TEST = 'UTILISATEUR_TEST',
+}
+
 /**
  * Enum des statuts de porte (TypeScript)
  * IMPORTANT: Doit être synchronisé avec :
@@ -155,6 +165,7 @@ export interface CreateDirecteurInput {
   adresse: string
   email: string
   numTelephone: string
+  status?: UserStatus
 }
 
 export interface CreateManagerInput {
@@ -163,6 +174,7 @@ export interface CreateManagerInput {
   email?: string
   numTelephone?: string
   directeurId?: number
+  status?: UserStatus
 }
 
 export interface CreateCommercialInput {
@@ -173,6 +185,7 @@ export interface CreateCommercialInput {
   age: number
   managerId?: number
   directeurId?: number
+  status?: UserStatus
 }
 
 export interface CreateZoneInput {
@@ -233,6 +246,7 @@ export interface UpdateDirecteurInput {
   adresse?: string
   email?: string
   numTelephone?: string
+  status?: UserStatus
 }
 
 export interface UpdateManagerInput {
@@ -242,6 +256,7 @@ export interface UpdateManagerInput {
   email?: string
   numTelephone?: number
   directeurId?: number
+  status?: UserStatus
 }
 
 export interface UpdateCommercialInput {
@@ -253,6 +268,7 @@ export interface UpdateCommercialInput {
   age?: number
   managerId?: number
   directeurId?: number
+  status?: UserStatus
 }
 
 export interface UpdateZoneInput {

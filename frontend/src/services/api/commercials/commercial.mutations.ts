@@ -13,6 +13,7 @@ export const CREATE_COMMERCIAL = `
       age
       managerId
       directeurId
+      status
       createdAt
       updatedAt
     }
@@ -30,6 +31,7 @@ export const UPDATE_COMMERCIAL = `
       age
       managerId
       directeurId
+      status
       createdAt
       updatedAt
     }
@@ -47,6 +49,7 @@ export const REMOVE_COMMERCIAL = `
       age
       managerId
       directeurId
+      status
       createdAt
       updatedAt
     }

@@ -1,6 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Plus, Building2 } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { useDndContext } from '@dnd-kit/core'
 import UserCard from './UserCard'
 import DropZone from './DropZone'
@@ -10,7 +9,7 @@ import DropZone from './DropZone'
  * Affiche la structure en colonnes: Directeurs | Managers | Commerciaux
  * Chaque directeur a son propre arbre vertical
  */
-export default function OrganizationTree({ data, onAddUser, isAdmin, isDirecteur, currentUserId }) {
+export default function OrganizationTree({ data, isDirecteur, currentUserId }) {
   // Filtrer les directeurs selon les permissions
   const visibleDirecteurs = isDirecteur ? data.filter(d => d.id === currentUserId) : data
 
@@ -19,12 +18,6 @@ export default function OrganizationTree({ data, onAddUser, isAdmin, isDirecteur
       <Card className="p-12 text-center">
         <Building2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
         <p className="text-muted-foreground text-lg mb-4">Aucun directeur dans l'organisation</p>
-        {isAdmin && (
-          <Button onClick={() => onAddUser('directeur')} variant="outline">
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un directeur
-          </Button>
-        )}
       </Card>
     )
   }
@@ -46,8 +39,6 @@ export default function OrganizationTree({ data, onAddUser, isAdmin, isDirecteur
           <DirecteurTree
             key={directeur.id}
             directeur={directeur}
-            onAddUser={onAddUser}
-            isAdmin={isAdmin}
           />
         ))}
       </div>
@@ -58,7 +49,7 @@ export default function OrganizationTree({ data, onAddUser, isAdmin, isDirecteur
 /**
  * Arbre vertical pour un directeur avec ses managers et commerciaux
  */
-function DirecteurTree({ directeur, onAddUser, isAdmin }) {
+function DirecteurTree({ directeur }) {
   const hasManagers = directeur.managers && directeur.managers.length > 0
   const hasDirectCommercials = directeur.directCommercials && directeur.directCommercials.length > 0
 
@@ -105,10 +96,7 @@ function DirecteurTree({ directeur, onAddUser, isAdmin }) {
                 <ManagerNode
                   key={manager.id}
                   manager={manager}
-                  onAddUser={onAddUser}
-                  isAdmin={isAdmin}
                   draggedType={draggedType}
-                  directeurId={directeur.id}
                 />
               ))}
             </div>
@@ -141,17 +129,6 @@ function DirecteurTree({ directeur, onAddUser, isAdmin }) {
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <UserCard user={commercial} type="commercial" />
                     </div>
-                    {isAdmin && (
-                      <Button
-                        onClick={() => onAddUser('commercial', directeur.id)}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 flex-shrink-0"
-                        title="Ajouter un commercial"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                 ))}
               </div>
@@ -166,7 +143,7 @@ function DirecteurTree({ directeur, onAddUser, isAdmin }) {
 /**
  * Nœud pour un manager avec ses commerciaux
  */
-function ManagerNode({ manager, onAddUser, isAdmin, draggedType, directeurId }) {
+function ManagerNode({ manager, draggedType }) {
   const hasCommercials = manager.commercials && manager.commercials.length > 0
 
   return (
@@ -177,17 +154,6 @@ function ManagerNode({ manager, onAddUser, isAdmin, draggedType, directeurId }) 
           <div className="flex-1">
             <UserCard user={manager} type="manager" />
           </div>
-          {isAdmin && (
-            <Button
-              onClick={() => onAddUser('manager', directeurId)}
-              size="sm"
-              variant="ghost"
-              className="h-8 w-8 p-0"
-              title="Ajouter un manager"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </div>
 
@@ -214,17 +180,6 @@ function ManagerNode({ manager, onAddUser, isAdmin, draggedType, directeurId }) 
                   <div className="flex-1">
                     <UserCard user={commercial} type="commercial" />
                   </div>
-                  {isAdmin && (
-                    <Button
-                      onClick={() => onAddUser('commercial', manager.id)}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      title="Ajouter un commercial"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
               ))}
             </div>

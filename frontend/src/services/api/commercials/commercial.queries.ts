@@ -13,6 +13,7 @@ export const GET_COMMERCIALS = `
       age
       managerId
       directeurId
+      status
       createdAt
       updatedAt
       statistics {
@@ -40,6 +41,7 @@ export const GET_COMMERCIAL = `
       age
       managerId
       directeurId
+      status
       createdAt
       updatedAt
     }
@@ -72,6 +74,7 @@ export const GET_COMMERCIAL_FULL = `
       age
       managerId
       directeurId
+      status
       createdAt
       updatedAt
       immeubles {

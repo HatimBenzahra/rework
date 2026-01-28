@@ -20,6 +20,7 @@ model Directeur {
   adresse     String?
   email       String?     @unique
   numTelephone String?
+  status      UserStatus   @default(ACTIF)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -35,6 +36,7 @@ model Manager {
   prenom      String
   email       String?     @unique
   numTelephone String?
+  status      UserStatus   @default(ACTIF)
   directeurId Int?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -54,6 +56,7 @@ model Commercial {
   email       String?  @unique
   numTel      String?
   age         Int?
+  status      UserStatus @default(ACTIF)
   managerId   Int?
   directeurId Int?
   createdAt   DateTime @default(now())
@@ -168,6 +171,12 @@ enum UserType {
   COMMERCIAL
   MANAGER
   DIRECTEUR
+}
+
+enum UserStatus {
+  ACTIF
+  CONTRAT_FINIE
+  UTILISATEUR_TEST
 }
 
 model ZoneEnCours {

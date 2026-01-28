@@ -1,6 +1,13 @@
 import { ObjectType, Field, Int, InputType } from '@nestjs/graphql';
-import { IsEmail, IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
 import { Statistic } from '../statistic/statistic.dto';
+import { UserStatus } from '../enumeration-Status/user-status.enum';
 
 @ObjectType()
 export class Directeur {
@@ -21,6 +28,9 @@ export class Directeur {
 
   @Field({ nullable: true })
   numTelephone?: string;
+
+  @Field(() => UserStatus)
+  status: UserStatus;
 
   @Field()
   createdAt: Date;
@@ -57,6 +67,11 @@ export class CreateDirecteurInput {
   @Field()
   @IsString()
   numTelephone: string;
+
+  @Field(() => UserStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }
 
 @InputType()
@@ -89,4 +104,9 @@ export class UpdateDirecteurInput {
   @IsOptional()
   @IsString()
   numTelephone?: string;
+
+  @Field(() => UserStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }

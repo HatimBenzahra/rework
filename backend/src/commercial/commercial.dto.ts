@@ -7,10 +7,12 @@ import {
   IsInt,
   Min,
   Max,
+  IsEnum,
 } from 'class-validator';
 import { Immeuble } from '../immeuble/immeuble.dto';
 import { Zone } from '../zone/zone.dto';
 import { Statistic } from '../statistic/statistic.dto';
+import { UserStatus } from '../enumeration-Status/user-status.enum';
 
 @ObjectType()
 export class Commercial {
@@ -37,6 +39,9 @@ export class Commercial {
 
   @Field(() => Int, { nullable: true })
   directeurId?: number;
+
+  @Field(() => UserStatus)
+  status: UserStatus;
 
   @Field()
   createdAt: Date;
@@ -90,6 +95,11 @@ export class CreateCommercialInput {
   @IsOptional()
   @IsInt()
   directeurId?: number;
+
+  @Field(() => UserStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }
 
 @InputType()
@@ -134,6 +144,11 @@ export class UpdateCommercialInput {
   @IsOptional()
   @IsInt()
   directeurId?: number;
+
+  @Field(() => UserStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }
 
 @ObjectType()

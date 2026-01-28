@@ -1,6 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { RANKS } from '@/utils/business/ranks'
 import { Card } from '@/components/ui/card'
 import { useCommerciauxLogic } from './useCommerciauxLogic'
@@ -17,7 +17,19 @@ export default memo(function Commerciaux() {
     refetch,
     commerciauxEditFields,
     handleEditCommercial,
+    statusOptions,
   } = useCommerciauxLogic()
+
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Tous' },
+      ...statusOptions.map(option => ({
+        value: option.value,
+        label: option.label,
+      })),
+    ],
+    [statusOptions]
+  )
 
   if (loading) {
     return (
@@ -97,7 +109,7 @@ export default memo(function Commerciaux() {
       </Card>
 
       <AdvancedDataTable
-        showStatusColumn={false}
+        showStatusColumn
         title="Liste des Commerciaux"
         description={description}
         data={tableData}
@@ -106,6 +118,8 @@ export default memo(function Commerciaux() {
         detailsPath="/commerciaux"
         editFields={commerciauxEditFields}
         onEdit={permissions.canEdit ? handleEditCommercial : undefined}
+        customStatusFilter={statusFilterOptions}
+        defaultStatusFilter="ACTIF"
         loading={updating}
       />
     </div>

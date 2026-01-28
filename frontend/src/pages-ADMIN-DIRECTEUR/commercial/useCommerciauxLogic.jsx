@@ -1,11 +1,30 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useCommercials, useUpdateCommercial, useManagers, useDirecteurs } from '@/services'
 import { useRole } from '@/contexts/userole'
 import { useEntityPermissions, useEntityDescription } from '@/hooks/metier/permissions/useRoleBasedData'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { calculateRank } from '@/utils/business/ranks'
+import { Badge } from '@/components/ui/badge'
 
-const getCommerciauxColumns = (isAdmin, isDirecteur) => {
+const USER_STATUS_OPTIONS = [
+  {
+    value: 'ACTIF',
+    label: 'Actif',
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  },
+  {
+    value: 'CONTRAT_FINIE',
+    label: 'Contrat finie',
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+  },
+  {
+    value: 'UTILISATEUR_TEST',
+    label: 'Utilisateur test',
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+  },
+]
+
+const getCommerciauxColumns = (isAdmin, isDirecteur, renderStatusBadge) => {
   const baseColumns = [
     {
       header: 'Nom',
@@ -18,6 +37,13 @@ const getCommerciauxColumns = (isAdmin, isDirecteur) => {
       accessor: 'prenom',
       sortable: true,
       className: 'font-medium',
+    },
+    {
+      header: 'Statut',
+      accessor: 'status',
+      sortable: true,
+      className: 'hidden md:table-cell',
+      cell: row => renderStatusBadge(row.status),
     },
     {
       header: 'Rang',
@@ -58,13 +84,39 @@ export function useCommerciauxLogic() {
   const { mutate: updateCommercial, loading: updating } = useUpdateCommercial()
   const { showError, showSuccess } = useErrorToast()
 
+  const getStatusMeta = useCallback(status => {
+    if (!status) {
+      return {
+        label: 'Inconnu',
+        badgeClass: 'bg-gray-100 text-gray-800 border-gray-200',
+      }
+    }
+    return (
+      USER_STATUS_OPTIONS.find(option => option.value === status) || {
+        label: status,
+        badgeClass: 'bg-gray-100 text-gray-800 border-gray-200',
+      }
+    )
+  }, [])
+
+  const renderStatusBadge = useCallback(
+    status => {
+      const meta = getStatusMeta(status)
+      return <Badge className={`${meta.badgeClass} border`}>{meta.label}</Badge>
+    },
+    [getStatusMeta]
+  )
+
   // Les données sont déjà filtrées côté serveur
   const filteredCommercials = useMemo(() => commercials || [], [commercials])
 
   // Récupération des permissions et description
   const permissions = useEntityPermissions('commerciaux')
   const description = useEntityDescription('commerciaux')
-  const columns = useMemo(() => getCommerciauxColumns(isAdmin, isDirecteur), [isAdmin, isDirecteur])
+  const columns = useMemo(
+    () => getCommerciauxColumns(isAdmin, isDirecteur, renderStatusBadge),
+    [isAdmin, isDirecteur, renderStatusBadge]
+  )
 
   // Préparer les données pour le tableau
   const tableData = useMemo(() => {
@@ -116,6 +168,7 @@ export function useCommerciauxLogic() {
         ...commercial,
         nom: commercial.nom,
         prenom: commercial.prenom,
+        status: commercial.status,
         columns,
         rankBadge,
         managerName,
@@ -172,6 +225,17 @@ export function useCommerciauxLogic() {
       section: 'Affectation',
       options: managerOptions,
     },
+    {
+      key: 'status',
+      label: 'Statut',
+      type: 'select',
+      section: 'Statut',
+      options: USER_STATUS_OPTIONS.map(option => ({
+        value: option.value,
+        label: option.label,
+      })),
+      hint: 'Statut du commercial',
+    },
   ]
 
   const handleEditCommercial = async editedData => {
@@ -183,6 +247,7 @@ export function useCommerciauxLogic() {
         numTel: editedData.numTel,
         age: editedData.age ? parseInt(editedData.age) : undefined,
         managerId: editedData.managerId ? parseInt(editedData.managerId) : undefined,
+        status: editedData.status || undefined,
       })
       await refetch()
       showSuccess('Commercial modifié avec succès')
@@ -203,5 +268,9 @@ export function useCommerciauxLogic() {
     refetch,
     commerciauxEditFields,
     handleEditCommercial,
+    statusOptions: USER_STATUS_OPTIONS.map(option => ({
+      value: option.value,
+      label: option.label,
+    })),
   }
 }

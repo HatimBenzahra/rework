@@ -11,6 +11,7 @@ export const GET_MANAGERS = `
       email
       numTelephone
       directeurId
+      status
       createdAt
       updatedAt
       statistics {
@@ -42,6 +43,7 @@ export const GET_MANAGER = `
       email
       numTelephone
       directeurId
+      status
       createdAt
       updatedAt
     }
@@ -57,6 +59,7 @@ export const GET_MANAGER_PERSONAL = `
       email
       numTelephone
       directeurId
+      status
       createdAt
       updatedAt
       directeur {
@@ -65,6 +68,7 @@ export const GET_MANAGER_PERSONAL = `
         prenom
         email
         numTelephone
+        status
       }
       immeubles {
         id
@@ -130,6 +134,7 @@ export const GET_MANAGER_FULL = `
       email
       numTelephone
       directeurId
+      status
       createdAt
       updatedAt
       directeur {
@@ -138,6 +143,7 @@ export const GET_MANAGER_FULL = `
         prenom
         email
         numTelephone
+        status
       }
       commercials {
         id
@@ -148,6 +154,7 @@ export const GET_MANAGER_FULL = `
         age
         managerId
         directeurId
+        status
         createdAt
         updatedAt
         statistics {

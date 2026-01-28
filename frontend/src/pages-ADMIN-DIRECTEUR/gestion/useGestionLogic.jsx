@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core'
 
 export function useGestionLogic() {
-  const { isAdmin, isDirecteur, currentUserId } = useRole()
+  const { isDirecteur, currentUserId } = useRole()
   const { showError, showSuccess } = useErrorToast()
 
   // Récupérer les données avec React Query
@@ -46,9 +46,15 @@ export function useGestionLogic() {
 
   // État local
   const [activeId, setActiveId] = useState(null)
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [addUserType, setAddUserType] = useState(null)
-  const [addUserParent, setAddUserParent] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('ACTIF')
+
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: 'ACTIF', label: 'Actifs' },
+      { value: 'UTILISATEUR_TEST', label: 'Utilisateurs test' },
+    ],
+    []
+  )
 
   // Configuration des sensors pour le drag and drop
   const sensors = useSensors(
@@ -59,21 +65,54 @@ export function useGestionLogic() {
     })
   )
 
+  const matchesStatusFilter = useCallback(
+    status => {
+      if (!status) return false
+      return status === statusFilter
+    },
+    [statusFilter]
+  )
+
+  const filteredManagers = useMemo(
+    () => managers.filter(manager => matchesStatusFilter(manager.status)),
+    [managers, matchesStatusFilter]
+  )
+
+  const filteredDirecteurs = useMemo(
+    () => directeurs.filter(directeur => matchesStatusFilter(directeur.status)),
+    [directeurs, matchesStatusFilter]
+  )
+
+  const filteredCommercials = useMemo(
+    () => commercials.filter(commercial => matchesStatusFilter(commercial.status)),
+    [commercials, matchesStatusFilter]
+  )
+
+  const filteredDirecteurIds = useMemo(
+    () => new Set(filteredDirecteurs.map(directeur => directeur.id)),
+    [filteredDirecteurs]
+  )
+
+  const filteredManagerIds = useMemo(
+    () => new Set(filteredManagers.map(manager => manager.id)),
+    [filteredManagers]
+  )
+
   // Construire la structure hiérarchique
   const organizationData = useMemo(() => {
-    if (!directeurs || !managers || !commercials)
+    if (!filteredDirecteurs || !filteredManagers || !filteredCommercials)
       return { trees: [], unassigned: { managers: [], commercials: [] } }
 
     // Créer les arbres pour chaque directeur
-    const trees = directeurs.map(directeur => ({
+    const trees = filteredDirecteurs.map(directeur => ({
       ...directeur,
       type: 'directeur',
-      managers: managers
+      managers: filteredManagers
         .filter(m => m.directeurId === directeur.id)
         .map(manager => ({
           ...manager,
           type: 'manager',
-          commercials: commercials
+          commercials: filteredCommercials
             .filter(c => c.managerId === manager.id)
             .map(commercial => ({
               ...commercial,
@@ -81,8 +120,12 @@ export function useGestionLogic() {
             })),
         })),
       // Commerciaux directs (sans manager)
-      directCommercials: commercials
-        .filter(c => c.directeurId === directeur.id && !c.managerId)
+      directCommercials: filteredCommercials
+        .filter(
+          c =>
+            c.directeurId === directeur.id &&
+            (!c.managerId || !filteredManagerIds.has(c.managerId))
+        )
         .map(commercial => ({
           ...commercial,
           type: 'commercial',
@@ -90,12 +133,12 @@ export function useGestionLogic() {
     }))
 
     // Trouver les utilisateurs non assignés
-    const unassignedManagers = managers
-      .filter(m => !m.directeurId)
+    const unassignedManagers = filteredManagers
+      .filter(m => !m.directeurId || !filteredDirecteurIds.has(m.directeurId))
       .map(m => ({ ...m, type: 'manager' }))
 
-    const unassignedCommercials = commercials
-      .filter(c => !c.directeurId && !c.managerId)
+    const unassignedCommercials = filteredCommercials
+      .filter(c => !c.directeurId || !filteredDirecteurIds.has(c.directeurId))
       .map(c => ({ ...c, type: 'commercial' }))
 
     return {
@@ -105,7 +148,7 @@ export function useGestionLogic() {
         commercials: unassignedCommercials,
       },
     }
-  }, [directeurs, managers, commercials])
+  }, [filteredDirecteurs, filteredManagers, filteredCommercials, filteredDirecteurIds, filteredManagerIds])
 
   // Trouver un utilisateur par ID et type
   const findUser = useCallback(
@@ -113,16 +156,16 @@ export function useGestionLogic() {
       const idNum = parseInt(id)
       switch (type) {
         case 'directeur':
-          return directeurs?.find(d => d.id === idNum)
+          return filteredDirecteurs?.find(d => d.id === idNum)
         case 'manager':
-          return managers?.find(m => m.id === idNum)
+          return filteredManagers?.find(m => m.id === idNum)
         case 'commercial':
-          return commercials?.find(c => c.id === idNum)
+          return filteredCommercials?.find(c => c.id === idNum)
         default:
           return null
       }
     },
-    [directeurs, managers, commercials]
+    [filteredDirecteurs, filteredManagers, filteredCommercials]
   )
 
   // Gérer le début du drag
@@ -247,27 +290,6 @@ export function useGestionLogic() {
     }
   }
 
-  // Gérer l'ouverture du modal d'ajout
-  const handleOpenAddModal = (type, parentId = null) => {
-    setAddUserType(type)
-    setAddUserParent(parentId)
-    setIsAddModalOpen(true)
-  }
-
-  // Gérer la fermeture du modal
-  const handleCloseAddModal = () => {
-    setIsAddModalOpen(false)
-    setAddUserType(null)
-    setAddUserParent(null)
-  }
-
-  // Gérer la création d'utilisateur
-  const handleUserCreated = async () => {
-    // Rafraîchir les données
-    await Promise.all([refetchDirecteurs(), refetchManagers(), refetchCommercials()])
-    handleCloseAddModal()
-  }
-
   const loading = loadingDirecteurs || loadingManagers || loadingCommercials
   const error = errorDirecteurs?.message || errorManagers?.message || errorCommercials?.message
 
@@ -278,7 +300,6 @@ export function useGestionLogic() {
   }
 
   return {
-    isAdmin,
     isDirecteur,
     currentUserId,
     loading,
@@ -289,14 +310,9 @@ export function useGestionLogic() {
     findUser,
     handleDragStart,
     handleDragEnd,
-    isAddModalOpen,
-    addUserType,
-    addUserParent,
-    handleOpenAddModal,
-    handleCloseAddModal,
-    handleUserCreated,
     refetchAll,
-    directeurs,
-    managers,
+    statusFilter,
+    setStatusFilter,
+    statusFilterOptions,
   }
 }

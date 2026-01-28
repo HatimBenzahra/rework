@@ -39,6 +39,7 @@ type Commercial {
   numTel: String
   prenom: String!
   statistics: [Statistic!]!
+  status: UserStatus!
   updatedAt: DateTime!
   zones: [Zone!]!
 }
@@ -57,6 +58,7 @@ input CreateCommercialInput {
   nom: String!
   numTel: String!
   prenom: String!
+  status: UserStatus
 }
 
 input CreateDirecteurInput {
@@ -65,6 +67,7 @@ input CreateDirecteurInput {
   nom: String!
   numTelephone: String!
   prenom: String!
+  status: UserStatus
 }
 
 input CreateImmeubleInput {
@@ -86,6 +89,7 @@ input CreateManagerInput {
   nom: String!
   numTelephone: String
   prenom: String!
+  status: UserStatus
 }
 
 input CreatePorteInput {
@@ -141,6 +145,7 @@ type Directeur {
   numTelephone: String
   prenom: String!
   statistics: [Statistic!]
+  status: UserStatus!
   updatedAt: DateTime!
 }
 
@@ -214,6 +219,7 @@ type Manager {
   personalStatistics: [Statistic!]
   prenom: String!
   statistics: [Statistic!]
+  status: UserStatus!
   teamStatistics: [Statistic!]
   updatedAt: DateTime!
   zones: [Zone!]
@@ -468,6 +474,7 @@ input UpdateCommercialInput {
   nom: String
   numTel: String
   prenom: String
+  status: UserStatus
 }
 
 input UpdateDirecteurInput {
@@ -477,6 +484,7 @@ input UpdateDirecteurInput {
   nom: String
   numTelephone: String
   prenom: String
+  status: UserStatus
 }
 
 input UpdateImmeubleInput {
@@ -500,6 +508,7 @@ input UpdateManagerInput {
   nom: String
   numTelephone: String
   prenom: String
+  status: UserStatus
 }
 
 input UpdatePorteInput {
@@ -547,6 +556,13 @@ type UserInfo {
   email: String!
   id: Int!
   role: String!
+}
+
+"""Statut d’un utilisateur (commercial, manager ou directeur)"""
+enum UserStatus {
+  ACTIF
+  CONTRAT_FINIE
+  UTILISATEUR_TEST
 }
 
 """Type d'utilisateur pouvant être assigné à une zone"""

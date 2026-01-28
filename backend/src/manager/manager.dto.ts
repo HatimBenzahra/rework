@@ -5,12 +5,14 @@ import {
   IsOptional,
   IsInt,
   IsPhoneNumber,
+  IsEnum,
 } from 'class-validator';
 import { Directeur } from '../directeur/directeur.dto';
 import { Commercial } from '../commercial/commercial.dto';
 import { Zone } from '../zone/zone.dto';
 import { Immeuble } from '../immeuble/immeuble.dto';
 import { Statistic } from '../statistic/statistic.dto';
+import { UserStatus } from '../enumeration-Status/user-status.enum';
 
 @ObjectType()
 export class Manager {
@@ -37,6 +39,9 @@ export class Manager {
 
   @Field()
   updatedAt: Date;
+
+  @Field(() => UserStatus)
+  status: UserStatus;
 
   @Field(() => Directeur, { nullable: true })
   directeur?: Directeur | null;
@@ -86,6 +91,11 @@ export class CreateManagerInput {
   @IsOptional()
   @IsInt()
   directeurId?: number;
+
+  @Field(() => UserStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }
 
 @InputType()
@@ -118,4 +128,9 @@ export class UpdateManagerInput {
   @IsOptional()
   @IsInt()
   directeurId?: number;
+
+  @Field(() => UserStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(UserStatus)
+  status?: UserStatus;
 }

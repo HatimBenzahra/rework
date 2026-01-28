@@ -56,15 +56,17 @@ export function AdvancedDataTable({
   editFields,
   onEdit,
   onDelete,
+  rowActions = [],
   lazyLoaders = [], // Configuration pour le lazy loading
   customStatusFilter = null, // Filtres personnalisés pour le statut
   showStatusColumn = true,
+  defaultStatusFilter = 'all',
   placeholder = 'Rechercher...',
 }) {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState(defaultStatusFilter || 'all')
   const [currentPage, setCurrentPage] = useState(1)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [selectedRow, setSelectedRow] = useState(null)
@@ -130,6 +132,10 @@ export function AdvancedDataTable({
     setCurrentPage(1)
   }, [searchTerm, statusFilter])
 
+  useEffect(() => {
+    setStatusFilter(defaultStatusFilter || 'all')
+  }, [defaultStatusFilter])
+
   // Déclencher le lazy loading pour les données visibles
   useEffect(() => {
     if (lazyLoaders.length > 0 && paginatedData.length > 0) {
@@ -182,6 +188,11 @@ export function AdvancedDataTable({
       onEdit(editedData)
     }
     console.log('Données modifiées:', editedData)
+  }
+
+  const resolveRowActions = row => {
+    if (!rowActions) return []
+    return typeof rowActions === 'function' ? rowActions(row) : rowActions
   }
 
   return (
@@ -324,12 +335,41 @@ export function AdvancedDataTable({
                                 <span>Modifier</span>
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuSeparator />
+                            {resolveRowActions(row)
+                              ?.filter(action =>
+                                typeof action.visible === 'function'
+                                  ? action.visible(row)
+                                  : action.visible !== false
+                              )
+                              .map(action => {
+                                const Icon = action.icon
+                                const disabled =
+                                  typeof action.disabled === 'function'
+                                    ? action.disabled(row)
+                                    : action.disabled
+                                return (
+                                  <DropdownMenuItem
+                                    key={action.key || action.label}
+                                    onClick={() => action.onClick?.(row)}
+                                    disabled={disabled}
+                                    variant={action.variant}
+                                  >
+                                    {Icon && <Icon />}
+                                    <span>{action.label}</span>
+                                  </DropdownMenuItem>
+                                )
+                              })}
                             {onDelete && (
-                              <DropdownMenuItem variant="destructive" onClick={() => onDelete(row)}>
-                                <Trash2 />
-                                <span>Supprimer</span>
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onClick={() => onDelete(row)}
+                                >
+                                  <Trash2 />
+                                  <span>Supprimer</span>
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>

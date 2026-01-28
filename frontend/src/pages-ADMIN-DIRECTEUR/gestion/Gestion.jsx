@@ -3,14 +3,20 @@ import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   DndContext,
   DragOverlay,
   closestCenter,
 } from '@dnd-kit/core'
-import { Users, Plus, Info } from 'lucide-react'
+import { Users, Info, Filter } from 'lucide-react'
 import OrganizationTree from './components/OrganizationTree'
 import UserCard from './components/UserCard'
-import AddUserModal from './components/AddUserModal'
 import UnassignedPanel from './components/UnassignedPanel'
 
 /**
@@ -20,7 +26,6 @@ import UnassignedPanel from './components/UnassignedPanel'
  */
 export default function Gestion() {
   const {
-    isAdmin,
     isDirecteur,
     currentUserId,
     loading,
@@ -31,15 +36,10 @@ export default function Gestion() {
     findUser,
     handleDragStart,
     handleDragEnd,
-    isAddModalOpen,
-    addUserType,
-    addUserParent,
-    handleOpenAddModal,
-    handleCloseAddModal,
-    handleUserCreated,
     refetchAll,
-    directeurs,
-    managers,
+    statusFilter,
+    setStatusFilter,
+    statusFilterOptions,
   } = useGestionLogic()
 
   if (loading) {
@@ -91,9 +91,9 @@ export default function Gestion() {
       </div>
 
       {/* Carte d'information compacte */}
-      <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+      <Card className="p-4 bg-linear-to-r from-primary/5 to-primary/10 border-primary/20">
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+          <div className="p-2 bg-primary/10 rounded-lg shrink-0">
             <Info className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
@@ -106,18 +106,24 @@ export default function Gestion() {
         </div>
       </Card>
 
-      {/* Bouton d'ajout principal (admin seulement) */}
-      {isAdmin && (
-        <div className="flex gap-2">
-          <Button
-            onClick={() => handleOpenAddModal('directeur')}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Nouveau Directeur
-          </Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-sm">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Filtrer par statut pour les développeurs seulement</span>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="Filtrer par statut" />
+            </SelectTrigger>
+            <SelectContent>
+              {statusFilterOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      )}
+      </div>
 
       {/* Layout avec panneau latéral et arbres */}
       <DndContext
@@ -131,16 +137,12 @@ export default function Gestion() {
           <UnassignedPanel
             managers={organizationData.unassigned.managers}
             commercials={organizationData.unassigned.commercials}
-            onAddUser={handleOpenAddModal}
-            isAdmin={isAdmin}
           />
 
           {/* Arbres organisationnels */}
           <div className="flex-1">
             <OrganizationTree
               data={organizationData.trees}
-              onAddUser={handleOpenAddModal}
-              isAdmin={isAdmin}
               isDirecteur={isDirecteur}
               currentUserId={parseInt(currentUserId, 10)}
             />
@@ -159,16 +161,6 @@ export default function Gestion() {
         </DragOverlay>
       </DndContext>
 
-      {/* Modal d'ajout d'utilisateur */}
-      <AddUserModal
-        isOpen={isAddModalOpen}
-        onClose={handleCloseAddModal}
-        onSuccess={handleUserCreated}
-        userType={addUserType}
-        parentId={addUserParent}
-        directeurs={directeurs}
-        managers={managers}
-      />
     </div>
   )
 }

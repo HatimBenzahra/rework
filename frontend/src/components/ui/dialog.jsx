@@ -33,7 +33,7 @@ function DialogOverlay({ className, ...props }) {
   )
 }
 
-function DialogContent({ className, children, showCloseButton = true, ...props }) {
+function DialogContent({ className, children, ...props }) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -46,15 +46,6 @@ function DialogContent({ className, children, showCloseButton = true, ...props }
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
-            data-slot="dialog-close"
-            className="absolute top-4 right-4 rounded-full p-1.5 opacity-70 transition-opacity hover:opacity-100 hover:bg-gray-100 focus:outline-none disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
-          >
-            <XIcon className="text-gray-600" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-        )}
       </DialogPrimitive.Content>
     </DialogPortal>
   )

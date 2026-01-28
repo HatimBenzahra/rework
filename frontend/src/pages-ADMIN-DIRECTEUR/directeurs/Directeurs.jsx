@@ -1,5 +1,6 @@
 import { AdvancedDataTable } from '@/components/tableau'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
+import { useMemo } from 'react'
 import { useDirecteursLogic } from './useDirecteursLogic'
 
 export default function Directeurs() {
@@ -11,7 +12,19 @@ export default function Directeurs() {
     directeursLoading,
     directeursEditFields,
     handleEditDirecteur,
+    statusOptions,
   } = useDirecteursLogic()
+
+  const statusFilterOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Tous' },
+      ...statusOptions.map(option => ({
+        value: option.value,
+        label: option.label,
+      })),
+    ],
+    [statusOptions]
+  )
 
   if (directeursLoading) {
     return (
@@ -28,7 +41,7 @@ export default function Directeurs() {
   return (
     <div>
       <AdvancedDataTable
-        showStatusColumn={false}
+        showStatusColumn
         title="Liste des Directeurs"
         data={tableData}
         columns={columns}
@@ -36,6 +49,8 @@ export default function Directeurs() {
         detailsPath="/directeurs"
         editFields={directeursEditFields}
         onEdit={permissions.canEdit ? handleEditDirecteur : undefined}
+        customStatusFilter={statusFilterOptions}
+        defaultStatusFilter="ACTIF"
       />
     </div>
   )

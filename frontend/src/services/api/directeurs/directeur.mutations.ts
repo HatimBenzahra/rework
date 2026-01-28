@@ -11,6 +11,7 @@ export const CREATE_DIRECTEUR = `
       email
       numTelephone
       adresse
+      status
       createdAt
       updatedAt
     }
@@ -26,6 +27,7 @@ export const UPDATE_DIRECTEUR = `
       email
       numTelephone
       adresse
+      status
       createdAt
       updatedAt
     }
@@ -41,6 +43,7 @@ export const REMOVE_DIRECTEUR = `
       email
       numTelephone
       adresse
+      status
       createdAt
       updatedAt
     }

@@ -63,7 +63,6 @@ export default function EditPorteModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        showCloseButton={false}
         onOpenAutoFocus={event => event.preventDefault()}
         style={dialogStyle}
         className={`

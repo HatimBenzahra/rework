@@ -1,11 +1,30 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useManagers, useUpdateManager, useDirecteurs } from '@/services'
 import { useEntityPage } from '@/hooks/metier/permissions/useRoleBasedData'
 import { useRole } from '@/contexts/userole'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { calculateRank } from '@/utils/business/ranks'
+import { Badge } from '@/components/ui/badge'
 
-const getManagersColumns = () => {
+const USER_STATUS_OPTIONS = [
+  {
+    value: 'ACTIF',
+    label: 'Actif',
+    badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  },
+  {
+    value: 'CONTRAT_FINIE',
+    label: 'Contrat finie',
+    badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
+  },
+  {
+    value: 'UTILISATEUR_TEST',
+    label: 'Utilisateur test',
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+  },
+]
+
+const getManagersColumns = renderStatusBadge => {
   const baseColumns = [
     {
       header: 'Nom',
@@ -18,6 +37,13 @@ const getManagersColumns = () => {
       accessor: 'prenom',
       sortable: true,
       className: 'font-medium',
+    },
+    {
+      header: 'Statut',
+      accessor: 'status',
+      sortable: true,
+      className: 'hidden md:table-cell',
+      cell: row => renderStatusBadge(row.status),
     },
     {
       header: 'Rang',
@@ -62,6 +88,29 @@ export function useManagersLogic() {
     description,
   } = useEntityPage('managers', managersApi || [])
 
+  const getStatusMeta = useCallback(status => {
+    if (!status) {
+      return {
+        label: 'Inconnu',
+        badgeClass: 'bg-gray-100 text-gray-800 border-gray-200',
+      }
+    }
+    return (
+      USER_STATUS_OPTIONS.find(option => option.value === status) || {
+        label: status,
+        badgeClass: 'bg-gray-100 text-gray-800 border-gray-200',
+      }
+    )
+  }, [])
+
+  const renderStatusBadge = useCallback(
+    status => {
+      const meta = getStatusMeta(status)
+      return <Badge className={`${meta.badgeClass} border`}>{meta.label}</Badge>
+    },
+    [getStatusMeta]
+  )
+
   // Préparation des données pour le tableau avec mapping API -> UI
   const tableData = useMemo(() => {
     if (!filteredManagers) return []
@@ -76,6 +125,7 @@ export function useManagersLogic() {
         ...manager,
         nom: manager.nom,
         prenom: manager.prenom,
+        status: manager.status,
         email: manager.email || 'Non renseigné',
         numTelephone: manager.numTelephone || 'Non renseigné',
         directeur: directeur ? `${directeur.prenom} ${directeur.nom}` : 'Aucun directeur',
@@ -136,6 +186,17 @@ export function useManagersLogic() {
         section: 'Affectation',
         options: directeurOptions,
       },
+      {
+        key: 'status',
+        label: 'Statut',
+        type: 'select',
+        section: 'Statut',
+        options: USER_STATUS_OPTIONS.map(option => ({
+          value: option.value,
+          label: option.label,
+        })),
+        hint: 'Actif par défaut pour les nouveaux comptes.',
+      },
     ],
     [directeurOptions]
   )
@@ -151,6 +212,7 @@ export function useManagersLogic() {
           editedData.directeur && editedData.directeur !== 'Aucun directeur'
             ? directeurs?.find(d => `${d.prenom} ${d.nom}` === editedData.directeur)?.id
             : null,
+        status: editedData.status || undefined,
       }
 
       await updateManager(updateInput)
@@ -162,7 +224,7 @@ export function useManagersLogic() {
     }
   }
 
-  const columns = getManagersColumns(isAdmin)
+  const columns = getManagersColumns(renderStatusBadge)
 
   return {
     tableData,
@@ -173,5 +235,9 @@ export function useManagersLogic() {
     managersEditFields,
     handleEditManager,
     isAdmin,
+    statusOptions: USER_STATUS_OPTIONS.map(option => ({
+      value: option.value,
+      label: option.label,
+    })),
   }
 }

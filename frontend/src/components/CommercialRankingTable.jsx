@@ -55,13 +55,26 @@ export default function CommercialRankingTable({
   const { currentRole } = useRole()
   const [selectedType, setSelectedType] = useState('commercials')
 
+  const activeCommercials = useMemo(
+    () => commercials.filter(commercial => commercial.status === 'ACTIF'),
+    [commercials]
+  )
+  const activeDirecteurs = useMemo(
+    () => directeurs.filter(directeur => directeur.status === 'ACTIF'),
+    [directeurs]
+  )
+  const activeManagers = useMemo(
+    () => managers.filter(manager => manager.status === 'ACTIF'),
+    [managers]
+  )
+
   // Filtrer les types d'utilisateurs selon le rôle connecté
   const availableUserTypes = [
     {
       key: 'commercials',
       label: 'Commerciaux',
       icon: Users,
-      data: commercials,
+      data: activeCommercials,
       color: 'blue',
       allowedRoles: ['admin', 'directeur', 'manager'], // Tous peuvent voir les commerciaux
     },
@@ -69,7 +82,7 @@ export default function CommercialRankingTable({
       key: 'directeurs',
       label: 'Directeurs',
       icon: Crown,
-      data: directeurs,
+      data: activeDirecteurs,
       color: 'purple',
       allowedRoles: ['admin'], // Seul l'admin peut voir les directeurs
     },
@@ -77,7 +90,7 @@ export default function CommercialRankingTable({
       key: 'managers',
       label: 'Managers',
       icon: Shield,
-      data: managers,
+      data: activeManagers,
       color: 'green',
       allowedRoles: ['admin', 'directeur'], // Admin et directeurs peuvent voir les managers
     },
@@ -126,7 +139,7 @@ export default function CommercialRankingTable({
   // Grouper les commerciaux par directeur
   const commercialsByDirecteur = useMemo(() => {
     const map = new Map()
-    commercials.forEach(commercial => {
+    activeCommercials.forEach(commercial => {
       if (commercial.directeurId) {
         if (!map.has(commercial.directeurId)) {
           map.set(commercial.directeurId, [])
@@ -135,7 +148,7 @@ export default function CommercialRankingTable({
       }
     })
     return map
-  }, [commercials])
+  }, [activeCommercials])
 
 
 

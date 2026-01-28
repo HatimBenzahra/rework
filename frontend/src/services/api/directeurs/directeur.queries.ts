@@ -11,6 +11,7 @@ export const GET_DIRECTEURS = `
       email
       numTelephone
       adresse
+      status
       createdAt
       updatedAt
       statistics {
@@ -38,6 +39,7 @@ export const GET_DIRECTEUR = `
       email
       numTelephone
       adresse
+      status
       createdAt
       updatedAt
       statistics {

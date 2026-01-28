@@ -184,7 +184,7 @@ export default function PortesGestion() {
 
       {/* Dialogue de confirmation pour quitter */}
       <Dialog open={showQuitConfirm} onOpenChange={setShowQuitConfirm}>
-        <DialogContent className="sm:max-w-md bg-white" showCloseButton={false}>
+        <DialogContent className="sm:max-w-md bg-white">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-3 rounded-full bg-red-100">
