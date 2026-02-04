@@ -63,10 +63,16 @@
     @apply bg-background text-foreground;
     min-width: 320px; /* Largeur minimale pour mobile */
     max-width: 100vw; /* Ne jamais dépasser la largeur de l'écran */
-    overflow-y: auto; /* Empêche le déplacement vertical lors de l'ouverture des dropdowns */
+    overflow-y: scroll !important; /* Force le scroll à rester visible même avec Radix UI */
     overflow-x: hidden; /* Empêche le scroll horizontal mais sans auto */
-    scrollbar-gutter: stable; /* Réserve l'espace pour la scrollbar pour éviter le décalage */
+    scrollbar-gutter: stable; /* Réserve l'espace pour la scrollbar */
     position: relative;
+  }
+
+  /* Empêche Radix UI d'appliquer overflow: hidden au body */
+  body[style*="overflow: hidden"] {
+    overflow-y: scroll !important;
+    padding-right: 0 !important;
   }
 
   #root {
