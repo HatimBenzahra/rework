@@ -17,6 +17,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { Play, Download, Clock, User } from 'lucide-react'
@@ -24,7 +31,7 @@ import { useEnregistrementLogic } from './useEnregistrementLogic'
 
 export default function Enregistrement() {
   const {
-    allUsers,
+    filteredUsers,
     loading,
     error,
     refetch,
@@ -48,6 +55,9 @@ export default function Enregistrement() {
     handlePlayRecording,
     resetSelection,
     handleUserSelection,
+    statusFilter,
+    setStatusFilter,
+    statusFilterOptions,
   } = useEnregistrementLogic()
 
   if (loading) {
@@ -105,11 +115,11 @@ export default function Enregistrement() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
+            <CardTitle className="text-sm font-medium">Utilisateurs visibles</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{allUsers.length}</div>
+            <div className="text-2xl font-bold">{filteredUsers.length}</div>
             <p className="text-xs text-muted-foreground">Commerciaux & Managers</p>
           </CardContent>
         </Card>
@@ -123,7 +133,24 @@ export default function Enregistrement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-4 mb-4">
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Statut
+              </span>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="min-w-[180px]">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusFilterOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -133,27 +160,31 @@ export default function Enregistrement() {
                     : 'Sélectionner un utilisateur'}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={resetSelection}>
-                  Aucun utilisateur
-                </DropdownMenuItem>
-                {allUsers.map(user => (
-                  <DropdownMenuItem
-                    key={`${user.userType}-${user.id}`}
-                    onClick={() => handleUserSelection(user)}
-                  >
-                    {user.prenom} {user.nom} (
-                    {user.userType === 'manager' ? 'Manager' : 'Commercial'})
+                <DropdownMenuContent className="max-h-64 overflow-y-auto">
+                  <DropdownMenuItem onClick={resetSelection}>
+                    Aucun utilisateur
                   </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
+                  {filteredUsers.length === 0 ? (
+                    <DropdownMenuItem disabled>Aucun utilisateur</DropdownMenuItem>
+                  ) : (
+                    filteredUsers.map(user => (
+                      <DropdownMenuItem
+                        key={`${user.userType}-${user.id}`}
+                        onClick={() => handleUserSelection(user)}
+                      >
+                        {user.prenom} {user.nom} (
+                        {user.userType === 'manager' ? 'Manager' : 'Commercial'})
+                      </DropdownMenuItem>
+                    ))
+                  )}
+                </DropdownMenuContent>
             </DropdownMenu>
 
             <Input
-              placeholder="Rechercher dans les enregistrements..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="max-w-sm"
+               placeholder="Rechercher dans les enregistrements..."
+               value={searchTerm}
+               onChange={e => setSearchTerm(e.target.value)}
+               className="max-w-sm"
               disabled={!selectedCommercialForRecordings}
             />
           </div>

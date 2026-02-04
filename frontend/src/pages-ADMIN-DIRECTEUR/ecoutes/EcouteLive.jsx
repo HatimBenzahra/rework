@@ -15,6 +15,13 @@ import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { Play, Square, User, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useEcouteLiveLogic } from './useEcouteLiveLogic'
 
 export default function EcouteLive() {
@@ -42,6 +49,9 @@ export default function EcouteLive() {
     isUserOnline,
     handleStartListening,
     handleStopListening,
+    statusFilter,
+    setStatusFilter,
+    statusFilterOptions,
   } = useEcouteLiveLogic()
 
   if (loading) {
@@ -132,7 +142,24 @@ export default function EcouteLive() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex items-center gap-4">
+          <div className="mb-4 flex flex-wrap items-center gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Statut
+              </span>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="min-w-[180px]">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statusFilterOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Input
               placeholder="Rechercher un utilisateur..."
               value={searchTerm}
@@ -180,7 +207,7 @@ export default function EcouteLive() {
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
                               <div
-                                className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                className={`w-2 h-2 rounded-full shrink-0 ${
                                   isOnline ? 'bg-green-500' : 'bg-gray-400'
                                 }`}
                               />
@@ -238,7 +265,7 @@ export default function EcouteLive() {
                               <div className="flex items-center justify-between border rounded-md p-4">
                                 <div className="flex items-center gap-4 flex-1">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
+                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shrink-0" />
                                     <span className="font-medium">
                                       {user.prenom} {user.nom}
                                     </span>

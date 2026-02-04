@@ -1,8 +1,14 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useEcoutesUsers } from '@/hooks/ecoutes/useEcoutesUsers'
 import { usePagination } from '@/hooks/utils/data/usePagination'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { RecordingService } from '@/services/audio'
+
+const USER_STATUS_OPTIONS = [
+  { value: 'ACTIF', label: 'Actif' },
+  { value: 'CONTRAT_FINIE', label: 'Contrat terminé' },
+  { value: 'UTILISATEUR_TEST', label: 'Utilisateur test' },
+]
 
 export function useEnregistrementLogic() {
   const { allUsers, loading, error, refetch } = useEcoutesUsers()
@@ -13,6 +19,38 @@ export function useEnregistrementLogic() {
   const [recordings, setRecordings] = useState([])
   const [loadingRecordings, setLoadingRecordings] = useState(false)
   const [playingRecording, setPlayingRecording] = useState(null)
+  const [statusFilter, setStatusFilter] = useState('ACTIF')
+
+  const statusFilterOptions = useMemo(
+    () => [{ value: 'ALL', label: 'Tous' }, ...USER_STATUS_OPTIONS],
+    []
+  )
+
+  const filteredUsers = useMemo(() => {
+    if (!allUsers) return []
+    return allUsers.filter(user =>
+      statusFilter === 'ALL' ? true : user?.status === statusFilter
+    )
+  }, [allUsers, statusFilter])
+
+  const resetSelection = useCallback(() => {
+    setSelectedCommercialForRecordings(null)
+    setRecordings([])
+  }, [])
+
+  useEffect(() => {
+    if (!selectedCommercialForRecordings) return
+
+    const stillVisible = filteredUsers.some(
+      user =>
+        user.id === selectedCommercialForRecordings.id &&
+        user.userType === selectedCommercialForRecordings.userType
+    )
+
+    if (!stillVisible) {
+      resetSelection()
+    }
+  }, [filteredUsers, selectedCommercialForRecordings, resetSelection])
 
   // Charger les enregistrements pour un utilisateur sélectionné
   const loadRecordingsForCommercial = async commercial => {
@@ -97,17 +135,13 @@ export function useEnregistrementLogic() {
     }
   }
 
-  const resetSelection = () => {
-    setSelectedCommercialForRecordings(null)
-    setRecordings([])
-  }
-
-  const handleUserSelection = (user) => {
+  const handleUserSelection = user => {
     setSelectedCommercialForRecordings(user)
     loadRecordingsForCommercial(user)
   }
 
   return {
+    filteredUsers,
     allUsers,
     loading,
     error,
@@ -132,5 +166,8 @@ export function useEnregistrementLogic() {
     handlePlayRecording,
     resetSelection,
     handleUserSelection,
+    statusFilter,
+    setStatusFilter,
+    statusFilterOptions,
   }
 }

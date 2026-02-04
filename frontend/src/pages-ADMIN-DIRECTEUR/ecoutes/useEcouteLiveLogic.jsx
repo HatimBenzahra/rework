@@ -5,6 +5,12 @@ import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
 import { useActiveRooms } from '@/hooks/audio/useActiveRooms'
 import { AudioMonitoringService, LiveKitUtils } from '@/services/audio'
 
+const USER_STATUS_OPTIONS = [
+  { value: 'ACTIF', label: 'Actif' },
+  { value: 'CONTRAT_FINIE', label: 'Contrat terminé' },
+  { value: 'UTILISATEUR_TEST', label: 'Utilisateur test' },
+]
+
 export function useEcouteLiveLogic() {
   const { allUsers, loading, error, refetch } = useEcoutesUsers()
   const { showSuccess, showError } = useErrorToast()
@@ -17,6 +23,12 @@ export function useEcouteLiveLogic() {
   const [isMuted, setIsMuted] = useState(false)
   const [activeListeningRooms, setActiveListeningRooms] = useState(new Map())
   const [showOnlyOnline, setShowOnlyOnline] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('ACTIF')
+
+  const statusFilterOptions = useMemo(
+    () => [{ value: 'ALL', label: 'Tous' }, ...USER_STATUS_OPTIONS],
+    []
+  )
 
   // Filtrer les utilisateurs selon la recherche et le statut en ligne
   const filteredUsers = useMemo(() => {
@@ -27,10 +39,11 @@ export function useEcouteLiveLogic() {
         user.prenom?.toLowerCase().includes(searchTerm.toLowerCase())
 
       const onlineMatch = showOnlyOnline ? isUserOnline(user.id, user.userType) : true
+      const statusMatch = statusFilter === 'ALL' ? true : user?.status === statusFilter
 
-      return searchMatch && onlineMatch
+      return searchMatch && onlineMatch && statusMatch
     })
-  }, [allUsers, searchTerm, showOnlyOnline, isUserOnline])
+  }, [allUsers, searchTerm, showOnlyOnline, isUserOnline, statusFilter])
 
   // Utiliser le hook de pagination
   const {
@@ -153,5 +166,8 @@ export function useEcouteLiveLogic() {
     isUserOnline,
     handleStartListening,
     handleStopListening,
+    statusFilter,
+    setStatusFilter,
+    statusFilterOptions,
   }
 }
