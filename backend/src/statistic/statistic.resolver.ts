@@ -7,6 +7,7 @@ import {
   CreateStatisticInput,
   UpdateStatisticInput,
   ZoneStatistic,
+  TimelinePoint,
 } from './statistic.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -63,6 +64,23 @@ export class StatisticResolver {
   @Roles('admin', 'directeur', 'manager', 'commercial')
   getZoneStatistics(@CurrentUser() user: any) {
     return this.statisticService.getZoneStatistics(user.id, user.role);
+  }
+
+  @Query(() => [TimelinePoint], { name: 'statsTimelineByCommercial' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
+  statsTimelineByCommercial(
+    @Args('commercialId', { type: () => Int }) commercialId: number,
+    @Args('startDate', { nullable: true }) startDate: Date | undefined,
+    @Args('endDate', { nullable: true }) endDate: Date | undefined,
+    @CurrentUser() user: any,
+  ) {
+    return this.statisticService.statsTimelineByCommercial(
+      commercialId,
+      user.id,
+      user.role,
+      startDate,
+      endDate,
+    );
   }
 
   @Mutation(() => String, { name: 'recalculateAllStats' })

@@ -144,3 +144,27 @@ export class ZoneStatistic {
   @Field(() => Float)
   performanceGlobale: number;
 }
+
+@ObjectType()
+export class TimelinePoint {
+  @Field()
+  date: Date;
+
+  @Field(() => Int)
+  rdvPris: number;
+
+  @Field(() => Int)
+  portesProspectees: number;
+
+  @Field(() => Int)
+  contratsSignes: number;
+
+  @Field(() => Int)
+  refus: number;
+
+  @Field(() => Int)
+  absents: number;
+
+  @Field(() => Int)
+  argumentes: number;
+}
