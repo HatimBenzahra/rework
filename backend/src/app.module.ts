@@ -15,6 +15,7 @@ import { StatisticModule } from './statistic/statistic.module';
 import { PorteModule } from './porte/porte.module';
 import { AudioMonitoringModule } from './audio-monitoring/audio-monitoring.module';
 import { RecordingModule } from './recording/recording.module';
+import { CreationCompteModule } from './creation_compte/creation_compte.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { RecordingModule } from './recording/recording.module';
     PorteModule,
     AudioMonitoringModule,
     RecordingModule,
+    CreationCompteModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

@@ -131,6 +131,13 @@ input CreateZoneInput {
   yOrigin: Float!
 }
 
+input CreerUtilisateurInput {
+  email: String!
+  nom: String!
+  prenom: String!
+  role: RoleUtilisateur!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -264,6 +271,7 @@ type Mutation {
   createPortesForImmeuble(immeubleId: Int!, nbEtages: Int!, nbPortesParEtage: Int!): Boolean!
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
+  creerUtilisateurProWin(input: CreerUtilisateurInput!): ReponseCreationUtilisateur!
   generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
   logAudioEvent(details: String, eventType: String!, message: String!): Boolean!
@@ -386,6 +394,20 @@ type RecordingResult {
   s3Key: String!
   status: String!
   url: String
+}
+
+type ReponseCreationUtilisateur {
+  message: String
+  password: String
+  success: Boolean!
+  userId: String
+}
+
+"""Rôle de l'utilisateur dans Pro Win"""
+enum RoleUtilisateur {
+  COMMERCIAL
+  DIRECTEUR
+  MANAGER
 }
 
 input StartMonitoringInput {
