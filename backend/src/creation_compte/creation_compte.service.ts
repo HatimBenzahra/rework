@@ -6,6 +6,7 @@ import {
   ReponseCreationUtilisateur,
   RoleUtilisateur,
 } from './creation_compte.dto';
+import { PrismaService } from '../prisma.service';
 
 @Injectable()
 export class CreationCompteService {
@@ -18,6 +19,8 @@ export class CreationCompteService {
     [RoleUtilisateur.MANAGER]: 'Prospection-Manager',
     [RoleUtilisateur.COMMERCIAL]: 'Prospection-Commercial',
   };
+
+  constructor(private readonly prisma: PrismaService) {}
 
   async creerCompteProWin(
     input: CreerUtilisateurInput,
@@ -42,6 +45,9 @@ export class CreationCompteService {
         this.ROLE_TO_GROUP[input.role],
       );
 
+      // 5. Sync local database
+      await this.synchroniserUtilisateurLocal(input);
+
       this.logger.log(
         `✅ User ${input.email} created with role ${input.role}`,
       );
@@ -59,6 +65,38 @@ export class CreationCompteService {
       throw new BadRequestException(
         error.message || 'Erreur lors de la création du compte',
       );
+    }
+  }
+
+  private async synchroniserUtilisateurLocal(
+    input: CreerUtilisateurInput,
+  ): Promise<void> {
+    const { email, nom, prenom, role } = input;
+
+    switch (role) {
+      case RoleUtilisateur.COMMERCIAL:
+        await this.prisma.commercial.upsert({
+          where: { email },
+          update: { nom, prenom },
+          create: { email, nom, prenom },
+        });
+        return;
+      case RoleUtilisateur.MANAGER:
+        await this.prisma.manager.upsert({
+          where: { email },
+          update: { nom, prenom },
+          create: { email, nom, prenom },
+        });
+        return;
+      case RoleUtilisateur.DIRECTEUR:
+        await this.prisma.directeur.upsert({
+          where: { email },
+          update: { nom, prenom },
+          create: { email, nom, prenom },
+        });
+        return;
+      default:
+        this.logger.warn(`Rôle local non pris en charge: ${role}`);
     }
   }
 
