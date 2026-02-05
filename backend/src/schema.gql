@@ -132,7 +132,7 @@ input CreateZoneInput {
 }
 
 input CreerUtilisateurInput {
-  email: String!
+  email: String
   nom: String!
   prenom: String!
   role: RoleUtilisateur!
@@ -238,6 +238,11 @@ type ManagerInfo {
   prenom: String!
 }
 
+input ModifierUtilisateurInput {
+  email: String!
+  nouveauMotDePasse: String!
+}
+
 type MonitoringSession {
   endedAt: DateTime
   id: ID!
@@ -276,6 +281,7 @@ type Mutation {
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
   logAudioEvent(details: String, eventType: String!, message: String!): Boolean!
   login(loginInput: LoginInput!): AuthResponse!
+  modifierUtilisateur(input: ModifierUtilisateurInput!): ReponseModifierUtilisateur!
   recalculateAllStats: String!
   refreshToken(refreshToken: String!): AuthResponse!
   removeCommercial(id: Int!): Commercial!
@@ -291,6 +297,7 @@ type Mutation {
   startRecording(input: StartRecordingInput!): RecordingResult!
   stopMonitoring(input: StopMonitoringInput!): Boolean!
   stopRecording(input: StopRecordingInput!): Boolean!
+  supprimerUtilisateur(input: SupprimerUtilisateurInput!): ReponseSupprimerUtilisateur!
   syncCommercialStats(immeubleId: Int!): String!
   syncManagerStats(managerId: Int!): String!
   unassignUser(userId: Int!, userType: UserType!): Boolean!
@@ -397,10 +404,21 @@ type RecordingResult {
 }
 
 type ReponseCreationUtilisateur {
+  email: String
   message: String
   password: String
   success: Boolean!
   userId: String
+}
+
+type ReponseModifierUtilisateur {
+  message: String
+  success: Boolean!
+}
+
+type ReponseSupprimerUtilisateur {
+  message: String
+  success: Boolean!
 }
 
 """Rôle de l'utilisateur dans Pro Win"""
@@ -474,6 +492,10 @@ input StopMonitoringInput {
 
 input StopRecordingInput {
   egressId: String!
+}
+
+input SupprimerUtilisateurInput {
+  email: String!
 }
 
 type TeamRanking {

@@ -120,7 +120,7 @@ export default function Historique() {
                       <CardContent className="p-3 sm:p-4">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-12 h-12 rounded-xl ${colors.primary.bg} flex items-center justify-center flex-shrink-0 shadow-sm`}
+                            className={`w-12 h-12 rounded-xl ${colors.primary.bg} flex items-center justify-center shrink-0 shadow-sm`}
                           >
                             <Building2 className="w-6 h-6 text-white" />
                           </div>
@@ -142,7 +142,7 @@ export default function Historique() {
                           </div>
 
                           <ChevronRight
-                            className={`w-5 h-5 ${colors.primary.text} flex-shrink-0`}
+                            className={`w-5 h-5 ${colors.primary.text} shrink-0`}
                           />
                         </div>
                       </CardContent>
@@ -218,7 +218,7 @@ export default function Historique() {
                     className={
                       currentPage === page
                         ? getButtonClasses('primary')
-                        : `${base.bg.card} ${base.border.card} border hover:${base.bg.hover} min-w-[2.5rem] ${base.text.primary}`
+                        : `${base.bg.card} ${base.border.card} border hover:${base.bg.hover} min-w-10 ${base.text.primary}`
                     }
                   >
                     {page}
