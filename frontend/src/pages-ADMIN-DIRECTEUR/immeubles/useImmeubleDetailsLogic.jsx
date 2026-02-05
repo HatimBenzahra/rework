@@ -220,7 +220,7 @@ export function useImmeubleDetailsLogic() {
         cell: row => {
           if (row.comment) {
             return (
-              <div className="max-w-xs text-sm break-words whitespace-normal">{row.comment}</div>
+              <div className="max-w-xs text-sm wrap-break-word whitespace-normal">{row.comment}</div>
             )
           }
           return <span className="text-muted-foreground">-</span>

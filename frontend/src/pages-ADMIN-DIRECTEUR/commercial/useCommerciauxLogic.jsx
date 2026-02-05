@@ -14,7 +14,7 @@ const USER_STATUS_OPTIONS = [
   },
   {
     value: 'CONTRAT_FINIE',
-    label: 'Contrat finie',
+    label: 'Contrat fini',
     badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
   },
   {
