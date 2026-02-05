@@ -117,10 +117,17 @@ export function useImmeublesLogic() {
         className: 'font-medium',
       },
       {
-        header: 'Étages',
-        accessor: 'floors',
-        className: 'hidden md:table-cell text-center',
-        cell: row => `${row.floors} étages`,
+        header: 'Date de création',
+        accessor: 'createdAt',
+        sortable: true,
+        className: 'hidden lg:table-cell',
+        cell: row => new Date(row.createdAt).toLocaleDateString('fr-FR'),
+      },
+      {
+        header: 'Commercial',
+        accessor: 'commercial_name',
+        sortable: true,
+        className: 'hidden xl:table-cell',
       },
       {
         header: 'contrats signés',
@@ -137,10 +144,11 @@ export function useImmeublesLogic() {
         cell: row => `${row.couverture}%`,
       },
       {
-        header: 'Commercial',
-        accessor: 'commercial_name',
+        header: 'Date de création',
+        accessor: 'createdAt',
         sortable: true,
-        className: 'hidden xl:table-cell',
+        className: 'hidden lg:table-cell',
+        cell: row => new Date(row.createdAt).toLocaleDateString('fr-FR'),
       },
     ],
     []
