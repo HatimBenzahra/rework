@@ -9,6 +9,7 @@ import {
   CreateStatisticInput,
   UpdateStatisticInput,
   ZoneStatistic,
+  TimelinePoint,
 } from './statistic.dto';
 
 @Injectable()
@@ -572,5 +573,104 @@ export class StatisticService {
     if (userRole === 'manager' && manager.id !== userId) {
       throw new ForbiddenException('Access denied');
     }
+  }
+
+  private async ensureCommercialAccess(
+    commercialId: number,
+    userId: number,
+    userRole: string,
+  ) {
+    const commercial = await this.prisma.commercial.findUnique({
+      where: { id: commercialId },
+      select: { id: true, managerId: true, directeurId: true },
+    });
+
+    if (!commercial) {
+      throw new NotFoundException('Commercial not found');
+    }
+
+    if (userRole === 'admin') {
+      return;
+    }
+
+    if (userRole === 'commercial' && commercial.id !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'manager' && commercial.managerId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (userRole === 'directeur' && commercial.directeurId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+  }
+
+  async statsTimelineByCommercial(
+    commercialId: number,
+    userId: number,
+    userRole: string,
+    startDate?: Date,
+    endDate?: Date,
+  ): Promise<TimelinePoint[]> {
+    await this.ensureCommercialAccess(commercialId, userId, userRole);
+
+    const validStart =
+      startDate && !isNaN(new Date(startDate).getTime())
+        ? new Date(startDate)
+        : undefined;
+    const validEnd =
+      endDate && !isNaN(new Date(endDate).getTime())
+        ? new Date(endDate)
+        : undefined;
+
+    const history = await this.prisma.statusHistorique.findMany({
+      where: {
+        commercialId,
+        ...(validStart || validEnd
+          ? {
+              createdAt: {
+                ...(validStart ? { gte: validStart } : {}),
+                ...(validEnd ? { lte: validEnd } : {}),
+              },
+            }
+          : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        statut: true,
+        createdAt: true,
+      },
+    });
+
+    const grouped = new Map<string, TimelinePoint>();
+
+    history.forEach((entry) => {
+      const dayKey = entry.createdAt.toISOString().slice(0, 10);
+      if (!grouped.has(dayKey)) {
+        grouped.set(dayKey, {
+          date: new Date(dayKey),
+          rdvPris: 0,
+          portesProspectees: 0,
+          contratsSignes: 0,
+          refus: 0,
+          absents: 0,
+          argumentes: 0,
+        });
+      }
+
+      const stats = calculateStatsForStatus(entry.statut, 1);
+      const current = grouped.get(dayKey)!;
+      current.rdvPris += stats.rendezVousPris;
+      current.portesProspectees += stats.nbPortesProspectes;
+      current.contratsSignes += stats.contratsSignes;
+      current.refus += stats.refus;
+      current.absents += stats.absents;
+      current.argumentes += stats.argumentes;
+    });
+
+    return Array.from(grouped.values()).sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
   }
 }

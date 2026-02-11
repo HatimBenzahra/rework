@@ -377,6 +377,7 @@ type Query {
   portesRdvToday: [Porte!]!
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int): [Statistic!]!
+  statsTimelineByCommercial(commercialId: Int!, endDate: DateTime, startDate: DateTime): [TimelinePoint!]!
   statusHistoriqueByImmeuble(immeubleId: Int!): [StatusHistorique!]!
   statusHistoriqueByPorte(porteId: Int!): [StatusHistorique!]!
   userZoneHistory(userId: Int!, userType: UserType!): [HistoriqueZone!]!
@@ -507,6 +508,16 @@ type TeamRanking {
   position: Int!
   total: Int!
   trend: String
+}
+
+type TimelinePoint {
+  absents: Int!
+  argumentes: Int!
+  contratsSignes: Int!
+  date: DateTime!
+  portesProspectees: Int!
+  rdvPris: Int!
+  refus: Int!
 }
 
 input UpdateCommercialInput {

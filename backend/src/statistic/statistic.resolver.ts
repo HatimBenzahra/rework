@@ -7,6 +7,7 @@ import {
   CreateStatisticInput,
   UpdateStatisticInput,
   ZoneStatistic,
+ TimelinePoint,
 } from './statistic.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -96,6 +97,23 @@ export class StatisticResolver {
     );
     await this.statisticSyncService.syncCommercialStats(immeubleId);
     return `✅ Statistiques synchronisées pour l'immeuble ${immeubleId}`;
+  }
+
+  @Query(() => [TimelinePoint], { name: 'statsTimelineByCommercial' })
+  @Roles('admin', 'directeur', 'manager', 'commercial')
+  statsTimelineByCommercial(
+    @Args('commercialId', { type: () => Int }) commercialId: number,
+    @Args('startDate', { type: () => Date, nullable: true }) startDate: Date | undefined,
+    @Args('endDate', { type: () => Date, nullable: true }) endDate: Date | undefined,
+    @CurrentUser() user: any,
+  ) {
+    return this.statisticService.statsTimelineByCommercial(
+      commercialId,
+      user.id,
+      user.role,
+      startDate,
+      endDate,
+    );
   }
 
   @Mutation(() => String, { name: 'syncManagerStats' })

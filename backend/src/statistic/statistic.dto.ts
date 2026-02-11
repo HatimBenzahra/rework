@@ -107,6 +107,30 @@ export class UpdateStatisticInput extends PartialType(CreateStatisticInput) {
 }
 
 @ObjectType()
+export class TimelinePoint {
+  @Field()
+  date: Date;
+
+  @Field(() => Int)
+  rdvPris: number;
+
+  @Field(() => Int)
+  portesProspectees: number;
+
+  @Field(() => Int)
+  contratsSignes: number;
+
+  @Field(() => Int)
+  refus: number;
+
+  @Field(() => Int)
+  absents: number;
+
+  @Field(() => Int)
+  argumentes: number;
+}
+
+@ObjectType()
 export class ZoneStatistic {
   @Field(() => Int)
   zoneId: number;
