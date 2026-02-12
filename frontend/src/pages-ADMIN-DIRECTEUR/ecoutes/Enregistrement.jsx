@@ -133,13 +133,13 @@ export default function Enregistrement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-end gap-4 mb-4">
+            <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Statut
               </span>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="min-w-[180px]">
+                <SelectTrigger className="w-[160px] h-9">
                   <SelectValue placeholder="Filtrer par statut" />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,15 +151,22 @@ export default function Enregistrement() {
                 </SelectContent>
               </Select>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <User className="w-4 h-4 mr-2" />
-                  {selectedCommercialForRecordings
-                    ? `${selectedCommercialForRecordings.prenom} ${selectedCommercialForRecordings.nom}`
-                    : 'Sélectionner un utilisateur'}
-                </Button>
-              </DropdownMenuTrigger>
+
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Utilisateur
+              </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-9 min-w-[200px] justify-start">
+                    <User className="w-4 h-4 mr-2 shrink-0" />
+                    <span className="truncate">
+                      {selectedCommercialForRecordings
+                        ? `${selectedCommercialForRecordings.prenom} ${selectedCommercialForRecordings.nom}`
+                        : 'Sélectionner'}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
                 <DropdownMenuContent className="max-h-64 overflow-y-auto">
                   <DropdownMenuItem onClick={resetSelection}>
                     Aucun utilisateur
@@ -178,15 +185,21 @@ export default function Enregistrement() {
                     ))
                   )}
                 </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            </div>
 
-            <Input
-               placeholder="Rechercher dans les enregistrements..."
-               value={searchTerm}
-               onChange={e => setSearchTerm(e.target.value)}
-               className="max-w-sm"
-              disabled={!selectedCommercialForRecordings}
-            />
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Recherche
+              </span>
+              <Input
+                placeholder="Rechercher dans les enregistrements..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="h-9"
+                disabled={!selectedCommercialForRecordings}
+              />
+            </div>
           </div>
 
           {loadingRecordings ? (
