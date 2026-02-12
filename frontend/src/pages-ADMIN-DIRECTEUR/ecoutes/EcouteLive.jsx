@@ -148,12 +148,18 @@ function UserCard({
               </div>
             </div>
 
-            <div className="h-[48px] w-full [--lk-fg:hsl(0_85%_55%)] [--lk-va-bg:hsl(0_0%_50%/0.15)]">
+            <div
+              className="w-full"
+              style={{
+                '--lk-fg': 'hsl(0 85% 55%)',
+                '--lk-va-bg': 'hsl(0 0% 50% / 0.2)',
+              }}
+            >
               <BarVisualizer
                 track={audioTrack || undefined}
-                barCount={24}
-                options={{ minHeight: 10, maxHeight: 100 }}
-                className="h-full w-full"
+                barCount={48}
+                options={{ minHeight: 5, maxHeight: 100 }}
+                style={{ height: '56px', gap: '3px' }}
               />
             </div>
 
