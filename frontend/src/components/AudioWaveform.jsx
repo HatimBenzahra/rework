@@ -1,126 +1,107 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
-/**
- * AudioWaveform
- * Props:
- * - isActive: boolean – active animation when true
- * - analyserNode: AnalyserNode | null – Web Audio API analyser for real-time audio data
- * - className: string – extra classes for the container
- * - barCount: number – number of bars (default 40 for responsive design)
- * - barWidth: number – width of each bar in px (default 4)
- * - gap: number – gap between bars in px (default 2)
- * - maxHeight: number – max bar height in px (default 48)
- */
 function AudioWaveform({
   isActive = false,
   analyserNode = null,
   className = '',
-  barCount = 40,
-  barWidth = 4,
+  barCount = 48,
+  barWidth = 3,
   gap = 2,
   maxHeight = 48,
 }) {
-  const [waveData, setWaveData] = useState(() => Array(barCount).fill(0.1))
+  const [waveData, setWaveData] = useState(() => Array(barCount).fill(0.08))
   const rafRef = useRef(null)
   const idleTimeoutRef = useRef(null)
   const dataArrayRef = useRef(null)
+  const prevDataRef = useRef(null)
 
-  // Sync bars count if it changes
   useEffect(() => {
-    setWaveData(Array(barCount).fill(0.1))
+    setWaveData(Array(barCount).fill(0.08))
+    prevDataRef.current = new Float32Array(barCount).fill(0.08)
   }, [barCount])
 
-  useEffect(() => {
-    // Initialize data array for analyser
-    if (analyserNode) {
-      analyserNode.fftSize = 256
-      analyserNode.smoothingTimeConstant = 0.7
-      const bufferLength = analyserNode.frequencyBinCount
-      dataArrayRef.current = new Uint8Array(bufferLength)
-      console.log('🎵 Analyser initialized:', bufferLength, 'bins')
-    }
+  const generateData = useCallback(() => {
+    if (analyserNode && dataArrayRef.current && isActive) {
+      analyserNode.getByteFrequencyData(dataArrayRef.current)
 
-    let frameCount = 0
-    const generateRealAudio = () => {
-      if (analyserNode && dataArrayRef.current && isActive) {
-        analyserNode.getByteFrequencyData(dataArrayRef.current)
+      const samplesPerBar = Math.floor(dataArrayRef.current.length / barCount)
+      const prev = prevDataRef.current
+      const smoothing = 0.35
 
-        // Debug log every 60 frames (~1 second)
-        frameCount++
-        if (frameCount % 60 === 0) {
-          const sample = dataArrayRef.current.slice(0, 10)
-          console.log(
-            '🎵 Audio data sample:',
-            sample,
-            'avg:',
-            Array.from(sample).reduce((a, b) => a + b, 0) / 10
-          )
-        }
-
-        // Sample frequency data to match bar count
-        const samplesPerBar = Math.floor(dataArrayRef.current.length / barCount)
-        const newWaveData = Array(barCount)
-          .fill(0)
-          .map((_, i) => {
-            const startIndex = i * samplesPerBar
-            const endIndex = Math.min(startIndex + samplesPerBar, dataArrayRef.current.length)
-            let sum = 0
-
-            // Average the frequency data for this bar
-            for (let j = startIndex; j < endIndex; j++) {
-              sum += dataArrayRef.current[j]
-            }
-
-            const average = sum / (endIndex - startIndex)
-            // Normalize to 0-1 range with better scaling
-            const normalized = Math.min(1, average / 128) // Changed from 180 to 128
-            return Math.max(0.1, normalized * 0.9 + 0.1) // Ensure minimum height
-          })
-
-        return newWaveData
-      }
-
-      // Fallback: simulated data when no analyser available or not active
-      return Array(barCount)
+      const result = Array(barCount)
         .fill(0)
         .map((_, i) => {
-          if (!isActive) return 0.08 + Math.random() * 0.04
-          const voice = Math.sin(Date.now() * 0.005 + i * 0.3) * 0.4
-          const noise = Math.random() * 0.2
-          const speech = Math.sin(Date.now() * 0.008 + i * 0.1) * 0.2
-          return Math.max(0.1, (voice + noise + speech) * 0.7 + 0.15)
+          const start = i * samplesPerBar
+          const end = Math.min(start + samplesPerBar, dataArrayRef.current.length)
+          let sum = 0
+          for (let j = start; j < end; j++) {
+            sum += dataArrayRef.current[j]
+          }
+          const avg = sum / (end - start)
+          const normalized = Math.min(1, avg / 128)
+          const value = Math.max(0.06, normalized * 0.9 + 0.1)
+          const smoothed = prev[i] * smoothing + value * (1 - smoothing)
+          prev[i] = smoothed
+          return smoothed
         })
+
+      return result
+    }
+
+    const prev = prevDataRef.current
+    return Array(barCount)
+      .fill(0)
+      .map((_, i) => {
+        if (!isActive) {
+          const t = Date.now() * 0.0008
+          const breath = Math.sin(t + i * 0.12) * 0.025
+          const target = 0.06 + Math.abs(breath)
+          prev[i] = prev[i] * 0.6 + target * 0.4
+          return prev[i]
+        }
+        const t = Date.now() * 0.001
+        const voice = Math.sin(t * 3.2 + i * 0.28) * 0.35
+        const breath = Math.sin(t * 1.1 + i * 0.07) * 0.15
+        const detail = Math.sin(t * 6.5 + i * 0.45) * 0.08
+        const target = Math.max(0.08, (voice + breath + detail) * 0.55 + 0.3)
+        prev[i] = prev[i] * 0.4 + target * 0.6
+        return prev[i]
+      })
+  }, [analyserNode, isActive, barCount])
+
+  useEffect(() => {
+    if (analyserNode) {
+      analyserNode.fftSize = 256
+      analyserNode.smoothingTimeConstant = 0.75
+      dataArrayRef.current = new Uint8Array(analyserNode.frequencyBinCount)
+    }
+
+    if (!prevDataRef.current || prevDataRef.current.length !== barCount) {
+      prevDataRef.current = new Float32Array(barCount).fill(0.08)
     }
 
     const animate = () => {
-      const newData = generateRealAudio()
-      setWaveData(newData)
+      setWaveData(generateData())
       rafRef.current = requestAnimationFrame(animate)
     }
 
-    const subtle = () => {
-      setWaveData(
-        Array(barCount)
-          .fill(0)
-          .map(() => 0.08 + Math.random() * 0.04)
-      )
-      idleTimeoutRef.current = setTimeout(subtle, 200)
+    const idle = () => {
+      setWaveData(generateData())
+      idleTimeoutRef.current = setTimeout(idle, 100)
     }
 
-    // Start proper loop
     if (isActive) {
       if (idleTimeoutRef.current) {
         clearTimeout(idleTimeoutRef.current)
         idleTimeoutRef.current = null
       }
-      console.log('🎬 Starting waveform animation, analyserNode:', !!analyserNode)
       animate()
     } else {
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
         rafRef.current = null
       }
-      subtle()
+      idle()
     }
 
     return () => {
@@ -133,7 +114,7 @@ function AudioWaveform({
         idleTimeoutRef.current = null
       }
     }
-  }, [isActive, analyserNode, barCount])
+  }, [isActive, analyserNode, barCount, generateData])
 
   return (
     <div
@@ -143,20 +124,19 @@ function AudioWaveform({
       aria-label={isActive ? 'Visualisation audio active' : 'Visualisation audio inactive'}
     >
       {waveData.map((h, i) => {
-        const barHeight = Math.max(4, h * maxHeight)
+        const barHeight = Math.max(3, h * maxHeight)
         return (
           <div
             key={i}
-            className={`rounded-full flex-shrink-0 ${
-              isActive
-                ? 'bg-gradient-to-t from-green-600 via-green-500 to-green-400'
-                : 'bg-gradient-to-t from-gray-400 to-gray-300'
-            }`}
+            className="rounded-full flex-shrink-0"
             style={{
               width: `${barWidth}px`,
               height: `${isActive ? barHeight : barHeight * 0.5}px`,
-              opacity: isActive ? 1 : 0.5,
-              transition: 'opacity 0.2s ease-out',
+              background: isActive
+                ? `linear-gradient(to top, hsl(0 85% 55%), hsl(15 90% 55%), hsl(35 95% 60%))`
+                : 'hsl(var(--muted-foreground) / 0.25)',
+              opacity: isActive ? 0.95 : 0.4,
+              transition: 'height 60ms ease-out, opacity 0.3s ease',
             }}
           />
         )
@@ -165,5 +145,4 @@ function AudioWaveform({
   )
 }
 
-// Export without memo to ensure updates on every state change
 export default AudioWaveform

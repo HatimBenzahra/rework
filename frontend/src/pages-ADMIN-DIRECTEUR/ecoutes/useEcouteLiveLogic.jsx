@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useEcoutesUsers } from '@/hooks/ecoutes/useEcoutesUsers'
 import { usePagination } from '@/hooks/utils/data/usePagination'
 import { useErrorToast } from '@/hooks/utils/ui/use-error-toast'
@@ -15,13 +15,13 @@ export function useEcouteLiveLogic() {
   const { allUsers, loading, error, refetch } = useEcoutesUsers()
   const { showSuccess, showError } = useErrorToast()
 
-  // Hook pour surveiller les rooms actives et les utilisateurs en ligne
   const { isUserOnline, refetch: refetchRooms } = useActiveRooms(3000)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCommercial, setSelectedCommercial] = useState(null)
   const [isMuted, setIsMuted] = useState(false)
   const [activeListeningRooms, setActiveListeningRooms] = useState(new Map())
+  const [audioTracks, setAudioTracks] = useState(new Map())
   const [showOnlyOnline, setShowOnlyOnline] = useState(true)
   const [statusFilter, setStatusFilter] = useState('ACTIF')
 
@@ -65,20 +65,33 @@ export function useEcouteLiveLogic() {
         return
       }
 
-      // Arrêter toutes les écoutes en cours
       for (const [userKey] of activeListeningRooms) {
         await handleStopListening(userKey)
       }
 
       const connectionDetails = await AudioMonitoringService.startMonitoring(user.id, user.userType)
 
-      // Utiliser une clé unique combinant type et id
       const userKey = `${user.userType}-${user.id}`
       const audioContainer = document.createElement('div')
       audioContainer.id = `audio-container-${userKey}`
       document.body.appendChild(audioContainer)
 
       const room = await LiveKitUtils.connectAsSupervisor(connectionDetails, audioContainer)
+
+      room.on('trackSubscribed', (track) => {
+        if (track.kind === 'audio') {
+          setAudioTracks(prev => new Map(prev).set(userKey, track))
+        }
+      })
+
+      const existingTracks = Array.from(room.remoteParticipants.values())
+        .flatMap(p => Array.from(p.audioTrackPublications.values()))
+        .map(pub => pub.track)
+        .filter(Boolean)
+
+      if (existingTracks.length > 0) {
+        setAudioTracks(prev => new Map(prev).set(userKey, existingTracks[0]))
+      }
 
       setActiveListeningRooms(prev =>
         new Map(prev).set(userKey, {
@@ -107,6 +120,12 @@ export function useEcouteLiveLogic() {
       if (listeningData.room) {
         await LiveKitUtils.disconnect(listeningData.room)
       }
+
+      setAudioTracks(prev => {
+        const next = new Map(prev)
+        next.delete(userKey)
+        return next
+      })
 
       if (listeningData.audioContainer) {
         listeningData.audioContainer.remove()
@@ -153,6 +172,7 @@ export function useEcouteLiveLogic() {
     showOnlyOnline,
     setShowOnlyOnline,
     activeListeningRooms,
+    audioTracks,
     isMuted,
     setIsMuted,
     currentPage,

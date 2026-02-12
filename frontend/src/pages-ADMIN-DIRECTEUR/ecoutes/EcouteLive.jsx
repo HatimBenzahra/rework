@@ -1,20 +1,24 @@
 import React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import AudioWaveform from '@/components/AudioWaveform'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { BarVisualizer } from '@livekit/components-react'
+import '@livekit/components-styles'
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/Pagination'
-import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { Play, Square, User, Mic, MicOff, Volume2, VolumeX } from 'lucide-react'
+import {
+  Play,
+  Square,
+  Mic,
+  Volume2,
+  VolumeX,
+  Radio,
+  Search,
+  Users,
+  Activity,
+  RotateCw,
+  Clock,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -23,6 +27,157 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useEcouteLiveLogic } from './useEcouteLiveLogic'
+
+function UserAvatar({ prenom, nom, userType }) {
+  const initials = `${(prenom || '')[0] || ''}${(nom || '')[0] || ''}`.toUpperCase()
+  const bg =
+    userType === 'manager'
+      ? 'bg-violet-500/15 text-violet-600'
+      : 'bg-blue-500/15 text-blue-600'
+  return (
+    <div
+      className={`flex items-center justify-center w-9 h-9 rounded-full font-semibold text-xs shrink-0 ${bg}`}
+    >
+      {initials}
+    </div>
+  )
+}
+
+function UserCard({
+  user,
+  isOnline,
+  isListening,
+  listeningData,
+  audioTrack,
+  isMuted,
+  setIsMuted,
+  onStart,
+  onStop,
+  userKey,
+}) {
+  return (
+    <div
+      className={`border rounded-xl transition-all duration-200 ${
+        isListening
+          ? 'border-red-500/30 bg-red-500/[0.03]'
+          : 'border-border/60 hover:border-border hover:shadow-sm'
+      }`}
+    >
+      <div className="flex items-center gap-3 p-3 sm:p-4">
+        <UserAvatar prenom={user.prenom} nom={user.nom} userType={user.userType} />
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm truncate">
+              {user.prenom} {user.nom}
+            </p>
+            <Badge
+              variant={user.userType === 'manager' ? 'secondary' : 'outline'}
+              className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+            >
+              {user.userType === 'manager' ? 'Manager' : 'Commercial'}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {isListening ? (
+              <>
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-xs font-medium text-red-500">En ecoute</span>
+                <span className="text-xs text-muted-foreground">
+                  depuis {listeningData?.startTime}
+                </span>
+              </>
+            ) : isOnline ? (
+              <>
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                <span className="text-xs font-medium text-green-600">En ligne</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-muted-foreground/30 rounded-full" />
+                <span className="text-xs text-muted-foreground">Hors ligne</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="shrink-0">
+          {isListening ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onStop(userKey)}
+              className="h-8 gap-1.5"
+            >
+              <Square className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Arreter</span>
+            </Button>
+          ) : (
+            <Button
+              variant={isOnline ? 'default' : 'outline'}
+              size="sm"
+              disabled={!isOnline}
+              onClick={() => onStart(user)}
+              className="h-8 gap-1.5"
+            >
+              <Play className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ecouter</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {isListening && listeningData && (
+        <div className="border-t border-border/40 p-3 sm:p-4">
+          <div className="bg-muted/30 rounded-lg p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-sm font-medium">
+                  {user.prenom} {user.nom}
+                </span>
+                {listeningData.connectionDetails?.roomName && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 h-5">
+                    {listeningData.connectionDetails.roomName}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                <span>{listeningData.startTime}</span>
+              </div>
+            </div>
+
+            <div className="h-[48px] w-full [--lk-fg:hsl(0_85%_55%)] [--lk-va-bg:hsl(0_0%_50%/0.15)]">
+              <BarVisualizer
+                track={audioTrack || undefined}
+                barCount={24}
+                options={{ minHeight: 10, maxHeight: 100 }}
+                className="h-full w-full"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMuted(!isMuted)}
+                className="h-8 gap-1.5"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <Volume2 className="w-4 h-4" />
+                )}
+                <span className="text-xs">{isMuted ? 'Son coupe' : 'Son actif'}</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function EcouteLive() {
   const {
@@ -36,6 +191,7 @@ export default function EcouteLive() {
     showOnlyOnline,
     setShowOnlyOnline,
     activeListeningRooms,
+    audioTracks,
     isMuted,
     setIsMuted,
     currentPage,
@@ -54,16 +210,30 @@ export default function EcouteLive() {
     statusFilterOptions,
   } = useEcouteLiveLogic()
 
+  const onlineCount = filteredUsers.filter(u => isUserOnline(u.id, u.userType)).length
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Écoute en Live</h1>
-          <p className="text-muted-foreground text-base">
-            Surveillance en temps réel des appels commerciaux
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10">
+            <Radio className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Ecoute en Live</h1>
+            <p className="text-sm text-muted-foreground">Surveillance en temps reel</p>
+          </div>
         </div>
-        <TableSkeleton />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 rounded-xl bg-muted/40 animate-pulse" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-16 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -71,84 +241,126 @@ export default function EcouteLive() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Écoute en Live</h1>
-          <p className="text-muted-foreground text-base">
-            Surveillance en temps réel des appels commerciaux
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10">
+            <Radio className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Ecoute en Live</h1>
+            <p className="text-sm text-muted-foreground">Surveillance en temps reel</p>
+          </div>
         </div>
-        <div className="p-6 border border-red-200 rounded-lg bg-red-50">
-          <p className="text-red-800">Erreur lors du chargement des données : {error}</p>
-          <Button onClick={refetch} className="mt-2" variant="outline">
-            Réessayer
-          </Button>
-        </div>
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-6">
+            <p className="text-destructive font-medium">
+              Erreur lors du chargement : {error}
+            </p>
+            <Button onClick={refetch} className="mt-3" variant="outline" size="sm">
+              <RotateCw className="w-4 h-4 mr-2" />
+              Reessayer
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Écoute en Live</h1>
-        <p className="text-muted-foreground text-base">
-          Surveillance en temps réel des appels commerciaux
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10">
+          <Radio className="w-5 h-5 text-red-500" />
+          {activeListeningRooms.size > 0 && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+          )}
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Ecoute en Live</h1>
+          <p className="text-sm text-muted-foreground">
+            Surveillance en temps reel des appels commerciaux
+          </p>
+        </div>
       </div>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Écoutes Actives</CardTitle>
-            <Mic className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeListeningRooms.size}</div>
-            <p className="text-xs text-muted-foreground">En cours maintenant</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utilisateurs Disponibles</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {filteredUsers.filter(u => isUserOnline(u.id, u.userType)).length}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card
+          className={`border-border/60 ${activeListeningRooms.size > 0 ? 'bg-red-500/[0.04]' : ''}`}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Ecoutes actives
+                </p>
+                <p
+                  className={`text-2xl font-bold mt-1 ${activeListeningRooms.size > 0 ? 'text-red-500' : ''}`}
+                >
+                  {activeListeningRooms.size}
+                </p>
+              </div>
+              <div
+                className={`flex items-center justify-center w-9 h-9 rounded-lg ${activeListeningRooms.size > 0 ? 'bg-red-500/10' : 'bg-muted/60'}`}
+              >
+                <Mic
+                  className={`w-4 h-4 ${activeListeningRooms.size > 0 ? 'text-red-500' : 'text-muted-foreground'}`}
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Commerciaux & Managers en ligne</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{filteredUsers.length}</div>
-            <p className="text-xs text-muted-foreground">Commerciaux & Managers</p>
+        <Card
+          className={`border-border/60 ${onlineCount > 0 ? 'bg-green-500/[0.04]' : ''}`}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  En ligne
+                </p>
+                <p
+                  className={`text-2xl font-bold mt-1 ${onlineCount > 0 ? 'text-green-600' : ''}`}
+                >
+                  {onlineCount}
+                </p>
+              </div>
+              <div
+                className={`flex items-center justify-center w-9 h-9 rounded-lg ${onlineCount > 0 ? 'bg-green-500/10' : 'bg-muted/60'}`}
+              >
+                <Activity
+                  className={`w-4 h-4 ${onlineCount > 0 ? 'text-green-600' : 'text-muted-foreground'}`}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Total
+                </p>
+                <p className="text-2xl font-bold mt-1">{filteredUsers.length}</p>
+              </div>
+              <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted/60">
+                <Users className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Utilisateurs Disponibles</CardTitle>
-          <CardDescription>
-            Sélectionnez un commercial ou manager pour démarrer l'écoute en live
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex flex-wrap items-center gap-4">
-            <div className="flex flex-col gap-1">
+      <Card className="border-border/60">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Statut
               </span>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="min-w-[180px]">
+                <SelectTrigger className="w-[160px] h-9">
                   <SelectValue placeholder="Filtrer par statut" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,163 +372,86 @@ export default function EcouteLive() {
                 </SelectContent>
               </Select>
             </div>
-            <Input
-              placeholder="Rechercher un utilisateur..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-            <label className="flex items-center gap-2 cursor-pointer">
+
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Recherche
+              </span>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un utilisateur..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="h-9 pl-8"
+                />
+              </div>
+            </div>
+
+            <label
+              className={`flex items-center gap-2.5 cursor-pointer h-9 px-3 rounded-md border transition-colors ${
+                showOnlyOnline
+                  ? 'border-green-500/50 bg-green-500/10'
+                  : 'border-input hover:bg-accent/50'
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={showOnlyOnline}
                 onChange={e => setShowOnlyOnline(e.target.checked)}
-                className="w-4 h-4 text-primary rounded focus:ring-2 focus:ring-primary"
+                className="w-4 h-4 rounded border-input accent-green-500"
               />
-              <span className="text-sm font-medium">Uniquement en ligne</span>
+              <span
+                className={`text-sm font-medium whitespace-nowrap ${showOnlyOnline ? 'text-green-600' : ''}`}
+              >
+                En ligne uniquement
+              </span>
             </label>
+
+            <Badge variant="outline" className="h-9 px-3 shrink-0">
+              {filteredUsers.length} utilisateur{filteredUsers.length > 1 ? 's' : ''}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {currentUsers.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-muted/60 mb-3">
+            <Users className="w-7 h-7 text-muted-foreground/50" />
+          </div>
+          <p className="text-muted-foreground font-medium">Aucun utilisateur trouve</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">
+            Modifiez vos filtres ou attendez que des utilisateurs se connectent
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            {currentUsers.map(user => {
+              const userKey = `${user.userType}-${user.id}`
+              const isOnline = isUserOnline(user.id, user.userType)
+              const isListening = activeListeningRooms.has(userKey)
+              const listeningData = activeListeningRooms.get(userKey)
+
+              return (
+                <UserCard
+                  key={`user-${user.userType}-${user.id}`}
+                  user={user}
+                  isOnline={isOnline}
+                  isListening={isListening}
+                  listeningData={listeningData}
+                  audioTrack={audioTracks.get(userKey) || null}
+                  isMuted={isMuted}
+                  setIsMuted={setIsMuted}
+                  onStart={handleStartListening}
+                  onStop={handleStopListening}
+                  userKey={userKey}
+                />
+              )
+            })}
           </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[35%]">Utilisateur</TableHead>
-                  <TableHead className="w-[20%]">Type</TableHead>
-                  <TableHead className="w-[25%]">Statut</TableHead>
-                  <TableHead className="w-[10%] text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      Aucun utilisateur trouvé
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  currentUsers.map(user => {
-                    const userKey = `${user.userType}-${user.id}`
-                    const isOnline = isUserOnline(user.id, user.userType)
-                    const isCurrentlyListening = activeListeningRooms.has(userKey)
-                    const listeningData = activeListeningRooms.get(userKey)
-
-                    return (
-                      <React.Fragment key={`user-${user.userType}-${user.id}`}>
-                        <TableRow>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-2 h-2 rounded-full shrink-0 ${
-                                  isOnline ? 'bg-green-500' : 'bg-gray-400'
-                                }`}
-                              />
-                              {user.prenom} {user.nom}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={user.userType === 'manager' ? 'secondary' : 'outline'}>
-                              {user.userType === 'manager' ? 'Manager' : 'Commercial'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {isCurrentlyListening ? (
-                              <Badge className="bg-red-100 text-red-800 animate-pulse">
-                                <Mic className="w-3 h-3 mr-1" />
-                                En écoute
-                              </Badge>
-                            ) : isOnline ? (
-                              <Badge className="bg-green-100 text-green-800">En ligne</Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-gray-100 text-gray-600">
-                                <MicOff className="w-3 h-3 mr-1" />
-                                Hors ligne
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center gap-2 justify-end">
-                              {isCurrentlyListening ? (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleStopListening(userKey)}
-                                >
-                                  <Square className="w-4 h-4 mr-2" />
-                                  Arrêter
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  disabled={!isOnline}
-                                  onClick={() => handleStartListening(user)}
-                                >
-                                  <Play className="w-4 h-4 mr-2" />
-                                  Écouter
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        {isCurrentlyListening && listeningData && (
-                          <TableRow className="bg-muted/30">
-                            <TableCell colSpan={4} className="p-4">
-                              <div className="flex items-center justify-between border rounded-md p-4">
-                                <div className="flex items-center gap-4 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse shrink-0" />
-                                    <span className="font-medium">
-                                      {user.prenom} {user.nom}
-                                    </span>
-                                  </div>
-                                  <Badge variant="outline">
-                                    {listeningData.connectionDetails?.roomName}
-                                  </Badge>
-                                  <span className="text-sm text-muted-foreground">
-                                    Depuis {listeningData.startTime}
-                                  </span>
-                                </div>
-                                <div className="flex-1 w-full mx-16">
-                                  <AudioWaveform
-                                    isActive={true}
-                                    intensity="voice"
-                                    className="h-10"
-                                  />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setIsMuted(!isMuted)}
-                                  >
-                                    {isMuted ? (
-                                      <VolumeX className="w-4 h-4" />
-                                    ) : (
-                                      <Volume2 className="w-4 h-4" />
-                                    )}
-                                  </Button>
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => handleStopListening(user.id)}
-                                  >
-                                    <Square className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
-                    )
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -329,8 +464,8 @@ export default function EcouteLive() {
             hasPreviousPage={hasPreviousPage}
             hasNextPage={hasNextPage}
           />
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   )
 }
