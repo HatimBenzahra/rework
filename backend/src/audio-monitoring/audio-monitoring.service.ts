@@ -21,10 +21,13 @@ type TargetMeta = {
   directeurId?: number | null;
 };
 
+const GHOST_GRACE_PERIOD_MS = 30_000;
+
 @Injectable()
 export class AudioMonitoringService {
   private readonly logger = new Logger(AudioMonitoringService.name);
   private activeSessions: Map<string, MonitoringSession> = new Map();
+  private ghostFirstSeen: Map<string, number> = new Map();
 
   constructor(
     private prisma: PrismaService, // prêt si tu veux persister plus tard
@@ -192,12 +195,25 @@ export class AudioMonitoringService {
   ): Promise<LiveKitConnectionDetails> {
     const supervisorId = currentUser.id;
 
+    this.logger.log(
+      `[START-MONITORING] Requête de ${currentUser.role}-${supervisorId} pour écouter ${input.userType}-${input.userId} (roomName demandé: ${input.roomName || 'auto'})`,
+    );
+
     const target = await this.getTargetMeta(input.userId, input.userType);
+    this.logger.debug(
+      `[START-MONITORING] Target résolu: type=${target.type}, id=${target.id}, managerId=${target.managerId ?? 'N/A'}, directeurId=${target.directeurId ?? 'N/A'}`,
+    );
+
     this.ensureMonitoringPermission(target, supervisorId, currentUser.role);
+    this.logger.debug(
+      `[START-MONITORING] Permission OK pour ${currentUser.role}-${supervisorId} → ${target.type}-${target.id}`,
+    );
 
     const finalRoomName = this.validateRoomName(input.roomName, target);
+    this.logger.debug(
+      `[START-MONITORING] Room finale: ${finalRoomName}`,
+    );
 
-    // Nettoyer les sessions en double du même superviseur pour le même utilisateur
     const existingSessions = Array.from(this.activeSessions.values()).filter(
       (s) =>
         s.userId === target.id &&
@@ -205,13 +221,27 @@ export class AudioMonitoringService {
         s.supervisorId === supervisorId,
     );
 
-    for (const session of existingSessions) {
-      this.logger.warn(`Cleaning up duplicate session: ${session.id}`);
-      this.activeSessions.delete(session.id);
+    if (existingSessions.length > 0) {
+      this.logger.warn(
+        `[START-MONITORING] ${existingSessions.length} session(s) dupliquée(s) trouvée(s) pour supervisor-${supervisorId} → ${target.type}-${target.id}. Nettoyage...`,
+      );
+      for (const session of existingSessions) {
+        this.logger.warn(
+          `[START-MONITORING] Suppression session dupliquée: ${session.id} (créée à ${session.startedAt.toISOString()})`,
+        );
+        this.activeSessions.delete(session.id);
+        this.ghostFirstSeen.delete(session.id);
+      }
     }
 
+    this.logger.debug(
+      `[START-MONITORING] Création/join room LiveKit: ${finalRoomName}`,
+    );
     await this.liveKit.createOrJoinRoom(finalRoomName);
 
+    this.logger.debug(
+      `[START-MONITORING] Génération token SUBSCRIBER pour supervisor-${supervisorId} dans ${finalRoomName}`,
+    );
     const supConn = await this.liveKit.generateConnectionDetails(
       finalRoomName,
       `supervisor-${supervisorId}`,
@@ -231,7 +261,7 @@ export class AudioMonitoringService {
 
     this.activeSessions.set(session.id, session);
     this.logger.log(
-      `Monitoring started for ${target.type} ${target.id} in ${finalRoomName}`,
+      `[START-MONITORING] Session créée: ${session.id} | supervisor-${supervisorId} écoute ${target.type}-${target.id} dans ${finalRoomName} | serverUrl: ${supConn.serverUrl} | Total sessions actives: ${this.activeSessions.size}`,
     );
 
     return supConn;
@@ -244,35 +274,55 @@ export class AudioMonitoringService {
     sessionId: string,
     currentUser: { id: number; role: string },
   ): Promise<boolean> {
+    this.logger.log(
+      `[STOP-MONITORING] Requête de ${currentUser.role}-${currentUser.id} pour arrêter session ${sessionId}`,
+    );
+
     const session = this.activeSessions.get(sessionId);
     if (!session) {
       this.logger.warn(
-        `Monitoring session ${sessionId} already stopped or not found`,
+        `[STOP-MONITORING] Session ${sessionId} introuvable ou déjà arrêtée — retour succès`,
       );
-      return true; // Considérer comme succès si déjà arrêtée
+      return true;
     }
+
+    this.logger.debug(
+      `[STOP-MONITORING] Session trouvée: ${sessionId} | supervisor-${session.supervisorId} → ${session.userType}-${session.userId} | room: ${session.roomName} | démarrée: ${session.startedAt.toISOString()}`,
+    );
 
     if (
       currentUser.role !== 'admin' &&
       session.supervisorId !== currentUser.id
     ) {
+      this.logger.warn(
+        `[STOP-MONITORING] Permission refusée: ${currentUser.role}-${currentUser.id} ne peut pas arrêter session de supervisor-${session.supervisorId}`,
+      );
       throw new ForbiddenException('Cannot stop this monitoring session');
     }
 
     session.status = MonitoringStatus.STOPPED;
     session.endedAt = new Date();
+    const durationMs = session.endedAt.getTime() - session.startedAt.getTime();
 
     try {
+      this.logger.debug(
+        `[STOP-MONITORING] Déconnexion supervisor-${session.supervisorId} de ${session.roomName}`,
+      );
       await this.liveKit.disconnectParticipant(
         session.roomName,
         `supervisor-${session.supervisorId}`,
       );
-    } catch {
-      // ignore si déjà parti
+    } catch (error) {
+      this.logger.debug(
+        `[STOP-MONITORING] Participant déjà déconnecté ou erreur: ${error.message}`,
+      );
     }
 
     this.activeSessions.delete(sessionId);
-    this.logger.log(`Monitoring stopped for session ${sessionId}`);
+    this.ghostFirstSeen.delete(sessionId);
+    this.logger.log(
+      `[STOP-MONITORING] Session ${sessionId} arrêtée | Durée: ${Math.round(durationMs / 1000)}s | ${session.userType}-${session.userId} | Sessions restantes: ${this.activeSessions.size}`,
+    );
     return true;
   }
 
@@ -280,18 +330,27 @@ export class AudioMonitoringService {
     id: number;
     role: string;
   }): Promise<MonitoringSession[]> {
-    // Nettoyer les sessions fantômes avant de retourner la liste
+    this.logger.debug(
+      `[GET-SESSIONS] Requête de ${currentUser.role}-${currentUser.id} | Sessions en mémoire: ${this.activeSessions.size} | En grace period: ${this.ghostFirstSeen.size}`,
+    );
+
     await this.cleanupGhostSessions();
     const sessions = Array.from(this.activeSessions.values());
 
+    this.logger.debug(
+      `[GET-SESSIONS] Après cleanup: ${sessions.length} session(s) | IDs: [${sessions.map((s) => `${s.id}(${s.userType}-${s.userId})`).join(', ')}]`,
+    );
+
     if (currentUser.role === 'admin') {
+      this.logger.debug(
+        `[GET-SESSIONS] Admin → retourne toutes les ${sessions.length} session(s)`,
+      );
       return sessions;
     }
 
     const visibleSessions: MonitoringSession[] = [];
 
     for (const session of sessions) {
-      // Toujours voir ses propres sessions
       if (session.supervisorId === currentUser.id) {
         visibleSessions.push(session);
         continue;
@@ -306,71 +365,147 @@ export class AudioMonitoringService {
           visibleSessions.push(session);
         }
       } catch {
-        // Ignore sessions dont la cible n'existe plus
+        this.logger.debug(
+          `[GET-SESSIONS] Cible introuvable pour session ${session.id} (${session.userType}-${session.userId}) — ignorée`,
+        );
       }
     }
 
+    this.logger.debug(
+      `[GET-SESSIONS] ${currentUser.role}-${currentUser.id} voit ${visibleSessions.length}/${sessions.length} session(s)`,
+    );
     return visibleSessions;
   }
 
   /**
-   * Nettoie les sessions où l'utilisateur cible n'est plus dans la room
+   * Nettoie les sessions où l'utilisateur cible n'est plus dans la room.
+   * Utilise un grace period de 30s pour éviter de tuer les sessions lors
+   * de déconnexions brèves du commercial.
    */
   private async cleanupGhostSessions(): Promise<void> {
-    const rooms = await this.liveKit.listRoomsWithParticipants();
+    const now = Date.now();
+    let rooms: Awaited<ReturnType<typeof this.liveKit.listRoomsWithParticipants>>;
+
+    try {
+      rooms = await this.liveKit.listRoomsWithParticipants();
+    } catch (error) {
+      this.logger.error(
+        `[GHOST-CLEANUP] Erreur lors de la récupération des rooms LiveKit: ${error.message}`,
+      );
+      return;
+    }
+
     const sessionsToDelete: string[] = [];
+    const roomNames = rooms.map((r) => r.roomName);
 
     this.logger.debug(
-      `🔍 Vérification des sessions fantômes (${this.activeSessions.size} session(s) active(s))`,
+      `[GHOST-CHECK] Début vérification — ${this.activeSessions.size} session(s) active(s), ${rooms.length} room(s) LiveKit: [${roomNames.join(', ')}], ghostFirstSeen entries: ${this.ghostFirstSeen.size}`,
     );
 
     for (const [sessionId, session] of this.activeSessions.entries()) {
-      // Trouver la room correspondante
+      const expectedParticipant = `${session.userType.toLowerCase()}-${session.userId}`;
       const room = rooms.find((r) => r.roomName === session.roomName);
 
+      // --- Room n'existe plus du tout ---
       if (!room) {
-        // La room n'existe plus du tout
+        const firstSeen = this.ghostFirstSeen.get(sessionId);
+
+        if (!firstSeen) {
+              this.ghostFirstSeen.set(sessionId, now);
+          this.logger.warn(
+            `[GHOST-CHECK] Room ${session.roomName} n'existe plus — démarrage grace period 30s pour session ${sessionId} (${expectedParticipant})`,
+          );
+          continue;
+        }
+
+        const elapsed = now - firstSeen;
+        if (elapsed < GHOST_GRACE_PERIOD_MS) {
+          this.logger.debug(
+            `[GHOST-CHECK] Grace period en cours pour ${sessionId} (${expectedParticipant}) — room absente depuis ${Math.round(elapsed / 1000)}s / ${GHOST_GRACE_PERIOD_MS / 1000}s`,
+          );
+          continue;
+        }
+
         this.logger.warn(
-          `👻 Ghost session détectée: room ${session.roomName} n'existe plus (Session: ${sessionId}, User: ${session.userType}-${session.userId})`,
+          `[GHOST-DELETE] Grace period expiré (${Math.round(elapsed / 1000)}s) — suppression session ${sessionId} (${expectedParticipant}, room: ${session.roomName})`,
         );
         sessionsToDelete.push(sessionId);
         continue;
       }
 
-      // Vérifier si l'utilisateur cible est dans la room
-      const expectedParticipant = `${session.userType.toLowerCase()}-${session.userId}`;
+      // --- Room existe, vérifier le participant ---
       const userIsPresent = room.participants.some(
         (p) => p === expectedParticipant,
       );
 
-      if (!userIsPresent) {
+      if (userIsPresent) {
+          if (this.ghostFirstSeen.has(sessionId)) {
+          const recoveredAfter = now - this.ghostFirstSeen.get(sessionId)!;
+          this.logger.log(
+            `[GHOST-RECOVERED] ${expectedParticipant} est revenu dans ${session.roomName} après ${Math.round(recoveredAfter / 1000)}s — session ${sessionId} conservée`,
+          );
+          this.ghostFirstSeen.delete(sessionId);
+        } else {
+          this.logger.debug(
+            `[GHOST-CHECK] OK: ${expectedParticipant} présent dans ${session.roomName} — participants: [${room.participants.join(', ')}]`,
+          );
+        }
+        continue;
+      }
+
+      // --- Participant absent mais room existe ---
+      const firstSeen = this.ghostFirstSeen.get(sessionId);
+
+      if (!firstSeen) {
+          this.ghostFirstSeen.set(sessionId, now);
         this.logger.warn(
-          `👻 Ghost session détectée: ${expectedParticipant} NOT IN ${session.roomName}`,
+          `[GHOST-CHECK] ${expectedParticipant} ABSENT de ${session.roomName} — démarrage grace period 30s (session ${sessionId}). Participants actuels: [${room.participants.join(', ')}]`,
         );
-        this.logger.warn(
-          `   ❌ Participant attendu: "${expectedParticipant}" | Participants présents: [${room.participants.join(', ')}]`,
-        );
-        this.logger.warn(
-          `   📊 Session ID: ${sessionId} | User Type: ${session.userType} | User ID: ${session.userId}`,
-        );
-        sessionsToDelete.push(sessionId);
-      } else {
+        continue;
+      }
+
+      const elapsed = now - firstSeen;
+      if (elapsed < GHOST_GRACE_PERIOD_MS) {
         this.logger.debug(
-          `✅ Session valide: ${expectedParticipant} présent dans ${session.roomName}`,
+          `[GHOST-CHECK] Grace period en cours pour ${sessionId} (${expectedParticipant}) — absent depuis ${Math.round(elapsed / 1000)}s / ${GHOST_GRACE_PERIOD_MS / 1000}s. Participants actuels: [${room.participants.join(', ')}]`,
+        );
+        continue;
+      }
+
+      this.logger.warn(
+        `[GHOST-DELETE] Grace period expiré (${Math.round(elapsed / 1000)}s) — suppression session ${sessionId} (${expectedParticipant}). Room ${session.roomName} existe mais participant absent. Participants: [${room.participants.join(', ')}]`,
+      );
+      sessionsToDelete.push(sessionId);
+    }
+
+    // --- Supprimer les sessions expirées ---
+    if (sessionsToDelete.length > 0) {
+      this.logger.log(
+        `[GHOST-CLEANUP] Suppression de ${sessionsToDelete.length} session(s) fantôme(s) après grace period`,
+      );
+      for (const sessionId of sessionsToDelete) {
+        const session = this.activeSessions.get(sessionId);
+        this.activeSessions.delete(sessionId);
+        this.ghostFirstSeen.delete(sessionId);
+        this.logger.log(
+          `[GHOST-CLEANUP] Session ${sessionId} supprimée (${session?.userType}-${session?.userId}, room: ${session?.roomName})`,
         );
       }
     }
 
-    // Supprimer toutes les sessions fantômes
-    if (sessionsToDelete.length > 0) {
-      this.logger.log(
-        `🧹 Nettoyage de ${sessionsToDelete.length} session(s) fantôme(s)`,
-      );
-      for (const sessionId of sessionsToDelete) {
-        this.activeSessions.delete(sessionId);
-        this.logger.log(`   🗑️ Session ${sessionId} supprimée`);
+    // --- Nettoyer les entrées ghostFirstSeen orphelines (session déjà supprimée par ailleurs) ---
+    for (const sessionId of this.ghostFirstSeen.keys()) {
+      if (!this.activeSessions.has(sessionId)) {
+        this.ghostFirstSeen.delete(sessionId);
+        this.logger.debug(
+          `[GHOST-CLEANUP] Nettoyage entrée ghostFirstSeen orpheline: ${sessionId}`,
+        );
       }
     }
+
+    this.logger.debug(
+      `[GHOST-CHECK] Fin vérification — ${this.activeSessions.size} session(s) restante(s), ${this.ghostFirstSeen.size} en grace period`,
+    );
   }
 
   /**
@@ -380,17 +515,30 @@ export class AudioMonitoringService {
     id: number;
     role: string;
   }): Promise<ActiveRoom[]> {
+    this.logger.debug(
+      `[GET-ROOMS] Requête de ${currentUser.role}-${currentUser.id}`,
+    );
+
     const rooms = await this.liveKit.listRoomsWithParticipants();
+    this.logger.debug(
+      `[GET-ROOMS] LiveKit retourne ${rooms.length} room(s): [${rooms.map((r) => `${r.roomName}(${r.participants.length}p: ${r.participants.join('+')})`).join(', ')}]`,
+    );
+
     const active: ActiveRoom[] = [];
 
     for (const r of rooms) {
-      // Autoriser uniquement les rooms dont l'utilisateur peut surveiller l'owner
       if (currentUser.role !== 'admin') {
         const target = await this.getTargetFromRoomName(r.roomName);
         if (!target) {
+          this.logger.debug(
+            `[GET-ROOMS] Room ${r.roomName} ignorée — impossible de résoudre la cible`,
+          );
           continue;
         }
         if (!this.canViewRoom(target, currentUser.id, currentUser.role)) {
+          this.logger.debug(
+            `[GET-ROOMS] Room ${r.roomName} masquée pour ${currentUser.role}-${currentUser.id}`,
+          );
           continue;
         }
       }
@@ -404,6 +552,9 @@ export class AudioMonitoringService {
     }
 
     active.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    this.logger.debug(
+      `[GET-ROOMS] Retourne ${active.length} room(s) visibles pour ${currentUser.role}-${currentUser.id}`,
+    );
     return active;
   }
 
@@ -415,17 +566,25 @@ export class AudioMonitoringService {
     roomName: string | undefined,
     currentUser?: { id: number; role: string },
   ): Promise<LiveKitConnectionDetails> {
+    this.logger.log(
+      `[COMMERCIAL-TOKEN] Requête — requestedId: ${requestedCommercialId}, roomName: ${roomName || 'auto'}, currentUser: ${currentUser?.role}-${currentUser?.id}`,
+    );
+
     if (!currentUser) {
+      this.logger.error(`[COMMERCIAL-TOKEN] Rejeté — pas d'authentification`);
       throw new ForbiddenException('Authentication required');
     }
 
     if (currentUser.role !== 'commercial') {
+      this.logger.error(
+        `[COMMERCIAL-TOKEN] Rejeté — rôle ${currentUser.role} interdit (seul commercial autorisé)`,
+      );
       throw new ForbiddenException('Only commercials can generate this token');
     }
 
     if (requestedCommercialId && requestedCommercialId !== currentUser.id) {
       this.logger.warn(
-        `⚠️ Commercial ${currentUser.id} attempted to request a token for ${requestedCommercialId}`,
+        `[COMMERCIAL-TOKEN] Commercial ${currentUser.id} a demandé un token pour ${requestedCommercialId} — utilisation de son propre ID`,
       );
     }
 
@@ -436,12 +595,14 @@ export class AudioMonitoringService {
 
     const finalRoomName = this.validateRoomName(roomName, target);
 
-    this.logger.log(
-      `🎤 [COMMERCIAL-${currentUser.id}] Génération token PUBLISHER (room: ${finalRoomName})`,
+    this.logger.debug(
+      `[COMMERCIAL-TOKEN] Création/join room: ${finalRoomName}`,
     );
-
     await this.liveKit.createOrJoinRoom(finalRoomName);
 
+    this.logger.debug(
+      `[COMMERCIAL-TOKEN] Génération token PUBLISHER pour commercial-${currentUser.id} dans ${finalRoomName}`,
+    );
     const conn = await this.liveKit.generateConnectionDetails(
       finalRoomName,
       `commercial-${currentUser.id}`,
@@ -449,7 +610,7 @@ export class AudioMonitoringService {
     );
 
     this.logger.log(
-      `✅ [COMMERCIAL-${currentUser.id}] Token généré - Identity: commercial-${currentUser.id} - ServerUrl: ${conn.serverUrl}`,
+      `[COMMERCIAL-TOKEN] Token généré pour commercial-${currentUser.id} | room: ${finalRoomName} | serverUrl: ${conn.serverUrl}`,
     );
     return conn;
   }
@@ -462,17 +623,25 @@ export class AudioMonitoringService {
     roomName: string | undefined,
     currentUser?: { id: number; role: string },
   ): Promise<LiveKitConnectionDetails> {
+    this.logger.log(
+      `[MANAGER-TOKEN] Requête — requestedId: ${requestedManagerId}, roomName: ${roomName || 'auto'}, currentUser: ${currentUser?.role}-${currentUser?.id}`,
+    );
+
     if (!currentUser) {
+      this.logger.error(`[MANAGER-TOKEN] Rejeté — pas d'authentification`);
       throw new ForbiddenException('Authentication required');
     }
 
     if (currentUser.role !== 'manager') {
+      this.logger.error(
+        `[MANAGER-TOKEN] Rejeté — rôle ${currentUser.role} interdit (seul manager autorisé)`,
+      );
       throw new ForbiddenException('Only managers can generate this token');
     }
 
     if (requestedManagerId && requestedManagerId !== currentUser.id) {
       this.logger.warn(
-        `Manager ${currentUser.id} attempted to request a token for ${requestedManagerId}`,
+        `[MANAGER-TOKEN] Manager ${currentUser.id} a demandé un token pour ${requestedManagerId} — utilisation de son propre ID`,
       );
     }
 
@@ -483,8 +652,14 @@ export class AudioMonitoringService {
 
     const finalRoomName = this.validateRoomName(roomName, target);
 
+    this.logger.debug(
+      `[MANAGER-TOKEN] Création/join room: ${finalRoomName}`,
+    );
     await this.liveKit.createOrJoinRoom(finalRoomName);
 
+    this.logger.debug(
+      `[MANAGER-TOKEN] Génération token PUBLISHER pour manager-${currentUser.id} dans ${finalRoomName}`,
+    );
     const conn = await this.liveKit.generateConnectionDetails(
       finalRoomName,
       `manager-${currentUser.id}`,
@@ -492,7 +667,7 @@ export class AudioMonitoringService {
     );
 
     this.logger.log(
-      `Manager token generated for manager ${currentUser.id} (room ${finalRoomName})`,
+      `[MANAGER-TOKEN] Token généré pour manager-${currentUser.id} | room: ${finalRoomName} | serverUrl: ${conn.serverUrl}`,
     );
     return conn;
   }
