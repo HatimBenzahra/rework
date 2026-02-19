@@ -11,53 +11,199 @@ import {
   Loader2,
 } from 'lucide-react'
 import WaveSurfer from 'wavesurfer.js'
+import FFT from 'fft.js'
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
-function detectSpeechRegions(audioBuffer, windowSec = 0.1, gapMerge = 0.35) {
-  const channelData = audioBuffer.getChannelData(0)
+/* ── Biquad filter (Audio EQ Cookbook) ──────────────────────────────── */
+function biquadCoeffs(type, f0, Q, fs) {
+  const w0 = (2 * Math.PI * f0) / fs
+  const cos = Math.cos(w0)
+  const sin = Math.sin(w0)
+  const alpha = sin / (2 * Q)
+  let b0, b1, b2, a0, a1, a2
+  if (type === 'lowpass') {
+    b0 = (1 - cos) / 2
+    b1 = 1 - cos
+    b2 = (1 - cos) / 2
+    a0 = 1 + alpha
+    a1 = -2 * cos
+    a2 = 1 - alpha
+  } else {
+    b0 = (1 + cos) / 2
+    b1 = -(1 + cos)
+    b2 = (1 + cos) / 2
+    a0 = 1 + alpha
+    a1 = -2 * cos
+    a2 = 1 - alpha
+  }
+  return { b0: b0 / a0, b1: b1 / a0, b2: b2 / a0, a1: a1 / a0, a2: a2 / a0 }
+}
+
+function biquadProcess(x, c) {
+  const y = new Float32Array(x.length)
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0
+  for (let i = 0; i < x.length; i++) {
+    const x0 = x[i]
+    const y0 = c.b0 * x0 + c.b1 * x1 + c.b2 * x2 - c.a1 * y1 - c.a2 * y2
+    y[i] = y0
+    x2 = x1; x1 = x0; y2 = y1; y1 = y0
+  }
+  return y
+}
+
+function percentile(sorted, p) {
+  const idx = Math.max(0, Math.min(sorted.length - 1, Math.floor(p * (sorted.length - 1))))
+  return sorted[idx]
+}
+
+/* ── Hybrid VAD: bandpass + log-energy + spectral flatness + ZCR ─── */
+function detectSpeechRegions(audioBuffer) {
+  const pcm = audioBuffer.getChannelData(0)
   const sampleRate = audioBuffer.sampleRate
-  const samplesPerWindow = Math.floor(sampleRate * windowSec)
+  const Q = 0.707
 
-  const rmsValues = []
-  for (let i = 0; i < channelData.length; i += samplesPerWindow) {
-    const end = Math.min(i + samplesPerWindow, channelData.length)
-    let sum = 0
-    for (let j = i; j < end; j++) sum += channelData[j] * channelData[j]
-    rmsValues.push(Math.sqrt(sum / (end - i)))
-  }
+  // 1. Bandpass filter: HPF 200Hz + LPF 3400Hz (isolate speech band)
+  const hp = biquadCoeffs('highpass', 200, Q, sampleRate)
+  const lp = biquadCoeffs('lowpass', 3400, Q, sampleRate)
+  const filtered = biquadProcess(biquadProcess(pcm, hp), lp)
 
-  const sorted = [...rmsValues].sort((a, b) => a - b)
-  const median = sorted[Math.floor(sorted.length * 0.5)]
-  const peak = sorted[sorted.length - 1]
-  const threshold = Math.max(median * 2.5, peak * 0.04, 0.005)
+  // 2. Frame analysis: 20ms frames, 10ms hop
+  const frameMs = 20
+  const hopMs = 10
+  const frameLen = Math.max(1, Math.round((sampleRate * frameMs) / 1000))
+  const hop = Math.max(1, Math.round((sampleRate * hopMs) / 1000))
+  const eps = 1e-12
 
-  const raw = []
-  let inSpeech = false
-  let start = 0
+  // FFT size must be power of 2 >= frameLen
+  const fftSize = 1 << Math.ceil(Math.log2(frameLen))
+  const fft = new FFT(fftSize)
+  const fftOut = fft.createComplexArray()
+  const fftIn = new Array(fftSize).fill(0)
 
-  for (let i = 0; i < rmsValues.length; i++) {
-    const time = (i * samplesPerWindow) / sampleRate
-    if (rmsValues[i] > threshold && !inSpeech) {
-      inSpeech = true
-      start = time
-    } else if (rmsValues[i] <= threshold && inSpeech) {
-      inSpeech = false
-      raw.push({ start, end: time })
+  const binHz = sampleRate / fftSize
+  const loIdx = Math.floor(300 / binHz)
+  const hiIdx = Math.ceil(3400 / binHz)
+  const halfN = fftSize / 2
+
+  const Edb = []
+  const flatness = []
+  const zcr = []
+
+  for (let i = 0; i + frameLen <= filtered.length; i += hop) {
+    // Log-energy on bandpass-filtered signal
+    let sumsq = 0
+    let signChanges = 0
+    let prev = filtered[i]
+    for (let j = 0; j < frameLen; j++) {
+      const v = filtered[i + j]
+      sumsq += v * v
+      if ((v >= 0) !== (prev >= 0)) signChanges++
+      prev = v
     }
-  }
-  if (inSpeech) raw.push({ start, end: channelData.length / sampleRate })
+    Edb.push(10 * Math.log10(sumsq / frameLen + eps))
+    zcr.push(signChanges / Math.max(1, frameLen - 1))
 
-  const merged = []
-  for (const r of raw) {
-    if (merged.length > 0 && r.start - merged[merged.length - 1].end < gapMerge) {
-      merged[merged.length - 1].end = r.end
+    // Spectral flatness on ORIGINAL signal (captures tonal structure)
+    for (let j = 0; j < fftSize; j++) fftIn[j] = j < frameLen ? pcm[i + j] : 0
+    fft.realTransform(fftOut, fftIn)
+
+    let logSum = 0, linSum = 0
+    for (let k = 1; k < halfN; k++) {
+      const re = fftOut[2 * k]
+      const im = fftOut[2 * k + 1]
+      const mag = Math.sqrt(re * re + im * im) + eps
+      logSum += Math.log(mag)
+      linSum += mag
+    }
+    const geo = Math.exp(logSum / (halfN - 1))
+    const arith = linSum / (halfN - 1)
+    flatness.push(geo / arith) // low = tonal/speech, high = noise
+  }
+
+  if (Edb.length === 0) return []
+
+  // 3. Adaptive threshold: p10 noise floor + SNR offset
+  const sortedE = [...Edb].sort((a, b) => a - b)
+  const p10 = percentile(sortedE, 0.10)
+  const snrDb = 15
+  const thr = Math.max(p10 + snrDb, -45)
+
+  // 4. Frame classification: majority vote (3 features, need 2+)
+  const zcrMin = 0.02
+  const zcrMax = 0.20
+  const flatnessMax = 0.4
+
+  const raw = Edb.map((e, k) => {
+    let votes = 0
+    if (e > thr) votes++
+    if (zcr[k] >= zcrMin && zcr[k] <= zcrMax) votes++
+    if (flatness[k] < flatnessMax) votes++
+    return votes >= 2
+  })
+
+  // 5. Debounce (3 frames to start) + hangover (5 frames to end)
+  const startNeed = 3
+  const hangFrames = 5
+  const speech = new Array(raw.length).fill(false)
+  let state = false, run = 0, hangLeft = 0
+
+  for (let i = 0; i < raw.length; i++) {
+    if (!state) {
+      run = raw[i] ? run + 1 : 0
+      if (run >= startNeed) {
+        state = true
+        hangLeft = hangFrames
+        // Mark the start frames retroactively
+        for (let b = i - startNeed + 1; b <= i; b++) speech[b] = true
+      }
     } else {
-      merged.push({ ...r })
+      if (raw[i]) hangLeft = hangFrames
+      else hangLeft--
+      if (hangLeft < 0) { state = false; run = 0 }
+      else speech[i] = true
     }
   }
 
-  return merged.filter(r => r.end - r.start > 0.15)
+  // 6. Convert frames → time segments
+  const segments = []
+  let inSeg = false, segStart = 0
+  for (let i = 0; i < speech.length; i++) {
+    if (speech[i] && !inSeg) { inSeg = true; segStart = i }
+    if (!speech[i] && inSeg) {
+      inSeg = false
+      segments.push({
+        start: (segStart * hop) / sampleRate,
+        end: (i * hop + frameLen) / sampleRate,
+      })
+    }
+  }
+  if (inSeg) {
+    segments.push({
+      start: (segStart * hop) / sampleRate,
+      end: pcm.length / sampleRate,
+    })
+  }
+
+  // 7. Cleanup: pad, merge gaps, drop short segments
+  const padSec = 0.05
+  const minDur = 0.25
+  const mergeGap = 0.15
+  const dur = pcm.length / sampleRate
+
+  const cleaned = []
+  for (const seg of segments) {
+    const a = Math.max(0, seg.start - padSec)
+    const b = Math.min(dur, seg.end + padSec)
+    if (b - a < minDur) continue
+    if (cleaned.length > 0 && a - cleaned[cleaned.length - 1].end <= mergeGap) {
+      cleaned[cleaned.length - 1].end = b
+    } else {
+      cleaned.push({ start: a, end: b })
+    }
+  }
+
+  return cleaned
 }
 
 function AudioPlayer({ src, title, onDownload }) {
