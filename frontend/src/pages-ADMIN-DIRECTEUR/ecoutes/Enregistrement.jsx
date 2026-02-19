@@ -15,7 +15,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -27,7 +30,7 @@ import {
 } from '@/components/ui/select'
 import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { Clock, Mic, Download, X, Loader2, Play, User } from 'lucide-react'
+import { Clock, Mic, Download, X, Loader2, Play, User, ChevronDown, XCircle } from 'lucide-react'
 import { useEnregistrementLogic } from './useEnregistrementLogic'
 import RecordingDetailModal from './RecordingDetailModal'
 import {
@@ -93,6 +96,12 @@ export default function Enregistrement() {
   const [recentModalRecording, setRecentModalRecording] = useState(null)
   const [recentModalIndex, setRecentModalIndex] = useState(null)
   const [recentPeriod, setRecentPeriod] = useState('all')
+
+  const groupedUsers = useMemo(() => {
+    const managers = filteredUsers.filter(u => u.userType === 'manager')
+    const commercials = filteredUsers.filter(u => u.userType !== 'manager')
+    return { managers, commercials }
+  }, [filteredUsers])
 
   const recentPeriodOptions = [
     { value: 'all', label: 'Tous' },
@@ -305,40 +314,93 @@ export default function Enregistrement() {
               </span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 min-w-[200px] justify-start">
-                    <User className="w-4 h-4 mr-2 shrink-0" />
-                    <span className="truncate">
-                      {selectedCommercialForRecordings
-                        ? `${selectedCommercialForRecordings.prenom} ${selectedCommercialForRecordings.nom}`
-                        : 'Sélectionner'}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                  <DropdownMenuContent className="max-h-64 overflow-y-auto">
-                    <DropdownMenuItem onClick={resetSelection}>
-                      Aucun utilisateur
-                    </DropdownMenuItem>
-                    {filteredUsers.length === 0 ? (
-                      <DropdownMenuItem disabled>Aucun utilisateur</DropdownMenuItem>
-                    ) : (
-                      filteredUsers.map(user => (
-                        <DropdownMenuItem
-                          key={`${user.userType}-${user.id}`}
-                          onClick={() => handleUserSelection(user)}
-                          className="gap-2"
-                        >
+                  <Button variant="outline" className="h-9 min-w-[220px] justify-between gap-2 font-normal">
+                    <span className="flex items-center gap-2 truncate">
+                      {selectedCommercialForRecordings ? (
+                        <>
                           <UserAvatar
-                            prenom={user.prenom}
-                            nom={user.nom}
-                            userType={user.userType}
+                            prenom={selectedCommercialForRecordings.prenom}
+                            nom={selectedCommercialForRecordings.nom}
+                            userType={selectedCommercialForRecordings.userType}
                             size="sm"
                           />
-                          <span>
-                            {user.prenom} {user.nom} ({user.userType === 'manager' ? 'Manager' : 'Commercial'})
+                          <span className="truncate font-medium">
+                            {selectedCommercialForRecordings.prenom} {selectedCommercialForRecordings.nom}
                           </span>
-                        </DropdownMenuItem>
-                      ))
-                    )}
+                        </>
+                      ) : (
+                        <>
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">Sélectionner...</span>
+                        </>
+                      )}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-[260px] max-h-72 overflow-y-auto">
+                  {selectedCommercialForRecordings && (
+                    <>
+                      <DropdownMenuItem onClick={resetSelection} className="gap-2 text-muted-foreground">
+                        <XCircle className="w-4 h-4" />
+                        Réinitialiser la sélection
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  {filteredUsers.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                      Aucun utilisateur trouvé
+                    </div>
+                  ) : (
+                    <>
+                      {groupedUsers.managers.length > 0 && (
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                            Managers ({groupedUsers.managers.length})
+                          </DropdownMenuLabel>
+                          {groupedUsers.managers.map(user => (
+                            <DropdownMenuItem
+                              key={`manager-${user.id}`}
+                              onClick={() => handleUserSelection(user)}
+                              className="gap-2.5 py-2"
+                            >
+                              <UserAvatar prenom={user.prenom} nom={user.nom} userType={user.userType} size="sm" />
+                              <span className="truncate">{user.prenom} {user.nom}</span>
+                              {selectedCommercialForRecordings?.id === user.id &&
+                                selectedCommercialForRecordings?.userType === user.userType && (
+                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuGroup>
+                      )}
+                      {groupedUsers.managers.length > 0 && groupedUsers.commercials.length > 0 && (
+                        <DropdownMenuSeparator />
+                      )}
+                      {groupedUsers.commercials.length > 0 && (
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+                            Commerciaux ({groupedUsers.commercials.length})
+                          </DropdownMenuLabel>
+                          {groupedUsers.commercials.map(user => (
+                            <DropdownMenuItem
+                              key={`commercial-${user.id}`}
+                              onClick={() => handleUserSelection(user)}
+                              className="gap-2.5 py-2"
+                            >
+                              <UserAvatar prenom={user.prenom} nom={user.nom} userType={user.userType} size="sm" />
+                              <span className="truncate">{user.prenom} {user.nom}</span>
+                              {selectedCommercialForRecordings?.id === user.id &&
+                                selectedCommercialForRecordings?.userType === user.userType && (
+                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuGroup>
+                      )}
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
