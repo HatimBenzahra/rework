@@ -1,7 +1,7 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, CalendarDays, X } from 'lucide-react'
 
 export function formatRelativeDate(dateString) {
   if (!dateString) return ''
@@ -133,34 +133,36 @@ export function SortableTableHeader({ label, sortKey, currentSort, onSort }) {
 export function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToChange, onClear }) {
   const hasFilter = dateFrom || dateTo
   return (
-    <div className="flex items-end gap-2 flex-wrap">
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-          Du
-        </span>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        Période
+      </span>
+      <div className="flex items-center h-9 rounded-md border border-input bg-background">
+        <div className="flex items-center pl-2.5 pr-1 text-muted-foreground">
+          <CalendarDays className="w-3.5 h-3.5" />
+        </div>
         <input
           type="date"
           value={dateFrom || ''}
           onChange={e => onDateFromChange(e.target.value || null)}
-          className="h-9 px-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className="h-full w-[120px] px-1.5 text-sm bg-transparent text-foreground focus:outline-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer relative"
         />
-      </div>
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-          Au
-        </span>
+        <span className="text-xs text-muted-foreground/50 px-1">→</span>
         <input
           type="date"
           value={dateTo || ''}
           onChange={e => onDateToChange(e.target.value || null)}
-          className="h-9 px-2 text-sm border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className="h-full w-[120px] px-1.5 text-sm bg-transparent text-foreground focus:outline-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer relative"
         />
+        {hasFilter && (
+          <button
+            onClick={onClear}
+            className="flex items-center justify-center w-7 h-full text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
-      {hasFilter && (
-        <Button variant="ghost" size="sm" onClick={onClear} className="h-9 text-xs">
-          Effacer
-        </Button>
-      )}
     </div>
   )
 }

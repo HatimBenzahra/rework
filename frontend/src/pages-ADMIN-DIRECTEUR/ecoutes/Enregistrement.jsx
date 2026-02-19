@@ -295,8 +295,8 @@ export default function Enregistrement() {
                 Statut
               </span>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px] h-9">
-                  <SelectValue placeholder="Filtrer par statut" />
+                <SelectTrigger className="w-[110px] h-9">
+                  <SelectValue placeholder="Statut" />
                 </SelectTrigger>
                 <SelectContent>
                   {statusFilterOptions.map(option => (
@@ -314,7 +314,7 @@ export default function Enregistrement() {
               </span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 min-w-[220px] justify-between gap-2 font-normal">
+                  <Button variant="outline" className="h-9 min-w-[260px] justify-between gap-2 font-normal">
                     <span className="flex items-center gap-2 truncate">
                       {selectedCommercialForRecordings ? (
                         <>
