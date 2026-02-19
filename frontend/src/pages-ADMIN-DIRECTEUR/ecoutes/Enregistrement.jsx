@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import AudioPlayer from '@/components/AudioPlayer'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +27,16 @@ import {
 } from '@/components/ui/select'
 import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
-import { Play, Download, Clock, User } from 'lucide-react'
+import { Clock, Mic, Download, X, Loader2, Play, User } from 'lucide-react'
 import { useEnregistrementLogic } from './useEnregistrementLogic'
+import RecordingDetailModal from './RecordingDetailModal'
+import {
+  UserAvatar,
+  RecordingStatusBadge,
+  RecordingCard,
+  SortableTableHeader,
+  DateRangeFilter,
+} from './EnregistrementComponents'
 
 export default function Enregistrement() {
   const {
@@ -40,7 +49,6 @@ export default function Enregistrement() {
     selectedCommercialForRecordings,
     recordings,
     loadingRecordings,
-    playingRecording,
     currentRecordings,
     currentPage,
     totalPages,
@@ -52,22 +60,107 @@ export default function Enregistrement() {
     hasPreviousPage,
     filteredRecordingsCount,
     handleDownloadRecording,
-    handlePlayRecording,
     resetSelection,
     handleUserSelection,
     statusFilter,
     setStatusFilter,
     statusFilterOptions,
+    recentRecordings,
+    loadingRecentRecordings,
+    recentRecordingsError,
+    sortConfig,
+    handleSort,
+    dateFrom,
+    dateTo,
+    setDateFrom,
+    setDateTo,
+    selectedRecordingIds,
+    selectedCount,
+    toggleRecordingSelection,
+    toggleSelectAll,
+    clearSelection,
+    handleBulkDownload,
+    bulkDownloading,
+    currentModalRecording,
+    openRecordingModal,
+    closeRecordingModal,
+    goToNextRecording,
+    goToPreviousRecording,
+    hasNextRecording,
+    hasPreviousRecording,
   } = useEnregistrementLogic()
+
+  const [recentModalRecording, setRecentModalRecording] = useState(null)
+  const [recentModalIndex, setRecentModalIndex] = useState(null)
+  const [recentPeriod, setRecentPeriod] = useState('all')
+
+  const recentPeriodOptions = [
+    { value: 'all', label: 'Tous' },
+    { value: 'today', label: "Aujourd'hui" },
+    { value: 'yesterday', label: 'Hier' },
+    { value: 'week', label: 'Cette semaine' },
+    { value: 'month', label: 'Ce mois' },
+  ]
+
+  const filteredRecentRecordings = useMemo(() => {
+    if (recentPeriod === 'all') return recentRecordings
+
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    let startDate
+    let endDate = now
+
+    switch (recentPeriod) {
+      case 'today':
+        startDate = today
+        break
+      case 'yesterday': {
+        startDate = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+        endDate = today
+        break
+      }
+      case 'week': {
+        const day = today.getDay()
+        const mondayOffset = day === 0 ? 6 : day - 1
+        startDate = new Date(today)
+        startDate.setDate(today.getDate() - mondayOffset)
+        break
+      }
+      case 'month':
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1)
+        break
+      default:
+        return recentRecordings
+    }
+
+    return recentRecordings.filter(r => {
+      const d = new Date(r.lastModified)
+      return d >= startDate && d < endDate
+    })
+  }, [recentRecordings, recentPeriod])
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Enregistrements</h1>
-          <p className="text-muted-foreground text-base">Consultation des enregistrements</p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10">
+            <Mic className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Enregistrements</h1>
+            <p className="text-sm text-muted-foreground">Consultation des appels enregistrés</p>
+          </div>
         </div>
-        <TableSkeleton />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-16 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />
+          ))}
+        </div>
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-16 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -75,59 +168,113 @@ export default function Enregistrement() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Enregistrements</h1>
-          <p className="text-muted-foreground text-base">Consultation des enregistrements</p>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10">
+            <Mic className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Enregistrements</h1>
+            <p className="text-sm text-muted-foreground">Consultation des appels enregistrés</p>
+          </div>
         </div>
-        <div className="p-6 border border-red-200 rounded-lg bg-red-50">
-          <p className="text-red-800">Erreur lors du chargement des données : {error}</p>
-          <Button onClick={refetch} className="mt-2" variant="outline">
-            Réessayer
-          </Button>
-        </div>
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-6">
+            <p className="text-destructive font-medium">Erreur lors du chargement : {error}</p>
+            <Button onClick={refetch} className="mt-3" variant="outline" size="sm">
+              Reessayer
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Enregistrements</h1>
-        <p className="text-muted-foreground text-base">Consultation des enregistrements</p>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-500/10">
+          <Mic className="w-5 h-5 text-red-500" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Enregistrements</h1>
+          <p className="text-sm text-muted-foreground">Analyse et révision des appels commerciaux</p>
+        </div>
       </div>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Enregistrements</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recordings.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {selectedCommercialForRecordings
-                ? `Pour ${selectedCommercialForRecordings.prenom} ${selectedCommercialForRecordings.nom}`
-                : 'Sélectionnez un utilisateur'}
+      <Card className="border-border/60">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Enregistrements récents
+              </CardTitle>
+              <CardDescription className="mt-1">Derniers enregistrements de tous vos commerciaux</CardDescription>
+              <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                {recentPeriodOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setRecentPeriod(opt.value)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                      recentPeriod === opt.value
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Badge variant="outline" className="h-6 px-2 shrink-0">
+              {filteredRecentRecordings.length}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {loadingRecentRecordings ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-xl" />
+              ))}
+            </div>
+          ) : filteredRecentRecordings.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredRecentRecordings.slice(0, 9).map(recording => (
+                <RecordingCard
+                  key={recording.id}
+                  recording={recording}
+                  onPlay={rec => {
+                    const idx = filteredRecentRecordings.findIndex(r => r.id === rec.id)
+                    setRecentModalRecording(rec)
+                    setRecentModalIndex(idx)
+                  }}
+                  onDownload={handleDownloadRecording}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-muted-foreground">
+              <Clock className="w-10 h-10 mx-auto mb-2 opacity-30" />
+              <p className="font-medium">
+                {recentPeriod === 'all'
+                  ? 'Aucun enregistrement récent'
+                  : 'Aucun enregistrement pour cette période'}
+              </p>
+            </div>
+          )}
+
+          {recentRecordingsError && (
+            <p className="text-xs text-muted-foreground mt-3">
+              ⚠ Certains utilisateurs n'ont pas pu être chargés
             </p>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utilisateurs visibles</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{filteredUsers.length}</div>
-            <p className="text-xs text-muted-foreground">Commerciaux & Managers</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
+      <Card className="border-border/60">
         <CardHeader>
-          <CardTitle>Enregistrements</CardTitle>
+          <CardTitle>Par utilisateur</CardTitle>
           <CardDescription>
             Sélectionnez un commercial ou manager pour voir ses enregistrements
           </CardDescription>
@@ -167,23 +314,31 @@ export default function Enregistrement() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="max-h-64 overflow-y-auto">
-                  <DropdownMenuItem onClick={resetSelection}>
-                    Aucun utilisateur
-                  </DropdownMenuItem>
-                  {filteredUsers.length === 0 ? (
-                    <DropdownMenuItem disabled>Aucun utilisateur</DropdownMenuItem>
-                  ) : (
-                    filteredUsers.map(user => (
-                      <DropdownMenuItem
-                        key={`${user.userType}-${user.id}`}
-                        onClick={() => handleUserSelection(user)}
-                      >
-                        {user.prenom} {user.nom} (
-                        {user.userType === 'manager' ? 'Manager' : 'Commercial'})
-                      </DropdownMenuItem>
-                    ))
-                  )}
+                  <DropdownMenuContent className="max-h-64 overflow-y-auto">
+                    <DropdownMenuItem onClick={resetSelection}>
+                      Aucun utilisateur
+                    </DropdownMenuItem>
+                    {filteredUsers.length === 0 ? (
+                      <DropdownMenuItem disabled>Aucun utilisateur</DropdownMenuItem>
+                    ) : (
+                      filteredUsers.map(user => (
+                        <DropdownMenuItem
+                          key={`${user.userType}-${user.id}`}
+                          onClick={() => handleUserSelection(user)}
+                          className="gap-2"
+                        >
+                          <UserAvatar
+                            prenom={user.prenom}
+                            nom={user.nom}
+                            userType={user.userType}
+                            size="sm"
+                          />
+                          <span>
+                            {user.prenom} {user.nom} ({user.userType === 'manager' ? 'Manager' : 'Commercial'})
+                          </span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -200,15 +355,54 @@ export default function Enregistrement() {
                 disabled={!selectedCommercialForRecordings}
               />
             </div>
+
+            <DateRangeFilter
+              dateFrom={dateFrom}
+              dateTo={dateTo}
+              onDateFromChange={setDateFrom}
+              onDateToChange={setDateTo}
+              onClear={() => {
+                setDateFrom(null)
+                setDateTo(null)
+              }}
+            />
+
+            <Badge variant="outline" className="h-9 px-3 shrink-0">
+              {filteredRecordingsCount} enregistrement(s)
+            </Badge>
           </div>
 
-          {loadingRecordings ? (
-            <div className="flex items-center justify-center py-8">
+          {selectedCount > 0 && (
+            <div className="flex items-center justify-between px-3 py-2 bg-muted/60 border border-border/60 rounded-lg mb-2">
+              <span className="text-sm font-medium">{selectedCount} sélectionné(s)</span>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-                <span>Chargement des enregistrements...</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="h-7 text-xs gap-1"
+                >
+                  <X className="w-3 h-3" /> Désélectionner
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleBulkDownload}
+                  disabled={bulkDownloading}
+                  className="h-7 text-xs gap-1"
+                >
+                  {bulkDownloading ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <Download className="w-3 h-3" />
+                  )}
+                  Télécharger
+                </Button>
               </div>
             </div>
+          )}
+
+          {loadingRecordings ? (
+            <TableSkeleton rows={6} />
           ) : !selectedCommercialForRecordings ? (
             <div className="text-center py-8 text-muted-foreground">
               <User className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -225,74 +419,121 @@ export default function Enregistrement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Fichier</TableHead>
-                      <TableHead>Date & Heure</TableHead>
-                      <TableHead>Taille</TableHead>
-                      <TableHead className="text-center`">Actions</TableHead>
+                      <TableHead className="w-10">
+                        <input
+                          type="checkbox"
+                          checked={
+                            currentRecordings.length > 0 &&
+                            currentRecordings.every(r => selectedRecordingIds.has(r.id))
+                          }
+                          ref={el => {
+                            if (el) {
+                              el.indeterminate =
+                                selectedCount > 0 &&
+                                !currentRecordings.every(r => selectedRecordingIds.has(r.id))
+                            }
+                          }}
+                          onChange={toggleSelectAll}
+                          className="w-4 h-4 rounded border-input cursor-pointer accent-primary"
+                          aria-label="Tout sélectionner"
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableTableHeader
+                          label="Fichier"
+                          sortKey="filename"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableTableHeader
+                          label="Date & Heure"
+                          sortKey="date"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                        />
+                      </TableHead>
+                      <TableHead>
+                        <SortableTableHeader
+                          label="Taille"
+                          sortKey="size"
+                          currentSort={sortConfig}
+                          onSort={handleSort}
+                        />
+                      </TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {currentRecordings.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           Aucun enregistrement trouvé
                         </TableCell>
                       </TableRow>
                     ) : (
                       currentRecordings.map(recording => (
-                        <React.Fragment key={recording.id}>
-                          <TableRow>
-                            <TableCell className="font-medium">
+                        <TableRow
+                          key={recording.id}
+                          onClick={() => openRecordingModal(recording)}
+                          className="cursor-pointer"
+                        >
+                          <TableCell onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedRecordingIds.has(recording.id)}
+                              onChange={() => toggleRecordingSelection(recording.id)}
+                              onClick={e => e.stopPropagation()}
+                              className="w-4 h-4 rounded border-input cursor-pointer accent-primary"
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-green-500" />
-                                {recording.filename}
+                                <div
+                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                    Date.now() - new Date(recording.lastModified).getTime() <
+                                    24 * 60 * 60 * 1000
+                                      ? 'bg-green-500'
+                                      : 'bg-muted-foreground/20'
+                                  }`}
+                                />
+                                <span className="truncate">{recording.filename}</span>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span>{recording.date}</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {recording.time}
-                                </span>
+                              <div>
+                                <RecordingStatusBadge lastModified={recording.lastModified} />
                               </div>
-                            </TableCell>
-                            <TableCell>{recording.duration}</TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center gap-2 justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handlePlayRecording(recording)}
-                                  disabled={!recording.url && !recording.rawUrl}
-                                >
-                                  <Play className="w-4 h-4 mr-1" />
-                                  {playingRecording?.id === recording.id ? 'Masquer' : 'Écouter'}
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDownloadRecording(recording)}
-                                  disabled={!recording.url && !recording.rawUrl}
-                                >
-                                  <Download className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                          {playingRecording?.id === recording.id && playingRecording?.url && (
-                            <TableRow className="bg-muted/20 hover:bg-muted/20">
-                              <TableCell colSpan={4} className="p-2 sm:p-4">
-                                <div className="w-full max-w-full">
-                                  <AudioPlayer
-                                    src={playingRecording.url}
-                                    title={`Enregistrement - ${playingRecording.filename}`}
-                                    onDownload={() => handleDownloadRecording(playingRecording)}
-                                  />
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </React.Fragment>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span>{recording.date}</span>
+                              <span className="text-sm text-muted-foreground">{recording.time}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{recording.duration}</TableCell>
+                          <TableCell className="text-right" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center gap-2 justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openRecordingModal(recording)}
+                              >
+                                <Play className="w-4 h-4 mr-1" />
+                                Détail
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadRecording(recording)}
+                                disabled={!recording.url && !recording.rawUrl}
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
                   </TableBody>
@@ -316,6 +557,47 @@ export default function Enregistrement() {
           )}
         </CardContent>
       </Card>
+
+      <RecordingDetailModal
+        open={!!currentModalRecording}
+        onOpenChange={o => {
+          if (!o) closeRecordingModal()
+        }}
+        recording={currentModalRecording}
+        currentIndex={currentModalRecording ? currentRecordings.indexOf(currentModalRecording) : 0}
+        totalCount={currentRecordings.length}
+        hasNext={hasNextRecording}
+        hasPrevious={hasPreviousRecording}
+        onNext={goToNextRecording}
+        onPrevious={goToPreviousRecording}
+        onDownload={handleDownloadRecording}
+      />
+
+      <RecordingDetailModal
+        open={!!recentModalRecording}
+        onOpenChange={o => {
+          if (!o) {
+            setRecentModalRecording(null)
+            setRecentModalIndex(null)
+          }
+        }}
+        recording={recentModalRecording}
+        currentIndex={recentModalIndex ?? 0}
+        totalCount={filteredRecentRecordings.length}
+        hasNext={recentModalIndex !== null && recentModalIndex < filteredRecentRecordings.length - 1}
+        hasPrevious={recentModalIndex !== null && recentModalIndex > 0}
+        onNext={() => {
+          const next = (recentModalIndex ?? 0) + 1
+          setRecentModalIndex(next)
+          setRecentModalRecording(filteredRecentRecordings[next])
+        }}
+        onPrevious={() => {
+          const prev = (recentModalIndex ?? 0) - 1
+          setRecentModalIndex(prev)
+          setRecentModalRecording(filteredRecentRecordings[prev])
+        }}
+        onDownload={handleDownloadRecording}
+      />
     </div>
   )
 }
