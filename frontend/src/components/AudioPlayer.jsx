@@ -14,6 +14,52 @@ import WaveSurfer from 'wavesurfer.js'
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2]
 
+function detectSpeechRegions(audioBuffer, windowSec = 0.1, gapMerge = 0.35) {
+  const channelData = audioBuffer.getChannelData(0)
+  const sampleRate = audioBuffer.sampleRate
+  const samplesPerWindow = Math.floor(sampleRate * windowSec)
+
+  const rmsValues = []
+  for (let i = 0; i < channelData.length; i += samplesPerWindow) {
+    const end = Math.min(i + samplesPerWindow, channelData.length)
+    let sum = 0
+    for (let j = i; j < end; j++) sum += channelData[j] * channelData[j]
+    rmsValues.push(Math.sqrt(sum / (end - i)))
+  }
+
+  const sorted = [...rmsValues].sort((a, b) => a - b)
+  const median = sorted[Math.floor(sorted.length * 0.5)]
+  const peak = sorted[sorted.length - 1]
+  const threshold = Math.max(median * 2.5, peak * 0.04, 0.005)
+
+  const raw = []
+  let inSpeech = false
+  let start = 0
+
+  for (let i = 0; i < rmsValues.length; i++) {
+    const time = (i * samplesPerWindow) / sampleRate
+    if (rmsValues[i] > threshold && !inSpeech) {
+      inSpeech = true
+      start = time
+    } else if (rmsValues[i] <= threshold && inSpeech) {
+      inSpeech = false
+      raw.push({ start, end: time })
+    }
+  }
+  if (inSpeech) raw.push({ start, end: channelData.length / sampleRate })
+
+  const merged = []
+  for (const r of raw) {
+    if (merged.length > 0 && r.start - merged[merged.length - 1].end < gapMerge) {
+      merged[merged.length - 1].end = r.end
+    } else {
+      merged.push({ ...r })
+    }
+  }
+
+  return merged.filter(r => r.end - r.start > 0.15)
+}
+
 function AudioPlayer({ src, title, onDownload }) {
   const waveformRef = useRef(null)
   const wsRef = useRef(null)
@@ -27,6 +73,7 @@ function AudioPlayer({ src, title, onDownload }) {
   const [volume, setVolume] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [speechOverlays, setSpeechOverlays] = useState([])
 
   useEffect(() => {
     if (!waveformRef.current || !src) return
@@ -48,6 +95,8 @@ function AudioPlayer({ src, title, onDownload }) {
     }
     const primary = resolveColor('primary', '#818cf8')
     const mutedFg = resolveColor('muted-foreground', 'rgba(160,160,160,0.5)')
+
+    setSpeechOverlays([])
 
     const ws = WaveSurfer.create({
       container: waveformRef.current,
@@ -71,6 +120,17 @@ function AudioPlayer({ src, title, onDownload }) {
       setIsReady(true)
       setIsLoading(false)
       ws.setVolume(1)
+
+      const decoded = ws.getDecodedData()
+      if (decoded && dur > 0) {
+        const parts = detectSpeechRegions(decoded)
+        setSpeechOverlays(
+          parts.map(r => ({
+            left: (r.start / dur) * 100,
+            width: ((r.end - r.start) / dur) * 100,
+          }))
+        )
+      }
     })
 
     ws.on('timeupdate', (time) => {
@@ -190,6 +250,17 @@ function AudioPlayer({ src, title, onDownload }) {
           </div>
         )}
         <div ref={waveformRef} className="w-full" />
+        {speechOverlays.map((r, i) => (
+          <div
+            key={i}
+            className="absolute top-0 h-full rounded-sm pointer-events-none"
+            style={{
+              left: `${r.left}%`,
+              width: `${r.width}%`,
+              backgroundColor: 'rgba(239, 68, 68, 0.18)',
+            }}
+          />
+        ))}
       </div>
 
       {/* Controls */}
