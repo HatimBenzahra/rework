@@ -59,7 +59,7 @@ function UserCard({
     <div
       className={`border rounded-xl transition-all duration-200 ${
         isListening
-          ? 'border-red-500/30 bg-red-500/[0.03]'
+          ? 'border-red-500/30 bg-red-500/3'
           : 'border-border/60 hover:border-border hover:shadow-sm'
       }`}
     >
@@ -290,7 +290,7 @@ export default function EcouteLive() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card
-          className={`border-border/60 ${activeListeningRooms.size > 0 ? 'bg-red-500/[0.04]' : ''}`}
+          className={`border-border/60 ${activeListeningRooms.size > 0 ? 'bg-red-500/4' : ''}`}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -316,7 +316,7 @@ export default function EcouteLive() {
         </Card>
 
         <Card
-          className={`border-border/60 ${onlineCount > 0 ? 'bg-green-500/[0.04]' : ''}`}
+          className={`border-border/60 ${onlineCount > 0 ? 'bg-green-500/4' : ''}`}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
