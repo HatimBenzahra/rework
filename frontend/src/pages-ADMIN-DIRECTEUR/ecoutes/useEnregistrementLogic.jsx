@@ -103,7 +103,6 @@ export function useEnregistrementLogic() {
 
       const sortedRecentRecordings = mergedRecordings
         .sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime())
-        .slice(0, 9)
 
       setRecentRecordings(sortedRecentRecordings)
       setRecentRecordingsError(

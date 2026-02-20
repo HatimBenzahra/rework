@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +31,7 @@ import {
 import { Pagination } from '@/components/Pagination'
 import { TableSkeleton } from '@/components/LoadingSkeletons'
 import { Clock, Mic, Download, X, Loader2, Play, User, ChevronDown, XCircle } from 'lucide-react'
+import { usePagination } from '@/hooks/utils/data/usePagination'
 import { useEnregistrementLogic } from './useEnregistrementLogic'
 import RecordingDetailModal from './RecordingDetailModal'
 import {
@@ -148,6 +149,24 @@ export default function Enregistrement() {
     })
   }, [recentRecordings, recentPeriod])
 
+  const {
+    currentItems: currentRecentRecordings,
+    currentPage: recentCurrentPage,
+    totalPages: recentTotalPages,
+    startIndex: recentStartIndex,
+    endIndex: recentEndIndex,
+    goToNextPage: goToNextRecentPage,
+    goToPreviousPage: goToPreviousRecentPage,
+    hasNextPage: hasNextRecentPage,
+    hasPreviousPage: hasPreviousRecentPage,
+  } = usePagination(filteredRecentRecordings, 9)
+
+  const openRecentModal = useCallback((rec) => {
+    const idx = filteredRecentRecordings.findIndex(r => r.id === rec.id)
+    setRecentModalRecording(rec)
+    setRecentModalIndex(idx)
+  }, [filteredRecentRecordings])
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -248,19 +267,29 @@ export default function Enregistrement() {
               ))}
             </div>
           ) : filteredRecentRecordings.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredRecentRecordings.slice(0, 9).map(recording => (
-                <RecordingCard
-                  key={recording.id}
-                  recording={recording}
-                  onPlay={rec => {
-                    const idx = filteredRecentRecordings.findIndex(r => r.id === rec.id)
-                    setRecentModalRecording(rec)
-                    setRecentModalIndex(idx)
-                  }}
-                  onDownload={handleDownloadRecording}
-                />
-              ))}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {currentRecentRecordings.map(recording => (
+                  <RecordingCard
+                    key={recording.id}
+                    recording={recording}
+                    onPlay={openRecentModal}
+                    onDownload={handleDownloadRecording}
+                  />
+                ))}
+              </div>
+              <Pagination
+                currentPage={recentCurrentPage}
+                totalPages={recentTotalPages}
+                startIndex={recentStartIndex}
+                endIndex={recentEndIndex}
+                totalItems={filteredRecentRecordings.length}
+                itemLabel="enregistrements"
+                onPrevious={goToPreviousRecentPage}
+                onNext={goToNextRecentPage}
+                hasPreviousPage={hasPreviousRecentPage}
+                hasNextPage={hasNextRecentPage}
+              />
             </div>
           ) : (
             <div className="text-center py-10 text-muted-foreground">
