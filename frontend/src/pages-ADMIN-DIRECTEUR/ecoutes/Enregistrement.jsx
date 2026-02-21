@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -40,6 +40,7 @@ import {
   RecordingCard,
   SortableTableHeader,
   DateRangeFilter,
+  SmartSearchBar,
 } from './EnregistrementComponents'
 
 export default function Enregistrement() {
@@ -96,13 +97,24 @@ export default function Enregistrement() {
 
   const [recentModalRecording, setRecentModalRecording] = useState(null)
   const [recentModalIndex, setRecentModalIndex] = useState(null)
-  const [recentPeriod, setRecentPeriod] = useState('all')
+  const [smartFilters, setSmartFilters] = useState({
+    commercial: null,
+    period: null,
+    searchText: '',
+  })
 
   const groupedUsers = useMemo(() => {
     const managers = filteredUsers.filter(u => u.userType === 'manager')
     const commercials = filteredUsers.filter(u => u.userType !== 'manager')
     return { managers, commercials }
   }, [filteredUsers])
+
+  useEffect(() => {
+    if (smartFilters.commercial) {
+      const match = filteredUsers.find(u => u.id === smartFilters.commercial.id)
+      if (match) handleUserSelection(match)
+    }
+  }, [smartFilters.commercial])
 
   const recentPeriodOptions = [
     { value: 'all', label: 'Tous' },
@@ -113,41 +125,62 @@ export default function Enregistrement() {
   ]
 
   const filteredRecentRecordings = useMemo(() => {
-    if (recentPeriod === 'all') return recentRecordings
+    let result = recentRecordings
 
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    let startDate
-    let endDate = now
+    if (smartFilters.period) {
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      let startDate
+      let endDate = now
 
-    switch (recentPeriod) {
-      case 'today':
-        startDate = today
-        break
-      case 'yesterday': {
-        startDate = new Date(today.getTime() - 24 * 60 * 60 * 1000)
-        endDate = today
-        break
+      switch (smartFilters.period) {
+        case 'today':
+          startDate = today
+          break
+        case 'yesterday': {
+          startDate = new Date(today.getTime() - 24 * 60 * 60 * 1000)
+          endDate = today
+          break
+        }
+        case 'week': {
+          const day = today.getDay()
+          const mondayOffset = day === 0 ? 6 : day - 1
+          startDate = new Date(today)
+          startDate.setDate(today.getDate() - mondayOffset)
+          break
+        }
+        case 'month':
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1)
+          break
+        default:
+          break
       }
-      case 'week': {
-        const day = today.getDay()
-        const mondayOffset = day === 0 ? 6 : day - 1
-        startDate = new Date(today)
-        startDate.setDate(today.getDate() - mondayOffset)
-        break
+
+      if (startDate) {
+        result = result.filter(r => {
+          const d = new Date(r.lastModified)
+          return d >= startDate && d < endDate
+        })
       }
-      case 'month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1)
-        break
-      default:
-        return recentRecordings
     }
 
-    return recentRecordings.filter(r => {
-      const d = new Date(r.lastModified)
-      return d >= startDate && d < endDate
-    })
-  }, [recentRecordings, recentPeriod])
+    if (smartFilters.commercial) {
+      const { prenom, nom, id } = smartFilters.commercial
+      result = result.filter(r => {
+        if (r.userId && r.userId === id) return true
+        const fullName = `${r.userPrenom || ''} ${r.userNom || ''}`.trim().toLowerCase()
+        const filterName = `${prenom || ''} ${nom || ''}`.trim().toLowerCase()
+        return fullName === filterName
+      })
+    }
+
+    if (smartFilters.searchText) {
+      const q = smartFilters.searchText.toLowerCase()
+      result = result.filter(r => r.filename?.toLowerCase().includes(q))
+    }
+
+    return result
+  }, [recentRecordings, smartFilters])
 
   const {
     currentItems: currentRecentRecordings,
@@ -229,6 +262,13 @@ export default function Enregistrement() {
         </div>
       </div>
 
+      <SmartSearchBar
+        allUsers={filteredUsers}
+        activeFilters={smartFilters}
+        onFilterChange={setSmartFilters}
+        totalResults={filteredRecentRecordings.length}
+      />
+
       <Card className="border-border/60">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
@@ -239,19 +279,29 @@ export default function Enregistrement() {
               </CardTitle>
               <CardDescription className="mt-1">Derniers enregistrements de tous vos commerciaux</CardDescription>
               <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                {recentPeriodOptions.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setRecentPeriod(opt.value)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                      recentPeriod === opt.value
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                {recentPeriodOptions.map(opt => {
+                  const isActive = opt.value === 'all'
+                    ? smartFilters.period === null
+                    : smartFilters.period === opt.value
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() =>
+                        setSmartFilters(prev => ({
+                          ...prev,
+                          period: opt.value === 'all' ? null : opt.value,
+                        }))
+                      }
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
             <Badge variant="outline" className="h-6 px-2 shrink-0">
@@ -295,9 +345,9 @@ export default function Enregistrement() {
             <div className="text-center py-10 text-muted-foreground">
               <Clock className="w-10 h-10 mx-auto mb-2 opacity-30" />
               <p className="font-medium">
-                {recentPeriod === 'all'
-                  ? 'Aucun enregistrement récent'
-                  : 'Aucun enregistrement pour cette période'}
+                {smartFilters.period || smartFilters.commercial || smartFilters.searchText
+                  ? 'Aucun enregistrement ne correspond aux filtres actifs'
+                  : 'Aucun enregistrement récent'}
               </p>
             </div>
           )}

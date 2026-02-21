@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, CalendarDays, X } from 'lucide-react'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, CalendarDays, X, Search } from 'lucide-react'
 
 export function formatRelativeDate(dateString) {
   if (!dateString) return ''
@@ -163,6 +163,258 @@ export function DateRangeFilter({ dateFrom, dateTo, onDateFromChange, onDateToCh
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+const PERIOD_OPTIONS = [
+  { value: 'today', label: "Aujourd'hui" },
+  { value: 'yesterday', label: 'Hier' },
+  { value: 'week', label: 'Cette semaine' },
+  { value: 'month', label: 'Ce mois' },
+]
+
+export function SmartSearchBar({ allUsers, activeFilters, onFilterChange, totalResults }) {
+  const [inputValue, setInputValue] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const containerRef = useRef(null)
+
+  const matchedUsers = useMemo(() => {
+    if (!inputValue.trim()) return []
+    const q = inputValue.toLowerCase()
+    return allUsers
+      .filter(u =>
+        u.prenom?.toLowerCase().includes(q) ||
+        u.nom?.toLowerCase().includes(q) ||
+        `${u.prenom} ${u.nom}`.toLowerCase().includes(q)
+      )
+      .slice(0, 6)
+  }, [inputValue, allUsers])
+
+  const matchedPeriods = useMemo(() => {
+    if (!inputValue.trim()) return PERIOD_OPTIONS
+    const q = inputValue.toLowerCase()
+    return PERIOD_OPTIONS.filter(p => p.label.toLowerCase().includes(q))
+  }, [inputValue])
+
+  const showSearchOption = inputValue.trim().length > 0
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function handleInputChange(e) {
+    setInputValue(e.target.value)
+    setIsOpen(true)
+  }
+
+  function handleInputFocus() {
+    setIsOpen(true)
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Escape') {
+      setIsOpen(false)
+      setInputValue('')
+    }
+    if (e.key === 'Enter' && inputValue.trim()) {
+      onFilterChange({ ...activeFilters, searchText: inputValue.trim() })
+      setInputValue('')
+      setIsOpen(false)
+    }
+  }
+
+  function selectUser(user) {
+    onFilterChange({ ...activeFilters, commercial: user })
+    setInputValue('')
+    setIsOpen(false)
+  }
+
+  function selectPeriod(period) {
+    onFilterChange({ ...activeFilters, period: period.value })
+    setInputValue('')
+    setIsOpen(false)
+  }
+
+  function applySearchText() {
+    if (inputValue.trim()) {
+      onFilterChange({ ...activeFilters, searchText: inputValue.trim() })
+      setInputValue('')
+      setIsOpen(false)
+    }
+  }
+
+  function removeFilter(key) {
+    onFilterChange({ ...activeFilters, [key]: key === 'searchText' ? '' : null })
+  }
+
+  const hasActiveFilters = activeFilters.commercial || activeFilters.period || activeFilters.searchText
+  const activePeriodLabel = PERIOD_OPTIONS.find(p => p.value === activeFilters.period)?.label
+
+  const showDropdown = isOpen && (matchedUsers.length > 0 || matchedPeriods.length > 0 || showSearchOption)
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div
+        className={`flex items-center h-11 rounded-xl border bg-card shadow-sm transition-all duration-200 ${
+          isOpen
+            ? 'ring-2 ring-primary/20 border-primary/40'
+            : 'border-border/60 hover:border-border/80'
+        }`}
+      >
+        <div className="flex items-center pl-3.5 pr-2 text-muted-foreground shrink-0">
+          <Search className="w-4 h-4" />
+        </div>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onKeyDown={handleKeyDown}
+          placeholder="Rechercher par commercial, période, nom de fichier..."
+          className="flex-1 h-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/55 focus:outline-none"
+        />
+        {totalResults !== undefined && (
+          <div className="flex items-center pr-3.5 pl-2 shrink-0">
+            <span className="text-xs text-muted-foreground/55 font-medium tabular-nums">
+              {totalResults} résultat{totalResults !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {showDropdown && (
+        <div className="absolute top-full left-0 right-0 mt-2 z-50 rounded-xl border border-border/60 bg-card shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="max-h-72 overflow-y-auto p-1.5 space-y-0.5">
+            {matchedUsers.length > 0 && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold px-3 py-1.5">
+                  Commerciaux
+                </div>
+                {matchedUsers.map(user => (
+                  <button
+                    key={user.id}
+                    onMouseDown={e => { e.preventDefault(); selectUser(user) }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/60 cursor-pointer rounded-lg transition-colors text-left ${
+                      activeFilters.commercial?.id === user.id ? 'bg-primary/5' : ''
+                    }`}
+                  >
+                    <UserAvatar prenom={user.prenom} nom={user.nom} userType={user.userType} size="sm" />
+                    <span className="flex-1 text-sm truncate">
+                      {user.prenom} {user.nom}
+                    </span>
+                    <Badge
+                      variant={user.userType === 'manager' ? 'secondary' : 'outline'}
+                      className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                    >
+                      {user.userType === 'manager' ? 'Manager' : 'Commercial'}
+                    </Badge>
+                    {activeFilters.commercial?.id === user.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {matchedPeriods.length > 0 && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold px-3 py-1.5">
+                  Période
+                </div>
+                {matchedPeriods.map(period => (
+                  <button
+                    key={period.value}
+                    onMouseDown={e => { e.preventDefault(); selectPeriod(period) }}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/60 cursor-pointer rounded-lg transition-colors text-left ${
+                      activeFilters.period === period.value ? 'bg-primary/5' : ''
+                    }`}
+                  >
+                    <div className="w-7 h-7 rounded-full bg-violet-500/10 flex items-center justify-center shrink-0">
+                      <CalendarDays className="w-3.5 h-3.5 text-violet-600" />
+                    </div>
+                    <span className="flex-1 text-sm">{period.label}</span>
+                    {activeFilters.period === period.value && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {showSearchOption && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold px-3 py-1.5">
+                  Recherche libre
+                </div>
+                <button
+                  onMouseDown={e => { e.preventDefault(); applySearchText() }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/60 cursor-pointer rounded-lg transition-colors text-left"
+                >
+                  <div className="w-7 h-7 rounded-full bg-muted/80 flex items-center justify-center shrink-0">
+                    <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                  </div>
+                  <span className="text-sm">
+                    Rechercher <span className="font-medium">"{inputValue}"</span> dans les fichiers
+                  </span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {hasActiveFilters && (
+        <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+          {activeFilters.commercial && (
+            <span className="h-7 rounded-full pl-1.5 pr-1 text-xs font-medium inline-flex items-center gap-1.5 bg-blue-500/10 text-blue-700 border border-blue-500/20">
+              <span className="w-5 h-5 rounded-full bg-blue-500/20 inline-flex items-center justify-center text-[9px] font-bold text-blue-700 shrink-0">
+                {(activeFilters.commercial.prenom?.[0] || '').toUpperCase()}{(activeFilters.commercial.nom?.[0] || '').toUpperCase()}
+              </span>
+              {activeFilters.commercial.prenom} {activeFilters.commercial.nom}
+              <button
+                onClick={() => removeFilter('commercial')}
+                className="w-4 h-4 rounded-full hover:bg-black/10 inline-flex items-center justify-center transition-colors"
+                aria-label="Supprimer le filtre commercial"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          )}
+          {activeFilters.period && (
+            <span className="h-7 rounded-full pl-2.5 pr-1 text-xs font-medium inline-flex items-center gap-1.5 bg-violet-500/10 text-violet-700 border border-violet-500/20">
+              <CalendarDays className="w-3 h-3 shrink-0" />
+              {activePeriodLabel}
+              <button
+                onClick={() => removeFilter('period')}
+                className="w-4 h-4 rounded-full hover:bg-black/10 inline-flex items-center justify-center transition-colors"
+                aria-label="Supprimer le filtre période"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          )}
+          {activeFilters.searchText && (
+            <span className="h-7 rounded-full pl-2.5 pr-1 text-xs font-medium inline-flex items-center gap-1.5 bg-muted text-muted-foreground border border-border/60">
+              <Search className="w-3 h-3 shrink-0" />
+              "{activeFilters.searchText}"
+              <button
+                onClick={() => removeFilter('searchText')}
+                className="w-4 h-4 rounded-full hover:bg-black/10 inline-flex items-center justify-center transition-colors"
+                aria-label="Supprimer la recherche textuelle"
+              >
+                <X className="w-2.5 h-2.5" />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
