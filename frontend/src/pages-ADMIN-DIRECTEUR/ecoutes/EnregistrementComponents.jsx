@@ -1,7 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronUp, ChevronDown, ChevronsUpDown, Download, CalendarDays, X, Search } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { ChevronUp, ChevronDown, ChevronsUpDown, Download, CalendarDays, X, Search, HelpCircle, User, Keyboard, FileText } from 'lucide-react'
 
 export function formatRelativeDate(dateString) {
   if (!dateString) return ''
@@ -177,6 +184,7 @@ const PERIOD_OPTIONS = [
 export function SmartSearchBar({ allUsers, activeFilters, onFilterChange, totalResults }) {
   const [inputValue, setInputValue] = useState('')
   const [isOpen, setIsOpen] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
   const containerRef = useRef(null)
 
   const matchedUsers = useMemo(() => {
@@ -280,13 +288,21 @@ export function SmartSearchBar({ allUsers, activeFilters, onFilterChange, totalR
           placeholder="Rechercher par commercial, période, nom de fichier..."
           className="flex-1 h-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/55 focus:outline-none"
         />
-        {totalResults !== undefined && (
-          <div className="flex items-center pr-3.5 pl-2 shrink-0">
+        <div className="flex items-center gap-1.5 pr-3 pl-2 shrink-0">
+          {totalResults !== undefined && (
             <span className="text-xs text-muted-foreground/55 font-medium tabular-nums">
               {totalResults} résultat{totalResults !== 1 ? 's' : ''}
             </span>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); setShowHelp(true) }}
+            className="w-6 h-6 rounded-full inline-flex items-center justify-center text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/60 transition-colors"
+            aria-label="Aide recherche"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {showDropdown && (
@@ -415,6 +431,106 @@ export function SmartSearchBar({ allUsers, activeFilters, onFilterChange, totalR
           )}
         </div>
       )}
+
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Search className="w-4 h-4 text-primary" />
+              </div>
+              Guide de recherche
+            </DialogTitle>
+            <DialogDescription>
+              Exploitez la barre de recherche pour filtrer rapidement vos enregistrements.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <User className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Par commercial</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Tapez un nom ou prénom pour filtrer les enregistrements d'un commercial ou manager spécifique.
+                </p>
+                <div className="flex gap-1.5 mt-2">
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">Ahmed</span>
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">Dupont</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full h-px bg-border/60" />
+
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                <CalendarDays className="w-4 h-4 text-violet-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Par période</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Sélectionnez une période prédéfinie pour afficher uniquement les enregistrements correspondants.
+                </p>
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">Aujourd'hui</span>
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">Hier</span>
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">Cette semaine</span>
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">Ce mois</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full h-px bg-border/60" />
+
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Par nom de fichier</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Tapez du texte libre puis appuyez sur Entrée pour filtrer par nom de fichier d'enregistrement.
+                </p>
+                <div className="flex gap-1.5 mt-2">
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">appel-client</span>
+                  <span className="px-2 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">2025-01</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full h-px bg-border/60" />
+
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                <Keyboard className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Raccourcis clavier</p>
+                <div className="flex flex-col gap-1.5 mt-1.5">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] font-mono font-medium">Entrée</kbd>
+                    <span>Appliquer la recherche texte</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted text-[10px] font-mono font-medium">Échap</kbd>
+                    <span>Fermer les suggestions</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-muted/50 border border-border/40 p-3 mt-1">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Les filtres sont cumulables : vous pouvez combiner un commercial, une période et une recherche texte simultanément.
+              Cliquez sur le <X className="w-3 h-3 inline-block align-text-bottom" /> d'un filtre actif pour le retirer.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
