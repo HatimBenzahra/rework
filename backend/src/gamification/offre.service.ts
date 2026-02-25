@@ -13,7 +13,7 @@ export class OffreService {
   ) {}
 
   // ============================================================================
-  // SYNCHRO — Upsert offres depuis WinLead+ (ne touche jamais aux points)
+  // SYNCHRO — Upsert offres depuis WinLead+
   // ============================================================================
 
   async syncOffres(
@@ -32,8 +32,12 @@ export class OffreService {
 
       const existing = await this.prisma.offre.findUnique({
         where: { externalId: item.id },
-        select: { id: true },
+        select: { id: true, points: true, badgeProductKey: true },
       });
+
+      const prixBase = item.prix_base ?? null;
+      const defaultPoints = Math.max(0, Math.round(prixBase ?? 0));
+      const inferredBadgeProductKey = this.inferBadgeProductKey(item);
 
       const syncData = {
         nom: (item.nom || '').trim(),
@@ -41,7 +45,7 @@ export class OffreService {
         categorie: (item.categorie || '').trim(),
         fournisseur: (item.fournisseur || '').trim(),
         logoUrl: item.logo_url ?? null,
-        prixBase: item.prix_base ?? null,
+        prixBase,
         features: item.features ?? null,
         popular: item.popular ?? false,
         rating: item.rating ?? null,
@@ -49,14 +53,23 @@ export class OffreService {
         syncedAt: new Date(),
       };
 
+      const updateData = {
+        ...syncData,
+        ...(existing && existing.points === 0 ? { points: defaultPoints } : {}),
+        ...(existing && !existing.badgeProductKey && inferredBadgeProductKey
+          ? { badgeProductKey: inferredBadgeProductKey }
+          : {}),
+      };
+
       await this.prisma.offre.upsert({
         where: { externalId: item.id },
         create: {
           externalId: item.id,
           ...syncData,
-          points: 0, // L'admin configurera les points
+          points: defaultPoints,
+          badgeProductKey: inferredBadgeProductKey,
         },
-        update: syncData, // points: PAS touché — c'est l'admin qui les gère
+        update: updateData,
       });
 
       if (existing) {
@@ -136,5 +149,55 @@ export class OffreService {
       }
     }
     return { updated, total: offres.length };
+  }
+
+  private inferBadgeProductKey(item: any): string | null {
+    const source = `${item.nom ?? ''} ${item.categorie ?? ''} ${item.description ?? ''} ${item.fournisseur ?? ''}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+    if (source.includes('fibre') || source.includes('fiber')) return 'FIBRE';
+    if (
+      source.includes('mobile') ||
+      source.includes('telephonie') ||
+      source.includes('forfait') ||
+      source.includes('sim')
+    ) {
+      return 'MOBILE';
+    }
+    if (
+      source.includes('depanssur') ||
+      source.includes('depannage') ||
+      source.includes('assistance')
+    ) {
+      return 'DEPANSSUR';
+    }
+    if (
+      source.includes('energie') ||
+      source.includes('electricite') ||
+      source.includes('elec') ||
+      source.includes('gaz')
+    ) {
+      return 'ELEC_GAZ';
+    }
+    if (source.includes('conciergerie')) return 'CONCIERGERIE';
+    if (
+      source.includes('mondial tv') ||
+      source.includes('divertissement') ||
+      source.includes('television') ||
+      source.includes('tv')
+    ) {
+      return 'MONDIAL_TV';
+    }
+    if (
+      source.includes('assurance') ||
+      source.includes('sante') ||
+      source.includes('mutuelle')
+    ) {
+      return 'ASSURANCE';
+    }
+
+    return null;
   }
 }

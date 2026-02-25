@@ -33,6 +33,7 @@ const EcouteLive = lazy(() => import('@/pages-ADMIN-DIRECTEUR/ecoutes/EcouteLive
 const Enregistrement = lazy(() => import('@/pages-ADMIN-DIRECTEUR/ecoutes/Enregistrement'))
 const Statistiques = lazy(() => import('@/pages-ADMIN-DIRECTEUR/statistiques/Statistiques'))
 const Gestion = lazy(() => import('@/pages-ADMIN-DIRECTEUR/gestion/Gestion'))
+const Gamification = lazy(() => import('@/pages-ADMIN-DIRECTEUR/gamification/Gamification'))
 
 // Lazy load commercial pages
 const CommercialLayoutComponent = lazy(
@@ -71,6 +72,7 @@ function AdminLayout() {
     'gps-tracking': { label: 'Suivi GPS', href: '/gps-tracking' },
     ecoutes: { label: 'Écoutes', href: '/ecoutes/live' },
     statistiques: { label: 'Statistiques', href: '/statistiques' },
+    gamification: { label: 'Gamification', href: '/gamification' },
     assignations: { label: 'Assignations en cours', href: '/zones/assignations' },
     historique: { label: 'Historique', href: '/zones/historique' },
   }
@@ -157,6 +159,7 @@ function AdminLayout() {
                   <Route path="/ecoutes/live" element={<EcouteLive />} />
                   <Route path="/ecoutes/enregistrement" element={<Enregistrement />} />
                   <Route path="/statistiques" element={<Statistiques />} />
+                  <Route path="/gamification/*" element={<Gamification />} />
                 </Routes>
               </Suspense>
             </div>

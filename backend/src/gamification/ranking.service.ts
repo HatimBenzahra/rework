@@ -26,7 +26,10 @@ export class RankingService {
   ): Promise<{ computed: number }> {
     // 1. Récupérer tous les commerciaux actifs
     const commercials = await this.prisma.commercial.findMany({
-      where: { status: 'ACTIF' },
+      where: {
+        status: 'ACTIF',
+        winleadPlusId: { not: null },
+      },
       select: { id: true },
     });
 
@@ -116,7 +119,13 @@ export class RankingService {
   /** Récupérer le classement complet d'une période */
   async getRanking(period: RankPeriod, periodKey: string) {
     return this.prisma.rankSnapshot.findMany({
-      where: { period, periodKey },
+      where: {
+        period,
+        periodKey,
+        commercial: {
+          winleadPlusId: { not: null },
+        },
+      },
       include: {
         commercial: {
           select: { id: true, nom: true, prenom: true },

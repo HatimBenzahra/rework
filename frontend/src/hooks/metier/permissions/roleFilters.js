@@ -23,6 +23,7 @@ export const PERMISSIONS = {
     'gps-tracking': { view: true, add: false, edit: false, delete: false },
     ecoutes: { view: true, add: true, edit: true, delete: true },
     gestion: { view: true, add: true, edit: true, delete: true },
+    gamification: { view: true, add: true, edit: true, delete: false },
   },
   [ROLES.DIRECTEUR]: {
     dashboard: { view: true, add: false, edit: false, delete: false },
@@ -35,6 +36,7 @@ export const PERMISSIONS = {
     'gps-tracking': { view: true, add: false, edit: false, delete: false },
     ecoutes: { view: true, add: true, edit: true, delete: true },
     gestion: { view: true, add: false, edit: true, delete: false },
+    gamification: { view: true, add: false, edit: true, delete: false },
   },
   [ROLES.MANAGER]: {
     dashboard: { view: false, add: false, edit: false, delete: false },
@@ -47,6 +49,7 @@ export const PERMISSIONS = {
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
     ecoutes: { view: false, add: false, edit: false, delete: false },
     gestion: { view: false, add: false, edit: false, delete: false },
+    gamification: { view: false, add: false, edit: false, delete: false },
   },
   [ROLES.COMMERCIAL]: {
     dashboard: { view: false, add: false, edit: false, delete: false },
@@ -59,6 +62,7 @@ export const PERMISSIONS = {
     'gps-tracking': { view: false, add: false, edit: false, delete: false },
     ecoutes: { view: false, add: false, edit: false, delete: false },
     gestion: { view: false, add: false, edit: false, delete: false },
+    gamification: { view: false, add: false, edit: false, delete: false },
   },
 }
 

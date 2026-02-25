@@ -12,6 +12,7 @@ import {
   Navigation2,
   Headphones,
   BarChart3,
+  Trophy,
   Users,
   ArrowLeft,
 } from 'lucide-react'
@@ -124,6 +125,34 @@ const items = [
     url: '/statistiques',
     icon: BarChart3,
     entity: 'statistics',
+  },
+  {
+    title: 'Gamification',
+    url: '/gamification',
+    icon: Trophy,
+    entity: 'gamification',
+    subitems: [
+      {
+        title: 'Classement',
+        url: '/gamification',
+      },
+      {
+        title: 'Badges',
+        url: '/gamification/badges',
+      },
+      {
+        title: 'Mapping',
+        url: '/gamification/mapping',
+      },
+      {
+        title: 'Offres',
+        url: '/gamification/offres',
+      },
+      {
+        title: 'Synchronisation',
+        url: '/gamification/sync',
+      },
+    ],
   },
 ]
 
