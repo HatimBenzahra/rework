@@ -109,11 +109,16 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
 
   const callIdRef = useRef(0)
   const abortRef = useRef<AbortController | null>(null)
-  const mounted = useRef(true)
+  const mutationFnRef = useRef(mutationFn)
+  mutationFnRef.current = mutationFn
+
+  // StrictMode-safe: re-set to true on every render so remount restores it
+  const mountedRef = useRef(true)
+  mountedRef.current = true
 
   useEffect(() => {
     return () => {
-      mounted.current = false
+      mountedRef.current = false
       abortRef.current?.abort()
     }
   }, [])
@@ -137,13 +142,10 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
          await new Promise(r => setTimeout(r, 300))
          
          if (opts?.onSuccess) {
-            // We can't provide real TOutput, so we cast pending input or partial as Output if possible
-            // Or just undefined (casting needed)
             opts.onSuccess(input as unknown as TOutput)
          }
          
          setLoading(false)
-         // Return input as output (best guess) to resolve promise
          return input as unknown as TOutput
       }
 
@@ -153,41 +155,39 @@ export function useApiMutation<TInput, TOutput, TOptimistic = unknown>(
           rollback = opts.optimisticUpdate()
         }
 
-        const result = await mutationFn(input, controller.signal)
+        const result = await mutationFnRef.current(input, controller.signal)
 
         if (entityType) {
           await Promise.resolve(invalidateRelatedCaches(entityType))
         }
 
-        if (mounted.current && callIdRef.current === myId) {
+        if (callIdRef.current === myId) {
           opts?.onSuccess?.(result)
         }
 
         return result
       } catch (err: unknown) {
-        // Normalisation message d’erreur
         let message = 'Unknown error occurred'
         if (typeof err === 'object' && err !== null) {
           const anyErr = err as any
           message = anyErr?.response?.data?.message ?? anyErr?.message ?? message
         }
-        // rollback si optimistic
         try {
           rollback?.()
         } catch {}
 
-        if (mounted.current && callIdRef.current === myId) {
+        if (callIdRef.current === myId) {
           setError(message)
           opts?.onError?.(message, err)
         }
         throw err
       } finally {
-        if (mounted.current && callIdRef.current === myId) {
+        if (callIdRef.current === myId) {
           setLoading(false)
         }
       }
     },
-    [mutationFn, entityType, offlineType]
+    [entityType, offlineType]
   )
 
   return { mutate, loading, error }

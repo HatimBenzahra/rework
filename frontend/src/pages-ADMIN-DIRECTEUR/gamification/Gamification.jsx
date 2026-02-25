@@ -63,30 +63,93 @@ const formatNumber = (num, decimals = 0) => {
 const getRankIcon = position => {
   switch (position) {
     case 1:
-      return <Trophy className="h-4 w-4 text-yellow-500" />
+      return (
+        <div className="h-7 w-7 rounded-full bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 flex items-center justify-center">
+          <Trophy className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-400" />
+        </div>
+      )
     case 2:
-      return <Medal className="h-4 w-4 text-gray-400" />
+      return (
+        <div className="h-7 w-7 rounded-full bg-slate-100 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-600 flex items-center justify-center">
+          <Medal className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+        </div>
+      )
     case 3:
-      return <Award className="h-4 w-4 text-orange-600" />
+      return (
+        <div className="h-7 w-7 rounded-full bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 flex items-center justify-center">
+          <Award className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+        </div>
+      )
     default:
-      return null
+      return (
+        <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
+          <span className="text-xs font-medium text-muted-foreground">{position}</span>
+        </div>
+      )
   }
 }
 
-const getCategoryColor = category => {
-  switch (category) {
-    case 'PROGRESSION':
-      return 'default'
-    case 'PRODUIT':
-      return 'secondary'
-    case 'PERFORMANCE':
-      return 'outline'
-    case 'TROPHEE':
-      return 'destructive'
-    default:
-      return 'default'
+const getRankRowClass = position => {
+  switch (position) {
+    case 1: return ''
+    case 2: return ''
+    case 3: return ''
+    default: return ''
   }
 }
+
+const getInitialColors = name => {
+  const palette = [
+    'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
+    'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
+    'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+    'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+    'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400',
+    'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400',
+    'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+    'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
+  ]
+  const index = (name || 'A').charCodeAt(0) % palette.length
+  return palette[index]
+}
+
+const getCategoryBadgeClass = category => {
+  switch (category) {
+    case 'PROGRESSION':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
+    case 'PRODUIT':
+      return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800'
+    case 'PERFORMANCE':
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
+    case 'TROPHEE':
+      return 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-400 dark:border-yellow-800'
+    default:
+      return 'bg-muted text-muted-foreground'
+  }
+}
+
+const getCategoryAccent = category => {
+  switch (category) {
+    case 'PROGRESSION':
+      return 'border-t-emerald-500'
+    case 'PRODUIT':
+      return 'border-t-sky-500'
+    case 'PERFORMANCE':
+      return 'border-t-amber-500'
+    case 'TROPHEE':
+      return 'border-t-yellow-500'
+    default:
+      return 'border-t-transparent'
+  }
+}
+
+const STAT_CARD_STYLES = [
+  { label: 'Total', key: 'total', icon: Shield, bg: 'bg-slate-100 dark:bg-slate-800/40', color: 'text-slate-600 dark:text-slate-400' },
+  { label: 'Progression', key: 'progression', icon: TrendingUp, bg: 'bg-emerald-100 dark:bg-emerald-900/30', color: 'text-emerald-600 dark:text-emerald-400' },
+  { label: 'Produit', key: 'produit', icon: Package, bg: 'bg-sky-100 dark:bg-sky-900/30', color: 'text-sky-600 dark:text-sky-400' },
+  { label: 'Performance', key: 'performance', icon: Target, bg: 'bg-amber-100 dark:bg-amber-900/30', color: 'text-amber-600 dark:text-amber-400' },
+  { label: 'Trophée', key: 'trophee', icon: Crown, bg: 'bg-yellow-100 dark:bg-yellow-900/30', color: 'text-yellow-600 dark:text-yellow-400' },
+]
 
 const getCategoryIcon = category => {
   switch (category) {
@@ -104,9 +167,9 @@ const getCategoryIcon = category => {
 }
 
 const getConfidenceColor = confidence => {
-  if (confidence >= 80) return 'text-green-600'
-  if (confidence >= 50) return 'text-yellow-600'
-  return 'text-red-600'
+  if (confidence >= 80) return 'text-green-600 dark:text-green-400'
+  if (confidence >= 50) return 'text-yellow-600 dark:text-yellow-400'
+  return 'text-red-600 dark:text-red-400'
 }
 
 const getOffreLogoUrl = logoUrl => {
@@ -296,10 +359,10 @@ const resolveBadgeIconUrl = badge => {
 }
 
 const CATEGORY_BADGE_STYLES = {
-  PROGRESSION: { bg: 'bg-emerald-50', border: 'border-emerald-200', color: 'text-emerald-600', Icon: TrendingUp },
-  PRODUIT: { bg: 'bg-sky-50', border: 'border-sky-200', color: 'text-sky-600', Icon: Package },
-  PERFORMANCE: { bg: 'bg-amber-50', border: 'border-amber-200', color: 'text-amber-600', Icon: Target },
-  TROPHEE: { bg: 'bg-yellow-50', border: 'border-yellow-200', color: 'text-yellow-600', Icon: Crown },
+  PROGRESSION: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', color: 'text-emerald-600 dark:text-emerald-400', Icon: TrendingUp },
+  PRODUIT: { bg: 'bg-sky-50 dark:bg-sky-950/30', border: 'border-sky-200 dark:border-sky-800', color: 'text-sky-600 dark:text-sky-400', Icon: Package },
+  PERFORMANCE: { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', color: 'text-amber-600 dark:text-amber-400', Icon: Target },
+  TROPHEE: { bg: 'bg-yellow-50 dark:bg-yellow-950/30', border: 'border-yellow-200 dark:border-yellow-800', color: 'text-yellow-600 dark:text-yellow-400', Icon: Crown },
 }
 
 function BadgeIcon({ badge }) {
@@ -344,37 +407,38 @@ function CommercialBadgesCell({ commercialId, periodKey }) {
   const { data: commercialBadges, loading } = useCommercialBadges(commercialId)
 
   if (loading) {
-    return <span className="text-xs text-muted-foreground">Chargement...</span>
+    return <span className="text-[10px] text-muted-foreground">Chargement...</span>
   }
 
-  const currentPeriodBadges = (commercialBadges || [])
-    .filter(b => b.periodKey === periodKey)
+  const badges = (commercialBadges || [])
+    .filter(b => b.periodKey === periodKey || b.periodKey === 'lifetime')
     .sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime())
 
-  const badgesToShow = currentPeriodBadges.slice(0, 3)
-  const remainingCount = currentPeriodBadges.length - badgesToShow.length
-
-  if (!badgesToShow.length) {
-    return <span className="text-xs text-muted-foreground">Aucun badge</span>
+  if (!badges.length) {
+    return <span className="text-[10px] text-muted-foreground italic">Aucun badge</span>
   }
 
   return (
-    <div className="flex items-center gap-1 flex-wrap justify-end">
-      {badgesToShow.map(badge => (
-        <Badge
-          key={badge.id}
-          variant="secondary"
-          className="text-[10px] px-1.5 py-0.5 max-w-[110px] truncate"
-          title={badge.badgeDefinition?.nom || 'Badge'}
-        >
-          {badge.badgeDefinition?.nom || badge.badgeDefinition?.code || 'Badge'}
-        </Badge>
-      ))}
-      {remainingCount > 0 && (
-        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-          +{remainingCount}
-        </Badge>
-      )}
+    <div className="flex items-center gap-1 flex-wrap">
+      {badges.map(badge => {
+        const def = badge.badgeDefinition
+        const iconUrl = def ? resolveBadgeIconUrl(def) : null
+        const style = CATEGORY_BADGE_STYLES[def?.category] || CATEGORY_BADGE_STYLES.PROGRESSION
+        return (
+          <div
+            key={badge.id}
+            title={`${def?.nom || 'Badge'} — ${def?.description || ''}`}
+            className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${style.bg} ${style.border}`}
+          >
+            {iconUrl ? (
+              <img src={iconUrl} alt="" className="h-3.5 w-3.5 object-contain" loading="lazy" />
+            ) : (
+              <style.Icon className={`h-3 w-3 ${style.color}`} />
+            )}
+            <span className="max-w-[80px] truncate">{def?.nom || def?.code || 'Badge'}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -410,50 +474,97 @@ function ClassementTab({
   handleComputeRanking,
   computeRankingLoading,
 }) {
+  const classementStats = useMemo(() => {
+    if (!ranking?.length) return { total: 0, totalPoints: 0, totalContrats: 0 }
+    return {
+      total: ranking.length,
+      totalPoints: ranking.reduce((sum, e) => sum + (e.points || 0), 0),
+      totalContrats: ranking.reduce((sum, e) => sum + (e.contratsSignes || 0), 0),
+    }
+  }, [ranking])
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Contrôles */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Select value={rankPeriod} onValueChange={setRankPeriod}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Période" />
-            </SelectTrigger>
-            <SelectContent>
-              {RANK_PERIODS.map(p => (
-                <SelectItem key={p.value} value={p.value}>
-                  {p.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">Période : {periodKey}</span>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleComputeRanking}
-          disabled={computeRankingLoading}
-        >
-          {computeRankingLoading ? (
-            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <RefreshCw className="h-4 w-4 mr-2" />
-          )}
-          Recalculer
-        </Button>
+      {/* Stats résumé */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-border/70 hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800/40">
+              <Trophy className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{classementStats.total}</div>
+              <div className="text-xs text-muted-foreground">Commerciaux</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-sky-100 dark:bg-sky-900/30">
+              <Star className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{formatNumber(classementStats.totalPoints)}</div>
+              <div className="text-xs text-muted-foreground">Points cumulés</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+              <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{formatNumber(classementStats.totalContrats)}</div>
+              <div className="text-xs text-muted-foreground">Contrats signés</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Tableau de classement */}
+      {/* Contrôles */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-yellow-500" />
-            Classement des commerciaux
-          </CardTitle>
-          <CardDescription>
-            {RANK_PERIODS.find(p => p.value === rankPeriod)?.label} — Points basés sur le prix des contrats validés
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-yellow-100 dark:bg-yellow-900/30">
+                  <Trophy className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                Classement des commerciaux
+              </CardTitle>
+              <CardDescription>
+                {RANK_PERIODS.find(p => p.value === rankPeriod)?.label} — Points basés sur le prix des contrats validés
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-3">
+              <Select value={rankPeriod} onValueChange={setRankPeriod}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Période" />
+                </SelectTrigger>
+                <SelectContent>
+                  {RANK_PERIODS.map(p => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleComputeRanking}
+                disabled={computeRankingLoading}
+              >
+                {computeRankingLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Recalculer
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {rankingLoading ? (
@@ -462,36 +573,42 @@ function ClassementTab({
             </div>
           ) : !ranking?.length ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Trophy className="h-8 w-8 mb-3 opacity-50" />
-              <p>Aucun classement disponible pour cette période</p>
+              <div className="p-3 rounded-full bg-muted mb-3">
+                <Trophy className="h-8 w-8 opacity-50" />
+              </div>
+              <p className="font-medium">Aucun classement disponible</p>
               <p className="text-xs mt-1">Lancez un recalcul ou attendez le prochain cycle CRON</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">#</TableHead>
+                  <TableHead className="w-16">Rang</TableHead>
                   <TableHead>Commercial</TableHead>
                   <TableHead>Niveau</TableHead>
-                  <TableHead className="text-right">Badges actuels</TableHead>
                   <TableHead className="text-right">Points</TableHead>
                   <TableHead className="text-right">Contrats</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ranking.map(entry => (
-                  <TableRow key={entry.id}>
+                  <TableRow key={entry.id} className={getRankRowClass(entry.rank)}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getRankIcon(entry.rank)}
-                        <span className={entry.rank <= 3 ? 'font-bold' : 'text-muted-foreground'}>
-                          {entry.rank}
-                        </span>
-                      </div>
+                      {getRankIcon(entry.rank)}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">
-                        {entry.commercialPrenom} {entry.commercialNom}
+                      <div className="flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getInitialColors(entry.commercialPrenom)}`}>
+                          {(entry.commercialPrenom || '').charAt(0)}{(entry.commercialNom || '').charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`font-medium ${entry.rank <= 3 ? 'text-foreground' : ''}`}>
+                            {entry.commercialPrenom} {entry.commercialNom}
+                          </div>
+                          <div className="mt-1">
+                            <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -500,13 +617,14 @@ function ClassementTab({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
+                      <span className="inline-flex items-center rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-xs font-bold text-sky-700 tabular-nums dark:bg-sky-950/30 dark:border-sky-800 dark:text-sky-400">
+                        {formatNumber(entry.points)} pts
+                      </span>
                     </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">
-                      {formatNumber(entry.points)} pts
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatNumber(entry.contratsSignes)}
+                    <TableCell className="text-right">
+                      <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700 tabular-nums dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
+                        {formatNumber(entry.contratsSignes)}
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -618,18 +736,14 @@ function BadgesTab({
 
       {/* Statistiques des badges */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {[
-          { label: 'Total', value: badgeStats.total, icon: Shield },
-          { label: 'Progression', value: badgeStats.progression, icon: TrendingUp },
-          { label: 'Produit', value: badgeStats.produit, icon: Package },
-          { label: 'Performance', value: badgeStats.performance, icon: Target },
-          { label: 'Trophée', value: badgeStats.trophee, icon: Crown },
-        ].map(stat => (
-          <Card key={stat.label} className="border-border/70">
+        {STAT_CARD_STYLES.map(stat => (
+          <Card key={stat.label} className="border-border/70 hover:shadow-sm transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
+              <div className={`p-2 rounded-lg ${stat.bg}`}>
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
               <div>
-                <div className="text-xl font-bold">{stat.value}</div>
+                <div className="text-2xl font-bold tabular-nums">{badgeStats[stat.key]}</div>
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
               </div>
             </CardContent>
@@ -649,21 +763,25 @@ function BadgesTab({
           <p className="text-xs mt-1">Essayez un autre filtre ou une autre recherche</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {displayedBadges.map(badge => (
-            <Card key={badge.id} className="hover:shadow-sm transition-shadow border-border/80">
+            <Card
+              key={badge.id}
+              className={`hover:shadow-md transition-all duration-200 border-border/80 border-t-2 ${getCategoryAccent(badge.category)}`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     <BadgeIcon badge={badge} />
                     <div className="min-w-0">
                       <span className="font-medium text-sm block truncate">{badge.nom}</span>
-                      <span className="text-[11px] text-muted-foreground">Code: {badge.code}</span>
+                      <span className="text-[11px] text-muted-foreground font-mono">{badge.code}</span>
                     </div>
                   </div>
-                  <Badge variant={getCategoryColor(badge.category)} className="text-[10px] shrink-0">
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold shrink-0 ${getCategoryBadgeClass(badge.category)}`}>
+                    {getCategoryIcon(badge.category)}
                     {badge.category}
-                  </Badge>
+                  </span>
                 </div>
                 {badge.description && (
                   <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
@@ -674,9 +792,11 @@ function BadgesTab({
                   <Badge variant="outline" className="text-[10px]">
                     Niveau {badge.tier}
                   </Badge>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Star className="h-3 w-3" />
-                    <span className="text-[11px]">{badge.isActive ? 'Actif' : 'Inactif'}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-2 w-2 rounded-full ${badge.isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                    <span className={`text-[11px] ${badge.isActive ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                      {badge.isActive ? 'Actif' : 'Inactif'}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -867,36 +987,111 @@ function OffresTab({
 }) {
   const [editPoints, setEditPoints] = useState('')
 
+  const offreStats = useMemo(() => {
+    if (!offres?.length) return { total: 0, assigned: 0, pending: 0 }
+    const assigned = offres.filter(o => o.badgeProductKey && o.badgeProductKey !== 'NONE').length
+    return { total: offres.length, assigned, pending: offres.length - assigned }
+  }, [offres])
+
+  const sortedOffres = useMemo(() => {
+    if (!offres?.length) return []
+    return [...offres].sort((a, b) => (b.points || 0) - (a.points || 0))
+  }, [offres])
+
+  const getOffreCategoryStyle = categorie => {
+    const cat = (categorie || '').toLowerCase()
+    if (cat.includes('mobile') || cat.includes('telecom')) return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800'
+    if (cat.includes('fibre') || cat.includes('internet')) return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800'
+    if (cat.includes('elec') || cat.includes('gaz') || cat.includes('energ')) return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
+    if (cat.includes('assurance') || cat.includes('mutuelle')) return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
+    if (cat.includes('tv') || cat.includes('divertissement')) return 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/30 dark:text-pink-400 dark:border-pink-800'
+    if (cat.includes('conciergerie') || cat.includes('service')) return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800'
+    return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800/30 dark:text-slate-400 dark:border-slate-700'
+  }
+
+  const getInitialColors = name => {
+    const palette = [
+      'bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
+      'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400',
+      'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+      'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+      'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400',
+      'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400',
+      'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+      'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400',
+    ]
+    const index = (name || 'A').charCodeAt(0) % palette.length
+    return palette[index]
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
-          {offres?.length || 0} offre{(offres?.length || 0) !== 1 ? 's' : ''} synchronisées
-        </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleSyncOffres}
-          disabled={syncOffresLoading}
-        >
-          {syncOffresLoading ? (
-            <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Download className="h-4 w-4 mr-2" />
-          )}
-          Synchroniser les offres
-        </Button>
+      {/* Stats résumé */}
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="border-border/70 hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800/40">
+              <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{offreStats.total}</div>
+              <div className="text-xs text-muted-foreground">Total offres</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+              <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{offreStats.assigned}</div>
+              <div className="text-xs text-muted-foreground">Badge assigné</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 hover:shadow-sm transition-shadow">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{offreStats.pending}</div>
+              <div className="text-xs text-muted-foreground">Non assigné</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
+      {/* Carte principale */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Offres WinLead+
-          </CardTitle>
-          <CardDescription>
-            Gérez les points et les clés produit badge pour chaque offre
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-sky-100 dark:bg-sky-900/30">
+                  <Package className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                </div>
+                Offres WinLead+
+              </CardTitle>
+              <CardDescription>
+                Gérez les points et les clés produit badge pour chaque offre
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncOffres}
+              disabled={syncOffresLoading}
+            >
+              {syncOffresLoading ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              Synchroniser
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {offresLoading ? (
@@ -905,51 +1100,57 @@ function OffresTab({
             </div>
           ) : !offres?.length ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Package className="h-8 w-8 mb-3 opacity-50" />
-              <p>Aucune offre synchronisée</p>
+              <div className="p-3 rounded-full bg-muted mb-3">
+                <Package className="h-8 w-8 opacity-50" />
+              </div>
+              <p className="font-medium">Aucune offre synchronisée</p>
               <p className="text-xs mt-1">Lancez la synchronisation pour importer les offres</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12"></TableHead>
-                  <TableHead>Nom</TableHead>
+                  <TableHead className="w-[280px]">Offre</TableHead>
                   <TableHead>Catégorie</TableHead>
-                  <TableHead>Fournisseur</TableHead>
                   <TableHead className="text-right">Prix de base</TableHead>
                   <TableHead className="text-right">Points</TableHead>
                   <TableHead>Clé Badge</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {offres.map(offre => (
-                  <TableRow key={offre.id}>
+                {sortedOffres.map(offre => (
+                  <TableRow key={offre.id} className="group">
                     <TableCell>
-                      {offre.logoUrl ? (
-                        <img
-                          src={getOffreLogoUrl(offre.logoUrl)}
-                          alt={offre.fournisseur}
-                          className="h-8 w-8 rounded object-contain"
-                          onError={e => { e.target.style.display = 'none' }}
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
-                          <Package className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex items-center gap-3">
+                        {offre.logoUrl ? (
+                          <img
+                            src={getOffreLogoUrl(offre.logoUrl)}
+                            alt={offre.fournisseur}
+                            className="h-9 w-9 rounded-lg border border-border/50 object-contain p-0.5 bg-white dark:bg-muted"
+                            onError={e => { e.target.style.display = 'none' }}
+                          />
+                        ) : (
+                          <div className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold ${getInitialColors(offre.fournisseur)}`}>
+                            {(offre.fournisseur || 'O').charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm truncate">{offre.nom}</div>
+                          <div className="text-[11px] text-muted-foreground">{offre.fournisseur}</div>
                         </div>
-                      )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium text-sm">{offre.nom}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${getOffreCategoryStyle(offre.categorie)}`}>
                         {offre.categorie}
-                      </Badge>
+                      </span>
                     </TableCell>
-                    <TableCell className="text-sm">{offre.fournisseur}</TableCell>
                     <TableCell className="text-right text-sm tabular-nums">
-                      {offre.prixBase != null ? `${formatNumber(offre.prixBase, 2)} €` : '—'}
+                      {offre.prixBase != null ? (
+                        <span className="font-medium">{formatNumber(offre.prixBase, 2)} €</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       {editingOffre === offre.id ? (
@@ -985,11 +1186,13 @@ function OffresTab({
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 justify-end">
-                          <span className="font-semibold tabular-nums">{formatNumber(offre.points)}</span>
+                          <span className="inline-flex items-center rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-xs font-bold text-sky-700 tabular-nums dark:bg-sky-950/30 dark:border-sky-800 dark:text-sky-400">
+                            {formatNumber(offre.points)} pts
+                          </span>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7 p-0"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground transition-colors"
                             title="Modifier les points"
                             aria-label="Modifier les points"
                             onClick={() => {

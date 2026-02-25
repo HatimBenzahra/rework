@@ -66,6 +66,34 @@ const items = [
     entity: 'commerciaux',
   },
   {
+    title: 'Gamification',
+    url: '/gamification',
+    icon: Trophy,
+    entity: 'gamification',
+    subitems: [
+      {
+        title: 'Classement',
+        url: '/gamification',
+      },
+      {
+        title: 'Badges',
+        url: '/gamification/badges',
+      },
+      {
+        title: 'Mapping',
+        url: '/gamification/mapping',
+      },
+      {
+        title: 'Offres',
+        url: '/gamification/offres',
+      },
+      {
+        title: 'Synchronisation',
+        url: '/gamification/sync',
+      },
+    ],
+  },
+  {
     title: 'Gestion',
     url: '/gestion',
     icon: Users,
@@ -126,34 +154,7 @@ const items = [
     icon: BarChart3,
     entity: 'statistics',
   },
-  {
-    title: 'Gamification',
-    url: '/gamification',
-    icon: Trophy,
-    entity: 'gamification',
-    subitems: [
-      {
-        title: 'Classement',
-        url: '/gamification',
-      },
-      {
-        title: 'Badges',
-        url: '/gamification/badges',
-      },
-      {
-        title: 'Mapping',
-        url: '/gamification/mapping',
-      },
-      {
-        title: 'Offres',
-        url: '/gamification/offres',
-      },
-      {
-        title: 'Synchronisation',
-        url: '/gamification/sync',
-      },
-    ],
-  },
+  
 ]
 
 export function AppSidebar() {
