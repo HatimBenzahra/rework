@@ -27,6 +27,55 @@ type AuthResponse {
   userId: Float!
 }
 
+input AwardBadgeInput {
+  badgeDefinitionId: Int!
+  commercialId: Int!
+  metadata: String
+  periodKey: String!
+}
+
+type AwardBadgesResult {
+  awarded: Int!
+  message: String!
+  skipped: Int!
+  success: Boolean!
+  total: Int!
+}
+
+"""Catégorie de badge gamification"""
+enum BadgeCategory {
+  PERFORMANCE
+  PRODUIT
+  PROGRESSION
+  TROPHEE
+}
+
+type BadgeDefinitionType {
+  category: BadgeCategory!
+  code: String!
+  condition: String
+  createdAt: DateTime!
+  description: String
+  iconUrl: String
+  id: Int!
+  isActive: Boolean!
+  nom: String!
+  tier: Int!
+  updatedAt: DateTime!
+}
+
+input BatchAwardBadgesInput {
+  awards: [AwardBadgeInput!]!
+}
+
+input BatchUpdateOffreBadgeProductKeyInput {
+  offres: [UpdateOffreBadgeProductKeyInput!]!
+}
+
+input BatchUpdateOffrePointsInput {
+  offres: [UpdateOffrePointsInput!]!
+}
+
 type Commercial {
   age: Int
   createdAt: DateTime!
@@ -44,10 +93,59 @@ type Commercial {
   zones: [Zone!]!
 }
 
+type CommercialBadgeType {
+  awardedAt: DateTime!
+  badgeDefinition: BadgeDefinitionType
+  badgeDefinitionId: Int!
+  commercialId: Int!
+  id: Int!
+  metadata: String
+  periodKey: String!
+}
+
 type CommercialInfo {
   id: Int!
   nom: String!
   prenom: String!
+}
+
+input ComputeRankingInput {
+  period: RankPeriod!
+  periodKey: String!
+}
+
+input ConfirmMappingInput {
+  mappings: [MappingEntry!]!
+}
+
+type ContratValideType {
+  commercialId: Int
+  commercialWinleadPlusId: String!
+  createdAt: DateTime!
+  dateSignature: DateTime
+  dateValidation: DateTime!
+  externalContratId: Int!
+  externalProspectId: Int!
+  id: Int!
+  metadata: String
+  offreExternalId: Int
+  offreId: Int
+  periodDay: String!
+  periodMonth: String!
+  periodQuarter: String!
+  periodWeek: String!
+  periodYear: String!
+  syncedAt: DateTime!
+}
+
+input CreateBadgeDefinitionInput {
+  category: BadgeCategory!
+  code: String!
+  condition: String
+  description: String
+  iconUrl: String
+  nom: String!
+  tier: Int! = 0
 }
 
 input CreateCommercialInput {
@@ -238,6 +336,33 @@ type ManagerInfo {
   prenom: String!
 }
 
+input MappingEntry {
+  prowinId: Int!
+  type: String!
+  winleadPlusId: String!
+}
+
+type MappingResult {
+  mapped: Int!
+  message: String!
+  skipped: Int!
+  success: Boolean!
+}
+
+type MappingSuggestion {
+  alreadyMapped: Boolean!
+  confidence: Int
+  prowinEmail: String
+  prowinId: Int!
+  prowinNom: String!
+  prowinPrenom: String!
+  prowinType: String!
+  winleadPlusEmail: String
+  winleadPlusId: String
+  winleadPlusNom: String
+  winleadPlusPrenom: String
+}
+
 input ModifierUtilisateurInput {
   email: String!
   nouveauMotDePasse: String!
@@ -268,6 +393,13 @@ type Mutation {
   assignZoneToDirecteur(directeurId: Int!, zoneId: Int!): Boolean!
   assignZoneToManager(managerId: Int!, zoneId: Int!): Boolean!
   assignZoneToUser(input: AssignZoneInput!): ZoneEnCours!
+  awardBadge(input: AwardBadgeInput!): AwardBadgesResult!
+  batchAwardBadges(input: BatchAwardBadgesInput!): AwardBadgesResult!
+  batchUpdateOffreBadgeProductKey(input: BatchUpdateOffreBadgeProductKeyInput!): MappingResult!
+  batchUpdateOffrePoints(input: BatchUpdateOffrePointsInput!): MappingResult!
+  computeRanking(input: ComputeRankingInput!): MappingResult!
+  confirmMapping(input: ConfirmMappingInput!): MappingResult!
+  createBadgeDefinition(input: CreateBadgeDefinitionInput!): BadgeDefinitionType!
   createCommercial(createCommercialInput: CreateCommercialInput!): Commercial!
   createDirecteur(createDirecteurInput: CreateDirecteurInput!): Directeur!
   createImmeuble(createImmeubleInput: CreateImmeubleInput!): Immeuble!
@@ -277,6 +409,9 @@ type Mutation {
   createStatistic(createStatisticInput: CreateStatisticInput!): Statistic!
   createZone(createZoneInput: CreateZoneInput!): Zone!
   creerUtilisateurProWin(input: CreerUtilisateurInput!): ReponseCreationUtilisateur!
+  evaluateBadges: AwardBadgesResult!
+  evaluatePerformanceRanking(month: String!): AwardBadgesResult!
+  evaluateTrophees(quarter: String!): AwardBadgesResult!
   generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
   logAudioEvent(details: String, eventType: String!, message: String!): Boolean!
@@ -289,26 +424,54 @@ type Mutation {
   removeEtageFromImmeuble(id: Int!): Immeuble!
   removeImmeuble(id: Int!): Immeuble!
   removeManager(id: Int!): Manager!
+  removeMapping(input: RemoveMappingInput!): MappingResult!
   removePorte(id: Int!): Porte!
   removePorteFromEtage(etage: Int!, immeubleId: Int!): Immeuble!
   removeStatistic(id: Int!): Statistic!
   removeZone(id: Int!): Zone!
+  revokeBadge(id: Int!): MappingResult!
+  seedBadges: SeedBadgesResult!
   startMonitoring(input: StartMonitoringInput!): LiveKitConnectionDetails!
   startRecording(input: StartRecordingInput!): RecordingResult!
   stopMonitoring(input: StopMonitoringInput!): Boolean!
   stopRecording(input: StopRecordingInput!): Boolean!
   supprimerUtilisateur(input: SupprimerUtilisateurInput!): ReponseSupprimerUtilisateur!
   syncCommercialStats(immeubleId: Int!): String!
+  syncContrats: SyncContratsResult!
   syncManagerStats(managerId: Int!): String!
+  syncOffres: SyncOffresResult!
   unassignUser(userId: Int!, userType: UserType!): Boolean!
   unassignZoneFromCommercial(commercialId: Int!, zoneId: Int!): Boolean!
+  updateBadgeDefinition(id: Int!, input: UpdateBadgeDefinitionInput!): BadgeDefinitionType!
   updateCommercial(updateCommercialInput: UpdateCommercialInput!): Commercial!
   updateDirecteur(updateDirecteurInput: UpdateDirecteurInput!): Directeur!
   updateImmeuble(updateImmeubleInput: UpdateImmeubleInput!): Immeuble!
   updateManager(updateManagerInput: UpdateManagerInput!): Manager!
+  updateOffreBadgeProductKey(badgeProductKey: String, offreId: Int!): Offre!
+  updateOffrePoints(offreId: Int!, points: Int!): Offre!
   updatePorte(updatePorteInput: UpdatePorteInput!): Porte!
   updateStatistic(updateStatisticInput: UpdateStatisticInput!): Statistic!
   updateZone(updateZoneInput: UpdateZoneInput!): Zone!
+}
+
+type Offre {
+  badgeProductKey: String
+  categorie: String!
+  createdAt: DateTime!
+  description: String
+  externalId: Int!
+  features: String
+  fournisseur: String!
+  id: Int!
+  isActive: Boolean!
+  logoUrl: String
+  nom: String!
+  points: Int!
+  popular: Boolean!
+  prixBase: Float
+  rating: Float
+  syncedAt: DateTime!
+  updatedAt: DateTime!
 }
 
 type Porte {
@@ -351,9 +514,14 @@ type PorteStatistics {
 type Query {
   allCurrentAssignments: [ZoneEnCours!]!
   allZoneHistory: [HistoriqueZone!]!
+  badgeDefinition(id: Int!): BadgeDefinitionType
+  badgeDefinitions(activeOnly: Boolean! = true, category: BadgeCategory): [BadgeDefinitionType!]!
   commercial(id: Int!): Commercial!
+  commercialBadges(commercialId: Int!): [CommercialBadgeType!]!
+  commercialRankings(commercialId: Int!): [RankSnapshotType!]!
   commercialTeamRanking(commercialId: Int!): TeamRanking!
   commercials: [Commercial!]!
+  contratsByCommercial(commercialId: Int!): [ContratValideType!]!
   currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours
   directeur(id: Int!): Directeur!
   directeurs: [Directeur!]!
@@ -368,13 +536,16 @@ type Query {
   managerFull(id: Int!): Manager
   managerPersonal(id: Int!): Manager
   managers: [Manager!]!
+  mappingSuggestions: [MappingSuggestion!]!
   me: UserInfo!
+  offres(activeOnly: Boolean! = true): [Offre!]!
   porte(id: Int!): Porte!
   porteStatistics(immeubleId: Int!): PorteStatistics!
   portes: [Porte!]!
   portesByImmeuble(etage: Int, immeubleId: Int!, skip: Int, take: Int): [Porte!]!
   portesModifiedToday(immeubleId: Int): [Porte!]!
   portesRdvToday: [Porte!]!
+  ranking(period: RankPeriod!, periodKey: String!): [RankSnapshotType!]!
   statistic(id: Int!): Statistic!
   statistics(commercialId: Int): [Statistic!]!
   statsTimelineByCommercial(commercialId: Int!, endDate: DateTime, startDate: DateTime): [TimelinePoint!]!
@@ -382,11 +553,35 @@ type Query {
   statusHistoriqueByPorte(porteId: Int!): [StatusHistorique!]!
   userZoneHistory(userId: Int!, userType: UserType!): [HistoriqueZone!]!
   validateStatsCoherence: String!
+  winleadPlusUsers: [WinleadPlusUser!]!
   zone(id: Int!): Zone!
   zoneCurrentAssignments(zoneId: Int!): [ZoneEnCours!]!
   zoneHistory(zoneId: Int!): [HistoriqueZone!]!
   zoneStatistics: [ZoneStatistic!]!
   zones: [Zone!]!
+}
+
+"""Période de classement (jour, semaine, mois, trimestre, année)"""
+enum RankPeriod {
+  DAILY
+  MONTHLY
+  QUARTERLY
+  WEEKLY
+  YEARLY
+}
+
+type RankSnapshotType {
+  commercialId: Int!
+  commercialNom: String
+  commercialPrenom: String
+  computedAt: DateTime!
+  contratsSignes: Int!
+  id: Int!
+  metadata: String
+  period: RankPeriod!
+  periodKey: String!
+  points: Int!
+  rank: Int!
 }
 
 type RecordingItem {
@@ -402,6 +597,11 @@ type RecordingResult {
   s3Key: String!
   status: String!
   url: String
+}
+
+input RemoveMappingInput {
+  prowinId: Int!
+  type: String!
 }
 
 type ReponseCreationUtilisateur {
@@ -427,6 +627,14 @@ enum RoleUtilisateur {
   COMMERCIAL
   DIRECTEUR
   MANAGER
+}
+
+type SeedBadgesResult {
+  created: Int!
+  message: String!
+  skipped: Int!
+  success: Boolean!
+  total: Int!
 }
 
 input StartMonitoringInput {
@@ -499,6 +707,23 @@ input SupprimerUtilisateurInput {
   email: String!
 }
 
+type SyncContratsResult {
+  created: Int!
+  message: String!
+  skipped: Int!
+  success: Boolean!
+  total: Int!
+  updated: Int!
+}
+
+type SyncOffresResult {
+  created: Int!
+  message: String!
+  success: Boolean!
+  total: Int!
+  updated: Int!
+}
+
 type TeamRanking {
   managerEmail: String
   managerNom: String
@@ -518,6 +743,16 @@ type TimelinePoint {
   portesProspectees: Int!
   rdvPris: Int!
   refus: Int!
+}
+
+input UpdateBadgeDefinitionInput {
+  category: BadgeCategory
+  condition: String
+  description: String
+  iconUrl: String
+  isActive: Boolean
+  nom: String
+  tier: Int
 }
 
 input UpdateCommercialInput {
@@ -564,6 +799,16 @@ input UpdateManagerInput {
   numTelephone: String
   prenom: String
   status: UserStatus
+}
+
+input UpdateOffreBadgeProductKeyInput {
+  badgeProductKey: String
+  offreId: Int!
+}
+
+input UpdateOffrePointsInput {
+  offreId: Int!
+  points: Int!
 }
 
 input UpdatePorteInput {
@@ -625,6 +870,17 @@ enum UserType {
   COMMERCIAL
   DIRECTEUR
   MANAGER
+}
+
+type WinleadPlusUser {
+  email: String
+  id: String!
+  isActive: Boolean!
+  managerId: String
+  nom: String!
+  prenom: String!
+  role: String!
+  username: String
 }
 
 type Zone {

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
@@ -16,6 +17,7 @@ import { PorteModule } from './porte/porte.module';
 import { AudioMonitoringModule } from './audio-monitoring/audio-monitoring.module';
 import { RecordingModule } from './recording/recording.module';
 import { CreationCompteModule } from './creation_compte/creation_compte.module';
+import { GamificationModule } from './gamification/gamification.module';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { CreationCompteModule } from './creation_compte/creation_compte.module';
       introspection: true,
       context: ({ req }) => ({ req }),
     }),
+    ScheduleModule.forRoot(),
     AuthModule,
     DirecteurModule,
     ManagerModule,
@@ -38,6 +41,7 @@ import { CreationCompteModule } from './creation_compte/creation_compte.module';
     AudioMonitoringModule,
     RecordingModule,
     CreationCompteModule,
+    GamificationModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
