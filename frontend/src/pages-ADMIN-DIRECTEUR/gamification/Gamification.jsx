@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { useCommercialBadges } from '@/hooks/metier/api/gamification'
 import {
   Trophy,
   Medal,
@@ -111,6 +112,29 @@ const getOffreLogoUrl = logoUrl => {
   return `https://www.winleadplus.com${logoUrl}`
 }
 
+const getTierBadgeClass = tierKey => {
+  switch (tierKey) {
+    case 'BRONZE':
+      return 'bg-orange-100 text-orange-800 border-orange-300'
+    case 'SILVER':
+      return 'bg-slate-100 text-slate-800 border-slate-300'
+    case 'GOLD':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    case 'PLATINUM':
+      return 'bg-cyan-100 text-cyan-800 border-cyan-300'
+    case 'DIAMOND':
+      return 'bg-indigo-100 text-indigo-800 border-indigo-300'
+    case 'MASTER':
+      return 'bg-emerald-100 text-emerald-800 border-emerald-300'
+    case 'GRANDMASTER':
+      return 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300'
+    case 'LEGEND':
+      return 'bg-rose-100 text-rose-800 border-rose-300'
+    default:
+      return 'bg-muted text-foreground border-border'
+  }
+}
+
 // =============================================================================
 // Tabs Configuration
 // =============================================================================
@@ -122,6 +146,45 @@ const TABS = [
   { id: 'offres', label: 'Offres', icon: Package },
   { id: 'sync', label: 'Synchronisation', icon: RefreshCw },
 ]
+
+function CommercialBadgesCell({ commercialId, periodKey }) {
+  const { data: commercialBadges, loading } = useCommercialBadges(commercialId)
+
+  if (loading) {
+    return <span className="text-xs text-muted-foreground">Chargement...</span>
+  }
+
+  const currentPeriodBadges = (commercialBadges || [])
+    .filter(b => b.periodKey === periodKey)
+    .sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime())
+
+  const badgesToShow = currentPeriodBadges.slice(0, 3)
+  const remainingCount = currentPeriodBadges.length - badgesToShow.length
+
+  if (!badgesToShow.length) {
+    return <span className="text-xs text-muted-foreground">Aucun badge</span>
+  }
+
+  return (
+    <div className="flex items-center gap-1 flex-wrap justify-end">
+      {badgesToShow.map(badge => (
+        <Badge
+          key={badge.id}
+          variant="secondary"
+          className="text-[10px] px-1.5 py-0.5 max-w-[110px] truncate"
+          title={badge.badgeDefinition?.nom || 'Badge'}
+        >
+          {badge.badgeDefinition?.nom || badge.badgeDefinition?.code || 'Badge'}
+        </Badge>
+      ))}
+      {remainingCount > 0 && (
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+          +{remainingCount}
+        </Badge>
+      )}
+    </div>
+  )
+}
 
 const TAB_PATHS = {
   classement: '/gamification',
@@ -216,6 +279,8 @@ function ClassementTab({
                 <TableRow>
                   <TableHead className="w-16">#</TableHead>
                   <TableHead>Commercial</TableHead>
+                  <TableHead>Niveau</TableHead>
+                  <TableHead className="text-right">Badges actuels</TableHead>
                   <TableHead className="text-right">Points</TableHead>
                   <TableHead className="text-right">Contrats</TableHead>
                 </TableRow>
@@ -235,6 +300,14 @@ function ClassementTab({
                       <div className="font-medium">
                         {entry.commercialPrenom} {entry.commercialNom}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getTierBadgeClass(entry.rankTierKey)}>
+                        {entry.rankTierLabel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
                       {formatNumber(entry.points)} pts

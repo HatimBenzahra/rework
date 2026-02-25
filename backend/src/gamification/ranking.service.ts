@@ -2,9 +2,27 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { RankPeriod } from '@prisma/client';
 
+type PointTier = {
+  key: string;
+  label: string;
+  minPoints: number;
+  maxPoints: number | null;
+};
+
 @Injectable()
 export class RankingService {
   private readonly logger = new Logger(RankingService.name);
+
+  private readonly pointTiers: PointTier[] = [
+    { key: 'BRONZE', label: 'Bronze', minPoints: 0, maxPoints: 249 },
+    { key: 'SILVER', label: 'Silver', minPoints: 250, maxPoints: 599 },
+    { key: 'GOLD', label: 'Gold', minPoints: 600, maxPoints: 1199 },
+    { key: 'PLATINUM', label: 'Platinum', minPoints: 1200, maxPoints: 2199 },
+    { key: 'DIAMOND', label: 'Diamond', minPoints: 2200, maxPoints: 3499 },
+    { key: 'MASTER', label: 'Master', minPoints: 3500, maxPoints: 4999 },
+    { key: 'GRANDMASTER', label: 'Grandmaster', minPoints: 5000, maxPoints: 6999 },
+    { key: 'LEGEND', label: 'Legend', minPoints: 7000, maxPoints: null },
+  ];
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -78,6 +96,7 @@ export class RankingService {
 
       const previousRank = previousSnapshot?.rank ?? null;
       const delta = previousRank !== null ? previousRank - currentRank : null;
+      const pointTier = this.resolvePointTier(scores[i].points);
 
       await this.prisma.rankSnapshot.upsert({
         where: {
@@ -94,13 +113,23 @@ export class RankingService {
           rank: currentRank,
           points: scores[i].points,
           contratsSignes: scores[i].contratsSignes,
-          metadata: { previousRank, delta },
+          metadata: {
+            previousRank,
+            delta,
+            rankTierKey: pointTier.key,
+            rankTierLabel: pointTier.label,
+          },
         },
         update: {
           rank: currentRank,
           points: scores[i].points,
           contratsSignes: scores[i].contratsSignes,
-          metadata: { previousRank, delta },
+          metadata: {
+            previousRank,
+            delta,
+            rankTierKey: pointTier.key,
+            rankTierLabel: pointTier.label,
+          },
           computedAt: new Date(),
         },
       });
@@ -198,5 +227,21 @@ export class RankingService {
       default:
         return 'periodMonth';
     }
+  }
+
+  resolvePointTier(points: number): PointTier {
+    const safePoints = Math.max(0, points || 0);
+
+    for (const tier of this.pointTiers) {
+      if (tier.maxPoints === null && safePoints >= tier.minPoints) {
+        return tier;
+      }
+
+      if (tier.maxPoints !== null && safePoints >= tier.minPoints && safePoints <= tier.maxPoints) {
+        return tier;
+      }
+    }
+
+    return this.pointTiers[0];
   }
 }

@@ -582,6 +582,8 @@ type RankSnapshotType {
   periodKey: String!
   points: Int!
   rank: Int!
+  rankTierKey: String!
+  rankTierLabel: String!
 }
 
 type RecordingItem {

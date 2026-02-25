@@ -590,6 +590,12 @@ export class RankSnapshotType {
   @Field(() => Int)
   contratsSignes: number;
 
+  @Field()
+  rankTierKey: string;
+
+  @Field()
+  rankTierLabel: string;
+
   @Field({ nullable: true })
   metadata?: string; // JSON sérialisé
 

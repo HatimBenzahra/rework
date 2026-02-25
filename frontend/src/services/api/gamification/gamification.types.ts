@@ -10,6 +10,8 @@ export interface RankSnapshot {
   rank: number
   points: number
   contratsSignes: number
+  rankTierKey: string
+  rankTierLabel: string
   metadata?: string
   computedAt: string
   commercialNom?: string

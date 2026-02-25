@@ -328,19 +328,24 @@ export class GamificationResolver {
     @Args('periodKey') periodKey: string,
   ): Promise<RankSnapshotType[]> {
     const snapshots = await this.rankingService.getRanking(period, periodKey);
-    return snapshots.map((s) => ({
-      id: s.id,
-      commercialId: s.commercialId,
-      period: s.period,
-      periodKey: s.periodKey,
-      rank: s.rank,
-      points: s.points,
-      contratsSignes: s.contratsSignes,
-      metadata: s.metadata ? JSON.stringify(s.metadata) : undefined,
-      computedAt: s.computedAt,
-      commercialNom: s.commercial?.nom,
-      commercialPrenom: s.commercial?.prenom,
-    }));
+    return snapshots.map((s) => {
+      const tier = this.rankingService.resolvePointTier(s.points);
+      return {
+        id: s.id,
+        commercialId: s.commercialId,
+        period: s.period,
+        periodKey: s.periodKey,
+        rank: s.rank,
+        points: s.points,
+        contratsSignes: s.contratsSignes,
+        rankTierKey: tier.key,
+        rankTierLabel: tier.label,
+        metadata: s.metadata ? JSON.stringify(s.metadata) : undefined,
+        computedAt: s.computedAt,
+        commercialNom: s.commercial?.nom,
+        commercialPrenom: s.commercial?.prenom,
+      };
+    });
   }
 
   @Query(() => [RankSnapshotType], { name: 'commercialRankings' })
@@ -349,17 +354,22 @@ export class GamificationResolver {
     @Args('commercialId', { type: () => Int }) commercialId: number,
   ): Promise<RankSnapshotType[]> {
     const snapshots = await this.rankingService.getCommercialRankings(commercialId);
-    return snapshots.map((s) => ({
-      id: s.id,
-      commercialId: s.commercialId,
-      period: s.period,
-      periodKey: s.periodKey,
-      rank: s.rank,
-      points: s.points,
-      contratsSignes: s.contratsSignes,
-      metadata: s.metadata ? JSON.stringify(s.metadata) : undefined,
-      computedAt: s.computedAt,
-    }));
+    return snapshots.map((s) => {
+      const tier = this.rankingService.resolvePointTier(s.points);
+      return {
+        id: s.id,
+        commercialId: s.commercialId,
+        period: s.period,
+        periodKey: s.periodKey,
+        rank: s.rank,
+        points: s.points,
+        contratsSignes: s.contratsSignes,
+        rankTierKey: tier.key,
+        rankTierLabel: tier.label,
+        metadata: s.metadata ? JSON.stringify(s.metadata) : undefined,
+        computedAt: s.computedAt,
+      };
+    });
   }
 
   @Mutation(() => MappingResult, { name: 'computeRanking' })

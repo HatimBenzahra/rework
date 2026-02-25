@@ -12,6 +12,8 @@ export const GET_RANKING = `
       rank
       points
       contratsSignes
+      rankTierKey
+      rankTierLabel
       metadata
       computedAt
       commercialNom
@@ -30,6 +32,8 @@ export const GET_COMMERCIAL_RANKINGS = `
       rank
       points
       contratsSignes
+      rankTierKey
+      rankTierLabel
       metadata
       computedAt
     }
