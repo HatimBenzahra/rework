@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import {
@@ -37,6 +37,9 @@ import {
   FileText,
   Download,
   Pencil,
+  Search,
+  TrendingUp,
+  Target,
 } from 'lucide-react'
 import {
   useGamificationLogic,
@@ -88,11 +91,11 @@ const getCategoryColor = category => {
 const getCategoryIcon = category => {
   switch (category) {
     case 'PROGRESSION':
-      return <Star className="h-3.5 w-3.5" />
+      return <TrendingUp className="h-3.5 w-3.5" />
     case 'PRODUIT':
       return <Package className="h-3.5 w-3.5" />
     case 'PERFORMANCE':
-      return <Zap className="h-3.5 w-3.5" />
+      return <Target className="h-3.5 w-3.5" />
     case 'TROPHEE':
       return <Crown className="h-3.5 w-3.5" />
     default:
@@ -133,6 +136,196 @@ const getTierBadgeClass = tierKey => {
     default:
       return 'bg-muted text-foreground border-border'
   }
+}
+
+const BADGE_ICON_PROVIDER_FALLBACK = {
+  PROGRESSION: 'https://img.icons8.com/3d-fluency/96/rocket.png',
+  PRODUIT: 'https://img.icons8.com/3d-fluency/96/package.png',
+  PERFORMANCE: 'https://img.icons8.com/3d-fluency/96/medal.png',
+  TROPHEE: 'https://img.icons8.com/3d-fluency/96/trophy.png',
+}
+
+const BADGE_ICON_PROVIDER_SECONDARY_FALLBACK = {
+  PROGRESSION: 'https://api.iconify.design/flat-color-icons/bar-chart.svg',
+  PRODUIT: 'https://api.iconify.design/flat-color-icons/package.svg',
+  PERFORMANCE: 'https://api.iconify.design/flat-color-icons/rules.svg',
+  TROPHEE: 'https://api.iconify.design/flat-color-icons/icons8-cup.svg',
+}
+
+const SEMANTIC_BADGE_ICONS = {
+  chart: 'https://img.icons8.com/3d-fluency/96/combo-chart.png',
+  rocket: 'https://img.icons8.com/3d-fluency/96/rocket.png',
+  increase: 'https://img.icons8.com/3d-fluency/96/increase.png',
+  package: 'https://img.icons8.com/3d-fluency/96/package.png',
+  speed: 'https://img.icons8.com/3d-fluency/96/speedometer.png',
+  medal: 'https://img.icons8.com/3d-fluency/96/medal.png',
+  trophy: 'https://img.icons8.com/3d-fluency/96/trophy.png',
+  contract: 'https://img.icons8.com/3d-fluency/96/signing-a-document.png',
+  calendar: 'https://img.icons8.com/3d-fluency/96/calendar.png',
+  mobile: 'https://img.icons8.com/3d-fluency/96/smartphone.png',
+  energy: 'https://img.icons8.com/3d-fluency/96/lightning-bolt.png',
+  tv: 'https://img.icons8.com/3d-fluency/96/retro-tv.png',
+  shield: 'https://img.icons8.com/3d-fluency/96/shield.png',
+  star: 'https://img.icons8.com/3d-fluency/96/star.png',
+  goal: 'https://img.icons8.com/3d-fluency/96/goal.png',
+  fire: 'https://img.icons8.com/3d-fluency/96/fire.png',
+  crown: 'https://img.icons8.com/3d-fluency/96/crown.png',
+  handshake: 'https://img.icons8.com/3d-fluency/96/handshake.png',
+}
+
+const CATEGORY_ICON_HEX = {
+  PROGRESSION: '22C55E',
+  PRODUIT: '0EA5E9',
+  PERFORMANCE: 'F59E0B',
+  TROPHEE: 'EAB308',
+}
+
+const normalizeExternalIconUrl = (iconUrl, category) => {
+  if (!iconUrl) return null
+
+  if (iconUrl.startsWith('https://cdn.simpleicons.org/')) {
+    const match = iconUrl.match(/^https:\/\/cdn\.simpleicons\.org\/([^/]+)$/)
+    if (match?.[1]) {
+      const color = CATEGORY_ICON_HEX[category] || '2563EB'
+      return `${iconUrl}/${color}`
+    }
+  }
+
+  if (iconUrl.startsWith('https://api.iconify.design/') && !iconUrl.includes('color=')) {
+    const color = CATEGORY_ICON_HEX[category] || '2563EB'
+    const separator = iconUrl.includes('?') ? '&' : '?'
+    return `${iconUrl}${separator}color=%23${color}`
+  }
+
+  return iconUrl
+}
+
+const resolveSemanticBadgeIconUrl = badge => {
+  const source = `${badge?.code || ''} ${badge?.nom || ''} ${badge?.description || ''}`
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+  if (badge?.category === 'TROPHEE' || source.includes('trophee') || source.includes('champion')) {
+    return SEMANTIC_BADGE_ICONS.trophy
+  }
+
+  if (source.includes('mobile') || source.includes('telecom')) return SEMANTIC_BADGE_ICONS.mobile
+  if (source.includes('fibre')) return SEMANTIC_BADGE_ICONS.mobile
+  if (
+    source.includes('energie') ||
+    source.includes('elec') ||
+    source.includes('gaz') ||
+    source.includes('depanssur')
+  ) {
+    return SEMANTIC_BADGE_ICONS.energy
+  }
+  if (source.includes('assurance') || source.includes('mutuelle')) return SEMANTIC_BADGE_ICONS.shield
+  if (source.includes('mondial tv') || source.includes(' tv')) return SEMANTIC_BADGE_ICONS.tv
+  if (source.includes('conciergerie')) return SEMANTIC_BADGE_ICONS.star
+
+  if (
+    source.includes('signature') ||
+    source.includes('signataire') ||
+    source.includes('contrat') ||
+    source.includes('conversion')
+  ) {
+    return SEMANTIC_BADGE_ICONS.contract
+  }
+
+  if (
+    source.includes('derniere minute') ||
+    source.includes('finisseur') ||
+    source.includes('5j') ||
+    source.includes('semaine') ||
+    source.includes('mois') ||
+    source.includes('trimestre')
+  ) {
+    return SEMANTIC_BADGE_ICONS.calendar
+  }
+
+  if (
+    source.includes('objectif') ||
+    source.includes('top') ||
+    source.includes('transformation') ||
+    source.includes('grand chelem') ||
+    source.includes('record')
+  ) {
+    return SEMANTIC_BADGE_ICONS.goal
+  }
+
+  if (
+    source.includes('marathon') ||
+    source.includes('fulgurante') ||
+    source.includes('as du terrain') ||
+    source.includes('performance')
+  ) {
+    return source.includes('marathon') || source.includes('as du terrain')
+      ? SEMANTIC_BADGE_ICONS.speed
+      : SEMANTIC_BADGE_ICONS.medal
+  }
+
+  if (
+    source.includes('progression') ||
+    source.includes('centurion') ||
+    source.includes('performer') ||
+    source.includes('niveau') ||
+    source.includes('starter') ||
+    source.includes('duo') ||
+    source.includes('trio') ||
+    source.includes('legende')
+  ) {
+    return source.includes('centurion') || source.includes('objectif')
+      ? SEMANTIC_BADGE_ICONS.chart
+      : SEMANTIC_BADGE_ICONS.rocket
+  }
+
+  return BADGE_ICON_PROVIDER_FALLBACK[badge?.category] || null
+}
+
+const resolveBadgeIconUrl = badge => {
+  if (badge?.iconUrl) {
+    if (badge.iconUrl.startsWith('http://') || badge.iconUrl.startsWith('https://')) {
+      return normalizeExternalIconUrl(badge.iconUrl, badge?.category)
+    }
+    if (badge.iconUrl.startsWith('/')) {
+      return badge.iconUrl
+    }
+  }
+  return resolveSemanticBadgeIconUrl(badge)
+}
+
+const CATEGORY_BADGE_STYLES = {
+  PROGRESSION: { bg: 'bg-emerald-50', border: 'border-emerald-200', color: 'text-emerald-600', Icon: TrendingUp },
+  PRODUIT: { bg: 'bg-sky-50', border: 'border-sky-200', color: 'text-sky-600', Icon: Package },
+  PERFORMANCE: { bg: 'bg-amber-50', border: 'border-amber-200', color: 'text-amber-600', Icon: Target },
+  TROPHEE: { bg: 'bg-yellow-50', border: 'border-yellow-200', color: 'text-yellow-600', Icon: Crown },
+}
+
+function BadgeIcon({ badge }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  const iconUrl = resolveBadgeIconUrl(badge)
+  const style = CATEGORY_BADGE_STYLES[badge?.category] || CATEGORY_BADGE_STYLES.PROGRESSION
+
+  useEffect(() => {
+    setImgFailed(false)
+  }, [iconUrl])
+
+  return (
+    <div className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center overflow-hidden`}>
+      {iconUrl && !imgFailed ? (
+        <img
+          src={iconUrl}
+          alt={badge.nom}
+          className="h-6 w-6 object-contain"
+          loading="lazy"
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <style.Icon className={`h-5 w-5 ${style.color}`} />
+      )}
+    </div>
+  )
 }
 
 // =============================================================================
@@ -341,67 +534,98 @@ function BadgesTab({
   handleEvaluateBadges,
   evaluateBadgesLoading,
 }) {
+  const [search, setSearch] = useState('')
+
+  const displayedBadges = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return filteredBadges || []
+
+    return (filteredBadges || []).filter(badge => {
+      const haystack = `${badge.nom || ''} ${badge.code || ''} ${badge.description || ''}`.toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [filteredBadges, search])
+
   return (
     <div className="flex flex-col gap-4">
-      {/* En-tête et contrôles */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Select value={badgeCategoryFilter} onValueChange={setBadgeCategoryFilter}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="Catégorie" />
-            </SelectTrigger>
-            <SelectContent>
-              {BADGE_CATEGORIES.map(c => (
-                <SelectItem key={c.value} value={c.value}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">
-            {filteredBadges?.length || 0} badge{(filteredBadges?.length || 0) !== 1 ? 's' : ''}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSeedBadges}
-            disabled={seedBadgesLoading}
-          >
-            {seedBadgesLoading ? (
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Download className="h-4 w-4 mr-2" />
-            )}
-            Initialiser
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEvaluateBadges}
-            disabled={evaluateBadgesLoading}
-          >
-            {evaluateBadgesLoading ? (
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Zap className="h-4 w-4 mr-2" />
-            )}
-            Évaluer
-          </Button>
-        </div>
-      </div>
+      <Card className="border-border/70">
+        <CardContent className="p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Select value={badgeCategoryFilter} onValueChange={setBadgeCategoryFilter}>
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="Catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BADGE_CATEGORIES.map(c => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="relative w-full sm:w-72">
+                <Search className="h-4 w-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Rechercher un badge..."
+                  className="pl-8 h-9"
+                />
+              </div>
+
+              <span className="text-sm text-muted-foreground">
+                {displayedBadges.length} badge{displayedBadges.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSeedBadges}
+                disabled={seedBadgesLoading}
+              >
+                {seedBadgesLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Download className="h-4 w-4 mr-2" />
+                )}
+                Initialiser
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEvaluateBadges}
+                disabled={evaluateBadgesLoading}
+              >
+                {evaluateBadgesLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Zap className="h-4 w-4 mr-2" />
+                )}
+                Évaluer
+              </Button>
+            </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            Astuce: filtrez par catégorie puis recherchez par nom/code pour retrouver rapidement un badge.
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Statistiques des badges */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: 'Total', value: badgeStats.total, icon: Shield },
-          { label: 'Progression', value: badgeStats.progression, icon: Star },
+          { label: 'Progression', value: badgeStats.progression, icon: TrendingUp },
           { label: 'Produit', value: badgeStats.produit, icon: Package },
-          { label: 'Performance', value: badgeStats.performance, icon: Zap },
+          { label: 'Performance', value: badgeStats.performance, icon: Target },
           { label: 'Trophée', value: badgeStats.trophee, icon: Crown },
         ].map(stat => (
-          <Card key={stat.label}>
+          <Card key={stat.label} className="border-border/70">
             <CardContent className="p-4 flex items-center gap-3">
               <stat.icon className="h-4 w-4 text-muted-foreground" />
               <div>
@@ -418,35 +642,42 @@ function BadgesTab({
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : !filteredBadges?.length ? (
+      ) : !displayedBadges.length ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <Shield className="h-8 w-8 mb-3 opacity-50" />
           <p>Aucun badge trouvé</p>
-          <p className="text-xs mt-1">Lancez l'initialisation pour créer le catalogue</p>
+          <p className="text-xs mt-1">Essayez un autre filtre ou une autre recherche</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredBadges.map(badge => (
-            <Card key={badge.id} className="hover:shadow-sm transition-shadow">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {displayedBadges.map(badge => (
+            <Card key={badge.id} className="hover:shadow-sm transition-shadow border-border/80">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(badge.category)}
-                    <span className="font-medium text-sm">{badge.nom}</span>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <BadgeIcon badge={badge} />
+                    <div className="min-w-0">
+                      <span className="font-medium text-sm block truncate">{badge.nom}</span>
+                      <span className="text-[11px] text-muted-foreground">Code: {badge.code}</span>
+                    </div>
                   </div>
-                  <Badge variant={getCategoryColor(badge.category)} className="text-xs shrink-0">
+                  <Badge variant={getCategoryColor(badge.category)} className="text-[10px] shrink-0">
                     {badge.category}
                   </Badge>
                 </div>
                 {badge.description && (
-                  <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
                     {badge.description}
                   </p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>Niveau {badge.tier}</span>
-                  <span>•</span>
-                  <span>{badge.code}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant="outline" className="text-[10px]">
+                    Niveau {badge.tier}
+                  </Badge>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <Star className="h-3 w-3" />
+                    <span className="text-[11px]">{badge.isActive ? 'Actif' : 'Inactif'}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
