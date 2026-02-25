@@ -10,6 +10,7 @@ import {
   useEvaluateBadges,
   useSeedBadges,
   useConfirmMapping,
+  useRemoveMapping,
   useUpdateOffrePoints,
   useUpdateOffreBadgeProductKey,
 } from '@/hooks/metier/api/gamification'
@@ -127,6 +128,7 @@ export function useGamificationLogic() {
   const { mutate: confirmMappingMut, loading: confirmMappingLoading } = useConfirmMapping()
   const { mutate: updatePointsMut, loading: updatePointsLoading } = useUpdateOffrePoints()
   const { mutate: updateBadgeKeyMut, loading: updateBadgeKeyLoading } = useUpdateOffreBadgeProductKey()
+  const { mutate: removeMappingMut, loading: removeMappingLoading } = useRemoveMapping()
 
   // --- Badges filtrés ---
   const filteredBadges = useMemo(() => {
@@ -220,6 +222,18 @@ export function useGamificationLogic() {
     }
   }, [confirmMappingMut, refetchMapping])
 
+  const handleRemoveMapping = useCallback(async (suggestion) => {
+    try {
+      await removeMappingMut({
+        prowinId: suggestion.prowinId,
+        type: suggestion.prowinType,
+      })
+      refetchMapping()
+    } catch (err) {
+      console.error('Erreur lors de la suppression du mapping:', err)
+    }
+  }, [removeMappingMut, refetchMapping])
+
   const handleUpdateOffrePoints = useCallback(async (offreId, points) => {
     try {
       const normalizedPoints = parseInt(points, 10)
@@ -283,6 +297,7 @@ export function useGamificationLogic() {
     evaluateBadgesLoading,
     seedBadgesLoading,
     confirmMappingLoading,
+    removeMappingLoading,
     updatePointsLoading,
     updateBadgeKeyLoading,
 
@@ -293,6 +308,7 @@ export function useGamificationLogic() {
     handleEvaluateBadges,
     handleSeedBadges,
     handleConfirmMapping,
+    handleRemoveMapping,
     handleUpdateOffrePoints,
     handleUpdateBadgeProductKey,
 

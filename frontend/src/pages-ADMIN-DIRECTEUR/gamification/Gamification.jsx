@@ -40,6 +40,7 @@ import {
   Search,
   TrendingUp,
   Target,
+  Trash2,
 } from 'lucide-react'
 import {
   useGamificationLogic,
@@ -818,6 +819,8 @@ function MappingTab({
   mappingLoading,
   handleConfirmMapping,
   confirmMappingLoading,
+  handleRemoveMapping,
+  removeMappingLoading,
   refetchMapping,
 }) {
   return (
@@ -943,20 +946,37 @@ function MappingTab({
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {!suggestion.alreadyMapped && suggestion.winleadPlusId && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleConfirmMapping(suggestion)}
-                          disabled={confirmMappingLoading}
-                        >
-                          {confirmMappingLoading ? (
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                          ) : (
-                            'Confirmer'
-                          )}
-                        </Button>
-                      )}
+                      <div className="flex items-center justify-end gap-2">
+                        {!suggestion.alreadyMapped && suggestion.winleadPlusId && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleConfirmMapping(suggestion)}
+                            disabled={confirmMappingLoading}
+                          >
+                            {confirmMappingLoading ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              'Confirmer'
+                            )}
+                          </Button>
+                        )}
+                        {suggestion.alreadyMapped && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRemoveMapping(suggestion)}
+                            disabled={removeMappingLoading}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
+                          >
+                            {removeMappingLoading ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <><Trash2 className="h-3 w-3 mr-1" /> Supprimer</>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1482,6 +1502,8 @@ export default function Gamification() {
           mappingLoading={logic.mappingLoading}
           handleConfirmMapping={logic.handleConfirmMapping}
           confirmMappingLoading={logic.confirmMappingLoading}
+          handleRemoveMapping={logic.handleRemoveMapping}
+          removeMappingLoading={logic.removeMappingLoading}
           refetchMapping={logic.refetchMapping}
         />
       )}
