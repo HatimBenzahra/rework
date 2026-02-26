@@ -645,12 +645,12 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
               )}
 
               {/* Contrats section */}
-              {contrats.length > 0 && (
-                <div className={`px-6 pt-4 pb-4 ${badges.length > 0 ? 'border-t border-border' : ''}`}>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    <FileText className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
-                    Contrats signés ({contrats.length})
-                  </p>
+              <div className={`px-6 pt-4 pb-4 ${badges.length > 0 ? 'border-t border-border' : ''}`}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  <FileText className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
+                  Contrats validés ({contrats.length})
+                </p>
+                {contrats.length > 0 ? (
                   <div className="space-y-2">
                     {contrats.map(contrat => (
                       <div key={contrat.id} className="flex items-start gap-4 rounded-lg border border-border/70 p-3">
@@ -685,8 +685,10 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground py-3">Aucun contrat validé</p>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -840,7 +842,7 @@ function ClassementTab({
                   <TableHead>Participant</TableHead>
                   <TableHead>Niveau</TableHead>
                   <TableHead className="text-right">Points</TableHead>
-                  <TableHead className="text-right">Contrats</TableHead>
+                  <TableHead className="text-right">Contrats validés</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

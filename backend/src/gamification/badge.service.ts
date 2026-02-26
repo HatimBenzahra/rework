@@ -72,13 +72,21 @@ export class BadgeService {
         select: { id: true },
       });
 
-      if (existing) {
-        skipped++;
-        continue;
-      }
+      await this.prisma.badgeDefinition.upsert({
+        where: { code: badge.code },
+        create: badge,
+        update: {
+          nom: badge.nom,
+          description: badge.description,
+          category: badge.category,
+          condition: badge.condition,
+          tier: badge.tier,
+          isActive: true,
+        },
+      });
 
-      await this.prisma.badgeDefinition.create({ data: badge });
-      created++;
+      if (existing) skipped++;
+      else created++;
     }
 
     this.logger.log(`Seed badges: ${created} créés, ${skipped} déjà existants (${badges.length} total)`);
@@ -113,7 +121,7 @@ export class BadgeService {
     const tiers = [
       { threshold: 1,   nom: 'Déclencheur',         tier: 1 },
       { threshold: 2,   nom: 'Junior Performer',     tier: 2 },
-      { threshold: 3,   nom: 'Monteur en puissance', tier: 3 },
+      { threshold: 3,   nom: 'Montée en puissance',  tier: 3 },
       { threshold: 5,   nom: 'Déca Performer',       tier: 4 },
       { threshold: 10,  nom: 'Objectif 10',          tier: 5 },
       { threshold: 20,  nom: 'Vingtaine',            tier: 6 },
