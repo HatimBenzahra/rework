@@ -571,12 +571,15 @@ enum RankPeriod {
 }
 
 type RankSnapshotType {
-  commercialId: Int!
+  commercialId: Int
   commercialNom: String
   commercialPrenom: String
   computedAt: DateTime!
   contratsSignes: Int!
   id: Int!
+  managerId: Int
+  managerNom: String
+  managerPrenom: String
   metadata: String
   period: RankPeriod!
   periodKey: String!

@@ -30,8 +30,9 @@ export class ContratService {
     const prospects = await this.winleadPlusApi.getProspects(token);
 
     // Pré-charger les mappings pour résolution rapide
-    const [commercialMap, offreMap] = await Promise.all([
+    const [commercialMap, managerMap, offreMap] = await Promise.all([
       this.buildCommercialMap(),
+      this.buildManagerMap(),
       this.buildOffreMap(),
     ]);
 
@@ -72,6 +73,7 @@ export class ContratService {
             prospect,
             souscription,
             commercialMap,
+            managerMap,
             offreMap,
           );
 
@@ -123,12 +125,14 @@ export class ContratService {
     prospect: any,
     souscription: any,
     commercialMap: Map<string, number>,
+    managerMap: Map<string, number>,
     offreMap: Map<number, number>,
   ): Promise<'created' | 'updated'> {
     const dateValidation = new Date(contrat.dateValidation);
     const periods = this.computePeriodKeys(dateValidation);
 
     const commercialId = commercialMap.get(prospect.commercialId) ?? null;
+    const managerId = managerMap.get(prospect.commercialId) ?? null;
     const offreExternalId = souscription.offreId ?? null;
     const offreId = offreExternalId ? (offreMap.get(offreExternalId) ?? null) : null;
 
@@ -141,6 +145,7 @@ export class ContratService {
       externalProspectId: prospect.idProspect ?? prospect.id,
       commercialWinleadPlusId: prospect.commercialId,
       commercialId,
+      managerId,
       offreExternalId,
       offreId,
       dateValidation,
@@ -190,6 +195,25 @@ export class ContratService {
     for (const c of commercials) {
       if (c.winleadPlusId) {
         map.set(c.winleadPlusId, c.id);
+      }
+    }
+    return map;
+  }
+
+  /**
+   * Construit un Map<winleadPlusId, managerId> pour résolution rapide.
+   * Seuls les managers ayant un mapping WinLead+ sont inclus.
+   */
+  private async buildManagerMap(): Promise<Map<string, number>> {
+    const managers = await this.prisma.manager.findMany({
+      where: { winleadPlusId: { not: null } },
+      select: { id: true, winleadPlusId: true },
+    });
+
+    const map = new Map<string, number>();
+    for (const m of managers) {
+      if (m.winleadPlusId) {
+        map.set(m.winleadPlusId, m.id);
       }
     }
     return map;

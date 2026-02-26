@@ -495,7 +495,7 @@ function ClassementTab({
             </div>
             <div>
               <div className="text-2xl font-bold tabular-nums">{classementStats.total}</div>
-              <div className="text-xs text-muted-foreground">Commerciaux</div>
+              <div className="text-xs text-muted-foreground">Participants</div>
             </div>
           </CardContent>
         </Card>
@@ -532,7 +532,7 @@ function ClassementTab({
                 <div className="p-1.5 rounded-md bg-yellow-100 dark:bg-yellow-900/30">
                   <Trophy className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                 </div>
-                Classement des commerciaux
+                Classement
               </CardTitle>
               <CardDescription>
                 {RANK_PERIODS.find(p => p.value === rankPeriod)?.label} — Points basés sur le prix des contrats validés
@@ -585,29 +585,38 @@ function ClassementTab({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">Rang</TableHead>
-                  <TableHead>Commercial</TableHead>
+                  <TableHead>Participant</TableHead>
                   <TableHead>Niveau</TableHead>
                   <TableHead className="text-right">Points</TableHead>
                   <TableHead className="text-right">Contrats</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ranking.map(entry => (
+                {ranking.map(entry => {
+                  const displayNom = entry.commercialNom || entry.managerNom || ''
+                  const displayPrenom = entry.commercialPrenom || entry.managerPrenom || ''
+                  const isManager = !!entry.managerId && !entry.commercialId
+                  return (
                   <TableRow key={entry.id} className={getRankRowClass(entry.rank)}>
                     <TableCell>
                       {getRankIcon(entry.rank)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getInitialColors(entry.commercialPrenom)}`}>
-                          {(entry.commercialPrenom || '').charAt(0)}{(entry.commercialNom || '').charAt(0)}
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getInitialColors(displayPrenom)}`}>
+                          {displayPrenom.charAt(0)}{displayNom.charAt(0)}
                         </div>
                         <div className="min-w-0">
                           <div className={`font-medium ${entry.rank <= 3 ? 'text-foreground' : ''}`}>
-                            {entry.commercialPrenom} {entry.commercialNom}
+                            {displayPrenom} {displayNom}
+                            {isManager && (
+                              <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">Manager</Badge>
+                            )}
                           </div>
                           <div className="mt-1">
-                            <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
+                            {entry.commercialId && (
+                              <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -628,7 +637,8 @@ function ClassementTab({
                       </span>
                     </TableCell>
                   </TableRow>
-                ))}
+                  )
+                })}
               </TableBody>
             </Table>
           )}

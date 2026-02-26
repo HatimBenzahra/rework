@@ -332,7 +332,8 @@ export class GamificationResolver {
       const tier = this.rankingService.resolvePointTier(s.points);
       return {
         id: s.id,
-        commercialId: s.commercialId,
+        commercialId: s.commercialId ?? undefined,
+        managerId: s.managerId ?? undefined,
         period: s.period,
         periodKey: s.periodKey,
         rank: s.rank,
@@ -344,6 +345,8 @@ export class GamificationResolver {
         computedAt: s.computedAt,
         commercialNom: s.commercial?.nom,
         commercialPrenom: s.commercial?.prenom,
+        managerNom: s.manager?.nom,
+        managerPrenom: s.manager?.prenom,
       };
     });
   }
@@ -358,7 +361,7 @@ export class GamificationResolver {
       const tier = this.rankingService.resolvePointTier(s.points);
       return {
         id: s.id,
-        commercialId: s.commercialId,
+        commercialId: s.commercialId ?? undefined,
         period: s.period,
         periodKey: s.periodKey,
         rank: s.rank,
@@ -383,7 +386,7 @@ export class GamificationResolver {
     );
     return {
       success: true,
-      message: `Classement ${input.period}/${input.periodKey}: ${result.computed} commerciaux classés`,
+      message: `Classement ${input.period}/${input.periodKey}: ${result.computed} participants classés`,
       mapped: result.computed,
       skipped: 0,
     };

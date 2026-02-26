@@ -7,6 +7,9 @@ export const GET_RANKING = `
     ranking(period: $period, periodKey: $periodKey) {
       id
       commercialId
+      managerId
+      managerNom
+      managerPrenom
       period
       periodKey
       rank
@@ -18,6 +21,8 @@ export const GET_RANKING = `
       computedAt
       commercialNom
       commercialPrenom
+      managerNom
+      managerPrenom
     }
   }
 `

@@ -4,7 +4,8 @@
 
 export interface RankSnapshot {
   id: number
-  commercialId: number
+  commercialId?: number
+  managerId?: number
   period: string
   periodKey: string
   rank: number
@@ -16,6 +17,8 @@ export interface RankSnapshot {
   computedAt: string
   commercialNom?: string
   commercialPrenom?: string
+  managerNom?: string
+  managerPrenom?: string
 }
 
 export interface Offre {

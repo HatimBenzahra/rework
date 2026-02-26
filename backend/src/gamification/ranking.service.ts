@@ -9,6 +9,13 @@ type PointTier = {
   maxPoints: number | null;
 };
 
+type ScoreEntry = {
+  commercialId: number | null;
+  managerId: number | null;
+  points: number;
+  contratsSignes: number;
+};
+
 @Injectable()
 export class RankingService {
   private readonly logger = new Logger(RankingService.name);
@@ -31,18 +38,20 @@ export class RankingService {
   // ============================================================================
 
   /**
-   * Calcule le classement de tous les commerciaux actifs pour une période.
+   * Calcule le classement de tous les commerciaux ET managers actifs pour une période.
    *
    * Points = somme des prix (prixBase) des contrats validés sur la période.
-   * Contrat à 10€ = 10 points de plus pour le commercial.
+   * Contrat à 10€ = 10 points de plus pour le commercial/manager.
    *
-   * Le calcul est idempotent: upsert par (commercialId, period, periodKey).
+   * Le calcul est idempotent: upsert par (commercialId/managerId, period, periodKey).
    */
   async computeRanking(
     period: RankPeriod,
     periodKey: string,
   ): Promise<{ computed: number }> {
-    // 1. Récupérer tous les commerciaux actifs
+    const periodField = this.getPeriodField(period);
+
+    // 1. Récupérer tous les commerciaux actifs avec mapping WinLead+
     const commercials = await this.prisma.commercial.findMany({
       where: {
         status: 'ACTIF',
@@ -51,92 +60,102 @@ export class RankingService {
       select: { id: true },
     });
 
-    // 2. Pour chaque commercial, calculer les points et contrats de la période
-    const scores: Array<{
-      commercialId: number;
-      points: number;
-      contratsSignes: number;
-    }> = [];
+    // 2. Récupérer tous les managers actifs avec mapping WinLead+
+    const managers = await this.prisma.manager.findMany({
+      where: {
+        status: 'ACTIF',
+        winleadPlusId: { not: null },
+      },
+      select: { id: true },
+    });
 
-    const periodField = this.getPeriodField(period);
+    // 3. Calculer les scores pour chaque commercial et manager
+    const scores: ScoreEntry[] = [];
 
     for (const commercial of commercials) {
-      const { points, contratsSignes } = await this.computeCommercialScore(
+      const { points, contratsSignes } = await this.computeScore(
+        'commercialId',
         commercial.id,
         periodField,
         periodKey,
       );
-      scores.push({ commercialId: commercial.id, points, contratsSignes });
+      scores.push({ commercialId: commercial.id, managerId: null, points, contratsSignes });
     }
 
-    // 3. Trier par points décroissants, puis par contrats signés en cas d'égalité
+    for (const manager of managers) {
+      const { points, contratsSignes } = await this.computeScore(
+        'managerId',
+        manager.id,
+        periodField,
+        periodKey,
+      );
+      scores.push({ commercialId: null, managerId: manager.id, points, contratsSignes });
+    }
+
+    // 4. Trier par points décroissants, puis par contrats signés en cas d'égalité
     scores.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       return b.contratsSignes - a.contratsSignes;
     });
 
-    // 4. Attribuer les rangs (ex aequo supporté)
+    // 5. Attribuer les rangs (ex aequo supporté)
     let currentRank = 1;
     for (let i = 0; i < scores.length; i++) {
       if (i > 0 && scores[i].points < scores[i - 1].points) {
         currentRank = i + 1;
       }
 
-      // Récupérer le rang précédent pour le metadata
-      const previousSnapshot = await this.prisma.rankSnapshot.findUnique({
-        where: {
-          commercialId_period_periodKey: {
-            commercialId: scores[i].commercialId,
-            period,
-            periodKey,
-          },
-        },
-        select: { rank: true },
-      });
+      const entry = scores[i];
+      const pointTier = this.resolvePointTier(entry.points);
 
+      // Récupérer le rang précédent pour le metadata
+      const previousSnapshot = await this.findPreviousSnapshot(entry, period, periodKey);
       const previousRank = previousSnapshot?.rank ?? null;
       const delta = previousRank !== null ? previousRank - currentRank : null;
-      const pointTier = this.resolvePointTier(scores[i].points);
 
-      await this.prisma.rankSnapshot.upsert({
-        where: {
-          commercialId_period_periodKey: {
-            commercialId: scores[i].commercialId,
-            period,
-            periodKey,
-          },
+      const snapshotData = {
+        period,
+        periodKey,
+        rank: currentRank,
+        points: entry.points,
+        contratsSignes: entry.contratsSignes,
+        metadata: {
+          previousRank,
+          delta,
+          rankTierKey: pointTier.key,
+          rankTierLabel: pointTier.label,
         },
-        create: {
-          commercialId: scores[i].commercialId,
-          period,
-          periodKey,
-          rank: currentRank,
-          points: scores[i].points,
-          contratsSignes: scores[i].contratsSignes,
-          metadata: {
-            previousRank,
-            delta,
-            rankTierKey: pointTier.key,
-            rankTierLabel: pointTier.label,
+      };
+
+      if (entry.commercialId) {
+        await this.prisma.rankSnapshot.upsert({
+          where: {
+            commercialId_period_periodKey: {
+              commercialId: entry.commercialId,
+              period,
+              periodKey,
+            },
           },
-        },
-        update: {
-          rank: currentRank,
-          points: scores[i].points,
-          contratsSignes: scores[i].contratsSignes,
-          metadata: {
-            previousRank,
-            delta,
-            rankTierKey: pointTier.key,
-            rankTierLabel: pointTier.label,
+          create: { commercialId: entry.commercialId, ...snapshotData },
+          update: { ...snapshotData, computedAt: new Date() },
+        });
+      } else if (entry.managerId) {
+        await this.prisma.rankSnapshot.upsert({
+          where: {
+            managerId_period_periodKey: {
+              managerId: entry.managerId,
+              period,
+              periodKey,
+            },
           },
-          computedAt: new Date(),
-        },
-      });
+          create: { managerId: entry.managerId, ...snapshotData },
+          update: { ...snapshotData, computedAt: new Date() },
+        });
+      }
     }
 
     this.logger.log(
-      `Classement ${period}/${periodKey}: ${scores.length} commerciaux classés`,
+      `Classement ${period}/${periodKey}: ${scores.length} participants classés (${commercials.length} commerciaux, ${managers.length} managers)`,
     );
     return { computed: scores.length };
   }
@@ -145,18 +164,22 @@ export class RankingService {
   // READ — Récupérer le classement d'une période
   // ============================================================================
 
-  /** Récupérer le classement complet d'une période */
+  /** Récupérer le classement complet d'une période (commerciaux + managers) */
   async getRanking(period: RankPeriod, periodKey: string) {
     return this.prisma.rankSnapshot.findMany({
       where: {
         period,
         periodKey,
-        commercial: {
-          winleadPlusId: { not: null },
-        },
+        OR: [
+          { commercial: { winleadPlusId: { not: null } } },
+          { manager: { winleadPlusId: { not: null } } },
+        ],
       },
       include: {
         commercial: {
+          select: { id: true, nom: true, prenom: true },
+        },
+        manager: {
           select: { id: true, nom: true, prenom: true },
         },
       },
@@ -172,26 +195,34 @@ export class RankingService {
     });
   }
 
+  /** Récupérer le classement d'un manager spécifique sur toutes les périodes */
+  async getManagerRankings(managerId: number) {
+    return this.prisma.rankSnapshot.findMany({
+      where: { managerId },
+      orderBy: [{ period: 'asc' }, { computedAt: 'desc' }],
+    });
+  }
+
   // ============================================================================
-  // HELPERS — Calcul du score d'un commercial
+  // HELPERS — Calcul du score
   // ============================================================================
 
   /**
-   * Calcule le score d'un commercial pour une période.
+   * Calcule le score d'un commercial ou manager pour une période.
    *
    * Points = somme des Offre.prixBase des contrats validés sur la période.
    * Contrat à 10€ → 10 points. Contrat sans prix → 0 points.
    * ContratsSignes = nombre de contrats validés sur la période.
    */
-  private async computeCommercialScore(
-    commercialId: number,
+  private async computeScore(
+    userField: 'commercialId' | 'managerId',
+    userId: number,
     periodField: string,
     periodKey: string,
   ): Promise<{ points: number; contratsSignes: number }> {
-    // Récupérer les contrats validés de ce commercial pour cette période
     const contrats = await this.prisma.contratValide.findMany({
       where: {
-        commercialId,
+        [userField]: userId,
         [periodField]: periodKey,
       },
       include: {
@@ -201,12 +232,46 @@ export class RankingService {
       },
     });
 
-    // Points = somme des prix des contrats (arrondi à l'entier)
     const points = Math.round(
       contrats.reduce((sum, c) => sum + (c.offre?.prixBase ?? 0), 0),
     );
 
     return { points, contratsSignes: contrats.length };
+  }
+
+  /**
+   * Trouve le snapshot précédent pour calculer le delta de rang.
+   */
+  private async findPreviousSnapshot(
+    entry: ScoreEntry,
+    period: RankPeriod,
+    periodKey: string,
+  ) {
+    if (entry.commercialId) {
+      return this.prisma.rankSnapshot.findUnique({
+        where: {
+          commercialId_period_periodKey: {
+            commercialId: entry.commercialId,
+            period,
+            periodKey,
+          },
+        },
+        select: { rank: true },
+      });
+    }
+    if (entry.managerId) {
+      return this.prisma.rankSnapshot.findUnique({
+        where: {
+          managerId_period_periodKey: {
+            managerId: entry.managerId,
+            period,
+            periodKey,
+          },
+        },
+        select: { rank: true },
+      });
+    }
+    return null;
   }
 
   /**

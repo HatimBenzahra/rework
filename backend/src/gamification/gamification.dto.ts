@@ -566,14 +566,17 @@ export class SyncContratsResult {
 // RankSnapshot — Classement / Ranking
 // ============================================================================
 
-/** Snapshot de classement d'un commercial */
+/** Snapshot de classement d'un commercial ou manager */
 @ObjectType()
 export class RankSnapshotType {
   @Field(() => Int)
   id: number;
 
-  @Field(() => Int)
-  commercialId: number;
+  @Field(() => Int, { nullable: true })
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  managerId?: number;
 
   @Field(() => PrismaRankPeriod)
   period: PrismaRankPeriod;
@@ -608,6 +611,13 @@ export class RankSnapshotType {
 
   @Field({ nullable: true })
   commercialPrenom?: string;
+
+  /** Nom du manager (résolu via relation) */
+  @Field({ nullable: true })
+  managerNom?: string;
+
+  @Field({ nullable: true })
+  managerPrenom?: string;
 }
 
 /** Input pour calculer/rafraîchir un classement */
