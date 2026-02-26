@@ -50,6 +50,7 @@ model Manager {
   statusHistorique StatusHistorique[]
   rankSnapshots    RankSnapshot[]
   contratsValides  ContratValide[]
+  commercialBadges CommercialBadge[]
 }
 
 model Commercial {
@@ -321,18 +322,22 @@ enum RankPeriod {
 
 model CommercialBadge {
   id                Int             @id @default(autoincrement())
-  commercialId      Int
+  commercialId      Int?
+  managerId         Int?
   badgeDefinitionId Int
   periodKey         String          // "2026-02-25", "2026-W09", "2026-02", "2026-Q1"
   awardedAt         DateTime        @default(now())
   metadata          Json?           // Données contextuelles: {"score": 42, "rank": 1}
 
-  commercial      Commercial      @relation(fields: [commercialId], references: [id], onDelete: Cascade)
+  commercial      Commercial?     @relation(fields: [commercialId], references: [id], onDelete: Cascade)
+  manager         Manager?        @relation(fields: [managerId], references: [id], onDelete: Cascade)
   badgeDefinition BadgeDefinition @relation(fields: [badgeDefinitionId], references: [id], onDelete: Cascade)
 
-  // Un commercial ne peut recevoir le même badge qu'une fois par période
+  // Un commercial/manager ne peut recevoir le même badge qu'une fois par période
   @@unique([commercialId, badgeDefinitionId, periodKey])
+  @@unique([managerId, badgeDefinitionId, periodKey])
   @@index([commercialId])
+  @@index([managerId])
   @@index([badgeDefinitionId])
   @@index([awardedAt])
   @@index([periodKey])

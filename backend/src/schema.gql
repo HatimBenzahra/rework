@@ -29,7 +29,8 @@ type AuthResponse {
 
 input AwardBadgeInput {
   badgeDefinitionId: Int!
-  commercialId: Int!
+  commercialId: Int
+  managerId: Int
   metadata: String
   periodKey: String!
 }
@@ -97,8 +98,9 @@ type CommercialBadgeType {
   awardedAt: DateTime!
   badgeDefinition: BadgeDefinitionType
   badgeDefinitionId: Int!
-  commercialId: Int!
+  commercialId: Int
   id: Int!
+  managerId: Int
   metadata: String
   periodKey: String!
 }
@@ -533,6 +535,7 @@ type Query {
   immeubles: [Immeuble!]!
   listRecordings(roomName: String!): [RecordingItem!]!
   manager(id: Int!): Manager!
+  managerBadges(managerId: Int!): [CommercialBadgeType!]!
   managerFull(id: Int!): Manager
   managerPersonal(id: Int!): Manager
   managers: [Manager!]!

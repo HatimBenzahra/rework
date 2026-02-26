@@ -415,8 +415,11 @@ export class CommercialBadgeType {
   @Field(() => Int)
   id: number;
 
-  @Field(() => Int)
-  commercialId: number;
+  @Field(() => Int, { nullable: true })
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  managerId?: number;
 
   @Field(() => Int)
   badgeDefinitionId: number;
@@ -437,9 +440,15 @@ export class CommercialBadgeType {
 /** Input pour attribuer un badge */
 @InputType()
 export class AwardBadgeInput {
-  @Field(() => Int)
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
   @IsInt()
-  commercialId: number;
+  commercialId?: number;
+
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  managerId?: number;
 
   @Field(() => Int)
   @IsInt()

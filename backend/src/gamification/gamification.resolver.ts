@@ -260,7 +260,28 @@ export class GamificationResolver {
     const badges = await this.badgeService.getCommercialBadges(commercialId);
     return badges.map((cb) => ({
       id: cb.id,
-      commercialId: cb.commercialId,
+      commercialId: cb.commercialId ?? undefined,
+      managerId: cb.managerId ?? undefined,
+      badgeDefinitionId: cb.badgeDefinitionId,
+      periodKey: cb.periodKey,
+      awardedAt: cb.awardedAt,
+      metadata: cb.metadata ? JSON.stringify(cb.metadata) : undefined,
+      badgeDefinition: cb.badgeDefinition
+        ? this.toBadgeType(cb.badgeDefinition)
+        : undefined,
+    }));
+  }
+
+  @Query(() => [CommercialBadgeType], { name: 'managerBadges' })
+  @Roles('admin', 'directeur', 'manager')
+  async getManagerBadges(
+    @Args('managerId', { type: () => Int }) managerId: number,
+  ): Promise<CommercialBadgeType[]> {
+    const badges = await this.badgeService.getManagerBadges(managerId);
+    return badges.map((cb) => ({
+      id: cb.id,
+      commercialId: cb.commercialId ?? undefined,
+      managerId: cb.managerId ?? undefined,
       badgeDefinitionId: cb.badgeDefinitionId,
       periodKey: cb.periodKey,
       awardedAt: cb.awardedAt,

@@ -22,11 +22,16 @@ export class EvaluationService {
   ) {}
 
   // ============================================================================
-  // ENTRY POINT — Évaluer tous les badges pour tous les commerciaux mappés
+  // ENTRY POINT — Évaluer tous les badges pour tous les participants mappés
   // ============================================================================
 
   async evaluateAll(): Promise<{ evaluated: number; awarded: number; skipped: number }> {
     const commercials = await this.prisma.commercial.findMany({
+      where: { status: 'ACTIF', winleadPlusId: { not: null } },
+      select: { id: true, winleadPlusId: true },
+    });
+
+    const managers = await this.prisma.manager.findMany({
       where: { status: 'ACTIF', winleadPlusId: { not: null } },
       select: { id: true, winleadPlusId: true },
     });
@@ -39,32 +44,39 @@ export class EvaluationService {
     let totalSkipped = 0;
 
     for (const commercial of commercials) {
-      const result = await this.evaluateCommercial(commercial.id, badges);
+      const result = await this.evaluateUser('commercialId', commercial.id, badges);
+      totalAwarded += result.awarded;
+      totalSkipped += result.skipped;
+    }
+
+    for (const manager of managers) {
+      const result = await this.evaluateUser('managerId', manager.id, badges);
       totalAwarded += result.awarded;
       totalSkipped += result.skipped;
     }
 
     this.logger.log(
-      `Évaluation terminée: ${commercials.length} commerciaux évalués, ${totalAwarded} badges attribués, ${totalSkipped} déjà existants`,
+      `Évaluation terminée: ${commercials.length + managers.length} participants évalués, ${totalAwarded} badges attribués, ${totalSkipped} déjà existants`,
     );
 
     return {
-      evaluated: commercials.length,
+      evaluated: commercials.length + managers.length,
       awarded: totalAwarded,
       skipped: totalSkipped,
     };
   }
 
   // ============================================================================
-  // EVALUATION PAR COMMERCIAL
+  // EVALUATION PAR PARTICIPANT
   // ============================================================================
 
-  private async evaluateCommercial(
-    commercialId: number,
+  private async evaluateUser(
+    userField: 'commercialId' | 'managerId',
+    userId: number,
     badges: any[],
   ): Promise<{ awarded: number; skipped: number }> {
-    // Pré-charger toutes les données nécessaires pour ce commercial
-    const context = await this.buildEvaluationContext(commercialId);
+    // Pré-charger toutes les données nécessaires pour ce participant
+    const context = await this.buildEvaluationContext(userField, userId);
 
     let awarded = 0;
     let skipped = 0;
@@ -73,17 +85,17 @@ export class EvaluationService {
       const condition = badge.condition as any;
       if (!condition?.metric) continue;
 
-      const shouldAward = this.evaluateBadge(badge, condition, context);
+      const shouldAward = this.evaluateBadge(condition, context);
       if (!shouldAward) continue;
 
       const periodKey = this.getPeriodKeyForBadge(badge, condition, context);
 
       const result = await this.badgeService.awardBadge({
-        commercialId,
+        [context.userField]: context.userId,
         badgeDefinitionId: badge.id,
         periodKey,
         metadata: JSON.stringify({ evaluatedAt: new Date().toISOString(), auto: true }),
-      });
+      } as any);
 
       if (result.awarded) awarded++;
       else skipped++;
@@ -93,19 +105,19 @@ export class EvaluationService {
   }
 
   // ============================================================================
-  // CONTEXTE D'ÉVALUATION — Données pré-chargées pour un commercial
+  // CONTEXTE D'ÉVALUATION — Données pré-chargées pour un participant
   // ============================================================================
 
-  private async buildEvaluationContext(commercialId: number) {
+  private async buildEvaluationContext(userField: 'commercialId' | 'managerId', userId: number) {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const currentQuarter = `${now.getFullYear()}-Q${Math.ceil((now.getMonth() + 1) / 3)}`;
     const currentYear = `${now.getFullYear()}`;
     const currentDay = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    // Tous les contrats validés de ce commercial
+    // Tous les contrats validés de ce participant
     const allContrats = await this.prisma.contratValide.findMany({
-      where: { commercialId },
+      where: { [userField]: userId },
       include: { offre: true },
       orderBy: { dateValidation: 'asc' },
     });
@@ -155,7 +167,7 @@ export class EvaluationService {
 
     // Badges déjà obtenus (pour meta-badge Grand Chelem)
     const existingBadges = await this.prisma.commercialBadge.findMany({
-      where: { commercialId },
+      where: { [userField]: userId },
       select: { badgeDefinitionId: true },
     });
     const distinctBadgeCount = new Set(existingBadges.map((b) => b.badgeDefinitionId)).size;
@@ -164,25 +176,33 @@ export class EvaluationService {
     const todayContrats = allContrats.filter((c) => c.periodDay === currentDay);
     const todayHours = todayContrats.map((c) => c.dateValidation.getHours());
 
-    // Portes tapées par jour (pour record et badge Marathon)
-    const portesParJour = await this.getPortesParJour(commercialId);
+    // Champs spécifiques commercial
+    let portesParJour = 0;
+    let totalArgumentes = 0;
+    let totalPortesProspectes = 0;
+    let repassageContrats = 0;
 
-    // Stats de conversion (contrats validés / argumentés)
-    const stats = await this.prisma.statistic.aggregate({
-      where: { commercialId },
-      _sum: { argumentes: true, nbPortesProspectes: true },
-    });
-    const totalArgumentes = stats._sum.argumentes ?? 0;
-    const totalPortesProspectes = stats._sum.nbPortesProspectes ?? 0;
+    if (userField === 'commercialId') {
+      // Portes tapées par jour (pour record et badge Marathon)
+      portesParJour = await this.getPortesParJour(userId);
 
-    // Repassages (Porte avec nbRepassages > 0 et CONTRAT_SIGNE)
-    const repassageContrats = await this.prisma.porte.count({
-      where: {
-        immeuble: { commercialId },
-        statut: 'CONTRAT_SIGNE',
-        nbRepassages: { gt: 0 },
-      },
-    });
+      // Stats de conversion (contrats validés / argumentés)
+      const stats = await this.prisma.statistic.aggregate({
+        where: { commercialId: userId },
+        _sum: { argumentes: true, nbPortesProspectes: true },
+      });
+      totalArgumentes = stats._sum.argumentes ?? 0;
+      totalPortesProspectes = stats._sum.nbPortesProspectes ?? 0;
+
+      // Repassages (Porte avec nbRepassages > 0 et CONTRAT_SIGNE)
+      repassageContrats = await this.prisma.porte.count({
+        where: {
+          immeuble: { commercialId: userId },
+          statut: 'CONTRAT_SIGNE',
+          nbRepassages: { gt: 0 },
+        },
+      });
+    }
 
     return {
       now,
@@ -205,7 +225,8 @@ export class EvaluationService {
       totalPortesProspectes,
       repassageContrats,
       allContrats,
-      commercialId,
+      userField,
+      userId,
     };
   }
 
@@ -213,7 +234,7 @@ export class EvaluationService {
   // ÉVALUATION D'UN BADGE — Dispatch par métrique
   // ============================================================================
 
-  private evaluateBadge(badge: any, condition: any, ctx: any): boolean {
+  private evaluateBadge(condition: any, ctx: any): boolean {
     switch (condition.metric) {
       // --- PROGRESSION ---
       case 'contratsSignes':
@@ -397,7 +418,7 @@ export class EvaluationService {
   // ============================================================================
 
   /**
-   * Évalue les trophées trimestriels pour tous les commerciaux.
+   * Évalue les trophées trimestriels pour tous les participants.
    * Appelé séparément car nécessite un classement comparatif.
    */
   async evaluateTrophees(
@@ -414,15 +435,15 @@ export class EvaluationService {
       const condition = trophee.condition as any;
       if (!condition?.ranking || !condition?.scope) continue;
 
-      const winnerId = await this.findTropheeWinner(condition, quarter);
-      if (!winnerId) continue;
+      const winner = await this.findTropheeWinner(condition, quarter);
+      if (!winner) continue;
 
       const result = await this.badgeService.awardBadge({
-        commercialId: winnerId,
+        [winner.winnerField]: winner.winnerId,
         badgeDefinitionId: trophee.id,
         periodKey: quarter,
         metadata: JSON.stringify({ quarter, auto: true }),
-      });
+      } as any);
 
       if (result.awarded) awarded++;
       else skipped++;
@@ -437,7 +458,7 @@ export class EvaluationService {
   private async findTropheeWinner(
     condition: any,
     quarter: string,
-  ): Promise<number | null> {
+  ): Promise<{ winnerId: number; winnerField: 'commercialId' | 'managerId' } | null> {
     if (condition.metric === 'contratsSignes') {
       // Top producteur global — plus de contrats validés sur le trimestre
       const topCommercial = await this.prisma.contratValide.groupBy({
@@ -448,7 +469,32 @@ export class EvaluationService {
         take: 1,
       });
 
-      return topCommercial[0]?.commercialId ?? null;
+      const topManager = await this.prisma.contratValide.groupBy({
+        by: ['managerId'],
+        where: { periodQuarter: quarter, managerId: { not: null } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 1,
+      });
+
+      const commercialCount = topCommercial[0]?._count.id ?? 0;
+      const managerCount = topManager[0]?._count.id ?? 0;
+
+      if (commercialCount === 0 && managerCount === 0) return null;
+
+      if (commercialCount >= managerCount && topCommercial[0]?.commercialId) {
+        return { winnerId: topCommercial[0].commercialId, winnerField: 'commercialId' };
+      }
+
+      if (topManager[0]?.managerId) {
+        return { winnerId: topManager[0].managerId, winnerField: 'managerId' };
+      }
+
+      if (topCommercial[0]?.commercialId) {
+        return { winnerId: topCommercial[0].commercialId, winnerField: 'commercialId' };
+      }
+
+      return null;
     }
 
     if (condition.metric === 'contratsProduit' && condition.categorie) {
@@ -469,7 +515,36 @@ export class EvaluationService {
         take: 1,
       });
 
-      return topCommercial[0]?.commercialId ?? null;
+      const topManager = await this.prisma.contratValide.groupBy({
+        by: ['managerId'],
+        where: {
+          periodQuarter: quarter,
+          managerId: { not: null },
+          offre: { badgeProductKey: { in: productKeys } },
+        },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 1,
+      });
+
+      const commercialCount = topCommercial[0]?._count.id ?? 0;
+      const managerCount = topManager[0]?._count.id ?? 0;
+
+      if (commercialCount === 0 && managerCount === 0) return null;
+
+      if (commercialCount >= managerCount && topCommercial[0]?.commercialId) {
+        return { winnerId: topCommercial[0].commercialId, winnerField: 'commercialId' };
+      }
+
+      if (topManager[0]?.managerId) {
+        return { winnerId: topManager[0].managerId, winnerField: 'managerId' };
+      }
+
+      if (topCommercial[0]?.commercialId) {
+        return { winnerId: topCommercial[0].commercialId, winnerField: 'commercialId' };
+      }
+
+      return null;
     }
 
     return null;
@@ -500,13 +575,37 @@ export class EvaluationService {
 
     if (rankedBadges.length === 0) return { awarded: 0, skipped: 0 };
 
-    // Calculer le classement du mois par contrats validés
-    const ranking = await this.prisma.contratValide.groupBy({
+    // Calculer le classement du mois par contrats validés (participants)
+    const commercialRanking = await this.prisma.contratValide.groupBy({
       by: ['commercialId'],
       where: { periodMonth: month, commercialId: { not: null } },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
     });
+
+    const managerRanking = await this.prisma.contratValide.groupBy({
+      by: ['managerId'],
+      where: { periodMonth: month, managerId: { not: null } },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+    });
+
+    const ranking = [
+      ...commercialRanking
+        .filter((r) => r.commercialId !== null)
+        .map((r) => ({
+          winnerId: r.commercialId as number,
+          winnerField: 'commercialId' as const,
+          count: r._count.id,
+        })),
+      ...managerRanking
+        .filter((r) => r.managerId !== null)
+        .map((r) => ({
+          winnerId: r.managerId as number,
+          winnerField: 'managerId' as const,
+          count: r._count.id,
+        })),
+    ].sort((a, b) => b.count - a.count);
 
     let awarded = 0;
     let skipped = 0;
@@ -516,20 +615,20 @@ export class EvaluationService {
       const rankPosition = this.parseRankPosition(condition.ranking);
       if (rankPosition === null || rankPosition > ranking.length) continue;
 
-      const winnerId = ranking[rankPosition - 1]?.commercialId;
-      if (!winnerId) continue;
+      const winner = ranking[rankPosition - 1];
+      if (!winner) continue;
 
       const result = await this.badgeService.awardBadge({
-        commercialId: winnerId,
+        [winner.winnerField]: winner.winnerId,
         badgeDefinitionId: badge.id,
         periodKey: month,
         metadata: JSON.stringify({
           month,
           rank: rankPosition,
-          contrats: ranking[rankPosition - 1]._count.id,
+          contrats: winner.count,
           auto: true,
         }),
-      });
+      } as any);
 
       if (result.awarded) awarded++;
       else skipped++;

@@ -9,6 +9,17 @@ import {
   GET_OFFRES,
   GET_BADGE_DEFINITIONS,
   GET_COMMERCIAL_BADGES,
+  GET_MANAGER_BADGES,
+  GET_WINLEADPLUS_USERS,
+  GET_MAPPING_SUGGESTIONS,
+  GET_CONTRATS_BY_COMMERCIAL,
+} from './gamification.queries'
+import {
+  GET_RANKING,
+  GET_COMMERCIAL_RANKINGS,
+  GET_OFFRES,
+  GET_BADGE_DEFINITIONS,
+  GET_COMMERCIAL_BADGES,
   GET_WINLEADPLUS_USERS,
   GET_MAPPING_SUGGESTIONS,
   GET_CONTRATS_BY_COMMERCIAL,
@@ -43,6 +54,7 @@ import type {
   QueryOffresResponse,
   QueryBadgeDefinitionsResponse,
   QueryCommercialBadgesResponse,
+  QueryManagerBadgesResponse,
   QueryWinleadPlusUsersResponse,
   QueryMappingSuggestionsResponse,
   QueryContratsByCommercialResponse,
@@ -108,6 +120,11 @@ export const gamificationApi = {
   async getCommercialBadges(commercialId: number): Promise<CommercialBadge[]> {
     const response = await gql<QueryCommercialBadgesResponse>(GET_COMMERCIAL_BADGES, { commercialId })
     return response.commercialBadges
+  },
+
+  async getManagerBadges(managerId: number): Promise<CommercialBadge[]> {
+    const response = await gql<QueryManagerBadgesResponse>(GET_MANAGER_BADGES, { managerId })
+    return response.managerBadges
   },
 
   async seedBadges(): Promise<SeedResult> {

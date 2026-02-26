@@ -364,14 +364,15 @@ export class BadgeService {
    */
   async awardBadge(input: AwardBadgeInput): Promise<{ awarded: boolean; id?: number }> {
     try {
-      const record = await this.prisma.commercialBadge.create({
-        data: {
-          commercialId: input.commercialId,
-          badgeDefinitionId: input.badgeDefinitionId,
-          periodKey: input.periodKey,
-          metadata: input.metadata ? JSON.parse(input.metadata) : null,
-        },
-      });
+      const data: any = {
+        badgeDefinitionId: input.badgeDefinitionId,
+        periodKey: input.periodKey,
+        metadata: input.metadata ? JSON.parse(input.metadata) : null,
+      };
+      if (input.commercialId) data.commercialId = input.commercialId;
+      if (input.managerId) data.managerId = input.managerId;
+
+      const record = await this.prisma.commercialBadge.create({ data });
       return { awarded: true, id: record.id };
     } catch (error: any) {
       // Unique constraint violation → déjà attribué (idempotent)
@@ -411,6 +412,15 @@ export class BadgeService {
   async getCommercialBadges(commercialId: number) {
     return this.prisma.commercialBadge.findMany({
       where: { commercialId },
+      include: { badgeDefinition: true },
+      orderBy: { awardedAt: 'desc' },
+    });
+  }
+
+  /** Liste les badges d'un manager, avec la définition incluse */
+  async getManagerBadges(managerId: number) {
+    return this.prisma.commercialBadge.findMany({
+      where: { managerId },
       include: { badgeDefinition: true },
       orderBy: { awardedAt: 'desc' },
     });

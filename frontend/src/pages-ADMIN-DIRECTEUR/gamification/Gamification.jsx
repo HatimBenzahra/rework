@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { useCommercialBadges } from '@/hooks/metier/api/gamification'
+import { useCommercialBadges, useManagerBadges } from '@/hooks/metier/api/gamification'
 import {
   Trophy,
   Medal,
@@ -404,14 +404,18 @@ const TABS = [
   { id: 'sync', label: 'Synchronisation', icon: RefreshCw },
 ]
 
-function CommercialBadgesCell({ commercialId, periodKey }) {
-  const { data: commercialBadges, loading } = useCommercialBadges(commercialId)
+function CommercialBadgesCell({ commercialId, managerId, periodKey }) {
+  const { data: commercialBadges, loading: commercialLoading } = useCommercialBadges(commercialId || 0)
+  const { data: managerBadgesData, loading: managerLoading } = useManagerBadges(managerId || 0)
+
+  const loading = commercialId ? commercialLoading : managerLoading
+  const rawBadges = commercialId ? commercialBadges : managerBadgesData
 
   if (loading) {
     return <span className="text-[10px] text-muted-foreground">Chargement...</span>
   }
 
-  const badges = (commercialBadges || [])
+  const badges = (rawBadges || [])
     .filter(b => b.periodKey === periodKey || b.periodKey === 'lifetime')
     .sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime())
 
@@ -428,7 +432,7 @@ function CommercialBadgesCell({ commercialId, periodKey }) {
         return (
           <div
             key={badge.id}
-            title={`${def?.nom || 'Badge'} — ${def?.description || ''}`}
+            title={`${def?.nom || 'Badge'} \u2014 ${def?.description || ''}`}
             className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${style.bg} ${style.border}`}
           >
             {iconUrl ? (
@@ -614,9 +618,11 @@ function ClassementTab({
                             )}
                           </div>
                           <div className="mt-1">
-                            {entry.commercialId && (
+                            {entry.commercialId ? (
                               <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
-                            )}
+                            ) : entry.managerId ? (
+                              <CommercialBadgesCell managerId={entry.managerId} periodKey={periodKey} />
+                            ) : null}
                           </div>
                         </div>
                       </div>

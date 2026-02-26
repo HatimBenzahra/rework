@@ -57,7 +57,8 @@ export interface BadgeDefinition {
 
 export interface CommercialBadge {
   id: number
-  commercialId: number
+  commercialId?: number
+  managerId?: number
   badgeDefinitionId: number
   periodKey: string
   awardedAt: string
@@ -156,6 +157,7 @@ export interface QueryCommercialRankingsResponse { commercialRankings: RankSnaps
 export interface QueryOffresResponse { offres: Offre[] }
 export interface QueryBadgeDefinitionsResponse { badgeDefinitions: BadgeDefinition[] }
 export interface QueryCommercialBadgesResponse { commercialBadges: CommercialBadge[] }
+export interface QueryManagerBadgesResponse { managerBadges: CommercialBadge[] }
 export interface QueryWinleadPlusUsersResponse { winleadPlusUsers: WinleadPlusUser[] }
 export interface QueryMappingSuggestionsResponse { mappingSuggestions: MappingSuggestion[] }
 export interface QueryContratsByCommercialResponse { contratsByCommercial: ContratValide[] }

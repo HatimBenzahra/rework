@@ -109,6 +109,29 @@ export const GET_COMMERCIAL_BADGES = `
   }
 `
 
+export const GET_MANAGER_BADGES = `
+  query GetManagerBadges($managerId: Int!) {
+    managerBadges(managerId: $managerId) {
+      id
+      commercialId
+      managerId
+      badgeDefinitionId
+      periodKey
+      awardedAt
+      metadata
+      badgeDefinition {
+        id
+        code
+        nom
+        description
+        category
+        iconUrl
+        tier
+      }
+    }
+  }
+`
+
 export const GET_WINLEADPLUS_USERS = `
   query GetWinleadPlusUsers {
     winleadPlusUsers {

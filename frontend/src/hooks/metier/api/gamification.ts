@@ -68,6 +68,14 @@ export function useCommercialBadges(commercialId: number) {
   )
 }
 
+export function useManagerBadges(managerId: number) {
+  return useApiCall(
+    () => gamificationApi.getManagerBadges(managerId),
+    [managerId],
+    'managerBadges'
+  )
+}
+
 export function useSeedBadges() {
   return useApiMutation(() => gamificationApi.seedBadges(), 'badgeDefinitions')
 }
