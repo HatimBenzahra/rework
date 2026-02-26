@@ -94,7 +94,7 @@ export class EvaluationService {
         [context.userField]: context.userId,
         badgeDefinitionId: badge.id,
         periodKey,
-        metadata: JSON.stringify({ evaluatedAt: new Date().toISOString(), auto: true }),
+        metadata: JSON.stringify(this.buildBadgeMetadata(condition, context)),
       } as any);
 
       if (result.awarded) awarded++;
@@ -194,14 +194,8 @@ export class EvaluationService {
       totalArgumentes = stats._sum.argumentes ?? 0;
       totalPortesProspectes = stats._sum.nbPortesProspectes ?? 0;
 
-      // Repassages (Porte avec nbRepassages > 0 et CONTRAT_SIGNE)
-      repassageContrats = await this.prisma.porte.count({
-        where: {
-          immeuble: { commercialId: userId },
-          statut: 'CONTRAT_SIGNE',
-          nbRepassages: { gt: 0 },
-        },
-      });
+      // Repassages: portes où StatusHistorique montre ABSENT ou RENDEZ_VOUS_PRIS suivi de CONTRAT_SIGNE
+      repassageContrats = await this.countRepassageContrats(userId);
     }
 
     return {
@@ -442,7 +436,7 @@ export class EvaluationService {
         [winner.winnerField]: winner.winnerId,
         badgeDefinitionId: trophee.id,
         periodKey: quarter,
-        metadata: JSON.stringify({ quarter, auto: true }),
+        metadata: JSON.stringify({ quarter, auto: true, metric: condition.metric, ranking: condition.ranking }),
       } as any);
 
       if (result.awarded) awarded++;
@@ -685,6 +679,43 @@ export class EvaluationService {
   }
 
   /**
+   * Compte les contrats signés après repassage pour un commercial.
+   * Un repassage = une porte où StatusHistorique montre ABSENT ou RENDEZ_VOUS_PRIS
+   * suivi (chronologiquement) d'un CONTRAT_SIGNE par le même commercial.
+   */
+  private async countRepassageContrats(commercialId: number): Promise<number> {
+    // Récupère l'historique complet de ce commercial, groupé par porte
+    const historique = await this.prisma.statusHistorique.findMany({
+      where: { commercialId },
+      orderBy: { createdAt: 'asc' },
+      select: { porteId: true, statut: true },
+    });
+
+    // Grouper par porte
+    const byPorte = new Map<number, string[]>();
+    for (const h of historique) {
+      if (!byPorte.has(h.porteId)) byPorte.set(h.porteId, []);
+      byPorte.get(h.porteId)!.push(h.statut);
+    }
+
+    // Pour chaque porte, vérifier le pattern: ABSENT|RENDEZ_VOUS_PRIS → ... → CONTRAT_SIGNE
+    let count = 0;
+    for (const statuts of byPorte.values()) {
+      let sawRepassageTrigger = false;
+      for (const s of statuts) {
+        if (s === 'ABSENT' || s === 'RENDEZ_VOUS_PRIS') {
+          sawRepassageTrigger = true;
+        } else if (s === 'CONTRAT_SIGNE' && sawRepassageTrigger) {
+          count++;
+          break; // une seule signature par porte compte
+        }
+      }
+    }
+
+    return count;
+  }
+
+  /**
    * Détermine la periodKey appropriée pour l'attribution d'un badge.
    * Les badges de progression sont « lifetime » (clé = "lifetime"),
    * les badges de produit aussi.
@@ -710,6 +741,55 @@ export class EvaluationService {
       default:
         return ctx.currentDay;
     }
+  }
+
+  /**
+   * Construit un metadata riche à partir de la condition du badge et du contexte d'évaluation.
+   * Permet au frontend d'afficher les vraies valeurs (ex: "3 contrats signés" au lieu de "? contrats signés").
+   */
+  private buildBadgeMetadata(condition: any, ctx: any): Record<string, any> {
+    const base: Record<string, any> = { evaluatedAt: new Date().toISOString(), auto: true };
+
+    switch (condition.metric) {
+      case 'contratsSignes':
+        base.totalContrats = ctx.totalContrats;
+        break;
+      case 'contratsProduit': {
+        const keys = this.mapCategorieToProductKeys(condition.categorie || '');
+        const count = keys.reduce((sum, k) => sum + (ctx.contratsByProduct.get(k) ?? 0), 0);
+        base.contratsCategorie = count;
+        base.categorie = condition.categorie;
+        break;
+      }
+      case 'signatureTiming':
+        base.timing = condition.timing;
+        break;
+      case 'signatureRepassage':
+        base.repassageContrats = ctx.repassageContrats;
+        break;
+      case 'portesParJour':
+        base.portesParJour = ctx.portesParJour;
+        break;
+      case 'signaturesParJour': {
+        const maxDay = Math.max(0, ...Array.from(ctx.contratsByDay.values() as Iterable<number>));
+        base.maxSignaturesJour = maxDay;
+        break;
+      }
+      case 'signaturesParSemaine': {
+        const maxWeek = Math.max(0, ...Array.from(ctx.contratsByWeek.values() as Iterable<number>));
+        base.maxSignaturesSemaine = maxWeek;
+        break;
+      }
+      case 'progressionHebdo':
+      case 'progressionMensuelle':
+        base.totalContrats = ctx.totalContrats;
+        break;
+      case 'badgesDistincts':
+        base.distinctBadgeCount = ctx.distinctBadgeCount;
+        break;
+    }
+
+    return base;
   }
 
   private getCurrentWeek(date: Date): string {

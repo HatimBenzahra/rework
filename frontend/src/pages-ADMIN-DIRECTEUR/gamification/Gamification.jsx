@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { useCommercialBadges, useManagerBadges } from '@/hooks/metier/api/gamification'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { useCommercialBadges, useManagerBadges, useContratsByCommercial, useContratsByManager } from '@/hooks/metier/api/gamification'
 import {
   Trophy,
   Medal,
@@ -37,6 +38,8 @@ import {
   FileText,
   Download,
   Pencil,
+  Calendar,
+  Pen,
   Search,
   TrendingUp,
   Target,
@@ -177,6 +180,65 @@ const getOffreLogoUrl = logoUrl => {
   if (!logoUrl) return null
   if (logoUrl.startsWith('http')) return logoUrl
   return `https://www.winleadplus.com${logoUrl}`
+}
+
+const getBadgeTriggerLabel = (conditionStr, metadataStr) => {
+  try {
+    const c = conditionStr ? JSON.parse(conditionStr) : null
+    const m = metadataStr ? JSON.parse(metadataStr) : null
+    if (!c?.metric) return null
+
+    // Trophées / classement
+    if (c.ranking) {
+      const pos = c.ranking.replace('top', 'Top ')
+      const suffix = m?.contrats ? ` (${m.contrats} contrats)` : ''
+      return `${pos} du classement${suffix}`
+    }
+
+    switch (c.metric) {
+      case 'contratsSignes': {
+        const val = c.threshold || m?.totalContrats
+        return val ? `${val} contrats signés` : 'Contrats signés'
+      }
+      case 'contratsProduit': {
+        const val = c.threshold || m?.contratsCategorie
+        const cat = c.categorie || m?.categorie || ''
+        return val ? `${val} contrats ${cat}`.trim() : `Contrats ${cat || 'produit'}`
+      }
+      case 'signatureTiming':
+        if (c.timing === 'firstDay') return 'Signature dès le 1er jour'
+        if (c.timing === 'firstWeek') return 'Signature dès la 1re semaine'
+        return 'Signature rapide'
+      case 'signatureRepassage': {
+        const val = m?.repassageContrats
+        return val ? `${val} signature${val > 1 ? 's' : ''} en repassage` : 'Signature en repassage'
+      }
+      case 'portesParJour': {
+        const val = c.threshold || m?.portesParJour
+        return val ? `${val} portes/jour` : 'Record portes/jour'
+      }
+      case 'signaturesParJour': {
+        const val = c.threshold || m?.maxSignaturesJour
+        return val ? `${val} signatures/jour` : 'Multi-signatures/jour'
+      }
+      case 'signaturesParSemaine': {
+        const val = c.threshold || m?.maxSignaturesSemaine
+        return val ? `${val} signatures/semaine` : 'Record signatures/semaine'
+      }
+      case 'progressionHebdo':
+        return c.threshold ? `+${c.threshold}% progression hebdo` : 'Progression hebdo'
+      case 'progressionMensuelle':
+        return c.threshold ? `+${c.threshold}% progression mensuelle` : 'Progression mensuelle'
+      case 'badgesDistincts': {
+        const val = c.threshold || m?.distinctBadgeCount
+        return val ? `${val} badges distincts obtenus` : 'Badges distincts obtenus'
+      }
+      default:
+        return null
+    }
+  } catch {
+    return null
+  }
 }
 
 const getTierBadgeClass = tierKey => {
@@ -432,7 +494,7 @@ function CommercialBadgesCell({ commercialId, managerId, periodKey }) {
         return (
           <div
             key={badge.id}
-            title={`${def?.nom || 'Badge'} \u2014 ${def?.description || ''}`}
+            title={`${def?.nom || 'Badge'} — ${def?.description || ''}`}
             className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-medium ${style.bg} ${style.border}`}
           >
             {iconUrl ? (
@@ -445,6 +507,191 @@ function CommercialBadgesCell({ commercialId, managerId, periodKey }) {
         )
       })}
     </div>
+  )
+}
+
+// =============================================================================
+// DetailModal — Fiche complète du participant (badges + contrats + points)
+// =============================================================================
+
+function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, displayPrenom, isManager, periodKey }) {
+  const { data: contratsCommercial, loading: loadingContrats } = useContratsByCommercial(commercialId || 0)
+  const { data: contratsManager, loading: loadingContratsM } = useContratsByManager(managerId || 0)
+  const { data: badgesCommercial, loading: loadingBadges } = useCommercialBadges(commercialId || 0)
+  const { data: badgesManager, loading: loadingBadgesM } = useManagerBadges(managerId || 0)
+
+  const loading = commercialId ? (loadingContrats || loadingBadges) : (loadingContratsM || loadingBadgesM)
+  const rawContrats = commercialId ? contratsCommercial : contratsManager
+  const rawBadges = commercialId ? badgesCommercial : badgesManager
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null
+    return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  }
+
+  const getPeriodField = (pk) => {
+    if (/^\d{4}-W\d{2}$/.test(pk)) return 'periodWeek'
+    if (/^\d{4}-Q\d$/.test(pk)) return 'periodQuarter'
+    if (/^\d{4}$/.test(pk)) return 'periodYear'
+    if (/^\d{4}-\d{2}-\d{2}$/.test(pk)) return 'periodDay'
+    if (/^\d{4}-\d{2}$/.test(pk)) return 'periodMonth'
+    return 'periodMonth'
+  }
+
+  const contrats = useMemo(() => {
+    if (!rawContrats) return []
+    const field = getPeriodField(periodKey)
+    return rawContrats.filter(c => c[field] === periodKey)
+  }, [rawContrats, periodKey])
+
+  const badges = useMemo(() => {
+    return (rawBadges || [])
+      .filter(b => b.periodKey === periodKey || b.periodKey === 'lifetime')
+      .sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime())
+  }, [rawBadges, periodKey])
+
+  const totalPoints = useMemo(() => contrats.reduce((sum, c) => sum + (c.offrePoints || 0), 0), [contrats])
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[640px] p-0 gap-0">
+
+        {/* Header */}
+        <div className="px-6 pt-5 pb-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${getInitialColors(displayPrenom)}`}>
+              {displayPrenom.charAt(0)}{displayNom.charAt(0)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold truncate">{displayPrenom} {displayNom}</span>
+                <Badge variant="outline" className="text-[10px] shrink-0">{isManager ? 'Manager' : 'Commercial'}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">{periodKey}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {badges.length > 0 && (
+                <span className="inline-flex items-center rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700 tabular-nums dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
+                  <Shield className="h-3 w-3 mr-1" />{badges.length}
+                </span>
+              )}
+              {contrats.length > 0 && (
+                <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700 tabular-nums dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
+                  <FileText className="h-3 w-3 mr-1" />{contrats.length}
+                </span>
+              )}
+              {totalPoints > 0 && (
+                <span className="inline-flex items-center rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-[10px] font-bold text-sky-700 tabular-nums dark:bg-sky-950/30 dark:border-sky-800 dark:text-sky-400">
+                  {totalPoints} pts
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="max-h-[60vh] overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              Chargement...
+            </div>
+          ) : (badges.length === 0 && contrats.length === 0) ? (
+            <div className="flex flex-col items-center py-12 text-muted-foreground">
+              <Trophy className="h-7 w-7 mb-2 opacity-40" />
+              <p className="text-sm">Aucune activité sur cette période</p>
+            </div>
+          ) : (
+            <>
+              {/* Badges section */}
+              {badges.length > 0 && (
+                <div className="px-6 pt-4 pb-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    <Shield className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
+                    Badges obtenus ({badges.length})
+                  </p>
+                  <div className="space-y-2">
+                    {badges.map(badge => {
+                      const def = badge.badgeDefinition
+                      const style = CATEGORY_BADGE_STYLES[def?.category] || CATEGORY_BADGE_STYLES.PROGRESSION
+                      const trigger = getBadgeTriggerLabel(def?.condition, badge.metadata)
+                      const iconUrl = def ? resolveBadgeIconUrl(def) : null
+                      return (
+                        <div key={badge.id} className="flex items-center gap-3 rounded-lg border border-border/70 p-3">
+                          <div className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center shrink-0 overflow-hidden`}>
+                            {iconUrl ? (
+                              <img src={iconUrl} alt="" className="h-6 w-6 object-contain" loading="lazy" />
+                            ) : (
+                              <style.Icon className={`h-4 w-4 ${style.color}`} />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{def?.nom || 'Badge'}</p>
+                            {trigger && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{trigger}</p>
+                            )}
+                          </div>
+                          <div className="shrink-0 flex items-center gap-2">
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getCategoryBadgeClass(def?.category)}`}>
+                              {def?.category}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">{formatDate(badge.awardedAt)}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Contrats section */}
+              {contrats.length > 0 && (
+                <div className={`px-6 pt-4 pb-4 ${badges.length > 0 ? 'border-t border-border' : ''}`}>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                    <FileText className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
+                    Contrats signés ({contrats.length})
+                  </p>
+                  <div className="space-y-2">
+                    {contrats.map(contrat => (
+                      <div key={contrat.id} className="flex items-start gap-4 rounded-lg border border-border/70 p-3">
+                        {contrat.offreLogoUrl ? (
+                          <img src={getOffreLogoUrl(contrat.offreLogoUrl)} alt="" className="h-9 w-9 rounded-lg border border-border/50 object-contain bg-muted/50 p-1 shrink-0" />
+                        ) : (
+                          <div className="h-9 w-9 rounded-lg border border-border/50 bg-muted/50 flex items-center justify-center shrink-0">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{contrat.offreNom || 'Offre inconnue'}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {[contrat.offreCategorie, contrat.offreFournisseur].filter(Boolean).join(' · ')}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right text-xs space-y-1">
+                          <div className="flex items-center justify-end gap-1 text-muted-foreground">
+                            <Calendar className="h-3 w-3" />{formatDate(contrat.dateValidation)}
+                          </div>
+                          {contrat.dateSignature && (
+                            <div className="flex items-center justify-end gap-1 text-muted-foreground">
+                              <Pen className="h-3 w-3" />{formatDate(contrat.dateSignature)}
+                            </div>
+                          )}
+                          {contrat.offrePoints > 0 && (
+                            <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-px text-[10px] font-semibold text-emerald-700 tabular-nums dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
+                              {contrat.offrePoints} pts
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -479,6 +726,7 @@ function ClassementTab({
   handleComputeRanking,
   computeRankingLoading,
 }) {
+  const [selectedEntry, setSelectedEntry] = useState(null)
   const classementStats = useMemo(() => {
     if (!ranking?.length) return { total: 0, totalPoints: 0, totalContrats: 0 }
     return {
@@ -601,7 +849,7 @@ function ClassementTab({
                   const displayPrenom = entry.commercialPrenom || entry.managerPrenom || ''
                   const isManager = !!entry.managerId && !entry.commercialId
                   return (
-                  <TableRow key={entry.id} className={getRankRowClass(entry.rank)}>
+                  <TableRow key={entry.id} className={`${getRankRowClass(entry.rank)} cursor-pointer`} onClick={() => setSelectedEntry(entry)}>
                     <TableCell>
                       {getRankIcon(entry.rank)}
                     </TableCell>
@@ -650,6 +898,16 @@ function ClassementTab({
           )}
         </CardContent>
       </Card>
+      <DetailModal
+        open={!!selectedEntry}
+        onOpenChange={(open) => { if (!open) setSelectedEntry(null) }}
+        commercialId={selectedEntry?.commercialId}
+        managerId={selectedEntry?.managerId}
+        displayNom={selectedEntry?.commercialNom || selectedEntry?.managerNom || ''}
+        displayPrenom={selectedEntry?.commercialPrenom || selectedEntry?.managerPrenom || ''}
+        isManager={!!selectedEntry?.managerId && !selectedEntry?.commercialId}
+        periodKey={periodKey}
+      />
     </div>
   )
 }

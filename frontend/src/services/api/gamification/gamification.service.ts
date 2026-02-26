@@ -13,16 +13,7 @@ import {
   GET_WINLEADPLUS_USERS,
   GET_MAPPING_SUGGESTIONS,
   GET_CONTRATS_BY_COMMERCIAL,
-} from './gamification.queries'
-import {
-  GET_RANKING,
-  GET_COMMERCIAL_RANKINGS,
-  GET_OFFRES,
-  GET_BADGE_DEFINITIONS,
-  GET_COMMERCIAL_BADGES,
-  GET_WINLEADPLUS_USERS,
-  GET_MAPPING_SUGGESTIONS,
-  GET_CONTRATS_BY_COMMERCIAL,
+  GET_CONTRATS_BY_MANAGER,
 } from './gamification.queries'
 import {
   SYNC_OFFRES,
@@ -58,6 +49,7 @@ import type {
   QueryWinleadPlusUsersResponse,
   QueryMappingSuggestionsResponse,
   QueryContratsByCommercialResponse,
+  QueryContratsByManagerResponse,
   MutationSyncOffresResponse,
   MutationSyncContratsResponse,
   MutationConfirmMappingResponse,
@@ -174,5 +166,10 @@ export const gamificationApi = {
   async getContratsByCommercial(commercialId: number): Promise<ContratValide[]> {
     const response = await gql<QueryContratsByCommercialResponse>(GET_CONTRATS_BY_COMMERCIAL, { commercialId })
     return response.contratsByCommercial
+  },
+
+  async getContratsByManager(managerId: number): Promise<ContratValide[]> {
+    const response = await gql<QueryContratsByManagerResponse>(GET_CONTRATS_BY_MANAGER, { managerId })
+    return response.contratsByManager
   },
 }

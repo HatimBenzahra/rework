@@ -97,6 +97,7 @@ export interface ContratValide {
   externalProspectId: number
   commercialWinleadPlusId: string
   commercialId?: number
+  managerId?: number
   offreExternalId?: number
   offreId?: number
   dateValidation: string
@@ -109,6 +110,11 @@ export interface ContratValide {
   metadata?: string
   syncedAt: string
   createdAt: string
+  offreNom?: string
+  offreCategorie?: string
+  offreFournisseur?: string
+  offreLogoUrl?: string
+  offrePoints?: number
 }
 
 export interface MutationResult {
@@ -161,6 +167,7 @@ export interface QueryManagerBadgesResponse { managerBadges: CommercialBadge[] }
 export interface QueryWinleadPlusUsersResponse { winleadPlusUsers: WinleadPlusUser[] }
 export interface QueryMappingSuggestionsResponse { mappingSuggestions: MappingSuggestion[] }
 export interface QueryContratsByCommercialResponse { contratsByCommercial: ContratValide[] }
+export interface QueryContratsByManagerResponse { contratsByManager: ContratValide[] }
 
 // Mutation response types
 export interface MutationSyncOffresResponse { syncOffres: SyncResult }

@@ -104,6 +104,7 @@ export const GET_COMMERCIAL_BADGES = `
         category
         iconUrl
         tier
+        condition
       }
     }
   }
@@ -127,6 +128,7 @@ export const GET_MANAGER_BADGES = `
         category
         iconUrl
         tier
+        condition
       }
     }
   }
@@ -173,6 +175,7 @@ export const GET_CONTRATS_BY_COMMERCIAL = `
       externalProspectId
       commercialWinleadPlusId
       commercialId
+      managerId
       offreExternalId
       offreId
       dateValidation
@@ -185,6 +188,41 @@ export const GET_CONTRATS_BY_COMMERCIAL = `
       metadata
       syncedAt
       createdAt
+      offreNom
+      offreCategorie
+      offreFournisseur
+      offreLogoUrl
+      offrePoints
+    }
+  }
+`
+
+export const GET_CONTRATS_BY_MANAGER = `
+  query GetContratsByManager($managerId: Int!) {
+    contratsByManager(managerId: $managerId) {
+      id
+      externalContratId
+      externalProspectId
+      commercialWinleadPlusId
+      commercialId
+      managerId
+      offreExternalId
+      offreId
+      dateValidation
+      dateSignature
+      periodDay
+      periodWeek
+      periodMonth
+      periodQuarter
+      periodYear
+      metadata
+      syncedAt
+      createdAt
+      offreNom
+      offreCategorie
+      offreFournisseur
+      offreLogoUrl
+      offrePoints
     }
   }
 `

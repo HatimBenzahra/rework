@@ -248,6 +248,24 @@ export class GamificationResolver {
     };
   }
 
+  /** Convertit un ContratValide Prisma (null + offre relation) → GraphQL (undefined + offre resolved fields) */
+  private toContratType(c: any): ContratValideType {
+    return {
+      ...c,
+      commercialId: c.commercialId ?? undefined,
+      managerId: c.managerId ?? undefined,
+      offreExternalId: c.offreExternalId ?? undefined,
+      offreId: c.offreId ?? undefined,
+      dateSignature: c.dateSignature ?? undefined,
+      metadata: c.metadata ? JSON.stringify(c.metadata) : undefined,
+      offreNom: c.offre?.nom ?? undefined,
+      offreCategorie: c.offre?.categorie ?? undefined,
+      offreFournisseur: c.offre?.fournisseur ?? undefined,
+      offreLogoUrl: c.offre?.logoUrl ?? undefined,
+      offrePoints: c.offre?.points ?? undefined,
+    };
+  }
+
   // ============================================================================
   // BADGES COMMERCIAUX — Attribution, liste, révocation
   // ============================================================================
@@ -479,14 +497,16 @@ export class GamificationResolver {
     @Args('commercialId', { type: () => Int }) commercialId: number,
   ): Promise<ContratValideType[]> {
     const contrats = await this.contratService.getContratsByCommercial(commercialId);
-    return contrats.map((c) => ({
-      ...c,
-      commercialId: c.commercialId ?? undefined,
-      offreExternalId: c.offreExternalId ?? undefined,
-      offreId: c.offreId ?? undefined,
-      dateSignature: c.dateSignature ?? undefined,
-      metadata: c.metadata ? JSON.stringify(c.metadata) : undefined,
-    }));
+    return contrats.map((c) => this.toContratType(c));
+  }
+
+  @Query(() => [ContratValideType], { name: 'contratsByManager' })
+  @Roles('admin', 'directeur', 'manager')
+  async getContratsByManager(
+    @Args('managerId', { type: () => Int }) managerId: number,
+  ): Promise<ContratValideType[]> {
+    const contrats = await this.contratService.getContratsByManager(managerId);
+    return contrats.map((c) => this.toContratType(c));
   }
 
   // ============================================================================

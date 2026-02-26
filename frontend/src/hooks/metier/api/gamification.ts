@@ -128,3 +128,11 @@ export function useContratsByCommercial(commercialId: number) {
     'contrats'
   )
 }
+
+export function useContratsByManager(managerId: number) {
+  return useApiCall(
+    () => gamificationApi.getContratsByManager(managerId),
+    [managerId],
+    'contrats'
+  )
+}

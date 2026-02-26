@@ -103,6 +103,15 @@ export class ContratService {
     });
   }
 
+  /** Contrats validés d'un manager (par son ID Pro-Win) */
+  async getContratsByManager(managerId: number) {
+    return this.prisma.contratValide.findMany({
+      where: { managerId },
+      include: { offre: true },
+      orderBy: { dateValidation: 'desc' },
+    });
+  }
+
   /** Contrats validés d'un commercial par période */
   async getContratsByCommercialAndPeriod(
     commercialId: number,

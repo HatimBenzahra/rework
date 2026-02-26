@@ -363,24 +363,26 @@ export class BadgeService {
    * Idempotent: si le badge existe déjà pour cette période, retourne null.
    */
   async awardBadge(input: AwardBadgeInput): Promise<{ awarded: boolean; id?: number }> {
-    try {
-      const data: any = {
-        badgeDefinitionId: input.badgeDefinitionId,
-        periodKey: input.periodKey,
-        metadata: input.metadata ? JSON.parse(input.metadata) : null,
-      };
-      if (input.commercialId) data.commercialId = input.commercialId;
-      if (input.managerId) data.managerId = input.managerId;
+    const data: any = {
+      badgeDefinitionId: input.badgeDefinitionId,
+      periodKey: input.periodKey,
+      metadata: input.metadata ? JSON.parse(input.metadata) : null,
+    };
+    if (input.commercialId) data.commercialId = input.commercialId;
+    if (input.managerId) data.managerId = input.managerId;
 
-      const record = await this.prisma.commercialBadge.create({ data });
-      return { awarded: true, id: record.id };
-    } catch (error: any) {
-      // Unique constraint violation → déjà attribué (idempotent)
-      if (error.code === 'P2002') {
-        return { awarded: false };
-      }
-      throw error;
-    }
+    // Unique constraint: commercialId+badgeDefinitionId+periodKey ou managerId+badgeDefinitionId+periodKey
+    const uniqueWhere = input.commercialId
+      ? { commercialId_badgeDefinitionId_periodKey: { commercialId: input.commercialId, badgeDefinitionId: input.badgeDefinitionId, periodKey: input.periodKey } }
+      : { managerId_badgeDefinitionId_periodKey: { managerId: input.managerId!, badgeDefinitionId: input.badgeDefinitionId, periodKey: input.periodKey } };
+
+    const record = await this.prisma.commercialBadge.upsert({
+      where: uniqueWhere,
+      create: data,
+      update: { metadata: data.metadata },
+    });
+
+    return { awarded: true, id: record.id };
   }
 
   /**

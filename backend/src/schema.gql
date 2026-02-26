@@ -129,9 +129,15 @@ type ContratValideType {
   externalContratId: Int!
   externalProspectId: Int!
   id: Int!
+  managerId: Int
   metadata: String
+  offreCategorie: String
   offreExternalId: Int
+  offreFournisseur: String
   offreId: Int
+  offreLogoUrl: String
+  offreNom: String
+  offrePoints: Int
   periodDay: String!
   periodMonth: String!
   periodQuarter: String!
@@ -524,6 +530,7 @@ type Query {
   commercialTeamRanking(commercialId: Int!): TeamRanking!
   commercials: [Commercial!]!
   contratsByCommercial(commercialId: Int!): [ContratValideType!]!
+  contratsByManager(managerId: Int!): [ContratValideType!]!
   currentUserAssignment(userId: Int!, userType: UserType!): ZoneEnCours
   directeur(id: Int!): Directeur!
   directeurs: [Directeur!]!

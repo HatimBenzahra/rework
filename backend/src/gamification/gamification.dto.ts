@@ -513,11 +513,12 @@ export class ContratValideType {
   commercialId?: number;
 
   @Field(() => Int, { nullable: true })
+  managerId?: number;
+  @Field(() => Int, { nullable: true })
   offreExternalId?: number;
 
   @Field(() => Int, { nullable: true })
   offreId?: number;
-
   @Field()
   dateValidation: Date;
 
@@ -547,8 +548,23 @@ export class ContratValideType {
 
   @Field()
   createdAt: Date;
-}
 
+  // --- Offre resolved fields ---
+  @Field({ nullable: true })
+  offreNom?: string;
+
+  @Field({ nullable: true })
+  offreCategorie?: string;
+
+  @Field({ nullable: true })
+  offreFournisseur?: string;
+
+  @Field({ nullable: true })
+  offreLogoUrl?: string;
+
+  @Field(() => Int, { nullable: true })
+  offrePoints?: number;
+}
 /** Résultat d'une synchro contrats */
 @ObjectType()
 export class SyncContratsResult {
