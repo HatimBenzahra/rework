@@ -176,11 +176,16 @@ export class EvaluationService {
     const todayContrats = allContrats.filter((c) => c.periodDay === currentDay);
     const todayHours = todayContrats.map((c) => c.dateValidation.getHours());
 
-    // Champs spécifiques commercial
+    // Champs spécifiques commercial (source: StatusHistorique + Statistic)
     let portesParJour = 0;
     let totalArgumentes = 0;
     let totalPortesProspectes = 0;
     let repassageContrats = 0;
+    let maxArgumentationsParJour = 0;
+    let maxPortesProspectesParJour = 0;
+    let argumentesThisMonth = 0;
+    let closedThisMonth = 0;
+    let repassageConversionsThisMonth = 0;
 
     if (userField === 'commercialId') {
       // Portes tapées par jour (pour record et badge Marathon)
@@ -196,6 +201,20 @@ export class EvaluationService {
 
       // Repassages: portes où StatusHistorique montre ABSENT ou RENDEZ_VOUS_PRIS suivi de CONTRAT_SIGNE
       repassageContrats = await this.countRepassageContrats(userId);
+
+      // Max argumentations en un seul jour (StatusHistorique: statut=ARGUMENTE groupé par jour)
+      maxArgumentationsParJour = await this.getMaxStatutParJour(userId, 'ARGUMENTE');
+
+      // Max portes prospectées en un seul jour (StatusHistorique: tout statut groupé par jour)
+      maxPortesProspectesParJour = await this.getMaxPortesProspectesParJour(userId);
+
+      // Taux closing du mois en cours: ARGUMENTE et CONTRAT_SIGNE ce mois-ci
+      const monthClosingStats = await this.getMonthClosingStats(userId, currentMonth);
+      argumentesThisMonth = monthClosingStats.argumentes;
+      closedThisMonth = monthClosingStats.closed;
+
+      // Repassage conversions du mois en cours: portes ABSENT → CONTRAT_SIGNE ce mois-ci
+      repassageConversionsThisMonth = await this.countRepassageConversionsThisMonth(userId, currentMonth);
     }
 
     return {
@@ -218,6 +237,11 @@ export class EvaluationService {
       totalArgumentes,
       totalPortesProspectes,
       repassageContrats,
+      maxArgumentationsParJour,
+      maxPortesProspectesParJour,
+      argumentesThisMonth,
+      closedThisMonth,
+      repassageConversionsThisMonth,
       allContrats,
       userField,
       userId,
@@ -238,14 +262,21 @@ export class EvaluationService {
       case 'contratsProduit':
         return this.evalContratsProduit(condition, ctx);
 
-      // --- PERFORMANCE: Timing ---
-      case 'signatureTiming':
-        return this.evalSignatureTiming(condition, ctx);
+      // --- PERFORMANCE: Argumentations par jour ---
+      case 'argumentationsParJour':
+        return this.evalArgumentationsParJour(condition, ctx);
 
-      // --- PERFORMANCE: Repassage ---
-      case 'signatureRepassage':
-        return ctx.repassageContrats > 0;
+      // --- PERFORMANCE: Portes prospectées par jour ---
+      case 'portesProspectesParJour':
+        return this.evalPortesProspectesParJour(condition, ctx);
 
+      // --- PERFORMANCE: Taux closing ARGUMENTE → CONTRAT_SIGNE ---
+      case 'tauxClosing':
+        return this.evalTauxClosing(condition, ctx);
+
+      // --- PERFORMANCE: Repassage conversion ABSENT → CONTRAT_SIGNE ---
+      case 'repassageConversion':
+        return this.evalRepassageConversion(condition, ctx);
       // --- PERFORMANCE: Volume portes ---
       case 'portesParJour':
         return this.evalPortesParJour(condition, ctx);
@@ -258,14 +289,14 @@ export class EvaluationService {
       case 'signaturesParSemaine':
         return this.evalSignaturesParSemaine(condition, ctx);
 
-      // --- PERFORMANCE: Conversion ---
+      // --- PERFORMANCE: Conversion (évalué via evaluateConversionRanking) ---
       case 'tauxConversion':
-        // Nécessite un classement comparatif — évalué via computeRanking
+        // Classement comparatif hebdo — évalué séparément via evaluateConversionRanking()
         return false;
 
-      // --- PERFORMANCE: Ratio portes/signatures ---
+      // --- PERFORMANCE: Ratio portes/signatures (évalué via evaluateTransformationRanking) ---
       case 'ratioPortesSignatures':
-        // Nécessite un classement comparatif — évalué via computeRanking
+        // Classement comparatif mensuel — évalué séparément via evaluateTransformationRanking()
         return false;
 
       // --- PERFORMANCE: Progression ---
@@ -275,10 +306,7 @@ export class EvaluationService {
       case 'progressionMensuelle':
         return this.evalProgressionMensuelle(condition, ctx);
 
-      // --- PERFORMANCE: Badge consécutif ---
-      case 'badgeConsecutif':
-        // Complexe — nécessite analyse temporelle des attributions
-        return false;
+      // --- PERFORMANCE: Progression ---
 
       // --- PERFORMANCE: Meta-badge ---
       case 'badgesDistincts':
@@ -319,29 +347,38 @@ export class EvaluationService {
     return count >= (condition.threshold ?? 0);
   }
 
-  /** TIMING: contrat validé à des heures spécifiques */
-  private evalSignatureTiming(condition: any, ctx: any): boolean {
-    if (ctx.todayHours.length === 0) return false;
-
-    switch (condition.scope) {
-      case 'derniere_heure':
-        // Contrat validé dans la dernière heure de la journée (entre 23h et minuit)
-        return ctx.todayHours.some((h: number) => h >= 23);
-
-      case 'apres_19h':
-        // Contrat validé après 19h
-        return ctx.todayHours.some((h: number) => h >= 19);
-
-      default:
-        return false;
-    }
+  /** ARGUMENTATIONS PAR JOUR: N argumentations réalisées en un seul jour (source: StatusHistorique) */
+  private evalArgumentationsParJour(condition: any, ctx: any): boolean {
+    const threshold = condition.threshold ?? 20;
+    return ctx.maxArgumentationsParJour >= threshold;
   }
 
-  /** VOLUME PORTES: record de portes tapées en un jour */
+  /** PORTES PROSPECTÉES PAR JOUR: N portes prospectées en un seul jour (source: StatusHistorique) */
+  private evalPortesProspectesParJour(condition: any, ctx: any): boolean {
+    const threshold = condition.threshold ?? 100;
+    return ctx.maxPortesProspectesParJour >= threshold;
+  }
+
+  /** TAUX CLOSING: ratio ARGUMENTE → CONTRAT_SIGNE >= threshold% sur le mois (source: StatusHistorique) */
+  private evalTauxClosing(condition: any, ctx: any): boolean {
+    if (condition.scope !== 'mois') return false;
+    const threshold = condition.threshold ?? 30;
+    if (ctx.argumentesThisMonth === 0) return false;
+    const rate = (ctx.closedThisMonth / ctx.argumentesThisMonth) * 100;
+    return rate >= threshold;
+  }
+
+  /** REPASSAGE CONVERSION: N portes ABSENT → CONTRAT_SIGNE sur le mois (source: StatusHistorique) */
+  private evalRepassageConversion(condition: any, ctx: any): boolean {
+    if (condition.scope !== 'mois') return false;
+    const threshold = condition.threshold ?? 3;
+    return ctx.repassageConversionsThisMonth >= threshold;
+  }
+
+  /** VOLUME PORTES: N portes tapées en un seul jour (source: StatusHistorique) */
   private evalPortesParJour(condition: any, ctx: any): boolean {
-    if (condition.scope !== 'record') return false;
-    // Le record est un badge « snapshot » — attribué si le commercial a un historique
-    return ctx.portesParJour > 0;
+    const threshold = condition.threshold ?? 50;
+    return ctx.portesParJour >= threshold;
   }
 
   /** MULTI-SIGNATURES: N contrats validés dans une même journée */
@@ -353,12 +390,11 @@ export class EvaluationService {
     return false;
   }
 
-  /** RECORDS HEBDO: record de contrats validés sur une semaine */
+  /** RECORDS HEBDO: N contrats validés sur une même semaine (source: WinLead+) */
   private evalSignaturesParSemaine(condition: any, ctx: any): boolean {
-    if (condition.scope !== 'record') return false;
-    // Attribué si le commercial a au moins une semaine avec des contrats
+    const threshold = condition.threshold ?? 5;
     for (const count of ctx.contratsByWeek.values()) {
-      if (count > 0) return true;
+      if (count >= threshold) return true;
     }
     return false;
   }
@@ -632,6 +668,259 @@ export class EvaluationService {
   }
 
   // ============================================================================
+  // CONVERSION RANKING — Badge basé sur le meilleur taux de conversion hebdo
+  // ============================================================================
+
+  /**
+   * Évalue le badge PERF_CONVERSION_KING pour une semaine donnée.
+   * Taux de conversion = contrats validés (WinLead+) / argumentations (Statistic) sur la semaine.
+   * Attribué au commercial avec le meilleur taux (minimum 1 argumentation requise).
+   */
+  async evaluateConversionRanking(
+    weekKey: string,
+  ): Promise<{ awarded: number; skipped: number }> {
+    // Trouver les badges de type tauxConversion
+    const conversionBadges = await this.prisma.badgeDefinition.findMany({
+      where: { category: 'PERFORMANCE', isActive: true },
+    });
+
+    const targetBadges = conversionBadges.filter((b) => {
+      const cond = b.condition as any;
+      return cond?.metric === 'tauxConversion' && cond?.ranking;
+    });
+
+    if (targetBadges.length === 0) return { awarded: 0, skipped: 0 };
+
+    // Plage de dates de la semaine ISO (lundi 00:00 → dimanche 23:59)
+    const { start, end } = this.getWeekDateRange(weekKey);
+
+    // 1. Contrats validés par commercial pour cette semaine (source: WinLead+)
+    const contratsByCommercial = await this.prisma.contratValide.groupBy({
+      by: ['commercialId'],
+      where: { periodWeek: weekKey, commercialId: { not: null } },
+      _count: { id: true },
+    });
+
+    // 2. Argumentations par commercial pour cette semaine (source: Statistic)
+    const statsByCommercial = await this.prisma.statistic.groupBy({
+      by: ['commercialId'],
+      where: {
+        commercialId: { not: null },
+        createdAt: { gte: start, lte: end },
+      },
+      _sum: { argumentes: true },
+    });
+
+    // Construire les maps pour lookup rapide
+    const arguMap = new Map<number, number>();
+    for (const s of statsByCommercial) {
+      if (s.commercialId != null) {
+        arguMap.set(s.commercialId, s._sum.argumentes ?? 0);
+      }
+    }
+
+    // Calculer le taux de conversion pour chaque commercial
+    const rankings: Array<{ commercialId: number; rate: number; contrats: number; argumentes: number }> = [];
+
+    for (const entry of contratsByCommercial) {
+      if (entry.commercialId == null) continue;
+      const contrats = entry._count.id;
+      const argumentes = arguMap.get(entry.commercialId) ?? 0;
+
+      // Minimum 1 argumentation requise pour éviter division par zéro
+      if (argumentes === 0) continue;
+
+      const rate = contrats / argumentes;
+      rankings.push({ commercialId: entry.commercialId, rate, contrats, argumentes });
+    }
+
+    // Trier par taux décroissant
+    rankings.sort((a, b) => b.rate - a.rate);
+
+    let awarded = 0;
+    let skipped = 0;
+
+    for (const badge of targetBadges) {
+      const condition = badge.condition as any;
+      const rankPosition = this.parseRankPosition(condition.ranking);
+      if (rankPosition === null || rankPosition > rankings.length) continue;
+
+      const winner = rankings[rankPosition - 1];
+      if (!winner) continue;
+
+      const result = await this.badgeService.awardBadge({
+        commercialId: winner.commercialId,
+        badgeDefinitionId: badge.id,
+        periodKey: weekKey,
+        metadata: JSON.stringify({
+          weekKey,
+          rank: rankPosition,
+          contrats: winner.contrats,
+          argumentes: winner.argumentes,
+          conversionRate: Math.round(winner.rate * 100) / 100,
+          auto: true,
+        }),
+      } as any);
+
+      if (result.awarded) awarded++;
+      else skipped++;
+    }
+
+    return { awarded, skipped };
+  }
+
+  // ============================================================================
+  // TRANSFORMATION RANKING — Badge basé sur le meilleur ratio portes/contrats mensuel
+  // ============================================================================
+
+  /**
+   * Évalue le badge PERF_CHAMPION_TRANSFORMATION pour un mois donné.
+   * Ratio = contrats validés (WinLead+) / portes prospectées (Statistic.nbPortesProspectes) sur le mois.
+   * Attribué au commercial avec le meilleur ratio (minimum 1 porte prospectée requise).
+   */
+  async evaluateTransformationRanking(
+    month: string,
+  ): Promise<{ awarded: number; skipped: number }> {
+    // Trouver les badges de type ratioPortesSignatures
+    const perfBadges = await this.prisma.badgeDefinition.findMany({
+      where: { category: 'PERFORMANCE', isActive: true },
+    });
+
+    const targetBadges = perfBadges.filter((b) => {
+      const cond = b.condition as any;
+      return cond?.metric === 'ratioPortesSignatures' && cond?.ranking;
+    });
+
+    if (targetBadges.length === 0) return { awarded: 0, skipped: 0 };
+
+    // Plage de dates du mois
+    const { start, end } = this.getMonthDateRange(month);
+
+    // 1. Contrats validés par commercial pour ce mois (source: WinLead+)
+    const contratsByCommercial = await this.prisma.contratValide.groupBy({
+      by: ['commercialId'],
+      where: { periodMonth: month, commercialId: { not: null } },
+      _count: { id: true },
+    });
+
+    // 2. Portes prospectées par commercial pour ce mois (source: Statistic)
+    const statsByCommercial = await this.prisma.statistic.groupBy({
+      by: ['commercialId'],
+      where: {
+        commercialId: { not: null },
+        createdAt: { gte: start, lte: end },
+      },
+      _sum: { nbPortesProspectes: true },
+    });
+
+    // Map pour lookup rapide
+    const portesMap = new Map<number, number>();
+    for (const s of statsByCommercial) {
+      if (s.commercialId != null) {
+        portesMap.set(s.commercialId, s._sum.nbPortesProspectes ?? 0);
+      }
+    }
+
+    // Calculer le ratio pour chaque commercial
+    const rankings: Array<{ commercialId: number; rate: number; contrats: number; portes: number }> = [];
+
+    for (const entry of contratsByCommercial) {
+      if (entry.commercialId == null) continue;
+      const contrats = entry._count.id;
+      const portes = portesMap.get(entry.commercialId) ?? 0;
+
+      // Minimum 1 porte prospectée requise pour éviter division par zéro
+      if (portes === 0) continue;
+
+      const rate = contrats / portes;
+      rankings.push({ commercialId: entry.commercialId, rate, contrats, portes });
+    }
+
+    // Trier par ratio décroissant
+    rankings.sort((a, b) => b.rate - a.rate);
+
+    let awarded = 0;
+    let skipped = 0;
+
+    for (const badge of targetBadges) {
+      const condition = badge.condition as any;
+      const rankPosition = this.parseRankPosition(condition.ranking);
+      if (rankPosition === null || rankPosition > rankings.length) continue;
+
+      const winner = rankings[rankPosition - 1];
+      if (!winner) continue;
+
+      const result = await this.badgeService.awardBadge({
+        commercialId: winner.commercialId,
+        badgeDefinitionId: badge.id,
+        periodKey: month,
+        metadata: JSON.stringify({
+          month,
+          rank: rankPosition,
+          contrats: winner.contrats,
+          portesProspectees: winner.portes,
+          transformationRate: Math.round(winner.rate * 10000) / 100,
+          auto: true,
+        }),
+      } as any);
+
+      if (result.awarded) awarded++;
+      else skipped++;
+    }
+
+    return { awarded, skipped };
+  }
+
+  /**
+   * Convertit une clé de mois (ex: "2026-02") en plage de dates 1er→dernier jour.
+   */
+  private getMonthDateRange(month: string): { start: Date; end: Date } {
+    const match = month.match(/^(\d{4})-(\d{2})$/);
+    if (!match) {
+      const now = new Date();
+      return { start: now, end: now };
+    }
+
+    const year = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+
+    const start = new Date(Date.UTC(year, m - 1, 1));
+    const end = new Date(Date.UTC(year, m, 0, 23, 59, 59, 999));
+
+    return { start, end };
+  }
+
+  /**
+   * Convertit une clé de semaine ISO (ex: "2026-W09") en plage de dates lundi→dimanche.
+   */
+  private getWeekDateRange(weekKey: string): { start: Date; end: Date } {
+    const match = weekKey.match(/^(\d{4})-W(\d{2})$/);
+    if (!match) {
+      // Fallback: retourne une plage vide
+      const now = new Date();
+      return { start: now, end: now };
+    }
+
+    const year = parseInt(match[1], 10);
+    const week = parseInt(match[2], 10);
+
+    // ISO 8601: la semaine 1 contient le 4 janvier
+    const jan4 = new Date(Date.UTC(year, 0, 4));
+    const dayOfWeek = jan4.getUTCDay() || 7; // 1=lundi, 7=dimanche
+    const mondayWeek1 = new Date(jan4);
+    mondayWeek1.setUTCDate(jan4.getUTCDate() - dayOfWeek + 1);
+
+    const monday = new Date(mondayWeek1);
+    monday.setUTCDate(mondayWeek1.getUTCDate() + (week - 1) * 7);
+
+    const sunday = new Date(monday);
+    sunday.setUTCDate(monday.getUTCDate() + 6);
+    sunday.setUTCHours(23, 59, 59, 999);
+
+    return { start: monday, end: sunday };
+  }
+
+  // ============================================================================
   // HELPERS
   // ============================================================================
 
@@ -716,6 +1005,118 @@ export class EvaluationService {
   }
 
   /**
+   * Max occurrences d'un statut donné en un seul jour pour un commercial.
+   * Ex: getMaxStatutParJour(userId, 'ARGUMENTE') → max argumentations en 1 jour.
+   * Source: StatusHistorique groupé par DATE(createdAt) filtré sur statut.
+   */
+  private async getMaxStatutParJour(commercialId: number, statut: string): Promise<number> {
+    const result = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(*) as count
+      FROM "StatusHistorique"
+      WHERE "commercialId" = ${commercialId}
+        AND "statut"::text = ${statut}
+      GROUP BY DATE("createdAt")
+      ORDER BY count DESC
+      LIMIT 1
+    `;
+
+    return result.length > 0 ? Number(result[0].count) : 0;
+  }
+
+  /**
+   * Max portes prospectées (tout statut) en un seul jour pour un commercial.
+   * Compte les portes DISTINCTES visitées par jour (une porte visitée 2x le même jour = 1).
+   * Source: StatusHistorique groupé par DATE(createdAt), COUNT(DISTINCT porteId).
+   */
+  private async getMaxPortesProspectesParJour(commercialId: number): Promise<number> {
+    const result = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(DISTINCT "porteId") as count
+      FROM "StatusHistorique"
+      WHERE "commercialId" = ${commercialId}
+      GROUP BY DATE("createdAt")
+      ORDER BY count DESC
+      LIMIT 1
+    `;
+
+    return result.length > 0 ? Number(result[0].count) : 0;
+  }
+
+  /**
+   * Statistiques de closing pour un mois donné: nb d'ARGUMENTE et nb de CONTRAT_SIGNE.
+   * Source: StatusHistorique filtré par mois et commercialId.
+   * Utilisé pour calculer le taux closing = closed / argumentes.
+   */
+  private async getMonthClosingStats(
+    commercialId: number,
+    month: string,
+  ): Promise<{ argumentes: number; closed: number }> {
+    const { start, end } = this.getMonthDateRange(month);
+
+    const argumentes = await this.prisma.statusHistorique.count({
+      where: {
+        commercialId,
+        statut: 'ARGUMENTE',
+        createdAt: { gte: start, lte: end },
+      },
+    });
+
+    const closed = await this.prisma.statusHistorique.count({
+      where: {
+        commercialId,
+        statut: 'CONTRAT_SIGNE',
+        createdAt: { gte: start, lte: end },
+      },
+    });
+
+    return { argumentes, closed };
+  }
+
+  /**
+   * Compte les portes où le commercial a converti un ABSENT en CONTRAT_SIGNE ce mois-ci.
+   * Pattern: pour chaque porte, StatusHistorique montre au moins un ABSENT
+   * suivi (chronologiquement) d'un CONTRAT_SIGNE, le tout dans le mois donné.
+   */
+  private async countRepassageConversionsThisMonth(
+    commercialId: number,
+    month: string,
+  ): Promise<number> {
+    const { start, end } = this.getMonthDateRange(month);
+
+    const historique = await this.prisma.statusHistorique.findMany({
+      where: {
+        commercialId,
+        createdAt: { gte: start, lte: end },
+        statut: { in: ['ABSENT', 'CONTRAT_SIGNE'] },
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { porteId: true, statut: true },
+    });
+
+    // Grouper par porte
+    const byPorte = new Map<number, string[]>();
+    for (const h of historique) {
+      if (!byPorte.has(h.porteId)) byPorte.set(h.porteId, []);
+      byPorte.get(h.porteId)!.push(h.statut);
+    }
+
+    // Pour chaque porte, vérifier ABSENT → ... → CONTRAT_SIGNE
+    let count = 0;
+    for (const statuts of byPorte.values()) {
+      let sawAbsent = false;
+      for (const s of statuts) {
+        if (s === 'ABSENT') {
+          sawAbsent = true;
+        } else if (s === 'CONTRAT_SIGNE' && sawAbsent) {
+          count++;
+          break;
+        }
+      }
+    }
+
+    return count;
+  }
+
+  /**
    * Détermine la periodKey appropriée pour l'attribution d'un badge.
    * Les badges de progression sont « lifetime » (clé = "lifetime"),
    * les badges de produit aussi.
@@ -761,11 +1162,21 @@ export class EvaluationService {
         base.categorie = condition.categorie;
         break;
       }
-      case 'signatureTiming':
-        base.timing = condition.timing;
+      case 'argumentationsParJour':
+        base.maxArgumentationsParJour = ctx.maxArgumentationsParJour;
         break;
-      case 'signatureRepassage':
-        base.repassageContrats = ctx.repassageContrats;
+      case 'portesProspectesParJour':
+        base.maxPortesProspectesParJour = ctx.maxPortesProspectesParJour;
+        break;
+      case 'tauxClosing':
+        base.argumentesThisMonth = ctx.argumentesThisMonth;
+        base.closedThisMonth = ctx.closedThisMonth;
+        base.tauxClosing = ctx.argumentesThisMonth > 0
+          ? Math.round((ctx.closedThisMonth / ctx.argumentesThisMonth) * 10000) / 100
+          : 0;
+        break;
+      case 'repassageConversion':
+        base.repassageConversionsThisMonth = ctx.repassageConversionsThisMonth;
         break;
       case 'portesParJour':
         base.portesParJour = ctx.portesParJour;

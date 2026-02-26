@@ -50,6 +50,14 @@ export class GamificationCronService {
         `✅ Badges: ${badgeResult.awarded} attribués, ${badgeResult.skipped} déjà existants`,
       );
 
+      // Étape 2b: Évaluer le badge conversion hebdo (classement comparatif)
+      const now = new Date();
+      const currentWeek = `${now.getFullYear()}-W${this.getISOWeek(now)}`;
+      const conversionResult = await this.evaluationService.evaluateConversionRanking(currentWeek);
+      this.logger.log(
+        `✅ Conversion hebdo ${currentWeek}: ${conversionResult.awarded} attribués, ${conversionResult.skipped} déjà existants`,
+      );
+
       // Étape 3: Recalculer les classements
       await this.computeAllRankings();
 
@@ -103,6 +111,21 @@ export class GamificationCronService {
     } catch (error: any) {
       this.logger.error(
         `❌ Évaluation performance ranking échouée: ${error.message}`,
+        error.stack,
+      );
+    }
+
+    // Évaluer le badge transformation (ratio portes/contrats) du mois précédent
+    this.logger.log(`🏅 Évaluation transformation ranking: ${previousMonth}`);
+
+    try {
+      const transformResult = await this.evaluationService.evaluateTransformationRanking(previousMonth);
+      this.logger.log(
+        `✅ Transformation ${previousMonth}: ${transformResult.awarded} attribués, ${transformResult.skipped} déjà existants`,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `❌ Évaluation transformation ranking échouée: ${error.message}`,
         error.stack,
       );
     }

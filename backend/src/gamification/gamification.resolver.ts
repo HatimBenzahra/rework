@@ -555,4 +555,34 @@ export class GamificationResolver {
       total: result.awarded + result.skipped,
     };
   }
+
+  @Mutation(() => AwardBadgesResult, { name: 'evaluateConversionRanking' })
+  @Roles('admin', 'directeur')
+  async evaluateConversionRanking(
+    @Args('weekKey') weekKey: string,
+  ): Promise<AwardBadgesResult> {
+    const result = await this.evaluationService.evaluateConversionRanking(weekKey);
+    return {
+      success: true,
+      message: `Conversion ranking ${weekKey}: ${result.awarded} badge(s) attribué(s), ${result.skipped} déjà existant(s)`,
+      awarded: result.awarded,
+      skipped: result.skipped,
+      total: result.awarded + result.skipped,
+    };
+  }
+
+  @Mutation(() => AwardBadgesResult, { name: 'evaluateTransformationRanking' })
+  @Roles('admin', 'directeur')
+  async evaluateTransformationRanking(
+    @Args('month') month: string,
+  ): Promise<AwardBadgesResult> {
+    const result = await this.evaluationService.evaluateTransformationRanking(month);
+    return {
+      success: true,
+      message: `Transformation ranking ${month}: ${result.awarded} badge(s) attribué(s), ${result.skipped} déjà existant(s)`,
+      awarded: result.awarded,
+      skipped: result.skipped,
+      total: result.awarded + result.skipped,
+    };
+  }
 }

@@ -187,33 +187,39 @@ export class BadgeService {
 
   private addPerformanceBadges(badges: any[]) {
     const performanceBadges = [
-      // --- Timing (source: dateValidation des contrats WinLead+) ---
+      // --- Volume terrain (source: StatusHistorique par jour) ---
       {
-        code: 'PERF_DERNIERE_MINUTE',
-        nom: 'Dernière Minute',
-        description: 'Contrat validé dans la dernière heure de la journée',
-        condition: { metric: 'signatureTiming', scope: 'derniere_heure' },
+        code: 'PERF_ARGUMENTATEUR',
+        nom: 'Argumentateur',
+        description: '20 argumentations réalisées en une seule journée',
+        condition: { metric: 'argumentationsParJour', scope: 'record', threshold: 20 },
       },
       {
-        code: 'PERF_FINISSEUR',
-        nom: 'Finisseur',
-        description: 'Dernier contrat validé de la journée (après 19h)',
-        condition: { metric: 'signatureTiming', scope: 'apres_19h' },
+        code: 'PERF_PROSPECTEUR_100',
+        nom: 'Prospecteur 100',
+        description: '100 portes prospectées en une seule journée',
+        condition: { metric: 'portesProspectesParJour', scope: 'record', threshold: 100 },
       },
-      // --- Repassage (source: Porte.nbRepassages + statut CONTRAT_SIGNE) ---
+      // --- Conversion terrain (source: StatusHistorique) ---
       {
-        code: 'PERF_RAPPEL_GAGNANT',
-        nom: 'Rappel Gagnant',
-        description: 'Contrat signé suite à un repassage / relance',
-        condition: { metric: 'signatureRepassage' },
+        code: 'PERF_CLOSER',
+        nom: 'Closer',
+        description: 'Taux de conversion ARGUMENTE → CONTRAT_SIGNE ≥ 30% sur le mois',
+        condition: { metric: 'tauxClosing', scope: 'mois', threshold: 30 },
+      },
+      {
+        code: 'PERF_RELANCEUR',
+        nom: 'Relanceur',
+        description: '3 portes ABSENT converties en CONTRAT_SIGNÉ via repassage sur le mois',
+        condition: { metric: 'repassageConversion', scope: 'mois', threshold: 3 },
       },
       // --- Volume portes (source: StatusHistorique.createdAt par jour) ---
-      {
-        code: 'PERF_MARATHON_PORTES',
-        nom: 'Marathon des Portes',
-        description: 'Nombre record de portes tapées en 1 jour',
-        condition: { metric: 'portesParJour', scope: 'record' },
-      },
+        {
+          code: 'PERF_MARATHON_PORTES',
+          nom: 'Marathon des Portes',
+          description: '50 portes tapées en une seule journée',
+          condition: { metric: 'portesParJour', threshold: 50 },
+        },
       // --- Multi-signatures/jour (source: dateValidation groupé par jour) ---
       {
         code: 'PERF_COUP_CHAPEAU',
@@ -243,8 +249,8 @@ export class BadgeService {
       {
         code: 'PERF_SERIAL_SIGNATAIRE',
         nom: 'Serial Signataire',
-        description: 'Plus grand nombre de contrats validés sur une semaine',
-        condition: { metric: 'signaturesParSemaine', scope: 'record' },
+        description: '5 contrats validés sur une même semaine',
+        condition: { metric: 'signaturesParSemaine', threshold: 5 },
       },
       // --- Taux de conversion (source: contrats validés / Statistic.argumentes) ---
       {
@@ -273,13 +279,7 @@ export class BadgeService {
         description: 'Amélioration des contrats validés de plus de 50% d\'un mois à l\'autre',
         condition: { metric: 'progressionMensuelle', threshold: 50 },
       },
-      // --- Badge cumul (source: CommercialBadge.awardedAt) ---
-      {
-        code: 'PERF_PERSEVERANCE_5J',
-        nom: 'Persévérance 5J',
-        description: 'Conservation du même badge 5 jours consécutifs (Lun-Ven)',
-        condition: { metric: 'badgeConsecutif', threshold: 5 },
-      },
+      // --- Ranking mensuel (source: RankSnapshot) ---
       // --- Ranking mensuel (source: RankSnapshot) ---
       {
         code: 'PERF_CONTRAT_OR',

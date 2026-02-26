@@ -19,8 +19,19 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
-import { useCommercialBadges, useManagerBadges, useContratsByCommercial, useContratsByManager } from '@/hooks/metier/api/gamification'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
+  useCommercialBadges,
+  useManagerBadges,
+  useContratsByCommercial,
+  useContratsByManager,
+} from '@/hooks/metier/api/gamification'
 import {
   Trophy,
   Medal,
@@ -95,10 +106,14 @@ const getRankIcon = position => {
 
 const getRankRowClass = position => {
   switch (position) {
-    case 1: return ''
-    case 2: return ''
-    case 3: return ''
-    default: return ''
+    case 1:
+      return ''
+    case 2:
+      return ''
+    case 3:
+      return ''
+    default:
+      return ''
   }
 }
 
@@ -148,11 +163,41 @@ const getCategoryAccent = category => {
 }
 
 const STAT_CARD_STYLES = [
-  { label: 'Total', key: 'total', icon: Shield, bg: 'bg-slate-100 dark:bg-slate-800/40', color: 'text-slate-600 dark:text-slate-400' },
-  { label: 'Progression', key: 'progression', icon: TrendingUp, bg: 'bg-emerald-100 dark:bg-emerald-900/30', color: 'text-emerald-600 dark:text-emerald-400' },
-  { label: 'Produit', key: 'produit', icon: Package, bg: 'bg-sky-100 dark:bg-sky-900/30', color: 'text-sky-600 dark:text-sky-400' },
-  { label: 'Performance', key: 'performance', icon: Target, bg: 'bg-amber-100 dark:bg-amber-900/30', color: 'text-amber-600 dark:text-amber-400' },
-  { label: 'Trophée', key: 'trophee', icon: Crown, bg: 'bg-yellow-100 dark:bg-yellow-900/30', color: 'text-yellow-600 dark:text-yellow-400' },
+  {
+    label: 'Total',
+    key: 'total',
+    icon: Shield,
+    bg: 'bg-slate-100 dark:bg-slate-800/40',
+    color: 'text-slate-600 dark:text-slate-400',
+  },
+  {
+    label: 'Progression',
+    key: 'progression',
+    icon: TrendingUp,
+    bg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    color: 'text-emerald-600 dark:text-emerald-400',
+  },
+  {
+    label: 'Produit',
+    key: 'produit',
+    icon: Package,
+    bg: 'bg-sky-100 dark:bg-sky-900/30',
+    color: 'text-sky-600 dark:text-sky-400',
+  },
+  {
+    label: 'Performance',
+    key: 'performance',
+    icon: Target,
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    color: 'text-amber-600 dark:text-amber-400',
+  },
+  {
+    label: 'Trophée',
+    key: 'trophee',
+    icon: Crown,
+    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+    color: 'text-yellow-600 dark:text-yellow-400',
+  },
 ]
 
 const getCategoryIcon = category => {
@@ -205,13 +250,23 @@ const getBadgeTriggerLabel = (conditionStr, metadataStr) => {
         const cat = c.categorie || m?.categorie || ''
         return val ? `${val} contrats ${cat}`.trim() : `Contrats ${cat || 'produit'}`
       }
-      case 'signatureTiming':
-        if (c.timing === 'firstDay') return 'Signature dès le 1er jour'
-        if (c.timing === 'firstWeek') return 'Signature dès la 1re semaine'
-        return 'Signature rapide'
-      case 'signatureRepassage': {
-        const val = m?.repassageContrats
-        return val ? `${val} signature${val > 1 ? 's' : ''} en repassage` : 'Signature en repassage'
+      case 'argumentationsParJour': {
+        const val = c.threshold || m?.maxArgumentationsParJour
+        return val ? `${val} argumentations/jour` : 'Record argumentations/jour'
+      }
+      case 'portesProspectesParJour': {
+        const val = c.threshold || m?.maxPortesProspectesParJour
+        return val ? `${val} portes prospectées/jour` : 'Record portes/jour'
+      }
+      case 'tauxClosing': {
+        const pct = m?.tauxClosing ?? c.threshold
+        return pct ? `${pct}% taux closing` : 'Taux closing mensuel'
+      }
+      case 'repassageConversion': {
+        const val = c.threshold || m?.repassageConversionsThisMonth
+        return val
+          ? `${val} repassage${val > 1 ? 's' : ''} converti${val > 1 ? 's' : ''}`
+          : 'Repassages convertis'
       }
       case 'portesParJour': {
         const val = c.threshold || m?.portesParJour
@@ -346,7 +401,8 @@ const resolveSemanticBadgeIconUrl = badge => {
   ) {
     return SEMANTIC_BADGE_ICONS.energy
   }
-  if (source.includes('assurance') || source.includes('mutuelle')) return SEMANTIC_BADGE_ICONS.shield
+  if (source.includes('assurance') || source.includes('mutuelle'))
+    return SEMANTIC_BADGE_ICONS.shield
   if (source.includes('mondial tv') || source.includes(' tv')) return SEMANTIC_BADGE_ICONS.tv
   if (source.includes('conciergerie')) return SEMANTIC_BADGE_ICONS.star
 
@@ -422,10 +478,30 @@ const resolveBadgeIconUrl = badge => {
 }
 
 const CATEGORY_BADGE_STYLES = {
-  PROGRESSION: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', border: 'border-emerald-200 dark:border-emerald-800', color: 'text-emerald-600 dark:text-emerald-400', Icon: TrendingUp },
-  PRODUIT: { bg: 'bg-sky-50 dark:bg-sky-950/30', border: 'border-sky-200 dark:border-sky-800', color: 'text-sky-600 dark:text-sky-400', Icon: Package },
-  PERFORMANCE: { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-200 dark:border-amber-800', color: 'text-amber-600 dark:text-amber-400', Icon: Target },
-  TROPHEE: { bg: 'bg-yellow-50 dark:bg-yellow-950/30', border: 'border-yellow-200 dark:border-yellow-800', color: 'text-yellow-600 dark:text-yellow-400', Icon: Crown },
+  PROGRESSION: {
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+    border: 'border-emerald-200 dark:border-emerald-800',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    Icon: TrendingUp,
+  },
+  PRODUIT: {
+    bg: 'bg-sky-50 dark:bg-sky-950/30',
+    border: 'border-sky-200 dark:border-sky-800',
+    color: 'text-sky-600 dark:text-sky-400',
+    Icon: Package,
+  },
+  PERFORMANCE: {
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+    border: 'border-amber-200 dark:border-amber-800',
+    color: 'text-amber-600 dark:text-amber-400',
+    Icon: Target,
+  },
+  TROPHEE: {
+    bg: 'bg-yellow-50 dark:bg-yellow-950/30',
+    border: 'border-yellow-200 dark:border-yellow-800',
+    color: 'text-yellow-600 dark:text-yellow-400',
+    Icon: Crown,
+  },
 }
 
 function BadgeIcon({ badge }) {
@@ -438,7 +514,9 @@ function BadgeIcon({ badge }) {
   }, [iconUrl])
 
   return (
-    <div className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center overflow-hidden`}>
+    <div
+      className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center overflow-hidden`}
+    >
       {iconUrl && !imgFailed ? (
         <img
           src={iconUrl}
@@ -467,7 +545,9 @@ const TABS = [
 ]
 
 function CommercialBadgesCell({ commercialId, managerId, periodKey }) {
-  const { data: commercialBadges, loading: commercialLoading } = useCommercialBadges(commercialId || 0)
+  const { data: commercialBadges, loading: commercialLoading } = useCommercialBadges(
+    commercialId || 0
+  )
   const { data: managerBadgesData, loading: managerLoading } = useManagerBadges(managerId || 0)
 
   const loading = commercialId ? commercialLoading : managerLoading
@@ -514,22 +594,39 @@ function CommercialBadgesCell({ commercialId, managerId, periodKey }) {
 // DetailModal — Fiche complète du participant (badges + contrats + points)
 // =============================================================================
 
-function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, displayPrenom, isManager, periodKey }) {
-  const { data: contratsCommercial, loading: loadingContrats } = useContratsByCommercial(commercialId || 0)
+function DetailModal({
+  open,
+  onOpenChange,
+  commercialId,
+  managerId,
+  displayNom,
+  displayPrenom,
+  isManager,
+  periodKey,
+}) {
+  const { data: contratsCommercial, loading: loadingContrats } = useContratsByCommercial(
+    commercialId || 0
+  )
   const { data: contratsManager, loading: loadingContratsM } = useContratsByManager(managerId || 0)
   const { data: badgesCommercial, loading: loadingBadges } = useCommercialBadges(commercialId || 0)
   const { data: badgesManager, loading: loadingBadgesM } = useManagerBadges(managerId || 0)
 
-  const loading = commercialId ? (loadingContrats || loadingBadges) : (loadingContratsM || loadingBadgesM)
+  const loading = commercialId
+    ? loadingContrats || loadingBadges
+    : loadingContratsM || loadingBadgesM
   const rawContrats = commercialId ? contratsCommercial : contratsManager
   const rawBadges = commercialId ? badgesCommercial : badgesManager
 
-  const formatDate = (dateStr) => {
+  const formatDate = dateStr => {
     if (!dateStr) return null
-    return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return new Date(dateStr).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    })
   }
 
-  const getPeriodField = (pk) => {
+  const getPeriodField = pk => {
     if (/^\d{4}-W\d{2}$/.test(pk)) return 'periodWeek'
     if (/^\d{4}-Q\d$/.test(pk)) return 'periodQuarter'
     if (/^\d{4}$/.test(pk)) return 'periodYear'
@@ -550,34 +647,45 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
       .sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime())
   }, [rawBadges, periodKey])
 
-  const totalPoints = useMemo(() => contrats.reduce((sum, c) => sum + (c.offrePoints || 0), 0), [contrats])
+  const totalPoints = useMemo(
+    () => contrats.reduce((sum, c) => sum + (c.offrePoints || 0), 0),
+    [contrats]
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[1480px] h-[640px] max-w-[calc(100vw-1.5rem)] sm:max-w-[1480px]! p-0 gap-0 overflow-hidden">
-
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${getInitialColors(displayPrenom)}`}>
-              {displayPrenom.charAt(0)}{displayNom.charAt(0)}
+            <div
+              className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${getInitialColors(displayPrenom)}`}
+            >
+              {displayPrenom.charAt(0)}
+              {displayNom.charAt(0)}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-semibold truncate">{displayPrenom} {displayNom}</span>
-                <Badge variant="outline" className="text-[10px] shrink-0">{isManager ? 'Manager' : 'Commercial'}</Badge>
+                <span className="font-semibold truncate">
+                  {displayPrenom} {displayNom}
+                </span>
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  {isManager ? 'Manager' : 'Commercial'}
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">{periodKey}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {badges.length > 0 && (
                 <span className="inline-flex items-center rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700 tabular-nums dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400">
-                  <Shield className="h-3 w-3 mr-1" />{badges.length}
+                  <Shield className="h-3 w-3 mr-1" />
+                  {badges.length}
                 </span>
               )}
               {contrats.length > 0 && (
                 <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700 tabular-nums dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
-                  <FileText className="h-3 w-3 mr-1" />{contrats.length}
+                  <FileText className="h-3 w-3 mr-1" />
+                  {contrats.length}
                 </span>
               )}
               {totalPoints > 0 && (
@@ -596,7 +704,7 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
               <RefreshCw className="h-4 w-4 animate-spin mr-2" />
               Chargement...
             </div>
-          ) : (badges.length === 0 && contrats.length === 0) ? (
+          ) : badges.length === 0 && contrats.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-muted-foreground">
               <Trophy className="h-7 w-7 mb-2 opacity-40" />
               <p className="text-sm">Aucune activité sur cette période</p>
@@ -612,26 +720,41 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
                   <div className="space-y-2">
                     {badges.map(badge => {
                       const def = badge.badgeDefinition
-                      const style = CATEGORY_BADGE_STYLES[def?.category] || CATEGORY_BADGE_STYLES.PROGRESSION
+                      const style =
+                        CATEGORY_BADGE_STYLES[def?.category] || CATEGORY_BADGE_STYLES.PROGRESSION
                       const trigger = getBadgeTriggerLabel(def?.condition, badge.metadata)
                       const iconUrl = def ? resolveBadgeIconUrl(def) : null
                       return (
-                        <div key={badge.id} className="rounded-lg border border-border/70 p-3 space-y-2">
+                        <div
+                          key={badge.id}
+                          className="rounded-lg border border-border/70 p-3 space-y-2"
+                        >
                           <div className="flex items-center gap-3">
-                            <div className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center shrink-0 overflow-hidden`}>
+                            <div
+                              className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center shrink-0 overflow-hidden`}
+                            >
                               {iconUrl ? (
-                                <img src={iconUrl} alt="" className="h-6 w-6 object-contain" loading="lazy" />
+                                <img
+                                  src={iconUrl}
+                                  alt=""
+                                  className="h-6 w-6 object-contain"
+                                  loading="lazy"
+                                />
                               ) : (
                                 <style.Icon className={`h-4 w-4 ${style.color}`} />
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">{def?.nom || 'Badge'}</p>
-                              <span className="text-[10px] text-muted-foreground">{formatDate(badge.awardedAt)}</span>
+                              <span className="text-[10px] text-muted-foreground">
+                                {formatDate(badge.awardedAt)}
+                              </span>
                             </div>
                           </div>
                           {trigger && <p className="text-xs text-muted-foreground">{trigger}</p>}
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getCategoryBadgeClass(def?.category)}`}>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getCategoryBadgeClass(def?.category)}`}
+                          >
                             {def?.category}
                           </span>
                         </div>
@@ -651,27 +774,40 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
                 {contrats.length > 0 ? (
                   <div className="space-y-2">
                     {contrats.map(contrat => (
-                      <div key={contrat.id} className="flex items-start gap-3 rounded-lg border border-border/70 p-3">
+                      <div
+                        key={contrat.id}
+                        className="flex items-start gap-3 rounded-lg border border-border/70 p-3"
+                      >
                         {contrat.offreLogoUrl ? (
-                          <img src={getOffreLogoUrl(contrat.offreLogoUrl)} alt="" className="h-9 w-9 rounded-lg border border-border/50 object-contain bg-muted/50 p-1 shrink-0" />
+                          <img
+                            src={getOffreLogoUrl(contrat.offreLogoUrl)}
+                            alt=""
+                            className="h-9 w-9 rounded-lg border border-border/50 object-contain bg-muted/50 p-1 shrink-0"
+                          />
                         ) : (
                           <div className="h-9 w-9 rounded-lg border border-border/50 bg-muted/50 flex items-center justify-center shrink-0">
                             <Package className="h-4 w-4 text-muted-foreground" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{contrat.offreNom || 'Offre inconnue'}</p>
+                          <p className="text-sm font-medium truncate">
+                            {contrat.offreNom || 'Offre inconnue'}
+                          </p>
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {[contrat.offreCategorie, contrat.offreFournisseur].filter(Boolean).join(' · ')}
+                            {[contrat.offreCategorie, contrat.offreFournisseur]
+                              .filter(Boolean)
+                              .join(' · ')}
                           </p>
                         </div>
                         <div className="shrink-0 text-right text-xs space-y-1">
                           <div className="flex items-center justify-end gap-1 text-muted-foreground">
-                            <Calendar className="h-3 w-3" />{formatDate(contrat.dateValidation)}
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(contrat.dateValidation)}
                           </div>
                           {contrat.dateSignature && (
                             <div className="flex items-center justify-end gap-1 text-muted-foreground">
-                              <Pen className="h-3 w-3" />{formatDate(contrat.dateSignature)}
+                              <Pen className="h-3 w-3" />
+                              {formatDate(contrat.dateSignature)}
                             </div>
                           )}
                           {contrat.offrePoints > 0 && (
@@ -757,7 +893,9 @@ function ClassementTab({
               <Star className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold tabular-nums">{formatNumber(classementStats.totalPoints)}</div>
+              <div className="text-2xl font-bold tabular-nums">
+                {formatNumber(classementStats.totalPoints)}
+              </div>
               <div className="text-xs text-muted-foreground">Points cumulés</div>
             </div>
           </CardContent>
@@ -768,7 +906,9 @@ function ClassementTab({
               <CheckCircle className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <div className="text-2xl font-bold tabular-nums">{formatNumber(classementStats.totalContrats)}</div>
+              <div className="text-2xl font-bold tabular-nums">
+                {formatNumber(classementStats.totalContrats)}
+              </div>
               <div className="text-xs text-muted-foreground">Contrats signés</div>
             </div>
           </CardContent>
@@ -787,7 +927,8 @@ function ClassementTab({
                 Classement
               </CardTitle>
               <CardDescription>
-                {RANK_PERIODS.find(p => p.value === rankPeriod)?.label} — Points basés sur le prix des contrats validés
+                {RANK_PERIODS.find(p => p.value === rankPeriod)?.label} — Points basés sur le prix
+                des contrats validés
               </CardDescription>
             </div>
             <div className="flex items-center gap-3">
@@ -849,48 +990,63 @@ function ClassementTab({
                   const displayPrenom = entry.commercialPrenom || entry.managerPrenom || ''
                   const isManager = !!entry.managerId && !entry.commercialId
                   return (
-                  <TableRow key={entry.id} className={`${getRankRowClass(entry.rank)} cursor-pointer`} onClick={() => setSelectedEntry(entry)}>
-                    <TableCell>
-                      {getRankIcon(entry.rank)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getInitialColors(displayPrenom)}`}>
-                          {displayPrenom.charAt(0)}{displayNom.charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className={`font-medium ${entry.rank <= 3 ? 'text-foreground' : ''}`}>
-                            {displayPrenom} {displayNom}
-                            {isManager && (
-                              <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">Manager</Badge>
-                            )}
+                    <TableRow
+                      key={entry.id}
+                      className={`${getRankRowClass(entry.rank)} cursor-pointer`}
+                      onClick={() => setSelectedEntry(entry)}
+                    >
+                      <TableCell>{getRankIcon(entry.rank)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getInitialColors(displayPrenom)}`}
+                          >
+                            {displayPrenom.charAt(0)}
+                            {displayNom.charAt(0)}
                           </div>
-                          <div className="mt-1">
-                            {entry.commercialId ? (
-                              <CommercialBadgesCell commercialId={entry.commercialId} periodKey={periodKey} />
-                            ) : entry.managerId ? (
-                              <CommercialBadgesCell managerId={entry.managerId} periodKey={periodKey} />
-                            ) : null}
+                          <div className="min-w-0">
+                            <div
+                              className={`font-medium ${entry.rank <= 3 ? 'text-foreground' : ''}`}
+                            >
+                              {displayPrenom} {displayNom}
+                              {isManager && (
+                                <Badge variant="outline" className="ml-2 text-[10px] py-0 px-1.5">
+                                  Manager
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="mt-1">
+                              {entry.commercialId ? (
+                                <CommercialBadgesCell
+                                  commercialId={entry.commercialId}
+                                  periodKey={periodKey}
+                                />
+                              ) : entry.managerId ? (
+                                <CommercialBadgesCell
+                                  managerId={entry.managerId}
+                                  periodKey={periodKey}
+                                />
+                              ) : null}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={getTierBadgeClass(entry.rankTierKey)}>
-                        {entry.rankTierLabel}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="inline-flex items-center rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-xs font-bold text-sky-700 tabular-nums dark:bg-sky-950/30 dark:border-sky-800 dark:text-sky-400">
-                        {formatNumber(entry.points)} pts
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700 tabular-nums dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
-                        {formatNumber(entry.contratsSignes)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getTierBadgeClass(entry.rankTierKey)}>
+                          {entry.rankTierLabel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-xs font-bold text-sky-700 tabular-nums dark:bg-sky-950/30 dark:border-sky-800 dark:text-sky-400">
+                          {formatNumber(entry.points)} pts
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-semibold text-emerald-700 tabular-nums dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400">
+                          {formatNumber(entry.contratsSignes)}
+                        </span>
+                      </TableCell>
+                    </TableRow>
                   )
                 })}
               </TableBody>
@@ -900,7 +1056,9 @@ function ClassementTab({
       </Card>
       <DetailModal
         open={!!selectedEntry}
-        onOpenChange={(open) => { if (!open) setSelectedEntry(null) }}
+        onOpenChange={open => {
+          if (!open) setSelectedEntry(null)
+        }}
         commercialId={selectedEntry?.commercialId}
         managerId={selectedEntry?.managerId}
         displayNom={selectedEntry?.commercialNom || selectedEntry?.managerNom || ''}
@@ -934,7 +1092,8 @@ function BadgesTab({
     if (!q) return filteredBadges || []
 
     return (filteredBadges || []).filter(badge => {
-      const haystack = `${badge.nom || ''} ${badge.code || ''} ${badge.description || ''}`.toLowerCase()
+      const haystack =
+        `${badge.nom || ''} ${badge.code || ''} ${badge.description || ''}`.toLowerCase()
       return haystack.includes(q)
     })
   }, [filteredBadges, search])
@@ -1004,7 +1163,8 @@ function BadgesTab({
           </div>
 
           <div className="text-xs text-muted-foreground">
-            Astuce: filtrez par catégorie puis recherchez par nom/code pour retrouver rapidement un badge.
+            Astuce: filtrez par catégorie puis recherchez par nom/code pour retrouver rapidement un
+            badge.
           </div>
         </CardContent>
       </Card>
@@ -1050,10 +1210,14 @@ function BadgesTab({
                     <BadgeIcon badge={badge} />
                     <div className="min-w-0">
                       <span className="font-medium text-sm block truncate">{badge.nom}</span>
-                      <span className="text-[11px] text-muted-foreground font-mono">{badge.code}</span>
+                      <span className="text-[11px] text-muted-foreground font-mono">
+                        {badge.code}
+                      </span>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold shrink-0 ${getCategoryBadgeClass(badge.category)}`}>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold shrink-0 ${getCategoryBadgeClass(badge.category)}`}
+                  >
                     {getCategoryIcon(badge.category)}
                     {badge.category}
                   </span>
@@ -1068,8 +1232,12 @@ function BadgesTab({
                     Niveau {badge.tier}
                   </Badge>
                   <div className="flex items-center gap-1.5">
-                    <div className={`h-2 w-2 rounded-full ${badge.isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                    <span className={`text-[11px] ${badge.isActive ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
+                    <div
+                      className={`h-2 w-2 rounded-full ${badge.isActive ? 'bg-green-500 dark:bg-green-400' : 'bg-gray-300 dark:bg-gray-600'}`}
+                    />
+                    <span
+                      className={`text-[11px] ${badge.isActive ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}
+                    >
                       {badge.isActive ? 'Actif' : 'Inactif'}
                     </span>
                   </div>
@@ -1179,7 +1347,9 @@ function MappingTab({
                         {suggestion.prowinPrenom} {suggestion.prowinNom}
                       </div>
                       {suggestion.prowinEmail && (
-                        <div className="text-xs text-muted-foreground">{suggestion.prowinEmail}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {suggestion.prowinEmail}
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -1205,7 +1375,9 @@ function MappingTab({
                     </TableCell>
                     <TableCell className="text-center">
                       {suggestion.confidence != null ? (
-                        <span className={`font-semibold ${getConfidenceColor(suggestion.confidence)}`}>
+                        <span
+                          className={`font-semibold ${getConfidenceColor(suggestion.confidence)}`}
+                        >
                           {suggestion.confidence}%
                         </span>
                       ) : (
@@ -1246,7 +1418,9 @@ function MappingTab({
                             {removeMappingLoading ? (
                               <RefreshCw className="h-3 w-3 animate-spin" />
                             ) : (
-                              <><Trash2 className="h-3 w-3 mr-1" /> Supprimer</>
+                              <>
+                                <Trash2 className="h-3 w-3 mr-1" /> Supprimer
+                              </>
                             )}
                           </Button>
                         )}
@@ -1294,12 +1468,18 @@ function OffresTab({
 
   const getOffreCategoryStyle = categorie => {
     const cat = (categorie || '').toLowerCase()
-    if (cat.includes('mobile') || cat.includes('telecom')) return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800'
-    if (cat.includes('fibre') || cat.includes('internet')) return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800'
-    if (cat.includes('elec') || cat.includes('gaz') || cat.includes('energ')) return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
-    if (cat.includes('assurance') || cat.includes('mutuelle')) return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
-    if (cat.includes('tv') || cat.includes('divertissement')) return 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/30 dark:text-pink-400 dark:border-pink-800'
-    if (cat.includes('conciergerie') || cat.includes('service')) return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800'
+    if (cat.includes('mobile') || cat.includes('telecom'))
+      return 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800'
+    if (cat.includes('fibre') || cat.includes('internet'))
+      return 'bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/30 dark:text-violet-400 dark:border-violet-800'
+    if (cat.includes('elec') || cat.includes('gaz') || cat.includes('energ'))
+      return 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
+    if (cat.includes('assurance') || cat.includes('mutuelle'))
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
+    if (cat.includes('tv') || cat.includes('divertissement'))
+      return 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/30 dark:text-pink-400 dark:border-pink-800'
+    if (cat.includes('conciergerie') || cat.includes('service'))
+      return 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800'
     return 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800/30 dark:text-slate-400 dark:border-slate-700'
   }
 
@@ -1421,21 +1601,29 @@ function OffresTab({
                             src={getOffreLogoUrl(offre.logoUrl)}
                             alt={offre.fournisseur}
                             className="h-9 w-9 rounded-lg border border-border/50 object-contain p-0.5 bg-white dark:bg-muted"
-                            onError={e => { e.target.style.display = 'none' }}
+                            onError={e => {
+                              e.target.style.display = 'none'
+                            }}
                           />
                         ) : (
-                          <div className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold ${getInitialColors(offre.fournisseur)}`}>
+                          <div
+                            className={`h-9 w-9 rounded-lg flex items-center justify-center text-xs font-bold ${getInitialColors(offre.fournisseur)}`}
+                          >
                             {(offre.fournisseur || 'O').charAt(0).toUpperCase()}
                           </div>
                         )}
                         <div className="min-w-0">
                           <div className="font-medium text-sm truncate">{offre.nom}</div>
-                          <div className="text-[11px] text-muted-foreground">{offre.fournisseur}</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {offre.fournisseur}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${getOffreCategoryStyle(offre.categorie)}`}>
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${getOffreCategoryStyle(offre.categorie)}`}
+                      >
                         {offre.categorie}
                       </span>
                     </TableCell>
@@ -1502,9 +1690,7 @@ function OffresTab({
                     <TableCell>
                       <Select
                         value={offre.badgeProductKey || 'NONE'}
-                        onValueChange={value =>
-                          handleUpdateBadgeProductKey(offre.id, value)
-                        }
+                        onValueChange={value => handleUpdateBadgeProductKey(offre.id, value)}
                       >
                         <SelectTrigger className="h-7 w-36 text-xs">
                           <SelectValue placeholder="Aucune" />
@@ -1568,7 +1754,7 @@ function SyncTab({
     {
       key: 'badges',
       title: 'Évaluer les badges',
-      description: 'Lance l\'évaluation pour tous les commerciaux',
+      description: "Lance l'évaluation pour tous les commerciaux",
       icon: Shield,
       action: handleEvaluateBadges,
       loading: evaluateBadgesLoading,
@@ -1628,11 +1814,7 @@ function SyncTab({
                       disabled={item.loading}
                       className="shrink-0"
                     >
-                      {item.loading ? (
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        'Lancer'
-                      )}
+                      {item.loading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : 'Lancer'}
                     </Button>
                   </div>
                   {/* Résultat */}

@@ -418,7 +418,9 @@ type Mutation {
   createZone(createZoneInput: CreateZoneInput!): Zone!
   creerUtilisateurProWin(input: CreerUtilisateurInput!): ReponseCreationUtilisateur!
   evaluateBadges: AwardBadgesResult!
+  evaluateConversionRanking(weekKey: String!): AwardBadgesResult!
   evaluatePerformanceRanking(month: String!): AwardBadgesResult!
+  evaluateTransformationRanking(month: String!): AwardBadgesResult!
   evaluateTrophees(quarter: String!): AwardBadgesResult!
   generateCommercialToken(commercialId: Int, roomName: String): LiveKitConnectionDetails!
   generateManagerToken(managerId: Int, roomName: String): LiveKitConnectionDetails!
