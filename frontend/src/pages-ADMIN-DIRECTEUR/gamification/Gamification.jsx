@@ -554,7 +554,7 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] p-0 gap-0">
+      <DialogContent className="w-[1480px] h-[640px] max-w-[calc(100vw-1.5rem)] sm:max-w-[1480px]! p-0 gap-0 overflow-hidden">
 
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border">
@@ -590,7 +590,7 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
         </div>
 
         {/* Body */}
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="h-[560px] overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
               <RefreshCw className="h-4 w-4 animate-spin mr-2" />
@@ -602,14 +602,13 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
               <p className="text-sm">Aucune activité sur cette période</p>
             </div>
           ) : (
-            <>
-              {/* Badges section */}
-              {badges.length > 0 && (
-                <div className="px-6 pt-4 pb-3">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                    <Shield className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
-                    Badges obtenus ({badges.length})
-                  </p>
+            <div className="grid grid-cols-[0.95fr_1.25fr] h-full">
+              <div className="px-5 py-3 border-r border-border h-full overflow-y-auto">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  <Shield className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
+                  Badges obtenus ({badges.length})
+                </p>
+                {badges.length > 0 ? (
                   <div className="space-y-2">
                     {badges.map(badge => {
                       const def = badge.badgeDefinition
@@ -617,35 +616,34 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
                       const trigger = getBadgeTriggerLabel(def?.condition, badge.metadata)
                       const iconUrl = def ? resolveBadgeIconUrl(def) : null
                       return (
-                        <div key={badge.id} className="flex items-center gap-3 rounded-lg border border-border/70 p-3">
-                          <div className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center shrink-0 overflow-hidden`}>
-                            {iconUrl ? (
-                              <img src={iconUrl} alt="" className="h-6 w-6 object-contain" loading="lazy" />
-                            ) : (
-                              <style.Icon className={`h-4 w-4 ${style.color}`} />
-                            )}
+                        <div key={badge.id} className="rounded-lg border border-border/70 p-3 space-y-2">
+                          <div className="flex items-center gap-3">
+                            <div className={`h-9 w-9 rounded-lg border ${style.bg} ${style.border} flex items-center justify-center shrink-0 overflow-hidden`}>
+                              {iconUrl ? (
+                                <img src={iconUrl} alt="" className="h-6 w-6 object-contain" loading="lazy" />
+                              ) : (
+                                <style.Icon className={`h-4 w-4 ${style.color}`} />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{def?.nom || 'Badge'}</p>
+                              <span className="text-[10px] text-muted-foreground">{formatDate(badge.awardedAt)}</span>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{def?.nom || 'Badge'}</p>
-                            {trigger && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{trigger}</p>
-                            )}
-                          </div>
-                          <div className="shrink-0 flex items-center gap-2">
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getCategoryBadgeClass(def?.category)}`}>
-                              {def?.category}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">{formatDate(badge.awardedAt)}</span>
-                          </div>
+                          {trigger && <p className="text-xs text-muted-foreground">{trigger}</p>}
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${getCategoryBadgeClass(def?.category)}`}>
+                            {def?.category}
+                          </span>
                         </div>
                       )
                     })}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground py-3">Aucun badge obtenu</p>
+                )}
+              </div>
 
-              {/* Contrats section */}
-              <div className={`px-6 pt-4 pb-4 ${badges.length > 0 ? 'border-t border-border' : ''}`}>
+              <div className="px-5 py-3 h-full overflow-y-auto">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                   <FileText className="h-3.5 w-3.5 inline mr-1.5 -mt-px" />
                   Contrats validés ({contrats.length})
@@ -653,7 +651,7 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
                 {contrats.length > 0 ? (
                   <div className="space-y-2">
                     {contrats.map(contrat => (
-                      <div key={contrat.id} className="flex items-start gap-4 rounded-lg border border-border/70 p-3">
+                      <div key={contrat.id} className="flex items-start gap-3 rounded-lg border border-border/70 p-3">
                         {contrat.offreLogoUrl ? (
                           <img src={getOffreLogoUrl(contrat.offreLogoUrl)} alt="" className="h-9 w-9 rounded-lg border border-border/50 object-contain bg-muted/50 p-1 shrink-0" />
                         ) : (
@@ -689,7 +687,7 @@ function DetailModal({ open, onOpenChange, commercialId, managerId, displayNom, 
                   <p className="text-sm text-muted-foreground py-3">Aucun contrat validé</p>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
       </DialogContent>
