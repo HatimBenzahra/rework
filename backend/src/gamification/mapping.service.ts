@@ -206,6 +206,7 @@ export class MappingService {
           (confidence === bestConfidence && wUser.email?.endsWith('@winleadplus.com'))) {
         bestConfidence = confidence;
         bestMatch = wUser;
+      }
     }
 
     if (!bestMatch || bestConfidence < 50) return null;
