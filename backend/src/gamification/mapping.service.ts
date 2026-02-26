@@ -201,11 +201,11 @@ export class MappingService {
       ) {
         confidence = 95;
       }
-
-      if (confidence > bestConfidence) {
+      //la condition ajoute pour un utilisateur qui a le compte gmail dans prowin et a 2 comptes gmail et winlead dans winlead plus
+      if (confidence > bestConfidence ||
+          (confidence === bestConfidence && wUser.email?.endsWith('@winleadplus.com'))) {
         bestConfidence = confidence;
         bestMatch = wUser;
-      }
     }
 
     if (!bestMatch || bestConfidence < 50) return null;
