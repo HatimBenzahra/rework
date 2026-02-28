@@ -209,22 +209,37 @@ export class AuthService {
     const token = this.getAccessToken()
     if (token && this.isAuthenticated()) {
       graphqlClient.setAuthToken(token)
+
+      // Programmer le refresh en fonction du temps restant
+      const exp = this.getTokenExpiration()
+      if (exp) {
+        const remainingSeconds = exp - Math.floor(Date.now() / 1000)
+        if (remainingSeconds > 0) {
+          this.scheduleTokenRefresh(remainingSeconds)
+        }
+      }
     } else {
       this.clearAuthData()
     }
   }
+
+  private refreshTimerId: ReturnType<typeof setTimeout> | null = null
 
   private storeAuthData(authResponse: AuthResponse): void {
     localStorage.setItem('access_token', authResponse.access_token)
     localStorage.setItem('refresh_token', authResponse.refresh_token)
     const expiresAt = authResponse.expires_in / 60
     localStorage.setItem('token_expires_at (minutes)', expiresAt.toString())
+
+    // Programmer le refresh automatique a 80% de la duree de vie du token
+    this.scheduleTokenRefresh(authResponse.expires_in)
   }
 
   /**
    * Nettoie les données d'authentification du localStorage
    */
   private clearAuthData(): void {
+    this.cancelScheduledRefresh()
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('token_expires_at (minutes)')
@@ -242,6 +257,40 @@ export class AuthService {
       return payload.email || null
     } catch {
       return null
+    }
+  }
+
+  /**
+   * Programme un refresh automatique du token avant son expiration.
+   * Se declenche a 80% de la duree de vie (ex: 8 min si TTL = 10 min).
+   */
+  private scheduleTokenRefresh(expiresInSeconds: number): void {
+    this.cancelScheduledRefresh()
+
+    // Refresh a 80% de la duree de vie, minimum 30s avant expiration
+    const refreshAfterMs = Math.max(
+      (expiresInSeconds * 0.8) * 1000,
+      (expiresInSeconds - 30) * 1000
+    )
+
+    if (refreshAfterMs <= 0) return
+
+    this.refreshTimerId = setTimeout(async () => {
+      try {
+        const result = await this.refreshToken()
+        if (!result) {
+          window.dispatchEvent(new Event('auth-unauthorized'))
+        }
+      } catch {
+        window.dispatchEvent(new Event('auth-unauthorized'))
+      }
+    }, refreshAfterMs)
+  }
+
+  private cancelScheduledRefresh(): void {
+    if (this.refreshTimerId !== null) {
+      clearTimeout(this.refreshTimerId)
+      this.refreshTimerId = null
     }
   }
 }
