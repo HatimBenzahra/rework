@@ -35,8 +35,8 @@ export class LiveKitService {
       canPublish: role === 'publisher', // commercial publie
       canSubscribe: true, // superviseur écoute
     });
-    // TTL as duration string
-    at.ttl = '1h'; // 1 hour from now
+    // TTL long pour éviter les déconnexions sur les tablettes commerciales
+    at.ttl = '30d';
 
     // toJwt() est SYNCHRONE → surtout pas de "await" ici
     const token = await at.toJwt();
